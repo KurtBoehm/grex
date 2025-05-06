@@ -9,10 +9,8 @@
 #include "grex/grex.hpp"
 
 int main() {
-  grex::Vector<grex::u64, 4> v{4};
-  fmt::print("v: {}\n", v.as_array());
-  v = v + v;
-  fmt::print("v: {}\n", v.as_array());
-  v = v - v;
-  fmt::print("v: {}\n", v.as_array());
+  grex::Vector<grex::i64, 4> v1{4, 3, 2, 1};
+  grex::Vector<grex::i64, 4> v2{6, 7, 8, 9};
+  fmt::print("{} + {} = {}, {} - {} = {}\n", v1.as_array(), v2.as_array(), (v1 + v2).as_array(),
+             v1.as_array(), v2.as_array(), (v1 - v2).as_array());
 }

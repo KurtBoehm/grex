@@ -20,6 +20,9 @@ template<Vectorizable T, std::size_t tSize>
 struct Vector {
   Vector() : vec_{backend::zero(thes::type_tag<T>, thes::index_tag<tSize>)} {}
   explicit Vector(T value) : vec_{backend::broadcast(value, thes::index_tag<tSize>)} {}
+  template<typename... Ts>
+  requires(sizeof...(Ts) == tSize)
+  explicit Vector(Ts... values) : vec_{backend::set(T{values}...)} {}
 
   friend Vector operator+(Vector a, Vector b) {
     return Vector(backend::add(a.vec_, b.vec_));
