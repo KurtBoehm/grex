@@ -1,0 +1,8 @@
+.DS_Store
+
+/packagecache/
+
+/expected-*/
+/fmt-*/
+/preprocessor-boost-*/
+/unordered_dense-*/
