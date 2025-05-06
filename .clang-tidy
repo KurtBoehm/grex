@@ -9,6 +9,7 @@ Checks: "
   -llvm*,
   -zircon-*,
   -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
   -modernize-use-trailing-return-type,
   -portability-simd-intrinsics,
   -readability-identifier-length,

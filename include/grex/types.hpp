@@ -7,7 +7,10 @@
 #ifndef INCLUDE_GREX_TYPES_HPP
 #define INCLUDE_GREX_TYPES_HPP
 
+#include <array>
 #include <cstddef>
+
+#include "thesauros/types.hpp"
 
 #include "grex/backend.hpp"
 #include "grex/base.hpp"
@@ -15,13 +18,27 @@
 namespace grex {
 template<Vectorizable T, std::size_t tSize>
 struct Vector {
-  Vector() = default;
+  Vector() : vec_{backend::zero(thes::type_tag<T>, thes::index_tag<tSize>)} {}
+  explicit Vector(T value) : vec_{backend::broadcast(value, thes::index_tag<tSize>)} {}
 
   friend Vector operator+(Vector a, Vector b) {
     return Vector(backend::add(a.vec_, b.vec_));
   }
   friend Vector operator-(Vector a, Vector b) {
     return Vector(backend::subtract(a.vec_, b.vec_));
+  }
+
+  void store(T* value) const {
+    backend::store(value, vec_);
+  }
+  void store_aligned(T* value) const {
+    backend::store_aligned(value, vec_);
+  }
+
+  std::array<T, tSize> as_array() const {
+    std::array<T, tSize> out{};
+    store(out.data());
+    return out;
   }
 
 private:
