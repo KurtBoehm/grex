@@ -9,7 +9,6 @@
 
 #include <immintrin.h>
 
-#include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/helpers.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
@@ -29,20 +28,7 @@ namespace grex::backend {
   GREX_DEFINE_SI_OPERATION(GREX_DEF_STORE, REGISTERBITS, PREFIX, si##REGISTERBITS, \
                            reinterpret_cast<__m##REGISTERBITS##i*>)
 
-GREX_DEF_STORE_FP(128, mm)
-GREX_DEF_STORE_INT(128, mm)
-#if GREX_INSTRUCTION_SET >= GREX_AVX
-GREX_DEF_STORE_FP(256, mm256)
-#endif
-#if GREX_INSTRUCTION_SET >= GREX_AVX2
-GREX_DEF_STORE_INT(256, mm256)
-#endif
-#if GREX_INSTRUCTION_SET >= GREX_AVX512_1
-GREX_DEF_STORE_FP(512, mm512)
-#endif
-#if GREX_INSTRUCTION_SET >= GREX_AVX512_2
-GREX_DEF_STORE_INT(512, mm512)
-#endif
+GREX_DEFINE_INSTR_SET(GREX_DEF_STORE_FP, GREX_DEF_STORE_INT)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_STORE_HPP
