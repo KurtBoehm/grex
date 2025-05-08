@@ -10,6 +10,7 @@
 #include <array>
 #include <cstddef>
 
+#include "thesauros/static-ranges/definitions.hpp"
 #include "thesauros/types.hpp"
 
 #include "grex/backend.hpp"
@@ -18,6 +19,10 @@
 namespace grex {
 template<Vectorizable T, std::size_t tSize>
 struct Vector {
+  using Value = T;
+  static constexpr std::size_t size = tSize;
+  static constexpr thes::star::PrintableMarker printable{};
+
   Vector() : vec_{backend::zero(thes::type_tag<T>, thes::index_tag<tSize>)} {}
   explicit Vector(T value) : vec_{backend::broadcast(value, thes::index_tag<tSize>)} {}
   template<typename... Ts>
@@ -38,6 +43,12 @@ struct Vector {
     backend::store_aligned(value, vec_);
   }
 
+  T operator[](std::size_t i) const {
+    return backend::extract(vec_, i);
+  }
+  T get(thes::AnyIndexTag auto i) const {
+    return backend::extract(vec_, i);
+  }
   std::array<T, tSize> as_array() const {
     std::array<T, tSize> out{};
     store(out.data());

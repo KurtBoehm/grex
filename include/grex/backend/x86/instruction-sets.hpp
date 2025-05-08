@@ -21,6 +21,12 @@ namespace grex::backend {
 #error "Only x86-64 is supported, which implies SSE2!"
 #endif
 #endif
+
+#if __AVX512VBMI2__
+#define GREX_HAS_AVX512VBMI2 true
+#else
+#define GREX_HAS_AVX512VBMI2 false
+#endif
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_INSTRUCTION_SETS_HPP

@@ -10,6 +10,7 @@ Checks: "
   -zircon-*,
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -modernize-use-trailing-return-type,
   -portability-simd-intrinsics,
