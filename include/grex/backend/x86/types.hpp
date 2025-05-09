@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_TYPES_HPP
 #define INCLUDE_GREX_BACKEND_X86_TYPES_HPP
 
+#include <cstddef>
+
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
@@ -15,35 +17,36 @@
 
 namespace grex::backend {
 // Mask definition macros
-#define GREX_TYPES_MASK_BROAD(ELEMENT, SIZE, REGISTER) \
+#define GREX_TYPES_MASK_BROAD(KIND, SIZE, REGISTERBITS) \
   template<> \
-  struct Mask<ELEMENT, SIZE> { \
-    REGISTER r; \
+  struct Mask<KIND, SIZE> { \
+    static constexpr std::size_t rbits = REGISTERBITS; \
+    __m##REGISTERBITS##i r; \
   }; \
-  using b##ELEMENT##x##SIZE = Mask<ELEMENT, SIZE>
-#define GREX_TYPES_MASK_COMPACT(PREFIX, BITS, SIZE, REGISTER) \
+  using b##KIND##x##SIZE = Mask<KIND, SIZE>
+#define GREX_TYPES_MASK_COMPACT(KIND, BITS, SIZE, REGISTERBITS) \
   template<> \
-  struct Mask<PREFIX##BITS, SIZE> { \
-    __mmask##BITS r; \
+  struct Mask<KIND##BITS, SIZE> { \
+    static constexpr std::size_t rbits = REGISTERBITS; \
+    GREX_SIZEMMASK(SIZE) r; \
   }; \
-  using b##PREFIX##BITS##x##SIZE = Mask<PREFIX##BITS, SIZE>
+  using b##KIND##BITS##x##SIZE = Mask<KIND##BITS, SIZE>
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_TYPES_MASK GREX_TYPES_MASK_COMPACT
 #else
-#define GREX_TYPES_MASK(PREFIX, BITS, SIZE, REGISTER) \
-  GREX_TYPES_MASK_BROAD(PREFIX##BITS, SIZE, REGISTER)
+#define GREX_TYPES_MASK(KIND, BITS, SIZE, REGISTERBITS) \
+  GREX_TYPES_MASK_BROAD(KIND##BITS, SIZE, REGISTERBITS)
 #endif
 
 // Combined vector and mask definition macros
-#define GREX_TYPES_IMPL(PREFIX, BITS, SIZE, REGISTER) \
+#define GREX_TYPES_IMPL(KIND, BITS, SIZE, REGISTERBITS) \
   template<> \
-  struct Vector<PREFIX##BITS, SIZE> { \
-    REGISTER r; \
+  struct Vector<KIND##BITS, SIZE> { \
+    GREX_REGISTER(KIND, BITS, REGISTERBITS) r; \
   }; \
-  using PREFIX##BITS##x##SIZE = Vector<PREFIX##BITS, SIZE>; \
-  GREX_TYPES_MASK(PREFIX, BITS, SIZE, REGISTER);
-#define GREX_TYPES(PREFIX, BITS, SIZE, REGISTERBITS) \
-  GREX_TYPES_IMPL(PREFIX, BITS, SIZE, GREX_REGISTER(PREFIX, BITS, REGISTERBITS))
+  using KIND##BITS##x##SIZE = Vector<KIND##BITS, SIZE>; \
+  GREX_TYPES_MASK(KIND, BITS, SIZE, REGISTERBITS);
+#define GREX_TYPES(KIND, BITS, SIZE, REGISTERBITS) GREX_TYPES_IMPL(KIND, BITS, SIZE, REGISTERBITS)
 
 #define GREX_TYPES_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_TYPES, REGISTERBITS, REGISTERBITS)

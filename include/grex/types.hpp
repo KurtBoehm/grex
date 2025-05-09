@@ -8,6 +8,7 @@
 #define INCLUDE_GREX_TYPES_HPP
 
 #include <array>
+#include <concepts>
 #include <cstddef>
 
 #include "thesauros/static-ranges/definitions.hpp"
@@ -18,22 +19,41 @@
 
 namespace grex {
 template<Vectorizable T, std::size_t tSize>
-struct Vector {
-  using Value = T;
+struct Mask {
+  using Backend = backend::Mask<T, tSize>;
   static constexpr std::size_t size = tSize;
   static constexpr thes::star::PrintableMarker printable{};
 
-  Vector() : vec_{backend::zero(thes::type_tag<T>, thes::index_tag<tSize>)} {}
-  explicit Vector(T value) : vec_{backend::broadcast(value, thes::index_tag<tSize>)} {}
+  Mask() : mask_{backend::zero(thes::type_tag<Backend>)} {}
+  explicit Mask(T value) : mask_{backend::broadcast(value, thes::type_tag<Backend>)} {}
+  template<typename... Ts>
+  requires(((sizeof...(Ts) == tSize) && ... && std::same_as<Ts, bool>))
+  explicit Mask(Ts... values) : mask_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
+
+private:
+  explicit Mask(Backend v) : mask_(v) {}
+  Backend mask_;
+};
+
+template<Vectorizable T, std::size_t tSize>
+struct Vector {
+  using Value = T;
+  using Mask = grex::Mask<T, tSize>;
+  using Backend = backend::Vector<T, tSize>;
+  static constexpr std::size_t size = tSize;
+  static constexpr thes::star::PrintableMarker printable{};
+
+  Vector() : vec_{backend::zero(thes::type_tag<Backend>)} {}
+  explicit Vector(T value) : vec_{backend::broadcast(value, thes::type_tag<Backend>)} {}
   template<typename... Ts>
   requires(sizeof...(Ts) == tSize)
-  explicit Vector(Ts... values) : vec_{backend::set(T{values}...)} {}
+  explicit Vector(Ts... values) : vec_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
 
   friend Vector operator+(Vector a, Vector b) {
-    return Vector(backend::add(a.vec_, b.vec_));
+    return Vector{backend::add(a.vec_, b.vec_)};
   }
   friend Vector operator-(Vector a, Vector b) {
-    return Vector(backend::subtract(a.vec_, b.vec_));
+    return Vector{backend::subtract(a.vec_, b.vec_)};
   }
 
   void store(T* value) const {
@@ -56,10 +76,8 @@ struct Vector {
   }
 
 private:
-  using BackendVec = backend::Vector<T, tSize>;
-  explicit Vector(BackendVec v) : vec_(v) {}
-
-  BackendVec vec_;
+  explicit Vector(Backend v) : vec_(v) {}
+  Backend vec_;
 };
 } // namespace grex
 
