@@ -20,24 +20,22 @@
 #include "grex/backend/x86/operations/store.hpp"
 #endif
 
-#define GREX_EXTRACT_FALLBACK(ELEMENT, SIZE) \
-  std::array<ELEMENT, SIZE> x{}; \
-  store(x.data(), v); \
-  return x[i % SIZE];
-#define GREX_EXTRACT_BASIC_512(TYPE, SIZE, REGISTER, CALL, CONVERT) \
-  inline TYPE extract(TYPE##x##SIZE v, std::size_t i) { \
+#define GREX_EXTRACT_BASIC_FALLBACK(ELEMENT, SIZE, REGISTER, CALL, CONVERT) \
+  inline ELEMENT extract(ELEMENT##x##SIZE v, std::size_t i) { \
+    std::array<ELEMENT, SIZE> x{}; \
+    store(x.data(), v); \
+    return x[i % SIZE]; \
+  }
+#define GREX_EXTRACT_BASIC_AVX512(ELEMENT, SIZE, REGISTER, CALL, CONVERT) \
+  inline ELEMENT extract(ELEMENT##x##SIZE v, std::size_t i) { \
     const REGISTER x = CALL; \
     return CONVERT; \
-  }
-#define GREX_EXTRACT_BASIC_FALLBACK(TYPE, SIZE, REGISTER, CALL, CONVERT) \
-  inline TYPE extract(TYPE##x##SIZE v, std::size_t i) { \
-    GREX_EXTRACT_FALLBACK(TYPE, SIZE) \
   }
 
 // Define for floating-point types
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_EXTRACT_FP_BASIC(TYPE, SIZE, REGISTER, CALL, CONVERT) \
-  GREX_EXTRACT_BASIC_512(TYPE, SIZE, REGISTER, CALL, CONVERT)
+  GREX_EXTRACT_BASIC_AVX512(TYPE, SIZE, REGISTER, CALL, CONVERT)
 #else
 #define GREX_EXTRACT_FP_BASIC(TYPE, SIZE, REGISTER, CALL, CONVERT) \
   GREX_EXTRACT_BASIC_FALLBACK(TYPE, SIZE, REGISTER, CALL, CONVERT)
@@ -56,7 +54,7 @@
 
 #if GREX_X86_64_LEVEL >= 4 && GREX_HAS_AVX512VBMI2
 #define GREX_EXTRACT_INT_BASIC(TYPE, SIZE, REGISTER, CALL, CONVERT) \
-  GREX_EXTRACT_BASIC_512(TYPE, SIZE, REGISTER, CALL, CONVERT)
+  GREX_EXTRACT_BASIC_AVX512(TYPE, SIZE, REGISTER, CALL, CONVERT)
 #else
 #define GREX_EXTRACT_INT_BASIC(TYPE, SIZE, REGISTER, CALL, CONVERT) \
   GREX_EXTRACT_BASIC_FALLBACK(TYPE, SIZE, REGISTER, CALL, CONVERT)
@@ -68,6 +66,25 @@
     KIND##BITS(GREX_EXTRACT_VALUE_##REGISTERBITS(BITS)))
 #define GREX_EXTRACT_INT_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_INT_TYPE(GREX_EXTRACT_INT_COMPRESS, REGISTERBITS, REGISTERBITS, BITPREFIX)
+
+// Define mask extraction
+#if GREX_X86_64_LEVEL >= 4
+// With AVX-512, the mask can just be converted to an integer to get the requested bit
+#define GREX_EXTRACT_MASK_IMPL(KIND, BITS, SIZE, UMMASK) \
+  inline bool extract(Mask<KIND##BITS, SIZE> v, std::size_t i) { \
+    return (UMMASK(UMMASK(v.r) >> i) & 1U) != 0; \
+  }
+#define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \
+  GREX_EXTRACT_MASK_IMPL(KIND, BITS, SIZE, BOOST_PP_CAT(u, GREX_MMASKSIZE(SIZE)))
+#else
+// Pre-AVX-512, we extract the corresponding part of the vector and compare it to 0
+#define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \
+  inline bool extract(Mask<KIND##BITS, SIZE> v, std::size_t i) { \
+    return extract(Vector<u##BITS, SIZE>{v.r}, i) != 0; \
+  }
+#endif
+#define GREX_EXTRACT_MASK_ALL(REGISTERBITS, BITPREFIX) \
+  GREX_FOREACH_TYPE(GREX_EXTRACT_MASK, REGISTERBITS)
 
 namespace grex::backend {
 GREX_EXTRACT_FP_COMPRESS(f32, 4, __m128, _mm_maskz_compress_ps, __mmask8, _mm_cvtss_f32)
@@ -88,6 +105,8 @@ GREX_EXTRACT_FP_COMPRESS(f64, 8, __m512d, _mm512_maskz_compress_pd, __mmask8, _m
 #endif
 
 GREX_FOREACH_X86_64_LEVEL(GREX_EXTRACT_INT_ALL)
+
+GREX_FOREACH_X86_64_LEVEL(GREX_EXTRACT_MASK_ALL)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_EXTRACT_HPP

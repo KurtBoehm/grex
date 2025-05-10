@@ -30,6 +30,13 @@ struct Mask {
   requires(((sizeof...(Ts) == tSize) && ... && std::same_as<Ts, bool>))
   explicit Mask(Ts... values) : mask_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
 
+  bool operator[](std::size_t i) const {
+    return backend::extract(mask_, i);
+  }
+  bool get(thes::AnyIndexTag auto i) const {
+    return backend::extract(mask_, i);
+  }
+
 private:
   explicit Mask(Backend v) : mask_(v) {}
   Backend mask_;
