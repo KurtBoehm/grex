@@ -3,6 +3,7 @@
 
 // IWYU pragma: begin_exports
 #include "operations/arithmetic.hpp"
+#include "operations/blend.hpp"
 #include "operations/extract.hpp"
 #include "operations/set.hpp"
 #include "operations/store.hpp"

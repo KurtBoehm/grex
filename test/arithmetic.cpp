@@ -14,4 +14,6 @@ int main() {
   fmt::print("{} + {} = {}, {} - {} = {}\n", v1, v2, v1 + v2, v1, v2, v1 - v2);
   grex::Mask<grex::i64, 4> m{true, true, false, true};
   fmt::print("{}\n", m);
+  fmt::print("blend_zero: {}\n", grex::blend_zero(m, v1));
+  fmt::print("blend: {}\n", grex::blend(m, v1, v2));
 }

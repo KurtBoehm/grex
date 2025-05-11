@@ -29,6 +29,7 @@ struct Mask {
   template<typename... Ts>
   requires(((sizeof...(Ts) == tSize) && ... && std::same_as<Ts, bool>))
   explicit Mask(Ts... values) : mask_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
+  explicit Mask(Backend v) : mask_(v) {}
 
   bool operator[](std::size_t i) const {
     return backend::extract(mask_, i);
@@ -37,8 +38,11 @@ struct Mask {
     return backend::extract(mask_, i);
   }
 
+  Backend backend() const {
+    return mask_;
+  }
+
 private:
-  explicit Mask(Backend v) : mask_(v) {}
   Backend mask_;
 };
 
@@ -55,6 +59,7 @@ struct Vector {
   template<typename... Ts>
   requires(sizeof...(Ts) == tSize)
   explicit Vector(Ts... values) : vec_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
+  explicit Vector(Backend v) : vec_(v) {}
 
   friend Vector operator+(Vector a, Vector b) {
     return Vector{backend::add(a.vec_, b.vec_)};
@@ -82,10 +87,22 @@ struct Vector {
     return out;
   }
 
+  Backend backend() const {
+    return vec_;
+  }
+
 private:
-  explicit Vector(Backend v) : vec_(v) {}
   Backend vec_;
 };
+
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> blend_zero(Mask<T, tSize> mask, Vector<T, tSize> v1) {
+  return Vector<T, tSize>{backend::blend_zero(mask.backend(), v1.backend())};
+}
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> blend(Mask<T, tSize> mask, Vector<T, tSize> v0, Vector<T, tSize> v1) {
+  return Vector<T, tSize>{backend::blend(mask.backend(), v0.backend(), v1.backend())};
+}
 } // namespace grex
 
 #endif // INCLUDE_GREX_TYPES_HPP
