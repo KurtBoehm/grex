@@ -3,10 +3,10 @@
 
 // IWYU pragma: begin_exports
 #include "operations/arithmetic.hpp"
+#include "operations/bitwise.hpp"
 #include "operations/blend.hpp"
 #include "operations/comparisons.hpp"
 #include "operations/extract.hpp"
-#include "operations/negation.hpp"
 #include "operations/set.hpp"
 #include "operations/store.hpp"
 // IWYU pragma: end_exports

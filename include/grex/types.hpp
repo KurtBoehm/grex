@@ -101,10 +101,16 @@ struct Vector {
   }
 
   friend Mask operator==(Vector a, Vector b) {
-    return Mask{backend::compare_equal(a.vec_, b.vec_)};
+    return Mask{backend::compare_eq(a.vec_, b.vec_)};
   }
   friend Mask operator!=(Vector a, Vector b) {
-    return Mask{backend::compare_nequal(a.vec_, b.vec_)};
+    return Mask{backend::compare_neq(a.vec_, b.vec_)};
+  }
+  friend Mask operator<(Vector a, Vector b) {
+    return Mask{backend::compare_lt(a.vec_, b.vec_)};
+  }
+  friend Mask operator>(Vector a, Vector b) {
+    return Mask{backend::compare_lt(b.vec_, a.vec_)};
   }
 
   Backend backend() const {

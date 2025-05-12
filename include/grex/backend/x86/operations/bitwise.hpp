@@ -4,8 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_NEGATION_HPP
-#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_NEGATION_HPP
+#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_BITWISE_HPP
+#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_BITWISE_HPP
 
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
@@ -15,11 +15,16 @@
 namespace grex::backend {
 #define GREX_NEGATION_BASE_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   BOOST_PP_CAT(BITPREFIX##_xor_, \
-               GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))(m.r, BITPREFIX##_set1_epi32(-1))
+               GREX_SI_SUFFIX(i, BITS, REGISTERBITS))(m.r, BITPREFIX##_set1_epi32(-1))
 
 #define GREX_NEGATION_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> negate(Vector<KIND##BITS, SIZE> m) { \
     return {.r = GREX_NEGATION_BASE_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
+  } \
+  inline Vector<KIND##BITS, SIZE> bitwise_xor(Vector<KIND##BITS, SIZE> a, \
+                                              Vector<KIND##BITS, SIZE> b) { \
+    return {.r = \
+              BOOST_PP_CAT(BITPREFIX##_xor_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))(a.r, b.r)}; \
   }
 
 #if GREX_X86_64_LEVEL >= 4
@@ -49,4 +54,4 @@ GREX_FOREACH_X86_64_LEVEL(GREX_NEGATION_VEC_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_NEGATION_MASK_ALL)
 } // namespace grex::backend
 
-#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_NEGATION_HPP
+#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_BITWISE_HPP

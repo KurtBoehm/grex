@@ -10,55 +10,160 @@
 #include <boost/preprocessor.hpp>
 #include <immintrin.h>
 
+#include "thesauros/types/type-tag.hpp"
+
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/negation.hpp"
+#include "grex/backend/x86/operations/bitwise.hpp"
+#include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
+/*
+  The intrinsics for vector comparisons are a real mess (apart from AVX-512),
+  which is sadly mirrored by the following definitions. The basic structure is:
+  - With the SSE instruction sets, the three element kinds have to be distinguished:
+    -
+  - With AVX-512, there are [register bit prefix]_cmp_[type suffix]_mask intrinsics which encode
+    the respective comparison through a magic number.
+    This is consistent and the best solution of those implemented in the SIMD instruction sets.
+  - With AVX/AVX2, the three element kinds have to be distinguished:
+    - f: The intrinsics follow the same conventions as those for AVX-512.
+    - i: The intrinsics follow the same conventions as those for the SSE family
+*/
+
 namespace grex::backend {
-#define GREX_COMPARE_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
+#define GREX_CMP_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
   inline Mask<KIND##BITS, SIZE> compare_##OPNAME(Vector<KIND##BITS, SIZE> a, \
                                                  Vector<KIND##BITS, SIZE> b) { \
-    return {.r = BOOST_PP_CAT(BOOST_PP_CAT(BITPREFIX##_cmp_, GREX_EPI_SUFFIX(KIND, BITS)), \
+    return {.r = BOOST_PP_CAT(BOOST_PP_CAT(BITPREFIX##_cmp_, GREX_EPU_SUFFIX(KIND, BITS)), \
                               _mask)(a.r, b.r, CMPIDX)}; \
   }
 
-#define GREX_COMPARE_INTRINSIC_BASE_cmpeq(KIND, BITS, BITPREFIX) \
-  {.r = BOOST_PP_CAT(BITPREFIX##_cmpeq_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r)}
-#define GREX_COMPARE_INTRINSIC_BASE_cmpneq(KIND, BITS, BITPREFIX) negate(compare_equal(a, b))
-#define GREX_COMPARE_INTRINSIC_BASE(KIND, BITS, BITPREFIX, CMPNAME, CMPIDX) \
-  GREX_COMPARE_INTRINSIC_BASE_##CMPNAME(KIND, BITS, BITPREFIX)
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define GREX_COMPARE_INTRINSIC_128 GREX_COMPARE_INTRINSIC_BASE
-#define GREX_COMPARE_INTRINSIC_256f(BITS, BITPREFIX, CMPNAME, CMPIDX) \
-  {.r = BOOST_PP_CAT(BITPREFIX##_cmp_, GREX_FP_SUFFIX(f##BITS))(a.r, b.r, CMPIDX)}
-#define GREX_COMPARE_INTRINSIC_256i(BITS, BITPREFIX, CMPNAME, CMPIDX) \
-  GREX_COMPARE_INTRINSIC_BASE(i, BITS, BITPREFIX, CMPNAME, CMPIDX)
-#define GREX_COMPARE_INTRINSIC_256u(BITS, BITPREFIX, CMPNAME, CMPIDX) \
-  GREX_COMPARE_INTRINSIC_BASE(u, BITS, BITPREFIX, CMPNAME, CMPIDX)
-#define GREX_COMPARE_INTRINSIC_256(KIND, BITS, BITPREFIX, CMPNAME, CMPIDX) \
-  GREX_COMPARE_INTRINSIC_256##KIND(BITS, BITPREFIX, CMPNAME, CMPIDX)
-#define GREX_COMPARE_INTRINSIC(KIND, BITS, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
-  GREX_COMPARE_INTRINSIC_##REGISTERBITS(KIND, BITS, BITPREFIX, CMPNAME, CMPIDX)
+// This is the base case (limited support for integers),
+// which applies to the SSE family and integer AVX2
 
-#define GREX_COMPARE_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
+// Equality: All kinds have cmpeq, unsigned fall back to signed
+#define GREX_CMP_IMPL_BASE_cmpeq(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  return { \
+    .r = GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, \
+                       BOOST_PP_CAT(BITPREFIX##_cmpeq_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r))};
+
+// Inequality: Separate cmpneq intrinsic only for f, negated equality for i and u
+#define GREX_CMPNEQ_f(BITS, BITPREFIX, REGISTERBITS) \
+  return {.r = \
+            GREX_KINDCAST(f, i, BITS, REGISTERBITS, \
+                          BOOST_PP_CAT(BITPREFIX##_cmpneq_, GREX_FP_SUFFIX(f##BITS))(a.r, b.r))};
+#define GREX_CMPNEQ_i(BITS, BITPREFIX, REGISTERBITS) return negate(compare_eq(a, b));
+#define GREX_CMPNEQ_u(BITS, BITPREFIX, REGISTERBITS) return negate(compare_eq(a, b));
+#define GREX_CMP_IMPL_BASE_cmpneq(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  GREX_CMPNEQ_##KIND(BITS, BITPREFIX, REGISTERBITS)
+
+// Less than
+// f, i other than i64 on level 1: Separate cmpgt intrinsics
+#define GREX_CMPLT_INTRINSIC(KIND, BITS, BITPREFIX, REGISTERBITS) \
+  return { \
+    .r = GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, \
+                       BOOST_PP_CAT(BITPREFIX##_cmpgt_, GREX_EPI_SUFFIX(KIND, BITS))(b.r, a.r))};
+// u8/16/32 on level 1, u64 on level 2 and 3: Flip the “sign” bit and use the signed comparison.
+#define GREX_CMPLT_UFLIP(KIND, BITS, SIZE, BITPREFIX) \
+  const auto signbits = broadcast(u##BITS{1} << u##BITS{BOOST_PP_DEC(BITS)}, \
+                                  thes::type_tag<Vector<KIND##BITS, SIZE>>); \
+  const auto a1 = bitwise_xor(a, signbits); \
+  const auto b1 = bitwise_xor(b, signbits); \
+  return {.r = BOOST_PP_CAT(BITPREFIX##_cmpgt_, GREX_EPI_SUFFIX(KIND, BITS))(b1.r, a1.r)};
+// u8/16/32 on levels 2 and 3: Inequality with unsigned minimum for u.
+#if GREX_X86_64_LEVEL >= 2
+#define GREX_CMPLT_UMIN(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  return compare_neq( \
+    a, {.r = BOOST_PP_CAT(BITPREFIX##_max_, GREX_EPU_SUFFIX(KIND, BITS))(a.r, b.r)});
+#else
+#define GREX_CMPLT_UMIN(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  GREX_CMPLT_UFLIP(KIND, BITS, SIZE, BITPREFIX)
+#endif
+// i64/u64 on level 1: Two 32 bit comparisons
+#define GREX_CMPLT_U32X2_u (u64{1} << u64{31}) | (u64{1} << u64{63})
+#define GREX_CMPLT_U32X2_i u64{1} << u64{31}
+#define GREX_CMPLT_U32X2(KIND) \
+  const auto s = _mm_set1_epi64x(GREX_CMPLT_U32X2_##KIND); \
+  const auto as = _mm_xor_si128(a.r, s); \
+  const auto bs = _mm_xor_si128(b.r, s); \
+  const auto lt = _mm_cmplt_epi32(as, bs); \
+  const auto eq = _mm_cmpeq_epi32(as, bs); \
+  const auto ltlo = _mm_shuffle_epi32(lt, 160); \
+  const auto lthi = _mm_shuffle_epi32(lt, 245); \
+  const auto eqhi = _mm_shuffle_epi32(eq, 245); \
+  return {.r = _mm_or_si128(lthi, _mm_and_si128(eqhi, ltlo))};
+// f
+#define GREX_CMPLT_f(BITS, SIZE, ...) GREX_CMPLT_INTRINSIC(f, BITS, __VA_ARGS__)
+// i
+#define GREX_CMPLT_i8(SIZE, ...) GREX_CMPLT_INTRINSIC(i, 8, __VA_ARGS__)
+#define GREX_CMPLT_i16(SIZE, ...) GREX_CMPLT_INTRINSIC(i, 16, __VA_ARGS__)
+#define GREX_CMPLT_i32(SIZE, ...) GREX_CMPLT_INTRINSIC(i, 32, __VA_ARGS__)
+#if GREX_X86_64_LEVEL >= 2
+#define GREX_CMPLT_i64(SIZE, ...) GREX_CMPLT_INTRINSIC(i, 64, __VA_ARGS__)
+#else
+#define GREX_CMPLT_i64(SIZE, BITPREFIX, REGISTERBITS) GREX_CMPLT_U32X2(i)
+#endif
+#define GREX_CMPLT_i(BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  GREX_CMPLT_i##BITS(SIZE, BITPREFIX, REGISTERBITS)
+// u
+#define GREX_CMPLT_u8(...) GREX_CMPLT_UMIN(u, 8, __VA_ARGS__)
+#define GREX_CMPLT_u16(...) GREX_CMPLT_UMIN(u, 16, __VA_ARGS__)
+#define GREX_CMPLT_u32(...) GREX_CMPLT_UMIN(u, 32, __VA_ARGS__)
+#if GREX_X86_64_LEVEL >= 2
+#define GREX_CMPLT_u64(SIZE, BITPREFIX, REGISTERBITS) GREX_CMPLT_UFLIP(u, 64, SIZE, BITPREFIX)
+#else
+#define GREX_CMPLT_u64(SIZE, BITPREFIX, REGISTERBITS) GREX_CMPLT_U32X2(u)
+#endif
+#define GREX_CMPLT_u(BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  GREX_CMPLT_u##BITS(SIZE, BITPREFIX, REGISTERBITS)
+// base
+#define GREX_CMP_IMPL_BASE_cmplt(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  GREX_CMPLT_##KIND(BITS, SIZE, BITPREFIX, REGISTERBITS)
+
+// Base: Case distinction based on comparison type
+#define GREX_CMP_IMPL_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
+  GREX_CMP_IMPL_BASE_##CMPNAME(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// SSE family definitions
+#define GREX_CMP_IMPL_128 GREX_CMP_IMPL_BASE
+// AVX/AVX2 definitions
+#define GREX_CMP_IMPL_256f(BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
+  return {.r = GREX_KINDCAST( \
+            f, i, BITS, REGISTERBITS, \
+            BOOST_PP_CAT(BITPREFIX##_cmp_, GREX_FP_SUFFIX(f##BITS))(a.r, b.r, CMPIDX))};
+#define GREX_CMP_IMPL_256i(...) GREX_CMP_IMPL_BASE(i, __VA_ARGS__)
+#define GREX_CMP_IMPL_256u(...) GREX_CMP_IMPL_BASE(u, __VA_ARGS__)
+#define GREX_CMP_IMPL_256(KIND, ...) GREX_CMP_IMPL_256##KIND(__VA_ARGS__)
+// Base macro
+#define GREX_CMP_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
+  GREX_CMP_IMPL_##REGISTERBITS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define GREX_CMP_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
   inline Mask<KIND##BITS, SIZE> compare_##OPNAME(Vector<KIND##BITS, SIZE> a, \
                                                  Vector<KIND##BITS, SIZE> b) { \
-    return GREX_COMPARE_INTRINSIC(KIND, BITS, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX); \
+    GREX_CMP_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
   }
 
 #if GREX_X86_64_LEVEL >= 4
-#define GREX_COMPARE GREX_COMPARE_AVX512
+#define GREX_CMP GREX_CMP_AVX512
 #else
-#define GREX_COMPARE GREX_COMPARE_BASE
+#define GREX_CMP GREX_CMP_BASE
 #endif
 
-#define GREX_COMPARE_ALL(REGISTERBITS, BITPREFIX, MACRO, OPNAME, CMPNAME, CMPIDX) \
-  GREX_FOREACH_TYPE(MACRO, REGISTERBITS, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX)
+#define GREX_CMP_ALL(REGISTERBITS, BITPREFIX, OPNAME, CMPNAME, CMPIDX) \
+  GREX_FOREACH_TYPE(GREX_CMP, REGISTERBITS, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX)
 
-GREX_FOREACH_X86_64_LEVEL(GREX_COMPARE_ALL, GREX_COMPARE, equal, cmpeq, 0)
-GREX_FOREACH_X86_64_LEVEL(GREX_COMPARE_ALL, GREX_COMPARE, nequal, cmpneq, 4)
+GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, eq, cmpeq, 0)
+GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, neq, cmpneq, 4)
+GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, lt, cmplt, 1)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARISONS_HPP
