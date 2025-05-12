@@ -19,19 +19,6 @@
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
-/*
-  The intrinsics for vector comparisons are a real mess (apart from AVX-512),
-  which is sadly mirrored by the following definitions. The basic structure is:
-  - With the SSE instruction sets, the three element kinds have to be distinguished:
-    -
-  - With AVX-512, there are [register bit prefix]_cmp_[type suffix]_mask intrinsics which encode
-    the respective comparison through a magic number.
-    This is consistent and the best solution of those implemented in the SIMD instruction sets.
-  - With AVX/AVX2, the three element kinds have to be distinguished:
-    - f: The intrinsics follow the same conventions as those for AVX-512.
-    - i: The intrinsics follow the same conventions as those for the SSE family
-*/
-
 namespace grex::backend {
 #define GREX_CMP_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
   inline Mask<KIND##BITS, SIZE> compare_##OPNAME(Vector<KIND##BITS, SIZE> a, \
@@ -83,6 +70,11 @@ namespace grex::backend {
 #define GREX_CMPLT_UMAX(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   GREX_CMPLT_UFLIP(KIND, BITS, SIZE, BITPREFIX)
 #endif
+// u8/u16 on level 1: saturated difference different from zero
+#define GREX_CMPLT_SUBS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  return compare_neq( \
+    {.r = BOOST_PP_CAT(BITPREFIX##_subs_, GREX_EPU_SUFFIX(KIND, BITS))(b.r, a.r)}, \
+    zero(thes::type_tag<Vector<KIND##BITS, SIZE>>));
 // i64/u64 on level 1: Two 32 bit comparisons
 #define GREX_CMPLT_U32X2_u (u64{1} << u64{31}) | (u64{1} << u64{63})
 #define GREX_CMPLT_U32X2_i u64{1} << u64{31}
@@ -110,8 +102,13 @@ namespace grex::backend {
 #define GREX_CMPLT_i(BITS, SIZE, BITPREFIX, REGISTERBITS) \
   GREX_CMPLT_i##BITS(SIZE, BITPREFIX, REGISTERBITS)
 // u
+#if GREX_X86_64_LEVEL >= 2
 #define GREX_CMPLT_u8(...) GREX_CMPLT_UMAX(u, 8, __VA_ARGS__)
 #define GREX_CMPLT_u16(...) GREX_CMPLT_UMAX(u, 16, __VA_ARGS__)
+#else
+#define GREX_CMPLT_u8(...) GREX_CMPLT_SUBS(u, 8, __VA_ARGS__)
+#define GREX_CMPLT_u16(...) GREX_CMPLT_SUBS(u, 16, __VA_ARGS__)
+#endif
 #define GREX_CMPLT_u32(...) GREX_CMPLT_UMAX(u, 32, __VA_ARGS__)
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_CMPLT_u64(SIZE, BITPREFIX, REGISTERBITS) GREX_CMPLT_UFLIP(u, 64, SIZE, BITPREFIX)
@@ -132,7 +129,7 @@ namespace grex::backend {
                        BOOST_PP_CAT(BITPREFIX##_cmpge_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r))};
 // Negated less than
 #define GREX_CMPGE_NEGATED return negate(compare_lt(a, b));
-// u8/16/32 on levels 2 and 3: Inequality with unsigned minimum for u.
+// u8/16/32 on levels 2 and 3: Equality with unsigned minimum for u.
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_CMPGE_UMAX(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return compare_eq(a, \
@@ -140,13 +137,22 @@ namespace grex::backend {
 #else
 #define GREX_CMPGE_UMAX(...) GREX_CMPGE_NEGATED
 #endif
+// u8/u16 on level 1: saturated difference is from zero
+#define GREX_CMPGE_SUBS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  return compare_eq({.r = BOOST_PP_CAT(BITPREFIX##_subs_, GREX_EPU_SUFFIX(KIND, BITS))(b.r, a.r)}, \
+                    zero(thes::type_tag<Vector<KIND##BITS, SIZE>>));
 // f
 #define GREX_CMPGE_f(BITS, SIZE, ...) GREX_CMPGE_INTRINSIC(f, BITS, __VA_ARGS__)
 // i
 #define GREX_CMPGE_i(...) GREX_CMPGE_NEGATED
 // u
+#if GREX_X86_64_LEVEL >= 2
 #define GREX_CMPGE_u8(...) GREX_CMPGE_UMAX(u, 8, __VA_ARGS__)
 #define GREX_CMPGE_u16(...) GREX_CMPGE_UMAX(u, 16, __VA_ARGS__)
+#else
+#define GREX_CMPGE_u8(...) GREX_CMPGE_SUBS(u, 8, __VA_ARGS__)
+#define GREX_CMPGE_u16(...) GREX_CMPGE_SUBS(u, 16, __VA_ARGS__)
+#endif
 #define GREX_CMPGE_u32(...) GREX_CMPGE_UMAX(u, 32, __VA_ARGS__)
 #define GREX_CMPGE_u64(...) GREX_CMPGE_NEGATED
 #define GREX_CMPGE_u(BITS, SIZE, BITPREFIX, REGISTERBITS) \
