@@ -6,8 +6,6 @@
 
 #include "thesauros/format.hpp"
 
-#define GREX_X86_64_LEVEL 2
-
 #include "grex/grex.hpp"
 
 int main() {
@@ -31,4 +29,6 @@ int main() {
   fmt::print("{} != {}: {}\n", v1, v2, v1 != v2);
   fmt::print("{} < {}: {}\n", v2, v1, v2 < v1);
   fmt::print("{} > {}: {}\n", v2, v1, v2 > v1);
+  fmt::print("{} >= {}: {}\n", v2, v1, v2 >= v1);
+  fmt::print("{} <= {}: {}\n", v2, v1, v2 <= v1);
 }

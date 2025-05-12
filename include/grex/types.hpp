@@ -112,6 +112,12 @@ struct Vector {
   friend Mask operator>(Vector a, Vector b) {
     return Mask{backend::compare_lt(b.vec_, a.vec_)};
   }
+  friend Mask operator>=(Vector a, Vector b) {
+    return Mask{backend::compare_ge(a.vec_, b.vec_)};
+  }
+  friend Mask operator<=(Vector a, Vector b) {
+    return Mask{backend::compare_ge(b.vec_, a.vec_)};
+  }
 
   Backend backend() const {
     return vec_;
