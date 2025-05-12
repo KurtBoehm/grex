@@ -10,10 +10,14 @@
 
 int main() {
   grex::Vector<grex::i64, 4> v1{4, 3, 2, 1};
-  grex::Vector<grex::i64, 4> v2{6, 7, 8, 9};
+  grex::Vector<grex::i64, 4> v2{4, 5, 6, 7};
   fmt::print("{} + {} = {}, {} - {} = {}\n", v1, v2, v1 + v2, v1, v2, v1 - v2);
+  fmt::print("~{} = {}\n", v1, ~v1);
+
   grex::Mask<grex::i64, 4> m{true, true, false, true};
-  fmt::print("{}\n", m);
+  fmt::print("{}, neg: {} {}\n", m, ~m, !m);
   fmt::print("blend_zero: {}\n", grex::blend_zero(m, v1));
   fmt::print("blend: {}\n", grex::blend(m, v1, v2));
+  fmt::print("{} == {}: {}\n", v1, v2, v1 == v2);
+  fmt::print("{} != {}: {}\n", v1, v2, v1 != v2);
 }

@@ -1,0 +1,64 @@
+// This file is part of https://github.com/KurtBoehm/grex.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARISONS_HPP
+#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARISONS_HPP
+
+#include <boost/preprocessor.hpp>
+#include <immintrin.h>
+
+#include "grex/backend/x86/helpers.hpp"
+#include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/operations/negation.hpp"
+#include "grex/backend/x86/types.hpp"
+#include "grex/base/defs.hpp"
+
+namespace grex::backend {
+#define GREX_COMPARE_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
+  inline Mask<KIND##BITS, SIZE> compare_##OPNAME(Vector<KIND##BITS, SIZE> a, \
+                                                 Vector<KIND##BITS, SIZE> b) { \
+    return {.r = BOOST_PP_CAT(BOOST_PP_CAT(BITPREFIX##_cmp_, GREX_EPI_SUFFIX(KIND, BITS)), \
+                              _mask)(a.r, b.r, CMPIDX)}; \
+  }
+
+#define GREX_COMPARE_INTRINSIC_BASE_cmpeq(KIND, BITS, BITPREFIX) \
+  {.r = BOOST_PP_CAT(BITPREFIX##_cmpeq_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r)}
+#define GREX_COMPARE_INTRINSIC_BASE_cmpneq(KIND, BITS, BITPREFIX) negate(compare_equal(a, b))
+#define GREX_COMPARE_INTRINSIC_BASE(KIND, BITS, BITPREFIX, CMPNAME, CMPIDX) \
+  GREX_COMPARE_INTRINSIC_BASE_##CMPNAME(KIND, BITS, BITPREFIX)
+
+#define GREX_COMPARE_INTRINSIC_128 GREX_COMPARE_INTRINSIC_BASE
+#define GREX_COMPARE_INTRINSIC_256f(BITS, BITPREFIX, CMPNAME, CMPIDX) \
+  {.r = BOOST_PP_CAT(BITPREFIX##_cmp_, GREX_FP_SUFFIX(f##BITS))(a.r, b.r, CMPIDX)}
+#define GREX_COMPARE_INTRINSIC_256i(BITS, BITPREFIX, CMPNAME, CMPIDX) \
+  GREX_COMPARE_INTRINSIC_BASE(i, BITS, BITPREFIX, CMPNAME, CMPIDX)
+#define GREX_COMPARE_INTRINSIC_256u(BITS, BITPREFIX, CMPNAME, CMPIDX) \
+  GREX_COMPARE_INTRINSIC_BASE(u, BITS, BITPREFIX, CMPNAME, CMPIDX)
+#define GREX_COMPARE_INTRINSIC_256(KIND, BITS, BITPREFIX, CMPNAME, CMPIDX) \
+  GREX_COMPARE_INTRINSIC_256##KIND(BITS, BITPREFIX, CMPNAME, CMPIDX)
+#define GREX_COMPARE_INTRINSIC(KIND, BITS, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
+  GREX_COMPARE_INTRINSIC_##REGISTERBITS(KIND, BITS, BITPREFIX, CMPNAME, CMPIDX)
+
+#define GREX_COMPARE_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
+  inline Mask<KIND##BITS, SIZE> compare_##OPNAME(Vector<KIND##BITS, SIZE> a, \
+                                                 Vector<KIND##BITS, SIZE> b) { \
+    return GREX_COMPARE_INTRINSIC(KIND, BITS, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX); \
+  }
+
+#if GREX_X86_64_LEVEL >= 4
+#define GREX_COMPARE GREX_COMPARE_AVX512
+#else
+#define GREX_COMPARE GREX_COMPARE_BASE
+#endif
+
+#define GREX_COMPARE_ALL(REGISTERBITS, BITPREFIX, MACRO, OPNAME, CMPNAME, CMPIDX) \
+  GREX_FOREACH_TYPE(MACRO, REGISTERBITS, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX)
+
+GREX_FOREACH_X86_64_LEVEL(GREX_COMPARE_ALL, GREX_COMPARE, equal, cmpeq, 0)
+GREX_FOREACH_X86_64_LEVEL(GREX_COMPARE_ALL, GREX_COMPARE, nequal, cmpneq, 4)
+} // namespace grex::backend
+
+#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARISONS_HPP

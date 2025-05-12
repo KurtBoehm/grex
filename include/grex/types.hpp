@@ -31,6 +31,13 @@ struct Mask {
   explicit Mask(Ts... values) : mask_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
   explicit Mask(Backend v) : mask_(v) {}
 
+  Mask operator!() const {
+    return Mask{backend::negate(mask_)};
+  }
+  Mask operator~() const {
+    return Mask{backend::negate(mask_)};
+  }
+
   bool operator[](std::size_t i) const {
     return backend::extract(mask_, i);
   }
@@ -85,6 +92,19 @@ struct Vector {
     std::array<T, tSize> out{};
     store(out.data());
     return out;
+  }
+
+  Vector operator~() const
+  requires(std::integral<T>)
+  {
+    return Vector{backend::negate(vec_)};
+  }
+
+  friend Mask operator==(Vector a, Vector b) {
+    return Mask{backend::compare_equal(a.vec_, b.vec_)};
+  }
+  friend Mask operator!=(Vector a, Vector b) {
+    return Mask{backend::compare_nequal(a.vec_, b.vec_)};
   }
 
   Backend backend() const {
