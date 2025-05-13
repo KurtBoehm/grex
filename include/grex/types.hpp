@@ -74,6 +74,14 @@ struct Vector {
   friend Vector operator-(Vector a, Vector b) {
     return Vector{backend::subtract(a.vec_, b.vec_)};
   }
+  friend Vector operator*(Vector a, Vector b) {
+    return Vector{backend::multiply(a.vec_, b.vec_)};
+  }
+  friend Vector operator/(Vector a, Vector b)
+  requires(std::floating_point<T>)
+  {
+    return Vector{backend::divide(a.vec_, b.vec_)};
+  }
 
   void store(T* value) const {
     backend::store(value, vec_);
