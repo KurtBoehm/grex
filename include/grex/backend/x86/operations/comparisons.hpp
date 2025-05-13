@@ -43,8 +43,8 @@ namespace grex::backend {
   return {.r = \
             GREX_KINDCAST(f, i, BITS, REGISTERBITS, \
                           BOOST_PP_CAT(BITPREFIX##_cmpneq_, GREX_FP_SUFFIX(f##BITS))(a.r, b.r))};
-#define GREX_CMPNEQ_i(BITS, BITPREFIX, REGISTERBITS) return negate(compare_eq(a, b));
-#define GREX_CMPNEQ_u(BITS, BITPREFIX, REGISTERBITS) return negate(compare_eq(a, b));
+#define GREX_CMPNEQ_i(...) return negate(compare_eq(a, b));
+#define GREX_CMPNEQ_u(...) return negate(compare_eq(a, b));
 #define GREX_CMP_IMPL_BASE_cmpneq(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   GREX_CMPNEQ_##KIND(BITS, BITPREFIX, REGISTERBITS)
 
@@ -97,10 +97,9 @@ namespace grex::backend {
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_CMPLT_i64(SIZE, ...) GREX_CMPLT_INTRINSIC(i, 64, __VA_ARGS__)
 #else
-#define GREX_CMPLT_i64(SIZE, BITPREFIX, REGISTERBITS) GREX_CMPLT_U32X2(i)
+#define GREX_CMPLT_i64(SIZE, ...) GREX_CMPLT_U32X2(i)
 #endif
-#define GREX_CMPLT_i(BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_CMPLT_i##BITS(SIZE, BITPREFIX, REGISTERBITS)
+#define GREX_CMPLT_i(BITS, ...) GREX_CMPLT_i##BITS(__VA_ARGS__)
 // u
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_CMPLT_u8(...) GREX_CMPLT_UMAX(u, 8, __VA_ARGS__)
@@ -115,11 +114,9 @@ namespace grex::backend {
 #else
 #define GREX_CMPLT_u64(SIZE, BITPREFIX, REGISTERBITS) GREX_CMPLT_U32X2(u)
 #endif
-#define GREX_CMPLT_u(BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_CMPLT_u##BITS(SIZE, BITPREFIX, REGISTERBITS)
+#define GREX_CMPLT_u(BITS, ...) GREX_CMPLT_u##BITS(__VA_ARGS__)
 // base
-#define GREX_CMP_IMPL_BASE_cmplt(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_CMPLT_##KIND(BITS, SIZE, BITPREFIX, REGISTERBITS)
+#define GREX_CMP_IMPL_BASE_cmplt(KIND, ...) GREX_CMPLT_##KIND(__VA_ARGS__)
 
 // Greater or equal
 // f: Separate cmpgt intrinsics
@@ -155,11 +152,9 @@ namespace grex::backend {
 #endif
 #define GREX_CMPGE_u32(...) GREX_CMPGE_UMAX(u, 32, __VA_ARGS__)
 #define GREX_CMPGE_u64(...) GREX_CMPGE_NEGATED
-#define GREX_CMPGE_u(BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_CMPGE_u##BITS(SIZE, BITPREFIX, REGISTERBITS)
+#define GREX_CMPGE_u(BITS, ...) GREX_CMPGE_u##BITS(__VA_ARGS__)
 // base
-#define GREX_CMP_IMPL_BASE_cmpge(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_CMPGE_##KIND(BITS, SIZE, BITPREFIX, REGISTERBITS)
+#define GREX_CMP_IMPL_BASE_cmpge(KIND, ...) GREX_CMPGE_##KIND(__VA_ARGS__)
 
 // Base: Case distinction based on comparison type
 #define GREX_CMP_IMPL_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \

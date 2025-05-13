@@ -11,23 +11,22 @@
 
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/types.hpp"
+#include "grex/base/defs.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
 // Define the casts
-#define GREX_STORE_CAST_f(REGISTERBITS)
-#define GREX_STORE_CAST_u(REGISTERBITS) reinterpret_cast<__m##REGISTERBITS##i*>
-#define GREX_STORE_CAST_i(REGISTERBITS) reinterpret_cast<__m##REGISTERBITS##i*>
+#define GREX_STORE_CAST_f(REGISTERBITS) dst
+#define GREX_STORE_CAST_u(REGISTERBITS) reinterpret_cast<__m##REGISTERBITS##i*>(dst)
+#define GREX_STORE_CAST_i(REGISTERBITS) reinterpret_cast<__m##REGISTERBITS##i*>(dst)
 
-#define GREX_STORE_BASE(NAME, ELEMENT, SIZE, MACRO, CAST) \
-  inline void NAME(ELEMENT* dst, Vector<ELEMENT, SIZE> src) { \
-    MACRO(CAST(dst), src.r); \
+#define GREX_STORE_BASE(NAME, INFIX, KIND, BITS, SIZE, KINDPREFIX, REGISTERBITS) \
+  inline void NAME(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src) { \
+    BOOST_PP_CAT(KINDPREFIX##_##INFIX##_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))( \
+      GREX_STORE_CAST_##KIND(REGISTERBITS), src.r); \
   }
-#define GREX_STORE_IMPL(ELEMENT, SIZE, KINDPREFIX, SUFFIX, CAST) \
-  GREX_STORE_BASE(store, ELEMENT, SIZE, KINDPREFIX##_storeu_##SUFFIX, CAST) \
-  GREX_STORE_BASE(store_aligned, ELEMENT, SIZE, KINDPREFIX##_store_##SUFFIX, CAST)
-#define GREX_STORE(KIND, BITS, SIZE, KINDPREFIX, REGISTERBITS) \
-  GREX_APPLY(GREX_STORE_IMPL, KIND##BITS, SIZE, KINDPREFIX, \
-             GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS), GREX_STORE_CAST_##KIND(REGISTERBITS))
+#define GREX_STORE(...) \
+  GREX_STORE_BASE(store, storeu, __VA_ARGS__) \
+  GREX_STORE_BASE(store_aligned, store, __VA_ARGS__)
 #define GREX_STORE_ALL(REGISTERBITS, KINDPREFIX) \
   GREX_FOREACH_TYPE(GREX_STORE, REGISTERBITS, KINDPREFIX, REGISTERBITS)
 

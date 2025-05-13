@@ -14,7 +14,7 @@
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base/defs.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
 // Define the very messy suffixes used by the set intrinsics
@@ -45,7 +45,7 @@ namespace grex::backend {
 
 // Define mask operations, which can be applied to compressed or broad masks
 #if GREX_X86_64_LEVEL >= 4
-#define GREX_MASK_SET_IMPL(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE) \
+#define GREX_MASK_SET(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE) \
   inline Mask<KIND##BITS, SIZE> zero(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_SIZEMMASK(SIZE){0}}; \
   } \
@@ -57,7 +57,7 @@ namespace grex::backend {
     return {.r = GREX_SIZEMMASK(SIZE)(GREX_CMASK_SET(SIZE, u##MMASKSIZE))}; \
   }
 #else
-#define GREX_MASK_SET_IMPL(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE) \
+#define GREX_MASK_SET(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE) \
   inline Mask<KIND##BITS, SIZE> zero(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = BITPREFIX##_setzero_si##REGISTERBITS()}; \
   } \
@@ -69,8 +69,6 @@ namespace grex::backend {
     return {.r = BITPREFIX##_set_##SUFFIX(BOOST_PP_REPEAT(SIZE, GREX_SET_NEGVAL, (BITS, SIZE)))}; \
   }
 #endif
-#define GREX_MASK_SET(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE) \
-  GREX_MASK_SET_IMPL(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE)
 
 // Define the setzero-based operations
 #define GREX_ZERO(ELEMENT, SIZE, BITPREFIX, SUFFIX, REGISTERBITS) \
