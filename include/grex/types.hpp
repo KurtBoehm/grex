@@ -32,10 +32,32 @@ struct Mask {
   explicit Mask(Backend v) : mask_(v) {}
 
   Mask operator!() const {
-    return Mask{backend::bitwise_not(mask_)};
+    return Mask{backend::logical_not(mask_)};
   }
   Mask operator~() const {
-    return Mask{backend::bitwise_not(mask_)};
+    return Mask{backend::logical_not(mask_)};
+  }
+  friend Mask operator&&(Mask a, Mask b) {
+    return Mask{backend::logical_and(a.mask_, b.mask_)};
+  }
+  friend Mask operator&(Mask a, Mask b) {
+    return Mask{backend::logical_and(a.mask_, b.mask_)};
+  }
+  friend Mask operator||(Mask a, Mask b) {
+    return Mask{backend::logical_or(a.mask_, b.mask_)};
+  }
+  friend Mask operator|(Mask a, Mask b) {
+    return Mask{backend::logical_or(a.mask_, b.mask_)};
+  }
+  friend Mask operator^(Mask a, Mask b) {
+    return Mask{backend::logical_xor(a.mask_, b.mask_)};
+  }
+
+  friend Mask operator!=(Mask a, Mask b) {
+    return Mask{backend::logical_xor(a.mask_, b.mask_)};
+  }
+  friend Mask operator==(Mask a, Mask b) {
+    return ~(a != b);
   }
 
   bool operator[](std::size_t i) const {
@@ -109,6 +131,21 @@ struct Vector {
   requires(std::integral<T>)
   {
     return Vector{backend::bitwise_not(vec_)};
+  }
+  friend Vector operator&(Vector a, Vector b)
+  requires(std::integral<T>)
+  {
+    return Vector{backend::bitwise_and(a.vec_, b.vec_)};
+  }
+  friend Vector operator|(Vector a, Vector b)
+  requires(std::integral<T>)
+  {
+    return Vector{backend::bitwise_or(a.vec_, b.vec_)};
+  }
+  friend Vector operator^(Vector a, Vector b)
+  requires(std::integral<T>)
+  {
+    return Vector{backend::bitwise_xor(a.vec_, b.vec_)};
   }
 
   friend Mask operator==(Vector a, Vector b) {

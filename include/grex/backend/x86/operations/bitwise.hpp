@@ -17,15 +17,25 @@ namespace grex::backend {
   BOOST_PP_CAT(BITPREFIX##_xor_, \
                GREX_SI_SUFFIX(i, BITS, REGISTERBITS))(m.r, BITPREFIX##_set1_epi32(-1))
 
-#define GREX_NEGATION_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+#define GREX_NEGATION_VEC_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, SUFFIX) \
   inline Vector<KIND##BITS, SIZE> bitwise_not(Vector<KIND##BITS, SIZE> m) { \
     return {.r = GREX_NEGATION_BASE_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   } \
+  inline Vector<KIND##BITS, SIZE> bitwise_and(Vector<KIND##BITS, SIZE> a, \
+                                              Vector<KIND##BITS, SIZE> b) { \
+    return {.r = BITPREFIX##_and_##SUFFIX(a.r, b.r)}; \
+  } \
+  inline Vector<KIND##BITS, SIZE> bitwise_or(Vector<KIND##BITS, SIZE> a, \
+                                             Vector<KIND##BITS, SIZE> b) { \
+    return {.r = BITPREFIX##_or_##SUFFIX(a.r, b.r)}; \
+  } \
   inline Vector<KIND##BITS, SIZE> bitwise_xor(Vector<KIND##BITS, SIZE> a, \
                                               Vector<KIND##BITS, SIZE> b) { \
-    return {.r = \
-              BOOST_PP_CAT(BITPREFIX##_xor_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))(a.r, b.r)}; \
+    return {.r = BITPREFIX##_xor_##SUFFIX(a.r, b.r)}; \
   }
+#define GREX_NEGATION_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  GREX_APPLY(GREX_NEGATION_VEC_IMPL, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, \
+             GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))
 
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_NEGATION_MASK_AVX512_IMPL_2 __mmask8(m.r ^ 0x03U)
@@ -36,13 +46,26 @@ namespace grex::backend {
 #define GREX_NEGATION_MASK_AVX512_IMPL_64 __mmask64(~m.r)
 #define GREX_NEGATION_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   GREX_NEGATION_MASK_AVX512_IMPL_##SIZE
+#define GREX_BITWISE_MASK_IMPL(NAME, OPERATOR, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  GREX_SIZEMMASK(SIZE)(a.r OPERATOR b.r)
 #else
 #define GREX_NEGATION_MASK_IMPL GREX_NEGATION_BASE_IMPL
+#define GREX_BITWISE_MASK_IMPL(NAME, OPERATOR, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  BOOST_PP_CAT(BITPREFIX##_##NAME##_, GREX_SI_SUFFIX(i, BITS, REGISTERBITS))(a.r, b.r)
 #endif
-#define GREX_NEGATION_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Mask<KIND##BITS, SIZE> bitwise_not(Mask<KIND##BITS, SIZE> m) { \
-    return {.r = GREX_NEGATION_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
+#define GREX_BITWISE_MASK(NAME, OPERATOR, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  inline Mask<KIND##BITS, SIZE> logical_##NAME(Mask<KIND##BITS, SIZE> a, \
+                                               Mask<KIND##BITS, SIZE> b) { \
+    return {.r = \
+              GREX_BITWISE_MASK_IMPL(NAME, OPERATOR, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   }
+#define GREX_NEGATION_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  inline Mask<KIND##BITS, SIZE> logical_not(Mask<KIND##BITS, SIZE> m) { \
+    return {.r = GREX_NEGATION_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
+  } \
+  GREX_BITWISE_MASK(and, &, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  GREX_BITWISE_MASK(or, |, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  GREX_BITWISE_MASK(xor, ^, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)
 
 #define GREX_NEGATION_VEC_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_INT_TYPE(GREX_NEGATION_VEC, REGISTERBITS, BITPREFIX, REGISTERBITS)
