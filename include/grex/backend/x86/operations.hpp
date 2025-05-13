@@ -2,6 +2,7 @@
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_HPP
 
 // IWYU pragma: begin_exports
+#include "operations/abs.hpp"
 #include "operations/arithmetic.hpp"
 #include "operations/bitwise.hpp"
 #include "operations/blend.hpp"

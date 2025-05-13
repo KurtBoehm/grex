@@ -128,6 +128,10 @@ private:
 };
 
 template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> abs(Vector<T, tSize> v) {
+  return Vector<T, tSize>{backend::abs(v.backend())};
+}
+template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> min(Vector<T, tSize> a, Vector<T, tSize> b) {
   return Vector<T, tSize>{backend::min(a.backend(), b.backend())};
 }

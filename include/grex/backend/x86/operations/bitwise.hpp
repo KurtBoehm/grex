@@ -10,7 +10,7 @@
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base/defs.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
 #define GREX_NEGATION_BASE_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \

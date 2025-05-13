@@ -7,16 +7,16 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_MINMAX_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_MINMAX_HPP
 
-#include "thesauros/types/type-tag.hpp"
+#include "thesauros/types/type-tag.hpp" // IWYU pragma: keep
 
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/bitwise.hpp"
-#include "grex/backend/x86/operations/blend.hpp"
-#include "grex/backend/x86/operations/comparisons.hpp"
-#include "grex/backend/x86/operations/set.hpp"
+#include "grex/backend/x86/operations/bitwise.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/blend.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/comparisons.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base/defs.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
 #define GREX_MINMAX_INTRINSIC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
@@ -28,10 +28,8 @@ namespace grex::backend {
   auto b1 = bitwise_xor(b, signbit); \
   auto m1 = _mm_##OP##_ep##TOELEMENT(a1.r, b1.r); \
   return bitwise_xor({.r = m1}, signbit);
-#define GREX_MINMAX_BLEND_min(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  blend(compare_lt(a, b), b, a)
-#define GREX_MINMAX_BLEND_max(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  blend(compare_lt(a, b), a, b)
+#define GREX_MINMAX_BLEND_min(...) blend(compare_lt(a, b), b, a)
+#define GREX_MINMAX_BLEND_max(...) blend(compare_lt(a, b), a, b)
 #define GREX_MINMAX_BLEND(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
   return GREX_MINMAX_BLEND_##OP(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS);
 #if GREX_X86_64_LEVEL >= 4
@@ -41,12 +39,9 @@ namespace grex::backend {
 #endif
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_MINMAX_BLEND32 GREX_MINMAX_INTRINSIC
-#else
-#define GREX_MINMAX_BLEND32 GREX_MINMAX_BLEND
-#endif
-#if GREX_X86_64_LEVEL >= 2
 #define GREX_MINMAX_FLIP(TOELEMENT, ...) GREX_MINMAX_INTRINSIC(__VA_ARGS__)
 #else
+#define GREX_MINMAX_BLEND32 GREX_MINMAX_BLEND
 #define GREX_MINMAX_FLIP GREX_MINMAX_FLIP_IMPL
 #endif
 
@@ -60,8 +55,8 @@ namespace grex::backend {
 #define GREX_MINMAX_IMPL_128_u16(...) GREX_MINMAX_FLIP(i16, __VA_ARGS__)
 #define GREX_MINMAX_IMPL_128_u32 GREX_MINMAX_BLEND32
 #define GREX_MINMAX_IMPL_128_u64 GREX_MINMAX_BLEND64
-#define GREX_MINMAX_IMPL_128(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
-  GREX_MINMAX_IMPL_128_##KIND##BITS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP)
+#define GREX_MINMAX_IMPL_128(KIND, BITS, ...) \
+  GREX_MINMAX_IMPL_128_##KIND##BITS(KIND, BITS, __VA_ARGS__)
 #define GREX_MINMAX_IMPL_256_f32 GREX_MINMAX_INTRINSIC
 #define GREX_MINMAX_IMPL_256_f64 GREX_MINMAX_INTRINSIC
 #define GREX_MINMAX_IMPL_256_i8 GREX_MINMAX_INTRINSIC
@@ -72,8 +67,8 @@ namespace grex::backend {
 #define GREX_MINMAX_IMPL_256_u16 GREX_MINMAX_INTRINSIC
 #define GREX_MINMAX_IMPL_256_u32 GREX_MINMAX_INTRINSIC
 #define GREX_MINMAX_IMPL_256_u64 GREX_MINMAX_BLEND64
-#define GREX_MINMAX_IMPL_256(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
-  GREX_MINMAX_IMPL_256_##KIND##BITS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP)
+#define GREX_MINMAX_IMPL_256(KIND, BITS, ...) \
+  GREX_MINMAX_IMPL_256_##KIND##BITS(KIND, BITS, __VA_ARGS__)
 #define GREX_MINMAX_IMPL_512 GREX_MINMAX_INTRINSIC
 #define GREX_MINMAX_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
   GREX_MINMAX_IMPL_##REGISTERBITS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP)
