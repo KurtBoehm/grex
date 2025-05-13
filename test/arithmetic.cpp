@@ -23,6 +23,8 @@ int main() {
   fmt::print("~{} = {}\n", v1, ~v1);
 
   fmt::print("{}, neg: {} {}\n", m, ~m, !m);
+  fmt::print("min({}, {}) = {}\n", v1, v2, grex::min(v1, v2));
+  fmt::print("max({}, {}) = {}\n", v1, v2, grex::max(v1, v2));
   fmt::print("blend_zero: {}\n", grex::blend_zero(m, v1));
   fmt::print("blend: {}\n", grex::blend(m, v1, v2));
   fmt::print("{} == {}: {}\n", v1, v2, v1 == v2);

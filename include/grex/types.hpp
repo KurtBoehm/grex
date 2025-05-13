@@ -128,6 +128,15 @@ private:
 };
 
 template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> min(Vector<T, tSize> a, Vector<T, tSize> b) {
+  return Vector<T, tSize>{backend::min(a.backend(), b.backend())};
+}
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> max(Vector<T, tSize> a, Vector<T, tSize> b) {
+  return Vector<T, tSize>{backend::max(a.backend(), b.backend())};
+}
+
+template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend_zero(Mask<T, tSize> mask, Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend_zero(mask.backend(), v1.backend())};
 }
