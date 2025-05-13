@@ -8,6 +8,7 @@
 #include "operations/blend.hpp"
 #include "operations/comparisons.hpp"
 #include "operations/extract.hpp"
+#include "operations/fmadd-family.hpp"
 #include "operations/minmax.hpp"
 #include "operations/set.hpp"
 #include "operations/store.hpp"

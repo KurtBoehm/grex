@@ -32,10 +32,10 @@ struct Mask {
   explicit Mask(Backend v) : mask_(v) {}
 
   Mask operator!() const {
-    return Mask{backend::negate(mask_)};
+    return Mask{backend::bitwise_not(mask_)};
   }
   Mask operator~() const {
-    return Mask{backend::negate(mask_)};
+    return Mask{backend::bitwise_not(mask_)};
   }
 
   bool operator[](std::size_t i) const {
@@ -68,6 +68,9 @@ struct Vector {
   explicit Vector(Ts... values) : vec_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
   explicit Vector(Backend v) : vec_(v) {}
 
+  Vector operator-() {
+    return Vector{backend::negate(vec_)};
+  }
   friend Vector operator+(Vector a, Vector b) {
     return Vector{backend::add(a.vec_, b.vec_)};
   }
@@ -105,7 +108,7 @@ struct Vector {
   Vector operator~() const
   requires(std::integral<T>)
   {
-    return Vector{backend::negate(vec_)};
+    return Vector{backend::bitwise_not(vec_)};
   }
 
   friend Mask operator==(Vector a, Vector b) {
@@ -146,6 +149,23 @@ inline Vector<T, tSize> min(Vector<T, tSize> a, Vector<T, tSize> b) {
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> max(Vector<T, tSize> a, Vector<T, tSize> b) {
   return Vector<T, tSize>{backend::max(a.backend(), b.backend())};
+}
+
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> fmadd(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
+  return Vector<T, tSize>{backend::fmadd(a.backend(), b.backend(), c.backend())};
+}
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> fmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
+  return Vector<T, tSize>{backend::fmsub(a.backend(), b.backend(), c.backend())};
+}
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> fnmadd(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
+  return Vector<T, tSize>{backend::fnmadd(a.backend(), b.backend(), c.backend())};
+}
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> fnmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
+  return Vector<T, tSize>{backend::fnmsub(a.backend(), b.backend(), c.backend())};
 }
 
 template<Vectorizable T, std::size_t tSize>

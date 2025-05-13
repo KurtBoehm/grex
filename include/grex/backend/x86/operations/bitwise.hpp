@@ -18,7 +18,7 @@ namespace grex::backend {
                GREX_SI_SUFFIX(i, BITS, REGISTERBITS))(m.r, BITPREFIX##_set1_epi32(-1))
 
 #define GREX_NEGATION_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> negate(Vector<KIND##BITS, SIZE> m) { \
+  inline Vector<KIND##BITS, SIZE> bitwise_not(Vector<KIND##BITS, SIZE> m) { \
     return {.r = GREX_NEGATION_BASE_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   } \
   inline Vector<KIND##BITS, SIZE> bitwise_xor(Vector<KIND##BITS, SIZE> a, \
@@ -40,7 +40,7 @@ namespace grex::backend {
 #define GREX_NEGATION_MASK_IMPL GREX_NEGATION_BASE_IMPL
 #endif
 #define GREX_NEGATION_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Mask<KIND##BITS, SIZE> negate(Mask<KIND##BITS, SIZE> m) { \
+  inline Mask<KIND##BITS, SIZE> bitwise_not(Mask<KIND##BITS, SIZE> m) { \
     return {.r = GREX_NEGATION_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   }
 
