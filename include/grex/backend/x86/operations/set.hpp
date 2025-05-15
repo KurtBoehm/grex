@@ -32,9 +32,9 @@ namespace grex::backend {
 // Helpers to define function arguments for the set-based operations
 #define GREX_SET_ARG(CNT, IDX, TYPE) BOOST_PP_COMMA_IF(IDX) TYPE v##IDX
 #define GREX_SET_VAL(CNT, IDX, SIZE) \
-  BOOST_PP_COMMA_IF(IDX) BOOST_PP_CAT(v, BOOST_PP_SUB(SIZE, BOOST_PP_INC(IDX)))
+  BOOST_PP_COMMA_IF(IDX) GREX_CAT(v, BOOST_PP_SUB(SIZE, BOOST_PP_INC(IDX)))
 #define GREX_SET_NEGVAL_IMPLI(CNT, IDX, BITS, SIZE) \
-  BOOST_PP_COMMA_IF(IDX) - i##BITS(BOOST_PP_CAT(v, BOOST_PP_SUB(SIZE, BOOST_PP_INC(IDX))))
+  BOOST_PP_COMMA_IF(IDX) - i##BITS(GREX_CAT(v, BOOST_PP_SUB(SIZE, BOOST_PP_INC(IDX))))
 #define GREX_SET_NEGVAL_IMPL(CNT, IDX, PAIR) GREX_SET_NEGVAL_IMPLI(CNT, IDX, PAIR)
 #define GREX_SET_NEGVAL(CNT, IDX, PAIR) GREX_SET_NEGVAL_IMPL(CNT, IDX, BOOST_PP_REMOVE_PARENS(PAIR))
 // Helper to generate indices
@@ -75,7 +75,7 @@ namespace grex::backend {
 // Define vector operations
 #define GREX_SET_VEC(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> zero(thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
-    return {.r = BOOST_PP_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))()}; \
+    return {.r = GREX_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))()}; \
   } \
   inline Vector<KIND##BITS, SIZE> broadcast(KIND##BITS value, \
                                             thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \

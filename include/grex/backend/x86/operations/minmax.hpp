@@ -20,9 +20,9 @@
 
 namespace grex::backend {
 #define GREX_MINMAX_INTRINSIC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
-  return {.r = BOOST_PP_CAT(BITPREFIX##_##OP##_, GREX_EPU_SUFFIX(KIND, BITS))(a.r, b.r)};
+  return {.r = GREX_CAT(BITPREFIX##_##OP##_, GREX_EPU_SUFFIX(KIND, BITS))(a.r, b.r)};
 #define GREX_MINMAX_FLIP_IMPL(TOELEMENT, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
-  auto signbit = broadcast(KIND##BITS(1U << BOOST_PP_CAT(BOOST_PP_DEC(BITS), U)), \
+  auto signbit = broadcast(KIND##BITS(1U << GREX_CAT(BOOST_PP_DEC(BITS), U)), \
                            thes::type_tag<Vector<KIND##BITS, SIZE>>); \
   auto a1 = bitwise_xor(a, signbit); \
   auto b1 = bitwise_xor(b, signbit); \

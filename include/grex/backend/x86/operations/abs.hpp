@@ -18,7 +18,7 @@ namespace grex::backend {
 // Floating-point
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_ABS_FP(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  return {.r = BOOST_PP_CAT(BITPREFIX##_range_, GREX_FP_SUFFIX(KIND##BITS))(v.r, v.r, 8)};
+  return {.r = GREX_CAT(BITPREFIX##_range_, GREX_FP_SUFFIX(KIND##BITS))(v.r, v.r, 8)};
 #else
 #define GREX_ABS_FP32(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   BITPREFIX##_castsi##REGISTERBITS##_ps(BITPREFIX##_set1_epi32(0x7FFFFFFF))
@@ -26,13 +26,13 @@ namespace grex::backend {
   BITPREFIX##_castsi##REGISTERBITS##_pd(BITPREFIX##_set1_epi64x(0x7FFFFFFFFFFFFFFF))
 #define GREX_ABS_FP(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   auto mask = GREX_ABS_FP##BITS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS); \
-  return {.r = BOOST_PP_CAT(BITPREFIX##_and_, GREX_FP_SUFFIX(KIND##BITS))(v.r, mask)};
+  return {.r = GREX_CAT(BITPREFIX##_and_, GREX_FP_SUFFIX(KIND##BITS))(v.r, mask)};
 #endif
 
 // Integer
 // Base case: Intrinsics
 #define GREX_ABS_INT_INTRINSIC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  return {.r = BOOST_PP_CAT(BITPREFIX##_abs_, GREX_EPI_SUFFIX(KIND, BITS))(v.r)};
+  return {.r = GREX_CAT(BITPREFIX##_abs_, GREX_EPI_SUFFIX(KIND, BITS))(v.r)};
 // 64 bit above level 1
 #define GREX_ABS_INT64_CMP(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   /* mask that is true if the component is negative */ \

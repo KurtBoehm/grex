@@ -25,8 +25,8 @@ namespace grex::backend {
   const auto x = CALL; \
   return CONVERT;
 #define GREX_MASKZ_CMPR(KIND, BITS, SIZE, BITPREFIX) \
-  BOOST_PP_CAT(BITPREFIX##_maskz_compress_, \
-               GREX_EPI_SUFFIX(KIND, BITS))(GREX_SIZEMMASK(SIZE)(u64{1} << i), v.r)
+  GREX_CAT(BITPREFIX##_maskz_compress_, \
+           GREX_EPI_SUFFIX(KIND, BITS))(GREX_SIZEMMASK(SIZE)(u64{1} << i), v.r)
 
 // Define for floating-point types
 #if GREX_X86_64_LEVEL >= 4
@@ -83,7 +83,7 @@ namespace grex::backend {
     return (UMMASK(UMMASK(v.r) >> i) & 1U) != 0; \
   }
 #define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \
-  GREX_EXTRACT_MASK_IMPL(KIND, BITS, SIZE, BOOST_PP_CAT(u, GREX_MMASKSIZE(SIZE)))
+  GREX_EXTRACT_MASK_IMPL(KIND, BITS, SIZE, GREX_CAT(u, GREX_MMASKSIZE(SIZE)))
 #else
 // Pre-AVX-512, we extract the corresponding part of the vector and compare it to 0
 #define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \

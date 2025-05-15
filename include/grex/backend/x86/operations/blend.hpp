@@ -17,7 +17,7 @@
 
 namespace grex::backend {
 #define GREX_BLEND_SIOP(KIND, BITS, BITPREFIX, REGISTERBITS, NAME) \
-  BOOST_PP_CAT(BITPREFIX##_##NAME##_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))
+  GREX_CAT(BITPREFIX##_##NAME##_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))
 #define GREX_BLEND_MBINOP(KIND, BITS, BITPREFIX, REGISTERBITS, NAME, MASK, VEC) \
   GREX_BLEND_SIOP(KIND, BITS, BITPREFIX, REGISTERBITS, \
                   NAME)(GREX_BROADMASK_CONVERT(KIND, BITS, REGISTERBITS, MASK), VEC)
@@ -25,7 +25,7 @@ namespace grex::backend {
 #define GREX_BLENDZ_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> blend_zero(Mask<KIND##BITS, SIZE> m, \
                                              Vector<KIND##BITS, SIZE> v1) { \
-    return {.r = BOOST_PP_CAT(BITPREFIX##_maskz_mov_, GREX_EPI_SUFFIX(KIND, BITS))(m.r, v1.r)}; \
+    return {.r = GREX_CAT(BITPREFIX##_maskz_mov_, GREX_EPI_SUFFIX(KIND, BITS))(m.r, v1.r)}; \
   }
 #define GREX_BLENDZ_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> blend_zero(Mask<KIND##BITS, SIZE> m, \
@@ -36,13 +36,12 @@ namespace grex::backend {
 #define GREX_BLEND_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> blend(Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> v0, \
                                         Vector<KIND##BITS, SIZE> v1) { \
-    return {.r = \
-              BOOST_PP_CAT(BITPREFIX##_mask_mov_, GREX_EPI_SUFFIX(KIND, BITS))(v0.r, m.r, v1.r)}; \
+    return {.r = GREX_CAT(BITPREFIX##_mask_mov_, GREX_EPI_SUFFIX(KIND, BITS))(v0.r, m.r, v1.r)}; \
   }
 #define GREX_BLEND_SSE4(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> blend(Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> v0, \
                                         Vector<KIND##BITS, SIZE> v1) { \
-    return {.r = BOOST_PP_CAT(BITPREFIX##_blendv_, GREX_EPI8_SUFFIX(KIND, BITS))( \
+    return {.r = GREX_CAT(BITPREFIX##_blendv_, GREX_EPI8_SUFFIX(KIND, BITS))( \
               v0.r, v1.r, GREX_BROADMASK_CONVERT(KIND, BITS, REGISTERBITS, m.r))}; \
   }
 #define GREX_BLEND_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \

@@ -17,12 +17,10 @@
 
 namespace grex::backend {
 // Addition and subtraction
-#define GREX_BINARITH_OP_IMPL(NAME, OP, KINDSUFFIX, ELEMENT, SIZE) \
-  inline Vector<ELEMENT, SIZE> NAME(Vector<ELEMENT, SIZE> a, Vector<ELEMENT, SIZE> b) { \
-    return {.r = OP##_##KINDSUFFIX(a.r, b.r)}; \
-  }
 #define GREX_BINARITH_OP_BASE(KIND, BITS, SIZE, NAME, OP) \
-  GREX_APPLY(GREX_BINARITH_OP_IMPL, NAME, OP, GREX_EPI_SUFFIX(KIND, BITS), KIND##BITS, SIZE)
+  inline Vector<KIND##BITS, SIZE> NAME(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+    return {.r = GREX_CAT(OP##_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r)}; \
+  }
 #define GREX_BINARITH_OPS_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_BINARITH_OP_BASE, REGISTERBITS, add, BITPREFIX##_add) \
   GREX_FOREACH_TYPE(GREX_BINARITH_OP_BASE, REGISTERBITS, subtract, BITPREFIX##_sub)
@@ -112,7 +110,7 @@ namespace grex::backend {
 #endif
 
 #define GREX_MUL_f(KIND, BITS, SIZE, BITPREFIX) \
-  return {.r = BOOST_PP_CAT(BITPREFIX##_mul_, GREX_FP_SUFFIX(KIND##BITS))(a.r, b.r)};
+  return {.r = GREX_CAT(BITPREFIX##_mul_, GREX_FP_SUFFIX(KIND##BITS))(a.r, b.r)};
 #define GREX_MUL_i(KIND, BITS, ...) GREX_MUL_INT##BITS(KIND, BITS, __VA_ARGS__)
 #define GREX_MUL_u(KIND, BITS, ...) GREX_MUL_INT##BITS(KIND, BITS, __VA_ARGS__)
 #define GREX_MUL(KIND, BITS, SIZE, BITPREFIX) \
