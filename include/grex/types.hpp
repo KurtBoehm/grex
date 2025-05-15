@@ -192,6 +192,11 @@ inline Vector<T, tSize> max(Vector<T, tSize> a, Vector<T, tSize> b) {
 }
 
 template<Vectorizable T, std::size_t tSize>
+inline T horizontal_add(Vector<T, tSize> v) {
+  return backend::horizontal_add(v.backend());
+}
+
+template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> fmadd(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
   return Vector<T, tSize>{backend::fmadd(a.backend(), b.backend(), c.backend())};
 }

@@ -22,19 +22,19 @@ namespace grex::backend {
   } \
   inline Vector<KIND##BITS, SIZE> bitwise_and(Vector<KIND##BITS, SIZE> a, \
                                               Vector<KIND##BITS, SIZE> b) { \
-    return {.r = BITPREFIX##_and_##SUFFIX(a.r, b.r)}; \
+    return {.r = GREX_CAT(BITPREFIX##_and_, SUFFIX)(a.r, b.r)}; \
   } \
   inline Vector<KIND##BITS, SIZE> bitwise_or(Vector<KIND##BITS, SIZE> a, \
                                              Vector<KIND##BITS, SIZE> b) { \
-    return {.r = BITPREFIX##_or_##SUFFIX(a.r, b.r)}; \
+    return {.r = GREX_CAT(BITPREFIX##_or_, SUFFIX)(a.r, b.r)}; \
   } \
   inline Vector<KIND##BITS, SIZE> bitwise_xor(Vector<KIND##BITS, SIZE> a, \
                                               Vector<KIND##BITS, SIZE> b) { \
-    return {.r = BITPREFIX##_xor_##SUFFIX(a.r, b.r)}; \
+    return {.r = GREX_CAT(BITPREFIX##_xor_, SUFFIX)(a.r, b.r)}; \
   }
 #define GREX_NEGATION_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_APPLY(GREX_NEGATION_VEC_IMPL, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, \
-             GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))
+  GREX_NEGATION_VEC_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, \
+                         GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))
 
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_NEGATION_MASK_AVX512_IMPL_2 __mmask8(m.r ^ 0x03U)

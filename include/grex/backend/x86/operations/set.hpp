@@ -25,9 +25,10 @@ namespace grex::backend {
 #define GREX_SET_EPI_16(REGISTERBITS) epi16
 #define GREX_SET_EPI_32(REGISTERBITS) epi32
 #define GREX_SET_EPI_64(REGISTERBITS) GREX_SET_EPI64_##REGISTERBITS
+#define GREX_SET_EPI(BITS, REGISTERBITS) GREX_SET_EPI_##BITS(REGISTERBITS)
 #define GREX_SET_SUFFIX_f(BITS, REGISTERBITS) GREX_FP_SUFFIX(f##BITS)
-#define GREX_SET_SUFFIX_i(BITS, REGISTERBITS) GREX_SET_EPI_##BITS(REGISTERBITS)
-#define GREX_SET_SUFFIX_u(BITS, REGISTERBITS) GREX_SET_EPI_##BITS(REGISTERBITS)
+#define GREX_SET_SUFFIX_i(BITS, REGISTERBITS) GREX_SET_EPI(BITS, REGISTERBITS)
+#define GREX_SET_SUFFIX_u(BITS, REGISTERBITS) GREX_SET_EPI(BITS, REGISTERBITS)
 #define GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS) GREX_SET_SUFFIX_##KIND(BITS, REGISTERBITS)
 // Helpers to define function arguments for the set-based operations
 #define GREX_SET_ARG(CNT, IDX, TYPE) BOOST_PP_COMMA_IF(IDX) TYPE v##IDX
@@ -47,43 +48,45 @@ namespace grex::backend {
 
 // Define mask operations, which can be applied to compressed or broad masks
 #if GREX_X86_64_LEVEL >= 4
-#define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE) \
+#define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Mask<KIND##BITS, SIZE> zero(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_SIZEMMASK(SIZE){0}}; \
   } \
   inline Mask<KIND##BITS, SIZE> broadcast(bool value, thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
-    return {.r = GREX_SIZEMMASK(SIZE)(-i##MMASKSIZE(value))}; \
+    return {.r = GREX_SIZEMMASK(SIZE)(-GREX_CAT(i, GREX_MMASKSIZE(SIZE))(value))}; \
   } \
   inline Mask<KIND##BITS, SIZE> set(BOOST_PP_REPEAT(SIZE, GREX_SET_ARG, bool), \
                                     thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
-    return {.r = GREX_SIZEMMASK(SIZE)(GREX_CMASK_SET(SIZE, u##MMASKSIZE))}; \
+    return {.r = GREX_SIZEMMASK(SIZE)(GREX_CMASK_SET(SIZE, GREX_CAT(u, GREX_MMASKSIZE(SIZE))))}; \
   }
 #else
-#define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE) \
+#define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Mask<KIND##BITS, SIZE> zero(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = BITPREFIX##_setzero_si##REGISTERBITS()}; \
   } \
   inline Mask<KIND##BITS, SIZE> broadcast(bool value, thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
-    return {.r = BITPREFIX##_set1_##SUFFIX(-i##BITS(value))}; \
+    return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_EPI(BITS, REGISTERBITS))(-i##BITS(value))}; \
   } \
   inline Mask<KIND##BITS, SIZE> set(BOOST_PP_REPEAT(SIZE, GREX_SET_ARG, bool), \
                                     thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
-    return {.r = BITPREFIX##_set_##SUFFIX(BOOST_PP_REPEAT(SIZE, GREX_SET_NEGVAL, (BITS, SIZE)))}; \
+    return {.r = GREX_CAT(BITPREFIX##_set_, GREX_SET_EPI(BITS, REGISTERBITS))( \
+              BOOST_PP_REPEAT(SIZE, GREX_SET_NEGVAL, (BITS, SIZE)))}; \
   }
 #endif
 
 // Define vector operations
-#define GREX_SET_VEC(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS) \
+#define GREX_SET_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> zero(thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))()}; \
   } \
   inline Vector<KIND##BITS, SIZE> broadcast(KIND##BITS value, \
                                             thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
-    return {.r = BITPREFIX##_set1_##SUFFIX(value)}; \
+    return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))(value)}; \
   } \
   inline Vector<KIND##BITS, SIZE> set(BOOST_PP_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS), \
                                       thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
-    return {.r = BITPREFIX##_set_##SUFFIX(BOOST_PP_REPEAT(SIZE, GREX_SET_VAL, SIZE))}; \
+    return {.r = GREX_CAT(BITPREFIX##_set_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))( \
+              BOOST_PP_REPEAT(SIZE, GREX_SET_VAL, SIZE))}; \
   } \
   inline Vector<KIND##BITS, SIZE> indices(thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return set(BOOST_PP_REPEAT(SIZE, GREX_SET_IDX, BOOST_PP_EMPTY()), \
@@ -91,15 +94,11 @@ namespace grex::backend {
   }
 
 // Define all set operations
-#define GREX_ASET_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_APPLY(GREX_SET_VEC, KIND, BITS, SIZE, BITPREFIX, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS), \
-             REGISTERBITS) \
-  GREX_APPLY(GREX_SET_MASK, KIND, BITS, SIZE, BITPREFIX, GREX_SET_EPI_##BITS(REGISTERBITS), \
-             REGISTERBITS, GREX_MMASKSIZE(SIZE))
-#define GREX_ASET(REGISTERBITS, PREFIX) \
-  GREX_FOREACH_TYPE(GREX_ASET_IMPL, REGISTERBITS, PREFIX, REGISTERBITS)
+#define GREX_SET(...) GREX_SET_VEC(__VA_ARGS__) GREX_SET_MASK(__VA_ARGS__)
+#define GREX_SET_ALL(REGISTERBITS, BITPREFIX) \
+  GREX_FOREACH_TYPE(GREX_SET, REGISTERBITS, BITPREFIX, REGISTERBITS)
 
-GREX_FOREACH_X86_64_LEVEL(GREX_ASET)
+GREX_FOREACH_X86_64_LEVEL(GREX_SET_ALL)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SET_HPP

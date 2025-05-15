@@ -17,8 +17,8 @@
 
 namespace grex::backend {
 #if GREX_X86_64_LEVEL >= 3
-#define GREX_FMADDF_CALL(NAME, BITPREFIX, KINDSUFFIX, ELEMENT, SIZE) \
-  {.r = BITPREFIX##_##NAME##_##KINDSUFFIX(a.r, b.r, c.r)}
+#define GREX_FMADDF_CALL(NAME, KIND, BITS, BITPREFIX) \
+  {.r = GREX_CAT(BITPREFIX##_##NAME##_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r, c.r)}
 #else
 #define GREX_FMADDF_CALL_fmadd add(multiply(a, b), c)
 #define GREX_FMADDF_CALL_fmsub subtract(multiply(a, b), c)
@@ -27,13 +27,11 @@ namespace grex::backend {
 #define GREX_FMADDF_CALL(NAME, ...) GREX_FMADDF_CALL_##NAME
 #endif
 
-#define GREX_FMADDF_IMPL(NAME, ELEMENT, SIZE, BITPREFIX, KINDSUFFIX) \
-  inline Vector<ELEMENT, SIZE> NAME(Vector<ELEMENT, SIZE> a, Vector<ELEMENT, SIZE> b, \
-                                    Vector<ELEMENT, SIZE> c) { \
-    return GREX_FMADDF_CALL(NAME, BITPREFIX, KINDSUFFIX, ELEMENT, SIZE); \
-  }
 #define GREX_FMADDF(KIND, BITS, SIZE, BITPREFIX, NAME) \
-  GREX_APPLY(GREX_FMADDF_IMPL, NAME, KIND##BITS, SIZE, BITPREFIX, GREX_EPI_SUFFIX(KIND, BITS))
+  inline Vector<KIND##BITS, SIZE> NAME(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b, \
+                                       Vector<KIND##BITS, SIZE> c) { \
+    return GREX_FMADDF_CALL(NAME, KIND, BITS, BITPREFIX); \
+  }
 #define GREX_FMADDF_ALL(REGISTERBITS, BITPREFIX, NAME) \
   GREX_FOREACH_FP_TYPE(GREX_FMADDF, REGISTERBITS, BITPREFIX, NAME)
 

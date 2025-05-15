@@ -46,14 +46,16 @@ int main() {
   fmt::print("fmsub({}, {}, {}) = {}\n", f1, f2, f3, grex::fmsub(f1, f2, f3));
   fmt::print("fnmadd({}, {}, {}) = {}\n", f1, f2, f3, grex::fnmadd(f1, f2, f3));
   fmt::print("fnmsub({}, {}, {}) = {}\n", f1, f2, f3, grex::fnmsub(f1, f2, f3));
-
   fmt::print("abs({}) = {}\n", i2, grex::abs(i2));
-  fmt::print("!{} = {}\n", m1, !m1);
+  fmt::print("horizontal_sum({}) = {}\n", i2, grex::horizontal_add(i2));
+  fmt::print("horizontal_sum({}) = {}\n", f1, grex::horizontal_add(f1));
   fmt::print("min({}, {}) = {}\n", i1, i2, grex::min(i1, i2));
   fmt::print("max({}, {}) = {}\n", i1, i2, grex::max(i1, i2));
   fmt::print("blend_zero: {}\n", grex::blend_zero(m1, i1));
   fmt::print("blend: {}\n", grex::blend(m1, i1, i2));
+
   fmt::print("cutoff({}, {}) = {}\n", i1, IVec::size / 2, i1.cutoff(IVec::size / 2));
+  fmt::print("!{} = {}\n", m1, !m1);
   fmt::print("{} == {}: {}\n", i1, i2, i1 == i2);
   fmt::print("{} != {}: {}\n", i1, i2, i1 != i2);
   fmt::print("{} < {}: {}\n", i2, i1, i2 < i1);
