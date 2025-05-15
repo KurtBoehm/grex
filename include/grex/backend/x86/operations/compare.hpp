@@ -4,8 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARISONS_HPP
-#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARISONS_HPP
+#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP
+#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP
 
 #include <boost/preprocessor.hpp>
 #include <immintrin.h>
@@ -23,8 +23,8 @@ namespace grex::backend {
 #define GREX_CMP_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
   inline Mask<KIND##BITS, SIZE> compare_##OPNAME(Vector<KIND##BITS, SIZE> a, \
                                                  Vector<KIND##BITS, SIZE> b) { \
-    return {.r = BOOST_PP_CAT(BOOST_PP_CAT(BITPREFIX##_cmp_, GREX_EPU_SUFFIX(KIND, BITS)), \
-                              _mask)(a.r, b.r, CMPIDX)}; \
+    return {.r = \
+              GREX_CAT(BITPREFIX##_cmp_, GREX_EPU_SUFFIX(KIND, BITS), _mask)(a.r, b.r, CMPIDX)}; \
   }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,8 +43,8 @@ namespace grex::backend {
   return {.r = \
             GREX_KINDCAST(f, i, BITS, REGISTERBITS, \
                           BOOST_PP_CAT(BITPREFIX##_cmpneq_, GREX_FP_SUFFIX(f##BITS))(a.r, b.r))};
-#define GREX_CMPNEQ_i(...) return negate(compare_eq(a, b));
-#define GREX_CMPNEQ_u(...) return negate(compare_eq(a, b));
+#define GREX_CMPNEQ_i(...) return logical_not(compare_eq(a, b));
+#define GREX_CMPNEQ_u(...) return logical_not(compare_eq(a, b));
 #define GREX_CMP_IMPL_BASE_cmpneq(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   GREX_CMPNEQ_##KIND(BITS, BITPREFIX, REGISTERBITS)
 
@@ -125,7 +125,7 @@ namespace grex::backend {
     .r = GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, \
                        BOOST_PP_CAT(BITPREFIX##_cmpge_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r))};
 // Negated less than
-#define GREX_CMPGE_NEGATED return negate(compare_lt(a, b));
+#define GREX_CMPGE_NEGATED return logical_not(compare_lt(a, b));
 // u8/16/32 on levels 2 and 3: Equality with unsigned minimum for u.
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_CMPGE_UMAX(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
@@ -199,4 +199,4 @@ GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, lt, cmplt, 1)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, ge, cmpge, 5)
 } // namespace grex::backend
 
-#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARISONS_HPP
+#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP

@@ -37,6 +37,8 @@ namespace grex::backend {
   BOOST_PP_COMMA_IF(IDX) - i##BITS(BOOST_PP_CAT(v, BOOST_PP_SUB(SIZE, BOOST_PP_INC(IDX))))
 #define GREX_SET_NEGVAL_IMPL(CNT, IDX, PAIR) GREX_SET_NEGVAL_IMPLI(CNT, IDX, PAIR)
 #define GREX_SET_NEGVAL(CNT, IDX, PAIR) GREX_SET_NEGVAL_IMPL(CNT, IDX, BOOST_PP_REMOVE_PARENS(PAIR))
+// Helper to generate indices
+#define GREX_SET_IDX(CNT, IDX, DUMMY) BOOST_PP_COMMA_IF(IDX) IDX
 
 #define GREX_CMASK_SET_OP(CNT, IDX, TYPE) \
   BOOST_PP_IF(IDX, |, BOOST_PP_EMPTY()) \
@@ -45,7 +47,7 @@ namespace grex::backend {
 
 // Define mask operations, which can be applied to compressed or broad masks
 #if GREX_X86_64_LEVEL >= 4
-#define GREX_MASK_SET(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE) \
+#define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE) \
   inline Mask<KIND##BITS, SIZE> zero(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_SIZEMMASK(SIZE){0}}; \
   } \
@@ -57,7 +59,7 @@ namespace grex::backend {
     return {.r = GREX_SIZEMMASK(SIZE)(GREX_CMASK_SET(SIZE, u##MMASKSIZE))}; \
   }
 #else
-#define GREX_MASK_SET(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE) \
+#define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS, MMASKSIZE) \
   inline Mask<KIND##BITS, SIZE> zero(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = BITPREFIX##_setzero_si##REGISTERBITS()}; \
   } \
@@ -70,31 +72,29 @@ namespace grex::backend {
   }
 #endif
 
-// Define the setzero-based operations
-#define GREX_ZERO(ELEMENT, SIZE, BITPREFIX, SUFFIX, REGISTERBITS) \
-  inline Vector<ELEMENT, SIZE> zero(thes::TypeTag<Vector<ELEMENT, SIZE>>) { \
-    return {.r = BITPREFIX##_setzero_##SUFFIX()}; \
-  }
-
-// Define the set1- and set-based operations
-#define GREX_SET_IMPL(ELEMENT, SIZE, BITPREFIX, SUFFIX, ARGS, VALS) \
-  inline Vector<ELEMENT, SIZE> set(ARGS, thes::TypeTag<Vector<ELEMENT, SIZE>>) { \
-    return {.r = BITPREFIX##_set_##SUFFIX(VALS)}; \
-  }
-#define GREX_VSET(ELEMENT, SIZE, BITPREFIX, SUFFIX, REGISTERBITS) \
-  inline Vector<ELEMENT, SIZE> broadcast(ELEMENT value, thes::TypeTag<Vector<ELEMENT, SIZE>>) { \
+// Define vector operations
+#define GREX_SET_VEC(KIND, BITS, SIZE, BITPREFIX, SUFFIX, REGISTERBITS) \
+  inline Vector<KIND##BITS, SIZE> zero(thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
+    return {.r = BOOST_PP_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))()}; \
+  } \
+  inline Vector<KIND##BITS, SIZE> broadcast(KIND##BITS value, \
+                                            thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = BITPREFIX##_set1_##SUFFIX(value)}; \
   } \
-  GREX_SET_IMPL(ELEMENT, SIZE, BITPREFIX, SUFFIX, BOOST_PP_REPEAT(SIZE, GREX_SET_ARG, ELEMENT), \
-                BOOST_PP_REPEAT(SIZE, GREX_SET_VAL, SIZE))
+  inline Vector<KIND##BITS, SIZE> set(BOOST_PP_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS), \
+                                      thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
+    return {.r = BITPREFIX##_set_##SUFFIX(BOOST_PP_REPEAT(SIZE, GREX_SET_VAL, SIZE))}; \
+  } \
+  inline Vector<KIND##BITS, SIZE> indices(thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
+    return set(BOOST_PP_REPEAT(SIZE, GREX_SET_IDX, BOOST_PP_EMPTY()), \
+               thes::type_tag<Vector<KIND##BITS, SIZE>>); \
+  }
 
 // Define all set operations
 #define GREX_ASET_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_APPLY(GREX_ZERO, KIND##BITS, SIZE, BITPREFIX, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS), \
+  GREX_APPLY(GREX_SET_VEC, KIND, BITS, SIZE, BITPREFIX, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS), \
              REGISTERBITS) \
-  GREX_APPLY(GREX_VSET, KIND##BITS, SIZE, BITPREFIX, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS), \
-             REGISTERBITS) \
-  GREX_APPLY(GREX_MASK_SET, KIND, BITS, SIZE, BITPREFIX, GREX_SET_EPI_##BITS(REGISTERBITS), \
+  GREX_APPLY(GREX_SET_MASK, KIND, BITS, SIZE, BITPREFIX, GREX_SET_EPI_##BITS(REGISTERBITS), \
              REGISTERBITS, GREX_MMASKSIZE(SIZE))
 #define GREX_ASET(REGISTERBITS, PREFIX) \
   GREX_FOREACH_TYPE(GREX_ASET_IMPL, REGISTERBITS, PREFIX, REGISTERBITS)

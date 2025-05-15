@@ -16,6 +16,6 @@ template<Vectorizable T, std::size_t tSize>
 struct Vector;
 template<Vectorizable T, std::size_t tSize>
 struct Mask;
-} // namespace grex
+} // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_DEFS_HPP

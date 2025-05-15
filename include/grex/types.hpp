@@ -31,33 +31,25 @@ struct Mask {
   explicit Mask(Ts... values) : mask_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
   explicit Mask(Backend v) : mask_(v) {}
 
-  Mask operator!() const {
-    return Mask{backend::logical_not(mask_)};
+  static Mask cutoff_mask(std::size_t i) {
+    return Mask{backend::cutoff_mask(i, thes::type_tag<Backend>)};
   }
-  Mask operator~() const {
+
+  Mask operator!() const {
     return Mask{backend::logical_not(mask_)};
   }
   friend Mask operator&&(Mask a, Mask b) {
     return Mask{backend::logical_and(a.mask_, b.mask_)};
   }
-  friend Mask operator&(Mask a, Mask b) {
-    return Mask{backend::logical_and(a.mask_, b.mask_)};
-  }
   friend Mask operator||(Mask a, Mask b) {
     return Mask{backend::logical_or(a.mask_, b.mask_)};
-  }
-  friend Mask operator|(Mask a, Mask b) {
-    return Mask{backend::logical_or(a.mask_, b.mask_)};
-  }
-  friend Mask operator^(Mask a, Mask b) {
-    return Mask{backend::logical_xor(a.mask_, b.mask_)};
   }
 
   friend Mask operator!=(Mask a, Mask b) {
     return Mask{backend::logical_xor(a.mask_, b.mask_)};
   }
   friend Mask operator==(Mask a, Mask b) {
-    return ~(a != b);
+    return !(a != b);
   }
 
   bool operator[](std::size_t i) const {
@@ -90,6 +82,13 @@ struct Vector {
   explicit Vector(Ts... values) : vec_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
   explicit Vector(Backend v) : vec_(v) {}
 
+  static Vector indices() {
+    return Vector{backend::indices(thes::type_tag<Backend>)};
+  }
+  static Vector indices(T start) {
+    return indices() + Vector{start};
+  }
+
   Vector operator-() {
     return Vector{backend::negate(vec_)};
   }
@@ -108,11 +107,8 @@ struct Vector {
     return Vector{backend::divide(a.vec_, b.vec_)};
   }
 
-  void store(T* value) const {
-    backend::store(value, vec_);
-  }
-  void store_aligned(T* value) const {
-    backend::store_aligned(value, vec_);
+  Vector cutoff(std::size_t i) const {
+    return Vector{backend::cutoff(i, vec_)};
   }
 
   T operator[](std::size_t i) const {
@@ -120,6 +116,13 @@ struct Vector {
   }
   T get(thes::AnyIndexTag auto i) const {
     return backend::extract(vec_, i);
+  }
+
+  void store(T* value) const {
+    backend::store(value, vec_);
+  }
+  void store_aligned(T* value) const {
+    backend::store_aligned(value, vec_);
   }
   std::array<T, tSize> as_array() const {
     std::array<T, tSize> out{};

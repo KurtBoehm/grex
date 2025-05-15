@@ -24,13 +24,13 @@ namespace grex::backend {
 
 #define GREX_BLENDZ_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> blend_zero(Mask<KIND##BITS, SIZE> m, \
-                                             Vector<KIND##BITS, SIZE> v) { \
-    return {.r = BOOST_PP_CAT(BITPREFIX##_maskz_mov_, GREX_EPI_SUFFIX(KIND, BITS))(m.r, v.r)}; \
+                                             Vector<KIND##BITS, SIZE> v1) { \
+    return {.r = BOOST_PP_CAT(BITPREFIX##_maskz_mov_, GREX_EPI_SUFFIX(KIND, BITS))(m.r, v1.r)}; \
   }
 #define GREX_BLENDZ_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> blend_zero(Mask<KIND##BITS, SIZE> m, \
-                                             Vector<KIND##BITS, SIZE> v) { \
-    return {.r = GREX_BLEND_MBINOP(KIND, BITS, BITPREFIX, REGISTERBITS, and, m.r, v.r)}; \
+                                             Vector<KIND##BITS, SIZE> v1) { \
+    return {.r = GREX_BLEND_MBINOP(KIND, BITS, BITPREFIX, REGISTERBITS, and, m.r, v1.r)}; \
   }
 
 #define GREX_BLEND_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \

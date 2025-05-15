@@ -13,7 +13,7 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/bitwise.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/blend.hpp" // IWYU pragma: keep
-#include "grex/backend/x86/operations/comparisons.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/compare.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
