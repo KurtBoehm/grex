@@ -221,6 +221,12 @@ template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend(Mask<T, tSize> mask, Vector<T, tSize> v0, Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend(mask.backend(), v0.backend(), v1.backend())};
 }
+
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> shuffle(Vector<T, tSize> v,
+                                thes::TypedValueTag<std::array<ShuffleIndex, tSize>> auto idxs) {
+  return Vector<T, tSize>{backend::shuffle(v.backend(), idxs)};
+}
 } // namespace grex
 
 #endif // INCLUDE_GREX_TYPES_HPP

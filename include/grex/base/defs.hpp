@@ -8,6 +8,7 @@
 #define INCLUDE_GREX_BASE_DEFS_HPP
 
 #include <concepts>
+#include <stdexcept>
 
 #include "thesauros/types.hpp"
 
@@ -28,6 +29,22 @@ concept Vectorizable =
   std::same_as<T, u8> || std::same_as<T, i8> || std::same_as<T, u16> || std::same_as<T, i16> ||
   std::same_as<T, u32> || std::same_as<T, i32> || std::same_as<T, u64> || std::same_as<T, i64> ||
   std::same_as<T, f32> || std::same_as<T, f64>;
+
+enum struct ShuffleIndex : u8 { any = 254, zero = 255 };
+inline constexpr ShuffleIndex any_sh = ShuffleIndex::any;
+inline constexpr ShuffleIndex zero_sh = ShuffleIndex::zero;
+constexpr bool is_index(ShuffleIndex sh) {
+  return u8(sh) < u8(any_sh);
+}
+
+namespace literals {
+consteval ShuffleIndex operator""_sh(unsigned long long int v) {
+  if (v < 254) {
+    return ShuffleIndex(v);
+  }
+  throw std::invalid_argument{"Unsupported value!"};
+}
+} // namespace literals
 } // namespace grex
 
 #endif // INCLUDE_GREX_BASE_DEFS_HPP

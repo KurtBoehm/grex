@@ -4,12 +4,19 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#include <array>
+
 #include "thesauros/format.hpp"
+#include "thesauros/types.hpp"
 
 #include "grex/grex.hpp"
 
+#define CONDITION (GREX_X86_64_LEVEL >= 3)
+
 int main() {
-#if GREX_X86_64_LEVEL >= 3
+  using namespace grex::literals;
+
+#if CONDITION
   using IVec = grex::Vector<grex::i64, 4>;
   using IMask = grex::Mask<grex::i64, 4>;
   IVec i1{4, 3, 2, -1};
@@ -68,4 +75,9 @@ int main() {
   fmt::print("{} != {}: {}\n", m1, m2, m1 != m2);
   fmt::print("{} && {}: {}\n", m1, m2, m1 && m2);
   fmt::print("{} || {}: {}\n", m1, m2, m1 || m2);
+
+#if !CONDITION
+  fmt::print("shuffle({}, [1, 0]) = {}", i1,
+             grex::shuffle(i1, thes::auto_tag<std::array{1_sh, 0_sh}>));
+#endif
 }
