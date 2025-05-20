@@ -32,11 +32,35 @@ namespace grex::backend {
 // This is the base case (limited support for integers),
 // which applies to the SSE family and integer AVX2
 
-// Equality: All kinds have cmpeq, unsigned fall back to signed
-#define GREX_CMP_IMPL_BASE_cmpeq(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+// Equality: All kinds have cmpeq apart from i64/u64 on level 1, unsigned fall back to signed
+#define GREX_CMP_IMPL_BASE_CMPEQ_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return {.r = \
             GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, \
                           GREX_CAT(BITPREFIX##_cmpeq_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r))};
+// i64/u64: 32 bit comparison, swap 32 bit pairs, and perform “and”
+#define GREX_CMP_IMPL_BASE_CMPEQ_SSE64 \
+  const __m128i eq32 = _mm_cmpeq_epi32(a.r, b.r); \
+  const __m128i eq32s = _mm_shuffle_epi32(eq32, 0b10110001); \
+  return {.r = _mm_and_si128(eq32, eq32s)};
+// case distinctions
+#if GREX_X86_64_LEVEL >= 2
+#define GREX_CMP_IMPL_BASE_CMPEQ_INT64x2 GREX_CMP_IMPL_BASE_CMPEQ_BASE
+#else
+#define GREX_CMP_IMPL_BASE_CMPEQ_INT64x2(...) GREX_CMP_IMPL_BASE_CMPEQ_SSE64
+#endif
+#define GREX_CMP_IMPL_BASE_CMPEQ_INT64x4 GREX_CMP_IMPL_BASE_CMPEQ_BASE
+#define GREX_CMP_IMPL_BASE_CMPEQ_INT64x8 GREX_CMP_IMPL_BASE_CMPEQ_BASE
+#define GREX_CMP_IMPL_BASE_CMPEQ_INT64(KIND, BITS, SIZE, ...) \
+  GREX_CMP_IMPL_BASE_CMPEQ_INT64x##SIZE(KIND, BITS, SIZE, __VA_ARGS__)
+#define GREX_CMP_IMPL_BASE_CMPEQ_INT32 GREX_CMP_IMPL_BASE_CMPEQ_BASE
+#define GREX_CMP_IMPL_BASE_CMPEQ_INT16 GREX_CMP_IMPL_BASE_CMPEQ_BASE
+#define GREX_CMP_IMPL_BASE_CMPEQ_INT8 GREX_CMP_IMPL_BASE_CMPEQ_BASE
+#define GREX_CMP_IMPL_BASE_CMPEQ_INT(KIND, BITS, SIZE, ...) \
+  GREX_CMP_IMPL_BASE_CMPEQ_INT##BITS(KIND, BITS, SIZE, __VA_ARGS__)
+#define GREX_CMP_IMPL_BASE_CMPEQ_f GREX_CMP_IMPL_BASE_CMPEQ_BASE
+#define GREX_CMP_IMPL_BASE_CMPEQ_i GREX_CMP_IMPL_BASE_CMPEQ_INT
+#define GREX_CMP_IMPL_BASE_CMPEQ_u GREX_CMP_IMPL_BASE_CMPEQ_INT
+#define GREX_CMP_IMPL_BASE_cmpeq(KIND, ...) GREX_CMP_IMPL_BASE_CMPEQ_##KIND(KIND, __VA_ARGS__)
 
 // Inequality: Separate cmpneq intrinsic only for f, negated equality for i and u
 #define GREX_CMPNEQ_f(BITS, BITPREFIX, REGISTERBITS) \

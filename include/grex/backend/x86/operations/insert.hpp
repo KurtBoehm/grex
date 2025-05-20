@@ -9,16 +9,16 @@
 
 #include <cstddef>
 
-#include "thesauros/types/type-tag.hpp"
+#include "thesauros/types/type-tag.hpp" // IWYU pragma: keep
 
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/blend.hpp"
-#include "grex/backend/x86/operations/compare.hpp"
-#include "grex/backend/x86/operations/set.hpp"
+#include "grex/backend/x86/operations/blend.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/compare.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/store.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base/defs.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
 #define GREX_INSERT_AVX512_F32_4 _mm_mask_broadcastss_ps
