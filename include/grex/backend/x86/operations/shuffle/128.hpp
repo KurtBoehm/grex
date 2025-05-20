@@ -59,10 +59,10 @@ inline __m128i shuffle2x64(const __m128i v,
     out = _mm_maskz_mov_epi64(zero_mask<2>(idxs), out);
 #else
     // use unpack to avoid using data cache
-    if constexpr (i0 == zero_sh) {
-      y = _mm_unpackhi_epi64(_mm_setzero_si128(), y);
-    } else if constexpr (i1 == zero_sh) {
-      y = _mm_unpacklo_epi64(y, _mm_setzero_si128());
+    if constexpr (idxs[0] == zero_sh) {
+      out = _mm_unpackhi_epi64(_mm_setzero_si128(), out);
+    } else if constexpr (idxs[1] == zero_sh) {
+      out = _mm_unpacklo_epi64(out, _mm_setzero_si128());
     }
 #endif
   }

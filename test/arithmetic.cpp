@@ -56,6 +56,10 @@ int main() {
   fmt::print("abs({}) = {}\n", i2, grex::abs(i2));
   fmt::print("horizontal_sum({}) = {}\n", i2, grex::horizontal_add(i2));
   fmt::print("horizontal_sum({}) = {}\n", f1, grex::horizontal_add(f1));
+  fmt::print("horizontal_min({}) = {}\n", i2, grex::horizontal_min(i2));
+  fmt::print("horizontal_min({}) = {}\n", f1, grex::horizontal_min(f1));
+  fmt::print("horizontal_max({}) = {}\n", i2, grex::horizontal_max(i2));
+  fmt::print("horizontal_max({}) = {}\n", f1, grex::horizontal_max(f1));
   fmt::print("min({}, {}) = {}\n", i1, i2, grex::min(i1, i2));
   fmt::print("max({}, {}) = {}\n", i1, i2, grex::max(i1, i2));
   fmt::print("blend_zero: {}\n", grex::blend_zero(m1, i1));
