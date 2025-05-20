@@ -15,6 +15,7 @@
 #include "operations/horizontal-add.hpp"
 #include "operations/horizontal-and.hpp"
 #include "operations/horizontal-minmax.hpp"
+#include "operations/insert.hpp"
 #include "operations/minmax.hpp"
 #include "operations/set.hpp"
 #include "operations/shuffle.hpp"

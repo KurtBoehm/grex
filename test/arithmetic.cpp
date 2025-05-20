@@ -55,6 +55,7 @@ int main() {
   fmt::print("{} & {} = {}\n", i1, i2, i1 & i2);
   fmt::print("{} | {} = {}\n", i1, i2, i1 | i2);
   fmt::print("{} ^ {} = {}\n", i1, i2, i1 ^ i2);
+  fmt::print("{}.insert(1, 2) = {}\n", i1, i1.insert(1, 2));
 
   fmt::print("fmadd({}, {}, {}) = {}\n", f1, f2, f3, grex::fmadd(f1, f2, f3));
   fmt::print("fmsub({}, {}, {}) = {}\n", f1, f2, f3, grex::fmsub(f1, f2, f3));

@@ -28,7 +28,7 @@ struct Mask {
   explicit Mask(T value) : mask_{backend::broadcast(value, thes::type_tag<Backend>)} {}
   template<typename... Ts>
   requires(((sizeof...(Ts) == tSize) && ... && std::same_as<Ts, bool>))
-  explicit Mask(Ts... values) : mask_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
+  explicit Mask(Ts... values) : mask_{backend::set(T(values)..., thes::type_tag<Backend>)} {}
   explicit Mask(Backend v) : mask_(v) {}
 
   static Mask cutoff_mask(std::size_t i) {
@@ -116,6 +116,9 @@ struct Vector {
   }
   T get(thes::AnyIndexTag auto i) const {
     return backend::extract(vec_, i);
+  }
+  Vector insert(std::size_t i, T value) const {
+    return Vector{backend::insert(vec_, i, value)};
   }
 
   void store(T* value) const {
