@@ -17,41 +17,42 @@
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/blend.hpp"
-#include "grex/backend/x86/operations/set.hpp"
+#include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
 // Since the largest vector size is 64, signed comparisons can be used even with i8
-// to determine the cutoff mask
 #if GREX_X86_64_LEVEL >= 4
-#define GREX_CUTOFF_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  return {.r = BITPREFIX##_cmp_epi##BITS##_mask( \
-            indices(thes::type_tag<Vector<i##BITS, SIZE>>).r, \
-            broadcast(i, thes::type_tag<Vector<i##BITS, SIZE>>).r, 1)};
+#define GREX_CUTOFF_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_SIZEMMASK(SIZE)(~(u64(-1) << i))
+#define GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_SIZEMMASK(SIZE)(u64{1} << i)
 #else
-#define GREX_CUTOFF_MASK_CMPGT(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  return {.r = BITPREFIX##_cmpgt_epi##BITS(broadcast(i, thes::type_tag<Vector<i##BITS, SIZE>>).r, \
-                                           indices(thes::type_tag<Vector<i##BITS, SIZE>>).r)};
-#define GREX_CUTOFF_MASK_8 GREX_CUTOFF_MASK_CMPGT
-#define GREX_CUTOFF_MASK_16 GREX_CUTOFF_MASK_CMPGT
-#define GREX_CUTOFF_MASK_32 GREX_CUTOFF_MASK_CMPGT
-#define GREX_CUTOFF_MASK_64_128 _mm_set_epi32(1, 1, 0, 0)
-#define GREX_CUTOFF_MASK_64_256 _mm256_set_epi32(3, 3, 2, 2, 1, 1, 0, 0)
-#define GREX_CUTOFF_MASK_64(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+#define GREX_INDEX_MASK_CMPGT(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMP) \
+  BITPREFIX##_cmp##CMP##_epi##BITS(broadcast(i, thes::type_tag<Vector<i##BITS, SIZE>>).r, \
+                                   indices(thes::type_tag<Vector<i##BITS, SIZE>>).r)
+#define GREX_INDEX_MASK_8 GREX_INDEX_MASK_CMPGT
+#define GREX_INDEX_MASK_16 GREX_INDEX_MASK_CMPGT
+#define GREX_INDEX_MASK_32 GREX_INDEX_MASK_CMPGT
+#define GREX_INDEX_MASK_64_128 _mm_set_epi32(1, 1, 0, 0)
+#define GREX_INDEX_MASK_64_256 _mm256_set_epi32(3, 3, 2, 2, 1, 1, 0, 0)
+#define GREX_INDEX_MASK_64(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMP) \
   /* perform a 32 bit comparison */ \
-  return { \
-    .r = BITPREFIX##_cmpgt_epi32(BITPREFIX##_set1_epi32(i), GREX_CUTOFF_MASK_64_##REGISTERBITS)};
-#define GREX_CUTOFF_MASK_IMPL(KIND, BITS, ...) GREX_CUTOFF_MASK_##BITS(KIND, BITS, __VA_ARGS__)
+  BITPREFIX##_cmp##CMP##_epi32(BITPREFIX##_set1_epi32(i), GREX_INDEX_MASK_64_##REGISTERBITS)
+#define GREX_CUTOFF_MASK_IMPL(KIND, BITS, ...) GREX_INDEX_MASK_##BITS(KIND, BITS, __VA_ARGS__, gt)
+#define GREX_SINGLE_MASK_IMPL(KIND, BITS, ...) GREX_INDEX_MASK_##BITS(KIND, BITS, __VA_ARGS__, eq)
 #endif
 
-#define GREX_CUTOFF_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+#define GREX_INDEX_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Mask<KIND##BITS, SIZE> cutoff_mask(std::size_t i, \
                                             thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
-    GREX_CUTOFF_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+    return {.r = GREX_CUTOFF_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
+  } \
+  inline Mask<KIND##BITS, SIZE> single_mask(std::size_t i, \
+                                            thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
+    return {.r = GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   }
-#define GREX_CUTOFF_MASK_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_TYPE(GREX_CUTOFF_MASK, REGISTERBITS, BITPREFIX, REGISTERBITS)
+#define GREX_INDEX_MASK_ALL(REGISTERBITS, BITPREFIX) \
+  GREX_FOREACH_TYPE(GREX_INDEX_MASK, REGISTERBITS, BITPREFIX, REGISTERBITS)
 
 #define GREX_CUTOFF_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> cutoff(std::size_t i, Vector<KIND##BITS, SIZE> v) { \
@@ -60,7 +61,7 @@ namespace grex::backend {
 #define GREX_CUTOFF_VEC_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_CUTOFF_VEC, REGISTERBITS, BITPREFIX, REGISTERBITS)
 
-GREX_FOREACH_X86_64_LEVEL(GREX_CUTOFF_MASK_ALL)
+GREX_FOREACH_X86_64_LEVEL(GREX_INDEX_MASK_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_CUTOFF_VEC_ALL)
 } // namespace grex::backend
 

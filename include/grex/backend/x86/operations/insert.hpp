@@ -15,6 +15,7 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/blend.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/compare.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/mask-index.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/store.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
@@ -44,9 +45,7 @@ namespace grex::backend {
 #define GREX_INSERT_FALLBACK(KIND, BITS, SIZE, BITPREFIX) \
   inline Vector<KIND##BITS, SIZE> insert(Vector<KIND##BITS, SIZE> vec, std::size_t index, \
                                          KIND##BITS value) { \
-    return blend({.r = compare_eq(indices(thes::type_tag<Vector<u##BITS, SIZE>>), \
-                                  broadcast(index, thes::type_tag<Vector<u##BITS, SIZE>>)) \
-                         .r}, \
+    return blend(single_mask(index, thes::type_tag<Mask<KIND##BITS, SIZE>>), \
                  broadcast(value, thes::type_tag<Vector<KIND##BITS, SIZE>>), vec); \
   }
 
