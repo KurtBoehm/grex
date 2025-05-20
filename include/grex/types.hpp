@@ -205,6 +205,11 @@ inline T horizontal_max(Vector<T, tSize> v) {
 }
 
 template<Vectorizable T, std::size_t tSize>
+inline T horizontal_and(Mask<T, tSize> m) {
+  return backend::horizontal_and(m.backend());
+}
+
+template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> fmadd(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
   return Vector<T, tSize>{backend::fmadd(a.backend(), b.backend(), c.backend())};
 }

@@ -79,6 +79,8 @@ int main() {
   fmt::print("{} != {}: {}\n", m1, m2, m1 != m2);
   fmt::print("{} && {}: {}\n", m1, m2, m1 && m2);
   fmt::print("{} || {}: {}\n", m1, m2, m1 || m2);
+  fmt::print("horizontal_and({}) = {}\n", m1, grex::horizontal_and(m1));
+  fmt::print("horizontal_and({}) = {}\n", m1 || !m2, grex::horizontal_and(m1 || !m2));
 
 #if !CONDITION
   fmt::print("shuffle({}, [1, 0]) = {}", i1,
