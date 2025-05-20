@@ -3,6 +3,7 @@
 
 // IWYU pragma: begin_exports
 #include "operations/abs.hpp"
+#include "operations/arithmetic-mask.hpp"
 #include "operations/arithmetic.hpp"
 #include "operations/bitwise.hpp"
 #include "operations/blend.hpp"

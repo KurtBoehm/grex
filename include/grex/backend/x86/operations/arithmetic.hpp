@@ -16,14 +16,14 @@
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
-// Addition and subtraction
-#define GREX_BINARITH_OP_BASE(KIND, BITS, SIZE, NAME, OP) \
+// Base case: Use intrinsics
+#define GREX_ARITH_BASE(KIND, BITS, SIZE, NAME, OP) \
   inline Vector<KIND##BITS, SIZE> NAME(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_CAT(OP##_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r)}; \
   }
-#define GREX_BINARITH_OPS_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_TYPE(GREX_BINARITH_OP_BASE, REGISTERBITS, add, BITPREFIX##_add) \
-  GREX_FOREACH_TYPE(GREX_BINARITH_OP_BASE, REGISTERBITS, subtract, BITPREFIX##_sub)
+#define GREX_ADDSUB_ALL(REGISTERBITS, BITPREFIX) \
+  GREX_FOREACH_TYPE(GREX_ARITH_BASE, REGISTERBITS, add, BITPREFIX##_add) \
+  GREX_FOREACH_TYPE(GREX_ARITH_BASE, REGISTERBITS, subtract, BITPREFIX##_sub)
 
 // Negation: Flip sign bit for floating-point values, subtract from zero for integers
 #define GREX_NEGATE_FP(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, KINDSUFFIX) \
@@ -122,9 +122,9 @@ namespace grex::backend {
 
 // Floating-point division (integer division is not available because it is very slow)
 #define GREX_DIV_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_FP_TYPE(GREX_BINARITH_OP_BASE, REGISTERBITS, divide, BITPREFIX##_div)
+  GREX_FOREACH_FP_TYPE(GREX_ARITH_BASE, REGISTERBITS, divide, BITPREFIX##_div)
 
-GREX_FOREACH_X86_64_LEVEL(GREX_BINARITH_OPS_ALL)
+GREX_FOREACH_X86_64_LEVEL(GREX_ADDSUB_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_NEGATE_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_MUL_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_DIV_ALL)

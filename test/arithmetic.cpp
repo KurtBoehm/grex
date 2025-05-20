@@ -26,6 +26,8 @@ int main() {
   grex::Vector<grex::f64, 4> f1{4.0, 3.0, 2.0, -1.0};
   grex::Vector<grex::f64, 4> f2{-2.0, 3.0, 4.0, 5.0};
   grex::Vector<grex::f64, 4> f3{1.0, -1.0, 1.0, -1.0};
+  grex::Mask<grex::f64, 4> fm1{true, true, false, true};
+  grex::Mask<grex::f64, 4> fm2{true, false, false, true};
 #else
   using IVec = grex::Vector<grex::i64, 2>;
   using IMask = grex::Mask<grex::i64, 2>;
@@ -60,6 +62,10 @@ int main() {
   fmt::print("horizontal_min({}) = {}\n", f1, grex::horizontal_min(f1));
   fmt::print("horizontal_max({}) = {}\n", i2, grex::horizontal_max(i2));
   fmt::print("horizontal_max({}) = {}\n", f1, grex::horizontal_max(f1));
+  fmt::print("mask_add({}, {}, {}) = {}\n", m1, i1, i2, grex::mask_add(m1, i1, i2));
+  fmt::print("mask_subtract({}, {}, {}) = {}\n", m1, i1, i2, grex::mask_subtract(m1, i1, i2));
+  fmt::print("mask_multiply({}, {}, {}) = {}\n", m1, i1, i2, grex::mask_multiply(m1, i1, i2));
+  fmt::print("mask_divide({}, {}, {}) = {}\n", m1, f1, f2, grex::mask_divide(fm1, f1, f2));
   fmt::print("min({}, {}) = {}\n", i1, i2, grex::min(i1, i2));
   fmt::print("max({}, {}) = {}\n", i1, i2, grex::max(i1, i2));
   fmt::print("blend_zero: {}\n", grex::blend_zero(m1, i1));

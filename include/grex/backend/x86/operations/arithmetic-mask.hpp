@@ -1,0 +1,86 @@
+// This file is part of https://github.com/KurtBoehm/grex.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_MASK_HPP
+#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_MASK_HPP
+
+#include "grex/backend/x86/helpers.hpp"
+#include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/operations/arithmetic.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/blend.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/types.hpp"
+#include "grex/base/defs.hpp" // IWYU pragma: keep
+
+namespace grex::backend {
+// AVX-512: Use intrinsics
+#define GREX_MASKARITH_AVX512(KIND, BITS, SIZE, NAME, OP) \
+  return {.r = GREX_CAT(OP##_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, m.r, a.r, b.r)};
+
+// Addition and subtraction
+// Otherwise: Zero-blend and then apply the basic operator
+#define GREX_MASKADDSUB_FALLBACK(KIND, BITS, SIZE, NAME, OP) return NAME(a, blend_zero(m, b));
+
+#if GREX_X86_64_LEVEL >= 4
+#define GREX_MASKADDSUB_IMPL GREX_MASKARITH_AVX512
+#else
+#define GREX_MASKADDSUB_IMPL GREX_MASKADDSUB_FALLBACK
+#endif
+
+#define GREX_MASKADDSUB_BASE(KIND, BITS, SIZE, NAME, OP) \
+  inline Vector<KIND##BITS, SIZE> mask_##NAME( \
+    Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+    GREX_MASKADDSUB_IMPL(KIND, BITS, SIZE, NAME, OP) \
+  }
+
+#define GREX_MASKADDSUB_ALL(REGISTERBITS, BITPREFIX) \
+  GREX_FOREACH_TYPE(GREX_MASKADDSUB_BASE, REGISTERBITS, add, BITPREFIX##_mask_add) \
+  GREX_FOREACH_TYPE(GREX_MASKADDSUB_BASE, REGISTERBITS, subtract, BITPREFIX##_mask_sub)
+
+// Multiplication and division
+// Fallback: Blend the basic operator with “a”
+#define GREX_MASKMULDIV_FALLBACK(KIND, BITS, SIZE, NAME, OP) return blend(m, a, NAME(a, b));
+
+#if GREX_X86_64_LEVEL >= 4
+#define GREX_MASKMULDIV_IMPL GREX_MASKARITH_AVX512
+#else
+#define GREX_MASKMULDIV_IMPL GREX_MASKMULDIV_FALLBACK
+#endif
+
+// Multiplication: No instruction for 8 bit integers, always use fallback
+#define GREX_MASKMUL_INT8 GREX_MASKMULDIV_FALLBACK
+#define GREX_MASKMUL_INT16 GREX_MASKMULDIV_IMPL
+#define GREX_MASKMUL_INT32 GREX_MASKMULDIV_IMPL
+#define GREX_MASKMUL_INT64 GREX_MASKMULDIV_IMPL
+
+#define GREX_MASKMUL_f(KIND, BITS, SIZE, BITPREFIX) \
+  GREX_MASKMULDIV_IMPL(KIND, BITS, SIZE, multiply, BITPREFIX##_mask_mul)
+#define GREX_MASKMUL_i(KIND, BITS, SIZE, BITPREFIX) \
+  GREX_MASKMUL_INT##BITS(KIND, BITS, SIZE, multiply, BITPREFIX##_mask_mullo)
+#define GREX_MASKMUL_u(KIND, BITS, SIZE, BITPREFIX) \
+  GREX_MASKMUL_INT##BITS(KIND, BITS, SIZE, multiply, BITPREFIX##_mask_mullo)
+#define GREX_MASKMUL(KIND, BITS, SIZE, BITPREFIX) \
+  inline Vector<KIND##BITS, SIZE> mask_multiply( \
+    Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+    GREX_MASKMUL_##KIND(KIND, BITS, SIZE, BITPREFIX) \
+  }
+#define GREX_MASKMUL_ALL(REGISTERBITS, BITPREFIX) \
+  GREX_FOREACH_TYPE(GREX_MASKMUL, REGISTERBITS, BITPREFIX)
+
+// Division
+#define GREX_MASKDIV(KIND, BITS, SIZE, BITPREFIX) \
+  inline Vector<KIND##BITS, SIZE> mask_divide( \
+    Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+    GREX_MASKMULDIV_IMPL(KIND, BITS, SIZE, divide, BITPREFIX##_mask_div) \
+  }
+#define GREX_MASKDIV_ALL(REGISTERBITS, BITPREFIX) \
+  GREX_FOREACH_FP_TYPE(GREX_MASKDIV, REGISTERBITS, BITPREFIX)
+
+GREX_FOREACH_X86_64_LEVEL(GREX_MASKADDSUB_ALL)
+GREX_FOREACH_X86_64_LEVEL(GREX_MASKMUL_ALL)
+GREX_FOREACH_X86_64_LEVEL(GREX_MASKDIV_ALL)
+} // namespace grex::backend
+
+#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_MASK_HPP

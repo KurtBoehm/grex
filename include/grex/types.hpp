@@ -203,7 +203,6 @@ template<Vectorizable T, std::size_t tSize>
 inline T horizontal_max(Vector<T, tSize> v) {
   return backend::horizontal_max(v.backend());
 }
-
 template<Vectorizable T, std::size_t tSize>
 inline T horizontal_and(Mask<T, tSize> m) {
   return backend::horizontal_and(m.backend());
@@ -233,6 +232,24 @@ inline Vector<T, tSize> blend_zero(Mask<T, tSize> mask, Vector<T, tSize> v1) {
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend(Mask<T, tSize> mask, Vector<T, tSize> v0, Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend(mask.backend(), v0.backend(), v1.backend())};
+}
+
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> mask_add(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b) {
+  return Vector<T, tSize>{backend::mask_add(mask.backend(), a.backend(), b.backend())};
+}
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> mask_subtract(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b) {
+  return Vector<T, tSize>{backend::mask_subtract(mask.backend(), a.backend(), b.backend())};
+}
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> mask_multiply(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b) {
+  return Vector<T, tSize>{backend::mask_multiply(mask.backend(), a.backend(), b.backend())};
+}
+template<Vectorizable T, std::size_t tSize>
+requires(std::floating_point<T>)
+inline Vector<T, tSize> mask_divide(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b) {
+  return Vector<T, tSize>{backend::mask_divide(mask.backend(), a.backend(), b.backend())};
 }
 
 template<Vectorizable T, std::size_t tSize>
