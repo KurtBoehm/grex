@@ -20,17 +20,18 @@ int main() {
 #if CONDITION
   using IVec = grex::Vector<grex::i64, 4>;
   using IMask = grex::Mask<grex::i64, 4>;
-  IVec i1{4, 3, 2, -1};
-  IVec i2{-2, 3, 4, 5};
-  IMask m1{true, true, false, true};
-  IMask m2{true, false, false, true};
-  grex::Vector<grex::f64, 4> f1{4.0, 3.0, 2.0, -1.0};
-  grex::Vector<grex::f64, 4> f2{-2.0, 3.0, 4.0, 5.0};
-  grex::Vector<grex::f64, 4> f3{1.0, -1.0, 1.0, -1.0};
-  grex::Vector<grex::f64, 4> f4{1.0, std::numeric_limits<grex::f64>::infinity(),
-                                std::numeric_limits<grex::f64>::quiet_NaN(), -1.0};
-  grex::Mask<grex::f64, 4> fm1{true, true, false, true};
-  grex::Mask<grex::f64, 4> fm2{true, false, false, true};
+  const IVec i1{4, 3, 2, -1};
+  const IVec i2{-2, 3, 4, 5};
+  const IMask m1{true, true, false, true};
+  const IMask m2{true, false, false, true};
+  std::array<grex::f64, 4> f1d{4.0, 3.0, 2.0, -1.0};
+  const auto f1 = grex::Vector<grex::f64, 4>::load(f1d.data());
+  const grex::Vector<grex::f64, 4> f2{-2.0, 3.0, 4.0, 5.0};
+  const grex::Vector<grex::f64, 4> f3{1.0, -1.0, 1.0, -1.0};
+  const grex::Vector<grex::f64, 4> f4{1.0, std::numeric_limits<grex::f64>::infinity(),
+                                      std::numeric_limits<grex::f64>::quiet_NaN(), -1.0};
+  const grex::Mask<grex::f64, 4> fm1{true, true, false, true};
+  const grex::Mask<grex::f64, 4> fm2{true, false, false, true};
 #else
   using IVec = grex::Vector<grex::i64, 2>;
   using IMask = grex::Mask<grex::i64, 2>;

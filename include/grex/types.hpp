@@ -82,6 +82,13 @@ struct Vector {
   explicit Vector(Ts... values) : vec_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
   explicit Vector(Backend v) : vec_(v) {}
 
+  static Vector load(const T* ptr) {
+    return Vector{backend::load(ptr, thes::index_tag<size>)};
+  }
+  static Vector load_aligned(const T* ptr) {
+    return Vector{backend::load_aligned(ptr, thes::index_tag<size>)};
+  }
+
   static Vector indices() {
     return Vector{backend::indices(thes::type_tag<Backend>)};
   }
@@ -89,7 +96,7 @@ struct Vector {
     return indices() + Vector{start};
   }
 
-  Vector operator-() {
+  Vector operator-() const {
     return Vector{backend::negate(vec_)};
   }
   friend Vector operator+(Vector a, Vector b) {
