@@ -7,6 +7,7 @@
 #include "operations/arithmetic.hpp"
 #include "operations/bitwise.hpp"
 #include "operations/blend.hpp"
+#include "operations/classification.hpp"
 #include "operations/compare.hpp"
 #include "operations/cutoff.hpp"
 #include "operations/extract.hpp"

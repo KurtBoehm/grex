@@ -192,6 +192,12 @@ inline Vector<T, tSize> max(Vector<T, tSize> a, Vector<T, tSize> b) {
 }
 
 template<Vectorizable T, std::size_t tSize>
+requires(std::floating_point<T>)
+inline Mask<T, tSize> is_finite(Vector<T, tSize> v) {
+  return Mask<T, tSize>{backend::is_finite(v.backend())};
+}
+
+template<Vectorizable T, std::size_t tSize>
 inline T horizontal_add(Vector<T, tSize> v) {
   return backend::horizontal_add(v.backend());
 }
@@ -209,18 +215,22 @@ inline T horizontal_and(Mask<T, tSize> m) {
 }
 
 template<Vectorizable T, std::size_t tSize>
+requires(std::floating_point<T>)
 inline Vector<T, tSize> fmadd(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
   return Vector<T, tSize>{backend::fmadd(a.backend(), b.backend(), c.backend())};
 }
 template<Vectorizable T, std::size_t tSize>
+requires(std::floating_point<T>)
 inline Vector<T, tSize> fmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
   return Vector<T, tSize>{backend::fmsub(a.backend(), b.backend(), c.backend())};
 }
 template<Vectorizable T, std::size_t tSize>
+requires(std::floating_point<T>)
 inline Vector<T, tSize> fnmadd(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
   return Vector<T, tSize>{backend::fnmadd(a.backend(), b.backend(), c.backend())};
 }
 template<Vectorizable T, std::size_t tSize>
+requires(std::floating_point<T>)
 inline Vector<T, tSize> fnmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
   return Vector<T, tSize>{backend::fnmsub(a.backend(), b.backend(), c.backend())};
 }

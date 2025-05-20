@@ -5,6 +5,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <array>
+#include <limits>
 
 #include "thesauros/format.hpp"
 #include "thesauros/types.hpp"
@@ -26,6 +27,8 @@ int main() {
   grex::Vector<grex::f64, 4> f1{4.0, 3.0, 2.0, -1.0};
   grex::Vector<grex::f64, 4> f2{-2.0, 3.0, 4.0, 5.0};
   grex::Vector<grex::f64, 4> f3{1.0, -1.0, 1.0, -1.0};
+  grex::Vector<grex::f64, 4> f4{1.0, std::numeric_limits<grex::f64>::infinity(),
+                                std::numeric_limits<grex::f64>::quiet_NaN(), -1.0};
   grex::Mask<grex::f64, 4> fm1{true, true, false, true};
   grex::Mask<grex::f64, 4> fm2{true, false, false, true};
 #else
@@ -38,6 +41,8 @@ int main() {
   grex::Vector<grex::f64, 2> f1{4.0, 3.0};
   grex::Vector<grex::f64, 2> f2{-2.0, 3.0};
   grex::Vector<grex::f64, 2> f3{1.0, -1.0};
+  grex::Vector<grex::f64, 2> f4{1.0, std::numeric_limits<grex::f64>::infinity()};
+  grex::Mask<grex::f64, 2> fm1{true, false};
 #endif
 
   fmt::print("indices: {} {}\n", IVec::indices(), IVec::indices(5));
@@ -87,6 +92,7 @@ int main() {
   fmt::print("{} || {}: {}\n", m1, m2, m1 || m2);
   fmt::print("horizontal_and({}) = {}\n", m1, grex::horizontal_and(m1));
   fmt::print("horizontal_and({}) = {}\n", m1 || !m2, grex::horizontal_and(m1 || !m2));
+  fmt::print("is_finite({}) = {}\n", f4, grex::is_finite(f4));
 
 #if !CONDITION
   fmt::print("shuffle({}, [1, 0]) = {}", i1,
