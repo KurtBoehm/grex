@@ -88,6 +88,9 @@ struct Vector {
   static Vector load_aligned(const T* ptr) {
     return Vector{backend::load_aligned(ptr, thes::index_tag<size>)};
   }
+  static Vector load_part(const T* ptr, std::size_t num) {
+    return Vector{backend::load_part(ptr, num, thes::index_tag<size>)};
+  }
 
   static Vector indices() {
     return Vector{backend::indices(thes::type_tag<Backend>)};

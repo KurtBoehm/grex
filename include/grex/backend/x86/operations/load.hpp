@@ -38,7 +38,7 @@ namespace grex::backend {
 // AVX-512: Use intrinsics
 #define GREX_PARTLOAD_128_64(KIND) \
   if (size >= 1) { \
-    if (size >= 2) [[likely]] { \
+    if (size >= 2) [[unlikely]] { \
       return {.r = GREX_KINDCAST(i, KIND, 64, 128, \
                                  _mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr)))}; \
     } \
@@ -99,9 +99,8 @@ namespace grex::backend {
       load(ptr, thes::index_tag<GREX_HALF(SIZE)>), \
       load_part(ptr + GREX_HALF(SIZE), size - GREX_HALF(SIZE), thes::index_tag<GREX_HALF(SIZE)>)); \
   } \
-  return merge( \
-    load_part(ptr + GREX_HALF(SIZE), size - GREX_HALF(SIZE), thes::index_tag<GREX_HALF(SIZE)>), \
-    zero(thes::type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>));
+  return merge(load_part(ptr, size, thes::index_tag<GREX_HALF(SIZE)>), \
+               zero(thes::type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>));
 #define GREX_PARTLOAD_256(...) GREX_PARTLOAD_SPLIT(__VA_ARGS__, 256, _mm, 128)
 #define GREX_PARTLOAD_512(...) GREX_PARTLOAD_SPLIT(__VA_ARGS__, 512, _mm256, 256)
 

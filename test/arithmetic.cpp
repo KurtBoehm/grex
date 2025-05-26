@@ -57,6 +57,11 @@ int main() {
   fmt::print("{} | {} = {}\n", i1, i2, i1 | i2);
   fmt::print("{} ^ {} = {}\n", i1, i2, i1 ^ i2);
   fmt::print("{}.insert(1, 2) = {}\n", i1, i1.insert(1, 2));
+  fmt::print("load_part({}, 0) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 0));
+  fmt::print("load_part({}, 1) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 1));
+  fmt::print("load_part({}, 2) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 2));
+  fmt::print("load_part({}, 3) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 3));
+  fmt::print("load_part({}, 4) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 4));
 
   fmt::print("fmadd({}, {}, {}) = {}\n", f1, f2, f3, grex::fmadd(f1, f2, f3));
   fmt::print("fmsub({}, {}, {}) = {}\n", f1, f2, f3, grex::fmsub(f1, f2, f3));
