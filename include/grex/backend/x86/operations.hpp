@@ -17,6 +17,7 @@
 #include "operations/insert.hpp"
 #include "operations/load.hpp"
 #include "operations/mask-index.hpp"
+#include "operations/merge.hpp"
 #include "operations/minmax.hpp"
 #include "operations/set.hpp"
 #include "operations/shuffle.hpp"

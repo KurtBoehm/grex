@@ -16,15 +16,6 @@
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
-#define GREX_HALF_512 256
-#define GREX_HALF_256 128
-#define GREX_HALF_64 32
-#define GREX_HALF_32 16
-#define GREX_HALF_16 8
-#define GREX_HALF_8 4
-#define GREX_HALF_4 2
-#define GREX_HALF(SIZE) GREX_HALF_##SIZE
-
 // The lower half can always be extracted using a cast
 #define GREX_SPLIT_LOWER(KIND, BITS, BITPREFIX, REGISTERBITS) \
   GREX_CAT(BITPREFIX##_cast, GREX_REGISTER_SUFFIX(KIND, BITS, REGISTERBITS), _, \
