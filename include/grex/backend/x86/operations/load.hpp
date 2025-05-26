@@ -13,9 +13,11 @@
 #include "thesauros/types/value-tag.hpp"
 
 #include "grex/backend/x86/helpers.hpp"
-#include "grex/backend/x86/operations/insert.hpp"
-#include "grex/backend/x86/operations/merge.hpp"
-#include "grex/backend/x86/operations/set.hpp"
+#include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/operations/insert.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/mask-index.hpp"
+#include "grex/backend/x86/operations/merge.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
@@ -33,9 +35,23 @@ namespace grex::backend {
   }
 
 // Partial loading
-// 128 bit: Case distinctions to use appropriate instructions
-// 256 bit: Partially load one half only
 // AVX-512: Use intrinsics
+// 128 bit:
+// - Level 3, 32/64 bit: Use maskload
+// - Otherwise: Case distinctions to use appropriate instructions
+// 256 bit:
+// - Level 3, 32/64 bit: Use maskload
+// - Otherwise: Partially load one half only
+#define GREX_MASKLOAD_CAST_32 reinterpret_cast<const int*>(ptr)
+#define GREX_MASKLOAD_CAST_64 reinterpret_cast<const long long*>(ptr)
+#define GREX_PARTLOAD_MASKLOAD(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+  return { \
+    .r = BITPREFIX##_maskload_epi##BITS( \
+      GREX_MASKLOAD_CAST_##BITS, cutoff_mask(size, thes::type_tag<Mask<KIND##BITS, SIZE>>).r)};
+#if GREX_X86_64_LEVEL >= 3
+#define GREX_PARTLOAD_128_64(KIND) GREX_PARTLOAD_MASKLOAD(KIND, 64, 2, _mm, 128)
+#define GREX_PARTLOAD_128_32(KIND) GREX_PARTLOAD_MASKLOAD(KIND, 32, 4, _mm, 128)
+#else
 #define GREX_PARTLOAD_128_64(KIND) \
   if (size >= 1) { \
     if (size >= 2) [[unlikely]] { \
@@ -64,6 +80,7 @@ namespace grex::backend {
                                _mm_loadu_si32(reinterpret_cast<const __m128i*>(ptr)))}; \
   } \
   return {.r = GREX_KINDCAST(i, KIND, 32, 128, _mm_setzero_si128())};
+#endif
 #define GREX_PARTLOAD_128_16(KIND) \
   const std::size_t size2 = size / 2; \
   __m128i out = load_part(reinterpret_cast<const KIND##32 *>(ptr), size2, thes::index_tag<4>).r; \
@@ -85,8 +102,7 @@ namespace grex::backend {
     out = insert(Vector<KIND##8, 16>{out}, i, ptr[i]).r; \
   } \
   return {.r = out};
-#define GREX_PARTLOAD_128(KIND, BITS, SIZE) GREX_PARTLOAD_128_##BITS(KIND)
-// 256/512 bit: split
+// 256 bit: Split
 #define GREX_PARTLOAD_SPLIT(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX2, REGISTERBITS2) \
   if (size == 0) [[unlikely]] { \
     return zero(thes::type_tag<Vector<KIND##BITS, SIZE>>); \
@@ -101,8 +117,20 @@ namespace grex::backend {
   } \
   return merge(load_part(ptr, size, thes::index_tag<GREX_HALF(SIZE)>), \
                zero(thes::type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>));
+// AVX-512: Intrinsics
+#define GREX_PARTLOAD_AVX512(KIND, BITS, SIZE, BITPREFIX) \
+  return {.r = GREX_CAT(BITPREFIX##_maskz_loadu_, GREX_EPI_SUFFIX(KIND, BITS))( \
+            cutoff_mask(size, thes::type_tag<Mask<KIND##BITS, SIZE>>).r, ptr)};
+// Case distinction based on register size
+#if GREX_X86_64_LEVEL >= 4
+#define GREX_PARTLOAD_128(KIND, BITS, SIZE) GREX_PARTLOAD_AVX512(KIND, BITS, SIZE, _mm)
+#define GREX_PARTLOAD_256(KIND, BITS, SIZE) GREX_PARTLOAD_AVX512(KIND, BITS, SIZE, _mm256)
+#define GREX_PARTLOAD_512(KIND, BITS, SIZE) GREX_PARTLOAD_AVX512(KIND, BITS, SIZE, _mm512)
+#else
+#define GREX_PARTLOAD_128(KIND, BITS, SIZE) GREX_PARTLOAD_128_##BITS(KIND)
 #define GREX_PARTLOAD_256(...) GREX_PARTLOAD_SPLIT(__VA_ARGS__, 256, _mm, 128)
 #define GREX_PARTLOAD_512(...) GREX_PARTLOAD_SPLIT(__VA_ARGS__, 512, _mm256, 256)
+#endif
 
 #define GREX_PARTLOAD(KIND, BITS, SIZE, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> load_part(const KIND##BITS* ptr, std::size_t size, \
