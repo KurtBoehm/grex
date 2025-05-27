@@ -40,8 +40,10 @@ namespace grex::backend {
 // - Level 3, 32/64 bit: Use maskload
 // - Otherwise: Case distinctions to use appropriate instructions
 // 256 bit:
-// - Level 3, 32/64 bit: Use maskload
+// - 32/64 bit: Use maskload
 // - Otherwise: Partially load one half only
+
+// 256 bit, 32/64 bit: maskload with casts
 #define GREX_MASKLOAD_CAST_32 reinterpret_cast<const int*>(ptr)
 #define GREX_MASKLOAD_CAST_64 reinterpret_cast<const long long*>(ptr)
 #define GREX_PARTLOAD_MASKLOAD(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
@@ -53,7 +55,7 @@ namespace grex::backend {
 #define GREX_PARTLOAD_128_32(KIND) GREX_PARTLOAD_MASKLOAD(KIND, 32, 4, _mm, 128)
 #else
 #define GREX_PARTLOAD_128_64(KIND) \
-  if (size >= 1) { \
+  if (size >= 1) [[likely]] { \
     if (size >= 2) [[unlikely]] { \
       return {.r = GREX_KINDCAST(i, KIND, 64, 128, \
                                  _mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr)))}; \
@@ -84,9 +86,9 @@ namespace grex::backend {
 #define GREX_PARTLOAD_128_16(KIND) \
   const std::size_t size2 = size / 2; \
   __m128i out = load_part(reinterpret_cast<const KIND##32 *>(ptr), size2, thes::index_tag<4>).r; \
-  if (size & 1U) { \
+  if ((size & 1U) != 0) { \
     switch (size2) { \
-    case 0: out = _mm_loadu_si32(reinterpret_cast<const __m128i*>(ptr)); break; \
+    case 0: out = _mm_loadu_si16(ptr); break; \
     case 1: out = _mm_insert_epi16(out, ptr[2], 2); break; \
     case 2: out = _mm_insert_epi16(out, ptr[4], 4); break; \
     case 3: out = _mm_insert_epi16(out, ptr[6], 6); break; \
@@ -97,7 +99,7 @@ namespace grex::backend {
 #define GREX_PARTLOAD_128_8(KIND) \
   const std::size_t size2 = size / 2; \
   __m128i out = load_part(reinterpret_cast<const KIND##16 *>(ptr), size2, thes::index_tag<8>).r; \
-  if (size & 1U) { \
+  if ((size & 1U) != 0) { \
     const std::size_t i = size - 1; \
     out = insert(Vector<KIND##8, 16>{out}, i, ptr[i]).r; \
   } \
