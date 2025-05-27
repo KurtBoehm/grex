@@ -3,7 +3,7 @@ opts = options_sub.get_variable('all_opts')
 args = options_sub.get_variable('all_args')
 
 foreach name, deps : {
-  'arithmetic': []
+  'basic': []
 }
   space_name = name.replace('-', ' ')
   test(

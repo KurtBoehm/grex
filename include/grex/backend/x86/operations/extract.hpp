@@ -10,6 +10,7 @@
 #include <array> // IWYU pragma: keep
 #include <cstddef>
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/store.hpp" // IWYU pragma: keep
@@ -25,8 +26,8 @@ namespace grex::backend {
   const auto x = CALL; \
   return CONVERT;
 #define GREX_MASKZ_CMPR(KIND, BITS, SIZE, BITPREFIX) \
-  GREX_CAT(BITPREFIX##_maskz_compress_, \
-           GREX_EPI_SUFFIX(KIND, BITS))(GREX_SIZEMMASK(SIZE)(u64{1} << i), v.r)
+  GREX_CAT(BITPREFIX##_maskz_compress_, GREX_EPI_SUFFIX(KIND, BITS)) \
+  (GREX_SIZEMMASK(SIZE)(u64{1} << i), v.r)
 
 // Define for floating-point types
 #if GREX_X86_64_LEVEL >= 4
@@ -97,6 +98,21 @@ namespace grex::backend {
 // Instantiate for each vector/mask type
 GREX_FOREACH_X86_64_LEVEL(GREX_EXTRACT_VEC_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_EXTRACT_MASK_ALL)
+
+template<typename THalf>
+inline THalf::Value extract(SuperVector<THalf> v, std::size_t i) {
+  if (i < THalf::size) {
+    return extract(v.lower, i);
+  }
+  return extract(v.upper, i - THalf::size);
+}
+template<typename THalf>
+inline bool extract(SuperMask<THalf> m, std::size_t i) {
+  if (i < THalf::size) {
+    return extract(m.lower, i);
+  }
+  return extract(m.upper, i - THalf::size);
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_EXTRACT_HPP

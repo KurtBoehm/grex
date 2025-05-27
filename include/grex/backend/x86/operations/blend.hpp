@@ -10,6 +10,7 @@
 #include <boost/preprocessor.hpp>
 #include <immintrin.h>
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp"
@@ -19,8 +20,8 @@ namespace grex::backend {
 #define GREX_BLEND_SIOP(KIND, BITS, BITPREFIX, REGISTERBITS, NAME) \
   GREX_CAT(BITPREFIX##_##NAME##_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))
 #define GREX_BLEND_MBINOP(KIND, BITS, BITPREFIX, REGISTERBITS, NAME, MASK, VEC) \
-  GREX_BLEND_SIOP(KIND, BITS, BITPREFIX, REGISTERBITS, \
-                  NAME)(GREX_BROADMASK_CONVERT(KIND, BITS, REGISTERBITS, MASK), VEC)
+  GREX_BLEND_SIOP(KIND, BITS, BITPREFIX, REGISTERBITS, NAME) \
+  (GREX_BROADMASK_CONVERT(KIND, BITS, REGISTERBITS, MASK), VEC)
 
 #define GREX_BLENDZ_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> blend_zero(Mask<KIND##BITS, SIZE> m, \
@@ -68,9 +69,18 @@ namespace grex::backend {
 
 #define GREX_BLEND_ALL(REGISTERBITS, BITPREFIX, MACRO) \
   GREX_FOREACH_TYPE(MACRO, REGISTERBITS, BITPREFIX, REGISTERBITS)
-
 GREX_FOREACH_X86_64_LEVEL(GREX_BLEND_ALL, GREX_BLENDZ)
 GREX_FOREACH_X86_64_LEVEL(GREX_BLEND_ALL, GREX_BLEND)
+
+template<typename TVecHalf, typename TMaskHalf>
+inline SuperVector<TVecHalf> blend_zero(SuperMask<TMaskHalf> m, SuperVector<TVecHalf> v1) {
+  return {.lower = blend_zero(m.lower, v1.lower), .upper = blend_zero(m.upper, v1.upper)};
+}
+template<typename TVecHalf, typename TMaskHalf>
+inline SuperVector<TVecHalf> blend(SuperMask<TMaskHalf> m, SuperVector<TVecHalf> v0,
+                                   SuperVector<TVecHalf> v1) {
+  return {.lower = blend(m.lower, v0.lower, v1.lower), .upper = blend(m.upper, v0.upper, v1.upper)};
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_HPP

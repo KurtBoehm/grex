@@ -7,10 +7,14 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_SET_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SET_HPP
 
+#include <array>
+#include <bit>
+#include <cstddef>
 #include <immintrin.h>
 
 #include "thesauros/types.hpp"
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp"
@@ -46,29 +50,42 @@ namespace grex::backend {
   BOOST_PP_IF(IDX, (TYPE(v##IDX) << IDX##U), TYPE(v##IDX))
 #define GREX_CMASK_SET(SIZE, TYPE) BOOST_PP_REPEAT(SIZE, GREX_CMASK_SET_OP, TYPE)
 
+#define GREX_ONEMASK_2 0x3
+#define GREX_ONEMASK_4 0xF
+#define GREX_ONEMASK_8 0xFF
+#define GREX_ONEMASK_16 0xFFFF
+#define GREX_ONEMASK_32 0xFFFFFFFF
+#define GREX_ONEMASK_64 0xFFFFFFFFFFFFFFFF
+
 // Define mask operations, which can be applied to compressed or broad masks
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Mask<KIND##BITS, SIZE> zero(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline Mask<KIND##BITS, SIZE> zeros(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_SIZEMMASK(SIZE){0}}; \
+  } \
+  inline Mask<KIND##BITS, SIZE> ones(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
+    return {.r = GREX_SIZEMMASK(SIZE)(GREX_ONEMASK_##SIZE)}; \
   } \
   inline Mask<KIND##BITS, SIZE> broadcast(bool value, thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_SIZEMMASK(SIZE)(-GREX_CAT(i, GREX_MMASKSIZE(SIZE))(value))}; \
   } \
-  inline Mask<KIND##BITS, SIZE> set(BOOST_PP_REPEAT(SIZE, GREX_SET_ARG, bool), \
-                                    thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline Mask<KIND##BITS, SIZE> set(thes::TypeTag<Mask<KIND##BITS, SIZE>>, \
+                                    BOOST_PP_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
     return {.r = GREX_SIZEMMASK(SIZE)(GREX_CMASK_SET(SIZE, GREX_CAT(u, GREX_MMASKSIZE(SIZE))))}; \
   }
 #else
 #define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Mask<KIND##BITS, SIZE> zero(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline Mask<KIND##BITS, SIZE> zeros(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = BITPREFIX##_setzero_si##REGISTERBITS()}; \
+  } \
+  inline Mask<KIND##BITS, SIZE> ones(thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
+    return {.r = BITPREFIX##_set1_epi32(-1)}; \
   } \
   inline Mask<KIND##BITS, SIZE> broadcast(bool value, thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_EPI(BITS, REGISTERBITS))(-i##BITS(value))}; \
   } \
-  inline Mask<KIND##BITS, SIZE> set(BOOST_PP_REPEAT(SIZE, GREX_SET_ARG, bool), \
-                                    thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline Mask<KIND##BITS, SIZE> set(thes::TypeTag<Mask<KIND##BITS, SIZE>>, \
+                                    BOOST_PP_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
     return {.r = GREX_CAT(BITPREFIX##_set_, GREX_SET_EPI(BITS, REGISTERBITS))( \
               BOOST_PP_REPEAT(SIZE, GREX_SET_NEGVAL, (BITS, SIZE)))}; \
   }
@@ -76,29 +93,89 @@ namespace grex::backend {
 
 // Define vector operations
 #define GREX_SET_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> zero(thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline Vector<KIND##BITS, SIZE> zeros(thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))()}; \
   } \
   inline Vector<KIND##BITS, SIZE> broadcast(KIND##BITS value, \
                                             thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))(value)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> set(BOOST_PP_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS), \
-                                      thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline Vector<KIND##BITS, SIZE> set(thes::TypeTag<Vector<KIND##BITS, SIZE>>, \
+                                      BOOST_PP_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
     return {.r = GREX_CAT(BITPREFIX##_set_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))( \
               BOOST_PP_REPEAT(SIZE, GREX_SET_VAL, SIZE))}; \
   } \
   inline Vector<KIND##BITS, SIZE> indices(thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
-    return set(BOOST_PP_REPEAT(SIZE, GREX_SET_IDX, BOOST_PP_EMPTY()), \
-               thes::type_tag<Vector<KIND##BITS, SIZE>>); \
+    return set(thes::type_tag<Vector<KIND##BITS, SIZE>>, \
+               BOOST_PP_REPEAT(SIZE, GREX_SET_IDX, BOOST_PP_EMPTY())); \
   }
 
 // Define all set operations
 #define GREX_SET(...) GREX_SET_VEC(__VA_ARGS__) GREX_SET_MASK(__VA_ARGS__)
 #define GREX_SET_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_SET, REGISTERBITS, BITPREFIX, REGISTERBITS)
-
 GREX_FOREACH_X86_64_LEVEL(GREX_SET_ALL)
+
+template<typename THalf>
+inline SuperVector<THalf> zeros(thes::TypeTag<SuperVector<THalf>> /*tag*/) {
+  const auto half = zeros(thes::type_tag<THalf>);
+  return {.lower = half, .upper = half};
+}
+template<typename THalf>
+inline SuperVector<THalf> broadcast(typename THalf::Value value,
+                                    thes::TypeTag<SuperVector<THalf>> /*tag*/) {
+  const auto half = broadcast(value, thes::type_tag<THalf>);
+  return {.lower = half, .upper = half};
+}
+template<typename THalf, typename... Ts>
+requires(sizeof...(Ts) == 2 * THalf::size)
+inline SuperVector<THalf> set(thes::TypeTag<SuperVector<THalf>> /*tag*/, Ts... values) {
+  constexpr std::size_t size = sizeof...(Ts);
+  std::array buf{values...};
+  auto apply = thes::star::apply([](auto... v) { return set(thes::type_tag<THalf>, v...); });
+  return {
+    .lower = thes::star::sub<0, size / 2>(buf) | apply,
+    .upper = thes::star::sub<size / 2, size>(buf) | apply,
+  };
+}
+template<typename THalf>
+inline SuperVector<THalf> indices(thes::TypeTag<SuperVector<THalf>> /*tag*/) {
+  using Vec = SuperVector<THalf>;
+  using Value = Vec::Value;
+  constexpr std::size_t size = Vec::size;
+  auto apply = thes::star::apply([](auto... v) { return set(thes::type_tag<THalf>, Value(v)...); });
+  return {
+    .lower = thes::star::iota<0, size / 2> | apply,
+    .upper = thes::star::iota<size / 2, size> | apply,
+  };
+}
+
+template<typename THalf>
+inline SuperMask<THalf> zeros(thes::TypeTag<SuperMask<THalf>> /*tag*/) {
+  const auto half = zeros(thes::type_tag<THalf>);
+  return {.lower = half, .upper = half};
+}
+template<typename THalf>
+inline SuperMask<THalf> ones(thes::TypeTag<SuperMask<THalf>> /*tag*/) {
+  const auto half = ones(thes::type_tag<THalf>);
+  return {.lower = half, .upper = half};
+}
+template<typename THalf>
+inline SuperMask<THalf> broadcast(bool value, thes::TypeTag<SuperMask<THalf>> /*tag*/) {
+  const auto half = broadcast(value, thes::type_tag<THalf>);
+  return {.lower = half, .upper = half};
+}
+template<typename THalf, typename... Ts>
+requires(std::has_single_bit(sizeof...(Ts)))
+inline SuperMask<THalf> set(thes::TypeTag<SuperMask<THalf>> /*tag*/, Ts... values) {
+  constexpr std::size_t size = sizeof...(Ts);
+  std::array buf{values...};
+  auto apply = thes::star::apply([](auto... v) { return set(thes::type_tag<THalf>, v...); });
+  return {
+    .lower = thes::star::sub<0, size / 2>(buf) | apply,
+    .upper = thes::star::sub<size / 2, size>(buf) | apply,
+  };
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SET_HPP

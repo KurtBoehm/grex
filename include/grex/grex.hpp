@@ -4,6 +4,7 @@
 // IWYU pragma: begin_exports
 #include "backend.hpp"
 #include "base.hpp"
+#include "glue.hpp"
 #include "types.hpp"
 // IWYU pragma: end_exports
 

@@ -9,6 +9,7 @@
 
 #include <immintrin.h>
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp"
@@ -98,8 +99,9 @@ namespace grex::backend {
 #define GREX_ABS_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_FP_TYPE(GREX_ABS_BASE, REGISTERBITS, BITPREFIX, REGISTERBITS) \
   GREX_FOREACH_SINT_TYPE(GREX_ABS_BASE, REGISTERBITS, BITPREFIX, REGISTERBITS)
-
 GREX_FOREACH_X86_64_LEVEL(GREX_ABS_ALL)
+
+GREX_SUPERVECTOR_UNARY(abs)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_ABS_HPP

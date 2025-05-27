@@ -7,6 +7,7 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_AND_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_AND_HPP
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp"
@@ -38,8 +39,14 @@ namespace grex::backend {
   }
 #define GREX_HAND_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_HAND, REGISTERBITS, BITPREFIX, REGISTERBITS)
-
 GREX_FOREACH_X86_64_LEVEL(GREX_HAND_ALL)
+
+template<typename THalf>
+inline bool horizontal_and(SuperMask<THalf> m) {
+  const bool lower = horizontal_and(m.lower);
+  const bool upper = horizontal_and(m.upper);
+  return lower && upper;
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_AND_HPP

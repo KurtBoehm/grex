@@ -9,6 +9,7 @@
 
 #include "thesauros/types/type-tag.hpp" // IWYU pragma: keep
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/abs.hpp" // IWYU pragma: keep
@@ -54,8 +55,12 @@ namespace grex::backend {
 
 #define GREX_ISFIN_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_FP_TYPE(GREX_ISFIN, REGISTERBITS, REGISTERBITS)
-
 GREX_FOREACH_X86_64_LEVEL(GREX_ISFIN_ALL)
+
+template<typename THalf>
+inline auto is_finite(SuperVector<THalf> v) {
+  return SuperMask{.lower = is_finite(v.lower), .upper = is_finite(v.upper)};
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CLASSIFICATION_HPP

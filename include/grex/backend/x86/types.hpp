@@ -20,6 +20,7 @@ namespace grex::backend {
 #define GREX_TYPES_MASK_BROAD(KIND, SIZE, REGISTERBITS) \
   template<> \
   struct Mask<KIND, SIZE> { \
+    static constexpr std::size_t size = SIZE; \
     static constexpr std::size_t rbits = REGISTERBITS; \
     __m##REGISTERBITS##i r; \
   }; \
@@ -42,6 +43,8 @@ namespace grex::backend {
 #define GREX_TYPES_IMPL(KIND, BITS, SIZE, REGISTERBITS) \
   template<> \
   struct Vector<KIND##BITS, SIZE> { \
+    using Value = KIND##BITS; \
+    static constexpr std::size_t size = SIZE; \
     GREX_REGISTER(KIND, BITS, REGISTERBITS) r; \
   }; \
   using KIND##BITS##x##SIZE = Vector<KIND##BITS, SIZE>; \

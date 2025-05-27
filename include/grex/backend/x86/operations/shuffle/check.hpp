@@ -382,7 +382,6 @@ public:
     return rot;
   }
 };
-
-}
+} // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHUFFLE_CHECK_HPP

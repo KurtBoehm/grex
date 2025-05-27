@@ -15,6 +15,7 @@
 #include "thesauros/types/type-tag.hpp"
 #include "thesauros/types/value-tag.hpp" // IWYU pragma: keep
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/mask-index.hpp"
@@ -186,6 +187,20 @@ GREX_FOREACH_X86_64_LEVEL(GREX_STORE_ALL)
 #define GREX_PARTSTORE_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_PARTSTORE, REGISTERBITS, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_PARTSTORE_ALL)
+
+template<typename THalf>
+inline void store(typename THalf::Value* dst, SuperVector<THalf> src) {
+  store(dst, src.lower);
+  store(dst + THalf::size, src.upper);
+}
+template<typename THalf>
+inline void store_part(typename THalf::Value* dst, SuperVector<THalf> src, std::size_t size) {
+  if (size <= THalf::size) {
+    store_part(dst, src.lower, size);
+  }
+  store(dst, src.lower);
+  store_part(dst + THalf::size, src.upper, size - THalf::size);
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_STORE_HPP

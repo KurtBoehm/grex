@@ -11,6 +11,7 @@
 
 #include "thesauros/types/value-tag.hpp"
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/operations/minmax.hpp"
 #include "grex/backend/x86/operations/split.hpp"
@@ -113,8 +114,16 @@ namespace grex::backend {
 #define GREX_HMINMAX_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_HMINMAX, REGISTERBITS, min) \
   GREX_FOREACH_TYPE(GREX_HMINMAX, REGISTERBITS, max)
-
 GREX_FOREACH_X86_64_LEVEL(GREX_HMINMAX_ALL)
+
+template<typename THalf>
+inline THalf::Value horizontal_min(SuperVector<THalf> v) {
+  return horizontal_min(min(v.lower, v.upper));
+}
+template<typename THalf>
+inline THalf::Value horizontal_max(SuperVector<THalf> v) {
+  return horizontal_max(max(v.lower, v.upper));
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_MINMAX_HPP

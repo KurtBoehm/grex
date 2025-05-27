@@ -7,6 +7,7 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_MASK_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_MASK_HPP
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/arithmetic.hpp" // IWYU pragma: keep
@@ -81,6 +82,20 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_MASKADDSUB_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_MASKMUL_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_MASKDIV_ALL)
+
+#define GREX_MASKARITH_SUPER(NAME) \
+  template<typename TVecHalf, typename TMaskHalf> \
+  inline SuperVector<TVecHalf> NAME(SuperMask<TMaskHalf> m, SuperVector<TVecHalf> a, \
+                                    SuperVector<TVecHalf> b) { \
+    return { \
+      .lower = NAME(m.lower, a.lower, b.lower), \
+      .upper = NAME(m.upper, a.upper, b.upper), \
+    }; \
+  }
+GREX_MASKARITH_SUPER(mask_add)
+GREX_MASKARITH_SUPER(mask_subtract)
+GREX_MASKARITH_SUPER(mask_multiply)
+GREX_MASKARITH_SUPER(mask_divide)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_MASK_HPP

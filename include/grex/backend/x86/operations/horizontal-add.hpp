@@ -11,6 +11,7 @@
 
 #include "thesauros/types/value-tag.hpp"
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/operations/arithmetic.hpp"
 #include "grex/backend/x86/operations/split.hpp"
@@ -100,6 +101,11 @@ namespace grex::backend {
 #define GREX_HADD_ALL(REGISTERBITS, BITPREFIX) GREX_FOREACH_TYPE(GREX_HADD, REGISTERBITS)
 
 GREX_FOREACH_X86_64_LEVEL(GREX_HADD_ALL)
+
+template<typename THalf>
+inline THalf::Value horizontal_add(SuperVector<THalf> v) {
+  return horizontal_add(add(v.lower, v.upper));
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_ADD_HPP

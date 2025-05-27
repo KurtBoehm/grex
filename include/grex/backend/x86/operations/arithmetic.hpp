@@ -9,6 +9,7 @@
 
 #include <immintrin.h>
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/blend.hpp" // IWYU pragma: keep
@@ -124,10 +125,16 @@ namespace grex::backend {
 #define GREX_DIV_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_FP_TYPE(GREX_ARITH_BASE, REGISTERBITS, divide, BITPREFIX##_div)
 
-GREX_FOREACH_X86_64_LEVEL(GREX_ADDSUB_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_NEGATE_ALL)
+GREX_FOREACH_X86_64_LEVEL(GREX_ADDSUB_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_MUL_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_DIV_ALL)
+
+GREX_SUPERVECTOR_UNARY(negate)
+GREX_SUPERVECTOR_BINARY(add)
+GREX_SUPERVECTOR_BINARY(subtract)
+GREX_SUPERVECTOR_BINARY(multiply)
+GREX_SUPERVECTOR_BINARY(divide)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_HPP

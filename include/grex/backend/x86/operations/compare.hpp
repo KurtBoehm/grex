@@ -12,6 +12,7 @@
 
 #include "thesauros/types/type-tag.hpp" // IWYU pragma: keep
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/bitwise.hpp" // IWYU pragma: keep
@@ -95,7 +96,7 @@ namespace grex::backend {
 // u8/u16 on level 1: saturated difference different from zero
 #define GREX_CMPLT_SUBS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return compare_neq({.r = GREX_CAT(BITPREFIX##_subs_, GREX_EPU_SUFFIX(KIND, BITS))(b.r, a.r)}, \
-                     zero(thes::type_tag<Vector<KIND##BITS, SIZE>>));
+                     zeros(thes::type_tag<Vector<KIND##BITS, SIZE>>));
 // i64/u64 on level 1: Two 32 bit comparisons
 #define GREX_CMPLT_U32X2_u (u64{1} << u64{31}) | (u64{1} << u64{63})
 #define GREX_CMPLT_U32X2_i u64{1} << u64{31}
@@ -157,7 +158,7 @@ namespace grex::backend {
 // u8/u16 on level 1: saturated difference is from zero
 #define GREX_CMPGE_SUBS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return compare_eq({.r = GREX_CAT(BITPREFIX##_subs_, GREX_EPU_SUFFIX(KIND, BITS))(b.r, a.r)}, \
-                    zero(thes::type_tag<Vector<KIND##BITS, SIZE>>));
+                    zeros(thes::type_tag<Vector<KIND##BITS, SIZE>>));
 // f
 #define GREX_CMPGE_f(BITS, SIZE, ...) GREX_CMPGE_INTRINSIC(f, BITS, __VA_ARGS__)
 // i
@@ -212,11 +213,20 @@ namespace grex::backend {
 
 #define GREX_CMP_ALL(REGISTERBITS, BITPREFIX, OPNAME, CMPNAME, CMPIDX) \
   GREX_FOREACH_TYPE(GREX_CMP, REGISTERBITS, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX)
-
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, eq, cmpeq, 0)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, neq, cmpneq, 4)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, lt, cmplt, 1)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, ge, cmpge, 5)
+
+#define GREX_CMP_SUPER(NAME) \
+  template<typename THalf> \
+  inline auto NAME(SuperVector<THalf> a, SuperVector<THalf> b) { \
+    return SuperMask{.lower = NAME(a.lower, b.lower), .upper = NAME(a.upper, b.upper)}; \
+  }
+GREX_CMP_SUPER(compare_eq)
+GREX_CMP_SUPER(compare_neq)
+GREX_CMP_SUPER(compare_lt)
+GREX_CMP_SUPER(compare_ge)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP

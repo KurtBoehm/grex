@@ -9,6 +9,7 @@
 
 #include <immintrin.h>
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/arithmetic.hpp" // IWYU pragma: keep
@@ -39,6 +40,11 @@ GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fmadd)
 GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fmsub)
 GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fnmadd)
 GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fnmsub)
+
+GREX_SUPERVECTOR_TERNARY(fmadd)
+GREX_SUPERVECTOR_TERNARY(fmsub)
+GREX_SUPERVECTOR_TERNARY(fnmadd)
+GREX_SUPERVECTOR_TERNARY(fnmsub)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_FMADD_FAMILY_HPP

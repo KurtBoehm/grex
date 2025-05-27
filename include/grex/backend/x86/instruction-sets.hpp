@@ -40,9 +40,9 @@ namespace grex::backend {
 #if GREX_X86_64_LEVEL >= 4
 inline constexpr std::array<std::size_t, 3> register_bits{128, 256, 512};
 #elif GREX_X86_64_LEVEL >= 3
-inline constexpr std::array<std::size_t, 3> register_bits{128, 256};
+inline constexpr std::array<std::size_t, 2> register_bits{128, 256};
 #else
-inline constexpr std::array<std::size_t, 3> register_bits{128};
+inline constexpr std::array<std::size_t, 1> register_bits{128};
 #endif
 template<Vectorizable T>
 inline constexpr std::array native_sizes =

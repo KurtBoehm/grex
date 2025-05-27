@@ -8,16 +8,12 @@
 #include <limits>
 
 #include "thesauros/format.hpp"
-#include "thesauros/types.hpp"
 
 #include "grex/grex.hpp"
-
-#define CONDITION (GREX_X86_64_LEVEL >= 3)
 
 int main() {
   using namespace grex::literals;
 
-#if CONDITION
   using IVec = grex::Vector<grex::i64, 4>;
   using IMask = grex::Mask<grex::i64, 4>;
   const IVec i1{4, 3, 2, -1};
@@ -30,21 +26,12 @@ int main() {
   const grex::Vector<grex::f64, 4> f3{1.0, -1.0, 1.0, -1.0};
   const grex::Vector<grex::f64, 4> f4{1.0, std::numeric_limits<grex::f64>::infinity(),
                                       std::numeric_limits<grex::f64>::quiet_NaN(), -1.0};
-  const grex::Mask<grex::f64, 4> fm1{true, true, false, true};
+  const grex::Vector<grex::f64, 4> f5{1.5};
+  const grex::Vector<grex::f64, 4> f6{};
+  const auto fm1 = grex::Mask<grex::f64, 4>::ones().insert(2, false);
   const grex::Mask<grex::f64, 4> fm2{true, false, false, true};
-#else
-  using IVec = grex::Vector<grex::i64, 2>;
-  using IMask = grex::Mask<grex::i64, 2>;
-  IVec i1{4, 3};
-  IVec i2{-2, 3};
-  IMask m1{true, true};
-  IMask m2{true, false};
-  grex::Vector<grex::f64, 2> f1{4.0, 3.0};
-  grex::Vector<grex::f64, 2> f2{-2.0, 3.0};
-  grex::Vector<grex::f64, 2> f3{1.0, -1.0};
-  grex::Vector<grex::f64, 2> f4{1.0, std::numeric_limits<grex::f64>::infinity()};
-  grex::Mask<grex::f64, 2> fm1{true, false};
-#endif
+  const grex::Mask<grex::f64, 4> fm3{true};
+  const grex::Mask<grex::f64, 4> fm4{};
 
   fmt::print("indices: {} {}\n", IVec::indices(), IVec::indices(5));
   fmt::print("-{} = {}, -{} = {}\n", i1, -i1, f1, -f1);
@@ -62,6 +49,9 @@ int main() {
   fmt::print("load_part({}, 2) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 2));
   fmt::print("load_part({}, 3) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 3));
   fmt::print("load_part({}, 4) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 4));
+  std::array<grex::i64, 4> ibuf{};
+  i2.store(ibuf.data());
+  fmt::print("store({}) = {}", i2, ibuf);
   std::array<grex::f64, 4> buf{};
   f1.store_part(buf.data(), 0);
   fmt::print("store_part({}, 0) = {}\n", f1, buf);
@@ -111,9 +101,4 @@ int main() {
   fmt::print("horizontal_and({}) = {}\n", m1, grex::horizontal_and(m1));
   fmt::print("horizontal_and({}) = {}\n", m1 || !m2, grex::horizontal_and(m1 || !m2));
   fmt::print("is_finite({}) = {}\n", f4, grex::is_finite(f4));
-
-#if !CONDITION
-  fmt::print("shuffle({}, [1, 0]) = {}", i1,
-             grex::shuffle(i1, thes::auto_tag<std::array{1_sh, 0_sh}>));
-#endif
 }

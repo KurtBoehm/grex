@@ -106,7 +106,8 @@
 
 #define GREX_KINDCAST_IMPL(FROMKIND, TOKIND, BITS, REGISTERBITS, X) \
   GREX_CAT(GREX_BITPREFIX(REGISTERBITS), _cast, GREX_SI_SUFFIX(FROMKIND, BITS, REGISTERBITS), _, \
-           GREX_SI_SUFFIX(TOKIND, BITS, REGISTERBITS))(X)
+           GREX_SI_SUFFIX(TOKIND, BITS, REGISTERBITS)) \
+  (X)
 #define GREX_KINDCAST_DUMMY(FROMKIND, TOKIND, BITS, REGISTERBITS, X) X
 #define GREX_KINDCAST_ff GREX_KINDCAST_DUMMY
 #define GREX_KINDCAST_fi GREX_KINDCAST_IMPL
@@ -163,6 +164,29 @@
 #define GREX_FOREACH_TYPE(MACRO, REGISTERBITS, ...) \
   GREX_FOREACH_FP_TYPE(MACRO, REGISTERBITS __VA_OPT__(, ) __VA_ARGS__) \
   GREX_FOREACH_INT_TYPE(MACRO, REGISTERBITS __VA_OPT__(, ) __VA_ARGS__)
+
+#define GREX_SUPER_UNARY(TYPE, NAME) \
+  template<typename THalf> \
+  inline TYPE<THalf> NAME(TYPE<THalf> v) { \
+    return {.lower = NAME(v.lower), .upper = NAME(v.upper)}; \
+  }
+#define GREX_SUPER_BINARY(TYPE, NAME) \
+  template<typename THalf> \
+  inline TYPE<THalf> NAME(TYPE<THalf> a, TYPE<THalf> b) { \
+    return {.lower = NAME(a.lower, b.lower), .upper = NAME(a.upper, b.upper)}; \
+  }
+#define GREX_SUPER_TERNARY(TYPE, NAME) \
+  template<typename THalf> \
+  inline TYPE<THalf> NAME(TYPE<THalf> a, TYPE<THalf> b, TYPE<THalf> c) { \
+    return {.lower = NAME(a.lower, b.lower, c.lower), .upper = NAME(a.upper, b.upper, c.upper)}; \
+  }
+
+#define GREX_SUPERVECTOR_UNARY(NAME) GREX_SUPER_UNARY(SuperVector, NAME)
+#define GREX_SUPERVECTOR_BINARY(NAME) GREX_SUPER_BINARY(SuperVector, NAME)
+#define GREX_SUPERVECTOR_TERNARY(NAME) GREX_SUPER_TERNARY(SuperVector, NAME)
+#define GREX_SUPERMASK_UNARY(NAME) GREX_SUPER_UNARY(SuperMask, NAME)
+#define GREX_SUPERMASK_BINARY(NAME) GREX_SUPER_BINARY(SuperMask, NAME)
+#define GREX_SUPERMASK_TERNARY(NAME) GREX_SUPER_TERNARY(SuperMask, NAME)
 
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_FOREACH_X86_64_LEVEL(MACRO, ...) \

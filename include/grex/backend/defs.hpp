@@ -14,8 +14,41 @@
 namespace grex::backend {
 template<Vectorizable T, std::size_t tSize>
 struct Vector;
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+struct SubVector {
+  using Value = T;
+  static constexpr std::size_t size = tPart;
+
+  Vector<T, tSize> full;
+};
+template<typename THalf>
+struct SuperVector {
+  using Value = THalf::Value;
+  static constexpr std::size_t size = 2 * THalf::size;
+
+  THalf lower;
+  THalf upper;
+};
+template<Vectorizable T, std::size_t tSize>
+using VectorPair = SuperVector<Vector<T, tSize>>;
+
 template<Vectorizable T, std::size_t tSize>
 struct Mask;
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+struct SubMask {
+  static constexpr std::size_t size = tPart;
+
+  Mask<T, tSize> full;
+};
+template<typename THalf>
+struct SuperMask {
+  static constexpr std::size_t size = 2 * THalf::size;
+
+  THalf lower;
+  THalf upper;
+};
+template<Vectorizable T, std::size_t tSize>
+using MaskPair = SuperMask<Mask<T, tSize>>;
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_DEFS_HPP

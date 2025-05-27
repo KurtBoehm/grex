@@ -16,21 +16,25 @@
 
 #include "grex/backend.hpp"
 #include "grex/base.hpp"
+#include "grex/glue.hpp"
 
 namespace grex {
 template<Vectorizable T, std::size_t tSize>
 struct Mask {
-  using Backend = backend::Mask<T, tSize>;
+  using Backend = glue::Mask<T, tSize>;
   static constexpr std::size_t size = tSize;
   static constexpr thes::star::PrintableMarker printable{};
 
-  Mask() : mask_{backend::zero(thes::type_tag<Backend>)} {}
-  explicit Mask(T value) : mask_{backend::broadcast(value, thes::type_tag<Backend>)} {}
+  Mask() : mask_{backend::zeros(thes::type_tag<Backend>)} {}
+  explicit Mask(bool value) : mask_{backend::broadcast(value, thes::type_tag<Backend>)} {}
   template<typename... Ts>
   requires(((sizeof...(Ts) == tSize) && ... && std::same_as<Ts, bool>))
-  explicit Mask(Ts... values) : mask_{backend::set(T(values)..., thes::type_tag<Backend>)} {}
+  explicit Mask(Ts... values) : mask_{backend::set(thes::type_tag<Backend>, bool(values)...)} {}
   explicit Mask(Backend v) : mask_(v) {}
 
+  static Mask ones() {
+    return Mask{backend::ones(thes::type_tag<Backend>)};
+  }
   static Mask cutoff_mask(std::size_t i) {
     return Mask{backend::cutoff_mask(i, thes::type_tag<Backend>)};
   }
@@ -58,6 +62,9 @@ struct Mask {
   bool get(thes::AnyIndexTag auto i) const {
     return backend::extract(mask_, i);
   }
+  Mask insert(std::size_t i, bool value) const {
+    return Mask{backend::insert(mask_, i, value)};
+  }
 
   Backend backend() const {
     return mask_;
@@ -71,25 +78,25 @@ template<Vectorizable T, std::size_t tSize>
 struct Vector {
   using Value = T;
   using Mask = grex::Mask<T, tSize>;
-  using Backend = backend::Vector<T, tSize>;
+  using Backend = glue::Vector<T, tSize>;
   static constexpr std::size_t size = tSize;
   static constexpr thes::star::PrintableMarker printable{};
 
-  Vector() : vec_{backend::zero(thes::type_tag<Backend>)} {}
+  Vector() : vec_{backend::zeros(thes::type_tag<Backend>)} {}
   explicit Vector(T value) : vec_{backend::broadcast(value, thes::type_tag<Backend>)} {}
   template<typename... Ts>
   requires(sizeof...(Ts) == tSize)
-  explicit Vector(Ts... values) : vec_{backend::set(T{values}..., thes::type_tag<Backend>)} {}
+  explicit Vector(Ts... values) : vec_{backend::set(thes::type_tag<Backend>, T{values}...)} {}
   explicit Vector(Backend v) : vec_(v) {}
 
   static Vector load(const T* ptr) {
-    return Vector{backend::load(ptr, thes::index_tag<size>)};
+    return Vector{backend::load(ptr, thes::type_tag<Backend>)};
   }
   static Vector load_aligned(const T* ptr) {
-    return Vector{backend::load_aligned(ptr, thes::index_tag<size>)};
+    return Vector{backend::load_aligned(ptr, thes::type_tag<Backend>)};
   }
   static Vector load_part(const T* ptr, std::size_t num) {
-    return Vector{backend::load_part(ptr, num, thes::index_tag<size>)};
+    return Vector{backend::load_part(ptr, num, thes::type_tag<Backend>)};
   }
 
   static Vector indices() {

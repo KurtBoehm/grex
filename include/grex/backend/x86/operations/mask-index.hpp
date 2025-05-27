@@ -14,6 +14,7 @@
 
 #include "thesauros/types/type-tag.hpp" // IWYU pragma: keep
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/blend.hpp"
@@ -60,9 +61,26 @@ namespace grex::backend {
   }
 #define GREX_CUTOFF_VEC_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_CUTOFF_VEC, REGISTERBITS, BITPREFIX, REGISTERBITS)
-
 GREX_FOREACH_X86_64_LEVEL(GREX_INDEX_MASK_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_CUTOFF_VEC_ALL)
+
+template<typename THalf>
+inline SuperMask<THalf> cutoff_mask(std::size_t i, thes::TypeTag<SuperMask<THalf>> /*tag*/) {
+  if (i <= THalf::size) {
+    return {.lower = cutoff_mask(i, thes::type_tag<THalf>), .upper = zeros(thes::type_tag<THalf>)};
+  }
+  return {
+    .lower = ones(thes::type_tag<THalf>),
+    .upper = cutoff_mask(i - THalf::size, thes::type_tag<THalf>),
+  };
+}
+template<typename THalf>
+inline SuperVector<THalf> cutoff(std::size_t i, SuperVector<THalf> v) {
+  if (i <= THalf::size) {
+    return {.lower = cutoff(i, v.lower), .upper = zeros(thes::type_tag<THalf>)};
+  }
+  return {.lower = v.lower, .upper = cutoff(i - THalf::size, v.upper)};
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_MASK_INDEX_HPP
