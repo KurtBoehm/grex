@@ -83,6 +83,17 @@ namespace grex::backend {
   GREX_FOREACH_TYPE(GREX_MASK_INSERT, REGISTERBITS, BITPREFIX)
 GREX_FOREACH_X86_64_LEVEL(GREX_INSERT_ALL)
 
+// SubVector/SubMask
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubVector<T, tPart, tSize> insert(SubVector<T, tPart, tSize> v, std::size_t index, T value) {
+  return {.full = insert(v.full, index, value)};
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubMask<T, tPart, tSize> insert(SubMask<T, tPart, tSize> v, std::size_t index, bool value) {
+  return {.full = insert(v.full, index, value)};
+}
+
+// SuperVector/SuperMask
 template<typename THalf>
 inline SuperVector<THalf> insert(SuperVector<THalf> v, std::size_t index,
                                  typename THalf::Value value) {

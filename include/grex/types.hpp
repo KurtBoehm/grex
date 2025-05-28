@@ -29,7 +29,7 @@ struct Mask {
   explicit Mask(bool value) : mask_{backend::broadcast(value, thes::type_tag<Backend>)} {}
   template<typename... Ts>
   requires(((sizeof...(Ts) == tSize) && ... && std::same_as<Ts, bool>))
-  explicit Mask(Ts... values) : mask_{backend::set(thes::type_tag<Backend>, bool(values)...)} {}
+  explicit Mask(Ts... values) : mask_{backend::set(thes::type_tag<Backend>, values...)} {}
   explicit Mask(Backend v) : mask_(v) {}
 
   static Mask ones() {

@@ -5,6 +5,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <array>
+#include <cstddef>
 #include <limits>
 
 #include "thesauros/format.hpp"
@@ -14,24 +15,30 @@
 int main() {
   using namespace grex::literals;
 
-  using IVec = grex::Vector<grex::i64, 4>;
-  using IMask = grex::Mask<grex::i64, 4>;
+  using Int = grex::i64;
+  constexpr std::size_t vsize = 4;
+  using IVec = grex::Vector<Int, vsize>;
+  using IMask = grex::Mask<Int, vsize>;
+  using Float = grex::f64;
+  using FVec = grex::Vector<Float, vsize>;
+  using FMask = grex::Mask<Float, vsize>;
+
   const IVec i1{4, 3, 2, -1};
   const IVec i2{-2, 3, 4, 5};
   const IMask m1{true, true, false, true};
   const IMask m2{true, false, false, true};
-  std::array<grex::f64, 4> f1d{4.0, 3.0, 2.0, -1.0};
-  const auto f1 = grex::Vector<grex::f64, 4>::load(f1d.data());
-  const grex::Vector<grex::f64, 4> f2{-2.0, 3.0, 4.0, 5.0};
-  const grex::Vector<grex::f64, 4> f3{1.0, -1.0, 1.0, -1.0};
-  const grex::Vector<grex::f64, 4> f4{1.0, std::numeric_limits<grex::f64>::infinity(),
-                                      std::numeric_limits<grex::f64>::quiet_NaN(), -1.0};
-  const grex::Vector<grex::f64, 4> f5{1.5};
-  const grex::Vector<grex::f64, 4> f6{};
-  const auto fm1 = grex::Mask<grex::f64, 4>::ones().insert(2, false);
-  const grex::Mask<grex::f64, 4> fm2{true, false, false, true};
-  const grex::Mask<grex::f64, 4> fm3{true};
-  const grex::Mask<grex::f64, 4> fm4{};
+  std::array<Float, vsize> f1d{4.0, 3.0, 2.0, -1.0};
+  const auto f1 = FVec::load(f1d.data());
+  const FVec f2{-2.0, 3.0, 4.0, 5.0};
+  const FVec f3{1.0, -1.0, 1.0, -1.0};
+  const FVec f4{1.0, std::numeric_limits<Float>::infinity(),
+                std::numeric_limits<Float>::quiet_NaN(), -1.0};
+  const FVec f5{1.5};
+  const FVec f6{};
+  const auto fm1 = FMask::ones().insert(2, false);
+  const FMask fm2{true, false, false, true};
+  const FMask fm3{true};
+  const FMask fm4{};
 
   fmt::print("indices: {} {}\n", IVec::indices(), IVec::indices(5));
   fmt::print("-{} = {}, -{} = {}\n", i1, -i1, f1, -f1);
@@ -44,15 +51,15 @@ int main() {
   fmt::print("{} | {} = {}\n", i1, i2, i1 | i2);
   fmt::print("{} ^ {} = {}\n", i1, i2, i1 ^ i2);
   fmt::print("{}.insert(1, 2) = {}\n", i1, i1.insert(1, 2));
-  fmt::print("load_part({}, 0) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 0));
-  fmt::print("load_part({}, 1) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 1));
-  fmt::print("load_part({}, 2) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 2));
-  fmt::print("load_part({}, 3) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 3));
-  fmt::print("load_part({}, 4) = {}\n", f1d, grex::Vector<grex::f64, 4>::load_part(f1d.data(), 4));
-  std::array<grex::i64, 4> ibuf{};
+  fmt::print("load_part({}, 0) = {}\n", f1d, FVec::load_part(f1d.data(), 0));
+  fmt::print("load_part({}, 1) = {}\n", f1d, FVec::load_part(f1d.data(), 1));
+  fmt::print("load_part({}, 2) = {}\n", f1d, FVec::load_part(f1d.data(), 2));
+  fmt::print("load_part({}, 3) = {}\n", f1d, FVec::load_part(f1d.data(), 3));
+  fmt::print("load_part({}, 4) = {}\n", f1d, FVec::load_part(f1d.data(), 4));
+  std::array<Int, vsize> ibuf{};
   i2.store(ibuf.data());
   fmt::print("store({}) = {}", i2, ibuf);
-  std::array<grex::f64, 4> buf{};
+  std::array<Float, vsize> buf{};
   f1.store_part(buf.data(), 0);
   fmt::print("store_part({}, 0) = {}\n", f1, buf);
   f1.store_part(buf.data(), 1);

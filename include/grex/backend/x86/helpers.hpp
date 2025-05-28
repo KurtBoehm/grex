@@ -180,13 +180,44 @@
   inline TYPE<THalf> NAME(TYPE<THalf> a, TYPE<THalf> b, TYPE<THalf> c) { \
     return {.lower = NAME(a.lower, b.lower, c.lower), .upper = NAME(a.upper, b.upper, c.upper)}; \
   }
-
 #define GREX_SUPERVECTOR_UNARY(NAME) GREX_SUPER_UNARY(SuperVector, NAME)
 #define GREX_SUPERVECTOR_BINARY(NAME) GREX_SUPER_BINARY(SuperVector, NAME)
 #define GREX_SUPERVECTOR_TERNARY(NAME) GREX_SUPER_TERNARY(SuperVector, NAME)
 #define GREX_SUPERMASK_UNARY(NAME) GREX_SUPER_UNARY(SuperMask, NAME)
 #define GREX_SUPERMASK_BINARY(NAME) GREX_SUPER_BINARY(SuperMask, NAME)
 #define GREX_SUPERMASK_TERNARY(NAME) GREX_SUPER_TERNARY(SuperMask, NAME)
+
+#define GREX_SUB_UNARY(TYPE, NAME) \
+  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
+  inline TYPE<T, tPart, tSize> NAME(TYPE<T, tPart, tSize> v) { \
+    return {.full = NAME(v.full)}; \
+  }
+#define GREX_SUB_BINARY(TYPE, NAME) \
+  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
+  inline TYPE<T, tPart, tSize> NAME(TYPE<T, tPart, tSize> a, TYPE<T, tPart, tSize> b) { \
+    return {.full = NAME(a.full, b.full)}; \
+  }
+#define GREX_SUBVECTOR_UNARY(NAME) GREX_SUB_UNARY(SubVector, NAME)
+#define GREX_SUBVECTOR_BINARY(NAME) GREX_SUB_BINARY(SubVector, NAME)
+#define GREX_SUBVECTOR_TERNARY(NAME) GREX_SUB_TERNARY(SubVector, NAME)
+#define GREX_SUBMASK_UNARY(NAME) GREX_SUB_UNARY(SubMask, NAME)
+#define GREX_SUBMASK_BINARY(NAME) GREX_SUB_BINARY(SubMask, NAME)
+#define GREX_SUBMASK_TERNARY(NAME) GREX_SUB_TERNARY(SubMask, NAME)
+
+#define GREX_FOREACH_SUB(MACRO, ...) \
+  MACRO(f, 32, 2, 4 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 8, 2, 16 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 8, 4, 16 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 8, 8, 16 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 16, 2, 8 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 16, 4, 8 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 32, 2, 4 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 8, 2, 16 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 8, 4, 16 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 8, 8, 16 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 16, 2, 8 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 16, 4, 8 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 32, 2, 4 __VA_OPT__(, ) __VA_ARGS__)
 
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_FOREACH_X86_64_LEVEL(MACRO, ...) \

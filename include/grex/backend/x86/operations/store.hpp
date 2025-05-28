@@ -188,6 +188,18 @@ GREX_FOREACH_X86_64_LEVEL(GREX_STORE_ALL)
   GREX_FOREACH_TYPE(GREX_PARTSTORE, REGISTERBITS, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_PARTSTORE_ALL)
 
+// SubVector
+// TODO Check if a manual implementation is necessary for optimal performance
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline void store(T* dst, SubVector<T, tPart, tSize> src) {
+  store_part(dst, src.full, tPart);
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline void store_part(T* dst, SubVector<T, tPart, tSize> src, std::size_t size) {
+  store_part(dst, src.full, size);
+}
+
+// SuperVector
 template<typename THalf>
 inline void store(typename THalf::Value* dst, SuperVector<THalf> src) {
   store(dst, src.lower);

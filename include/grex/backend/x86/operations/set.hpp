@@ -110,12 +110,37 @@ namespace grex::backend {
                BOOST_PP_REPEAT(SIZE, GREX_SET_IDX, BOOST_PP_EMPTY())); \
   }
 
-// Define all set operations
 #define GREX_SET(...) GREX_SET_VEC(__VA_ARGS__) GREX_SET_MASK(__VA_ARGS__)
 #define GREX_SET_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_SET, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_SET_ALL)
 
+// SubVector
+template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
+inline SubVector<T, tPart, tSize> set(thes::TypeTag<SubVector<T, tPart, tSize>> /*tag*/,
+                                      Ts... values) {
+  std::array<T, tSize> elements{values...};
+  const auto full = elements | thes::star::apply([](auto... vs) {
+                      return set(thes::type_tag<Vector<T, tSize>>, vs...);
+                    });
+  return {.full = full};
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
+inline SubVector<T, tPart, tSize> indices(thes::TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
+  return {.full = indices(thes::type_tag<Vector<T, tSize>>)};
+}
+
+// SubMask
+template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
+inline SubMask<T, tPart, tSize> set(thes::TypeTag<SubMask<T, tPart, tSize>> /*tag*/, Ts... values) {
+  std::array<bool, tSize> elements{values...};
+  const auto full = elements | thes::star::apply([](auto... vs) {
+                      return set(thes::type_tag<Mask<T, tSize>>, vs...);
+                    });
+  return {.full = full};
+}
+
+// SuperVector
 template<typename THalf>
 inline SuperVector<THalf> zeros(thes::TypeTag<SuperVector<THalf>> /*tag*/) {
   const auto half = zeros(thes::type_tag<THalf>);
@@ -128,7 +153,7 @@ inline SuperVector<THalf> broadcast(typename THalf::Value value,
   return {.lower = half, .upper = half};
 }
 template<typename THalf, typename... Ts>
-requires(sizeof...(Ts) == 2 * THalf::size)
+requires(sizeof...(Ts) == 2 * THalf::size && std::has_single_bit(sizeof...(Ts)))
 inline SuperVector<THalf> set(thes::TypeTag<SuperVector<THalf>> /*tag*/, Ts... values) {
   constexpr std::size_t size = sizeof...(Ts);
   std::array buf{values...};
@@ -150,6 +175,7 @@ inline SuperVector<THalf> indices(thes::TypeTag<SuperVector<THalf>> /*tag*/) {
   };
 }
 
+// SuperMask
 template<typename THalf>
 inline SuperMask<THalf> zeros(thes::TypeTag<SuperMask<THalf>> /*tag*/) {
   const auto half = zeros(thes::type_tag<THalf>);
@@ -166,7 +192,7 @@ inline SuperMask<THalf> broadcast(bool value, thes::TypeTag<SuperMask<THalf>> /*
   return {.lower = half, .upper = half};
 }
 template<typename THalf, typename... Ts>
-requires(std::has_single_bit(sizeof...(Ts)))
+requires(sizeof...(Ts) == 2 * THalf::size && std::has_single_bit(sizeof...(Ts)))
 inline SuperMask<THalf> set(thes::TypeTag<SuperMask<THalf>> /*tag*/, Ts... values) {
   constexpr std::size_t size = sizeof...(Ts);
   std::array buf{values...};

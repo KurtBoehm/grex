@@ -23,13 +23,18 @@ namespace grex::backend {
 #define GREX_HADD_HALVES(...) \
   return horizontal_add(add(split(v, thes::index_tag<0>), split(v, thes::index_tag<1>)));
 // f32
+#define GREX_HADD_f32x2(...) \
+  /* [v1, -, -, -] */ \
+  const __m128 shuf = _mm_shuffle_ps(vf.r, vf.r, 1); \
+  /* [v0 + v1, -, -, -][0] */ \
+  return _mm_cvtss_f32(_mm_add_ss(vf.r, shuf));
 #define GREX_HADD_f32x4(...) \
   /* [v0 + v2, v1 + v3, -, -] */ \
   const __m128 pairs = _mm_add_ps(v.r, _mm_movehl_ps(v.r, v.r)); \
   /* [v1 + v3, -, -, -] */ \
-  const __m128 shuffled = _mm_shuffle_ps(pairs, pairs, 1); \
+  const __m128 shuf = _mm_shuffle_ps(pairs, pairs, 1); \
   /* [v0 + v2 + v1 + v3, -, -, -][0] */ \
-  return _mm_cvtss_f32(_mm_add_ss(pairs, shuffled));
+  return _mm_cvtss_f32(_mm_add_ss(pairs, shuf));
 #define GREX_HADD_f32x8 GREX_HADD_HALVES
 #define GREX_HADD_f32x16 GREX_HADD_HALVES
 // f64
@@ -41,6 +46,20 @@ namespace grex::backend {
 #define GREX_HADD_f64x4 GREX_HADD_HALVES
 #define GREX_HADD_f64x8 GREX_HADD_HALVES
 // i8/u8
+#define GREX_HADD_i8_SUB(PART, KIND, BITS, ...) \
+  /* mask out all components above PART */ \
+  const __m128i masked = _mm_and_si128(vf.r, _mm_set1_epi64x((1ULL << (BITS * PART)) - 1)); \
+  /* [v0 + … + v7, -, -, -, -, -, -, -] as u16x8 */ \
+  const __m128i sad = _mm_sad_epu8(masked, _mm_setzero_si128()); \
+  /* extract low 32 bits and cast the upper 24 bits away */ \
+  return KIND##BITS(_mm_cvtsi128_si32(sad));
+#define GREX_HADD_i8x2(...) GREX_HADD_i8_SUB(2, __VA_ARGS__)
+#define GREX_HADD_i8x4(...) GREX_HADD_i8_SUB(4, __VA_ARGS__)
+#define GREX_HADD_i8x8(KIND, BITS, ...) \
+  /* [v0 + … + v7, -, -, -, -, -, -, -] as u16x8 */ \
+  const __m128i sad = _mm_sad_epu8(vf.r, _mm_setzero_si128()); \
+  /* extract low 32 bits and cast the upper 24 bits away */ \
+  return KIND##BITS(_mm_cvtsi128_si32(sad));
 #define GREX_HADD_i8x16(KIND, BITS, ...) \
   /* [v0 + … + v7, -, -, -, v8 + … + v15, -, -, -] as u16x8 */ \
   const __m128i sad = _mm_sad_epu8(v.r, _mm_setzero_si128()); \
@@ -53,6 +72,20 @@ namespace grex::backend {
 #define GREX_HADD_i8x32 GREX_HADD_HALVES
 #define GREX_HADD_i8x64 GREX_HADD_HALVES
 // i16/u16
+#define GREX_HADD_i16x2(KIND, BITS, ...) \
+  /* [v1, -, -, -, -, -, -, -] */ \
+  const __m128i shuf = _mm_shufflelo_epi16(vf.r, 1); \
+  /* [v0 + v1, -, -, -, -, -, -, -][0] */ \
+  return KIND##BITS(_mm_cvtsi128_si32(_mm_add_epi16(vf.r, shuf)));
+#define GREX_HADD_i16x4(KIND, BITS, ...) \
+  /* [v2, v3, -, -, -, -, -, -] */ \
+  const __m128i shuf1 = _mm_shuffle_epi32(vf.r, 1); \
+  /* [v0 + v2, v1 + v3, -, -, -, -, -, -] */ \
+  const __m128i pairs = _mm_add_epi16(vf.r, shuf1); \
+  /* [v1 + v3, -, -, -, -, -, -, -] */ \
+  const __m128i shuf2 = _mm_shufflelo_epi16(pairs, 1); \
+  /* [v1 + … + v3, -, -, -, -, -, -, -][0] */ \
+  return KIND##BITS(_mm_cvtsi128_si32(_mm_add_epi16(pairs, shuf2)));
 #define GREX_HADD_i16x8(KIND, BITS, ...) \
   /* [v4, v5, v6, v7, v4, v5, v6, v7] */ \
   const __m128i unpackhi = _mm_unpackhi_epi64(v.r, v.r); \
@@ -61,23 +94,28 @@ namespace grex::backend {
   /* [v2 + v6, v3 + v7, -, -, -, -, -, -] */ \
   const __m128i spairs = _mm_shuffle_epi32(pairs, 1); \
   /* [v0 + v4 + v2 + v6, v1 + v5 + v3 + v7, -, -, -, -, -, -] */ \
-  const __m128i sum4 = _mm_add_epi16(pairs, spairs); \
+  const __m128i quads = _mm_add_epi16(pairs, spairs); \
   /* [v1 + v5 + v3 + v7, -, -, -, -, -, -, -] */ \
-  const __m128i sum5 = _mm_shufflelo_epi16(sum4, 1); \
+  const __m128i squads = _mm_shufflelo_epi16(quads, 1); \
   /* [v1 + … + v7, -, -, -, -, -, -, -][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si32(_mm_add_epi16(sum4, sum5)));
+  return KIND##BITS(_mm_cvtsi128_si32(_mm_add_epi16(quads, squads)));
 #define GREX_HADD_i16x16 GREX_HADD_HALVES
 #define GREX_HADD_i16x32 GREX_HADD_HALVES
 // i32/u32
+#define GREX_HADD_i32x2(KIND, BITS, ...) \
+  /* [v1, -, -, -] */ \
+  const __m128i shuf = _mm_shuffle_epi32(vf.r, 1); \
+  /* [v0 + v1, -, -, -][0] */ \
+  return KIND##BITS(_mm_cvtsi128_si32(_mm_add_epi32(vf.r, shuf)));
 #define GREX_HADD_i32x4(KIND, BITS, ...) \
   /* [v2, v3, v2, v3] */ \
   const __m128i unpackhi = _mm_unpackhi_epi64(v.r, v.r); \
   /* [v0 + v2, v1 + v3, -, -] */ \
   const __m128i pairs = _mm_add_epi32(v.r, unpackhi); \
   /* [v1 + v3, -, -, -] */ \
-  const __m128i shuffled = _mm_shuffle_epi32(pairs, 0x01); \
+  const __m128i shuf = _mm_shuffle_epi32(pairs, 1); \
   /* [v0 + v2 + v1 + v3, -, -, -][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si32(_mm_add_epi32(pairs, shuffled)));
+  return KIND##BITS(_mm_cvtsi128_si32(_mm_add_epi32(pairs, shuf)));
 #define GREX_HADD_i32x8 GREX_HADD_HALVES
 #define GREX_HADD_i32x16 GREX_HADD_HALVES
 // i64/u64
@@ -98,10 +136,19 @@ namespace grex::backend {
   inline KIND##BITS horizontal_add(Vector<KIND##BITS, SIZE> v) { \
     GREX_HADD_##KIND(KIND, BITS, SIZE) \
   }
-#define GREX_HADD_ALL(REGISTERBITS, BITPREFIX) GREX_FOREACH_TYPE(GREX_HADD, REGISTERBITS)
+#define GREX_HADD_SUB(KIND, BITS, PART, SIZE) \
+  inline KIND##BITS horizontal_add(SubVector<KIND##BITS, PART, SIZE> v) { \
+    const auto vf = v.full; \
+    GREX_HADD_##KIND(KIND, BITS, PART) \
+  }
 
+#define GREX_HADD_ALL(REGISTERBITS, BITPREFIX) GREX_FOREACH_TYPE(GREX_HADD, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_HADD_ALL)
 
+// SubVector
+GREX_FOREACH_SUB(GREX_HADD_SUB)
+
+// SuperVector
 template<typename THalf>
 inline THalf::Value horizontal_add(SuperVector<THalf> v) {
   return horizontal_add(add(v.lower, v.upper));
