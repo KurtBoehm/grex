@@ -284,12 +284,6 @@ requires(std::floating_point<T>)
 inline Vector<T, tSize> mask_divide(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b) {
   return Vector<T, tSize>{backend::mask_divide(mask.backend(), a.backend(), b.backend())};
 }
-
-template<Vectorizable T, std::size_t tSize>
-inline Vector<T, tSize> shuffle(Vector<T, tSize> v,
-                                thes::TypedValueTag<std::array<ShuffleIndex, tSize>> auto idxs) {
-  return Vector<T, tSize>{backend::shuffle(v.backend(), idxs)};
-}
 } // namespace grex
 
 #endif // INCLUDE_GREX_TYPES_HPP
