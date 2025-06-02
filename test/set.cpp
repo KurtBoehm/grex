@@ -6,60 +6,67 @@
 
 #include <cstddef>
 
-#include "thesauros/types.hpp"
+#include "thesauros/static-ranges.hpp"
 
 #include "grex/grex.hpp"
 
 #include "defs.hpp"
 
+#ifdef GREX_TEST_TYPE
+using Value = grex::GREX_TEST_TYPE;
+#else
+using Value = grex::f32;
+#endif
+
+#ifdef GREX_TEST_SIZE
+inline constexpr std::size_t size = GREX_TEST_SIZE;
+#else
+inline constexpr std::size_t size = 4;
+#endif
+
 namespace test = grex::test;
 
-template<grex::Vectorizable T, std::size_t tSize>
-void run(thes::TypeTag<T> /*tag*/, thes::IndexTag<tSize> /*tag*/) {
+int main() {
   // vector
   {
-    test::VectorChecker<T, tSize> checker{};
+    test::VectorChecker<Value, size> checker{};
     checker.check();
   }
   {
-    test::VectorChecker<T, tSize> checker{T{127}};
+    test::VectorChecker<Value, size> checker{Value{127}};
     checker.check();
   }
   {
-    thes::star::iota<0, tSize> | thes::star::apply([](auto... values) {
-      test::VectorChecker<T, tSize> checker{T(tSize - values)...};
+    thes::star::iota<0, size> | thes::star::apply([](auto... values) {
+      test::VectorChecker<Value, size> checker{Value(size - values)...};
       checker.check();
     });
   }
   {
-    auto checker = test::VectorChecker<T, tSize>::indices();
+    auto checker = test::VectorChecker<Value, size>::indices();
     checker.check();
   }
   // mask
   {
-    test::MaskChecker<T, tSize> checker{};
+    test::MaskChecker<Value, size> checker{};
     checker.check();
   }
   {
-    auto checker = test::MaskChecker<T, tSize>::ones();
+    auto checker = test::MaskChecker<Value, size>::ones();
     checker.check();
   }
   {
-    test::MaskChecker<T, tSize> checker{false};
+    test::MaskChecker<Value, size> checker{false};
     checker.check();
   }
   {
-    test::MaskChecker<T, tSize> checker{true};
+    test::MaskChecker<Value, size> checker{true};
     checker.check();
   }
   {
-    thes::star::iota<0, tSize> | thes::star::apply([](auto... values) {
-      test::MaskChecker<T, tSize> checker{((values % 5) % 2 == 0)...};
+    thes::star::iota<0, size> | thes::star::apply([](auto... values) {
+      test::MaskChecker<Value, size> checker{((values % 5) % 2 == 0)...};
       checker.check();
     });
   }
-}
-
-int main() {
-  test::run_types_sizes([](auto... args) { run(args...); });
 }

@@ -33,14 +33,8 @@ int main() {
   const FVec f3{1.0, -1.0, 1.0, -1.0};
   const FVec f4{1.0, std::numeric_limits<Float>::infinity(),
                 std::numeric_limits<Float>::quiet_NaN(), -1.0};
-  const FVec f5{1.5};
-  const FVec f6{};
   const auto fm1 = FMask::ones().insert(2, false);
-  const FMask fm2{true, false, false, true};
-  const FMask fm3{true};
-  const FMask fm4{};
 
-  fmt::print("indices: {} {}\n", IVec::indices(), IVec::indices(5));
   fmt::print("-{} = {}, -{} = {}\n", i1, -i1, f1, -f1);
   fmt::print("{} + {} = {}\n", i1, i2, i1 + i2);
   fmt::print("{} - {} = {}\n", i1, i2, i1 - i2);
