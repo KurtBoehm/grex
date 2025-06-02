@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_HPP
 
+#include <cstddef>
+
 #include <boost/preprocessor.hpp>
 #include <immintrin.h>
 
@@ -71,6 +73,17 @@ namespace grex::backend {
   GREX_FOREACH_TYPE(MACRO, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_BLEND_ALL, GREX_BLENDZ)
 GREX_FOREACH_X86_64_LEVEL(GREX_BLEND_ALL, GREX_BLEND)
+
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubVector<T, tPart, tSize> blend_zero(SubMask<T, tPart, tSize> m,
+                                             SubVector<T, tPart, tSize> v1) {
+  return {.full = blend_zero(m.full, v1.full)};
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubVector<T, tPart, tSize> blend(SubMask<T, tPart, tSize> m, SubVector<T, tPart, tSize> v0,
+                                        SubVector<T, tPart, tSize> v1) {
+  return {.full = blend(m.full, v0.full, v1.full)};
+}
 
 template<typename TVecHalf, typename TMaskHalf>
 inline SuperVector<TVecHalf> blend_zero(SuperMask<TMaskHalf> m, SuperVector<TVecHalf> v1) {

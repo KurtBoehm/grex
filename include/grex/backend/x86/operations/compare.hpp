@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP
 
+#include <cstddef>
+
 #include <boost/preprocessor.hpp>
 #include <immintrin.h>
 
@@ -217,6 +219,17 @@ GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, eq, cmpeq, 0)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, neq, cmpneq, 4)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, lt, cmplt, 1)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, ge, cmpge, 5)
+
+#define GREX_CMP_SUB(NAME) \
+  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
+  inline SubMask<T, tPart, tSize> NAME(SubVector<T, tPart, tSize> a, \
+                                       SubVector<T, tPart, tSize> b) { \
+    return {.full = NAME(a.full, b.full)}; \
+  }
+GREX_CMP_SUB(compare_eq)
+GREX_CMP_SUB(compare_neq)
+GREX_CMP_SUB(compare_lt)
+GREX_CMP_SUB(compare_ge)
 
 #define GREX_CMP_SUPER(NAME) \
   template<typename THalf> \

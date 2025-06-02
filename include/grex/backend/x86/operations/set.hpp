@@ -10,6 +10,7 @@
 #include <array>
 #include <bit>
 #include <cstddef>
+
 #include <immintrin.h>
 
 #include "thesauros/types.hpp"
@@ -116,6 +117,11 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_SET_ALL)
 
 // SubVector
+template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
+inline SubVector<T, tPart, tSize> broadcast(T value,
+                                            thes::TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
+  return {.full = broadcast(value, thes::type_tag<Vector<T, tSize>>)};
+}
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> set(thes::TypeTag<SubVector<T, tPart, tSize>> /*tag*/,
                                       Ts... values) {

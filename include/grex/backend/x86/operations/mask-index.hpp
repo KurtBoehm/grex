@@ -25,7 +25,13 @@
 namespace grex::backend {
 // Since the largest vector size is 64, signed comparisons can be used even with i8
 #if GREX_X86_64_LEVEL >= 4
-#define GREX_CUTOFF_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_SIZEMMASK(SIZE)(~(u64(-1) << i))
+#define GREX_CUTOFF_MASK_2 __mmask8(~(u8(-1) << i))
+#define GREX_CUTOFF_MASK_4 __mmask8(~(u8(-1) << i))
+#define GREX_CUTOFF_MASK_8 __mmask8(~(u16(-1) << i))
+#define GREX_CUTOFF_MASK_16 __mmask16(~(u32(-1) << i))
+#define GREX_CUTOFF_MASK_32 __mmask32(~(u64(-1) << i))
+#define GREX_CUTOFF_MASK_64 __mmask64((i < 64) ? ~(u64(-1) << i) : u64(-1))
+#define GREX_CUTOFF_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_CUTOFF_MASK_##SIZE
 #define GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_SIZEMMASK(SIZE)(u64{1} << i)
 #else
 #define GREX_INDEX_MASK_CMPGT(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMP) \
@@ -63,6 +69,16 @@ namespace grex::backend {
   GREX_FOREACH_TYPE(GREX_CUTOFF_VEC, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_INDEX_MASK_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_CUTOFF_VEC_ALL)
+
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubMask<T, tPart, tSize> cutoff_mask(std::size_t i,
+                                            thes::TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
+  return {.full = cutoff_mask(i, thes::type_tag<Mask<T, tSize>>)};
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubVector<T, tPart, tSize> cutoff(std::size_t i, SubVector<T, tPart, tSize> v) {
+  return {.full = cutoff(i, v.full)};
+}
 
 template<typename THalf>
 inline SuperMask<THalf> cutoff_mask(std::size_t i, thes::TypeTag<SuperMask<THalf>> /*tag*/) {

@@ -15,7 +15,7 @@
 int main() {
   using namespace grex::literals;
 
-  using Int = grex::i64;
+  using Int = grex::i16;
   constexpr std::size_t vsize = 4;
   using IVec = grex::Vector<Int, vsize>;
   using IMask = grex::Mask<Int, vsize>;
@@ -23,8 +23,8 @@ int main() {
   using FVec = grex::Vector<Float, vsize>;
   using FMask = grex::Mask<Float, vsize>;
 
-  const IVec i1{4, 3, 2, -1};
-  const IVec i2{-2, 3, 4, 5};
+  const IVec i1{Int{4}, Int{3}, Int{2}, Int{-1}};
+  const IVec i2{Int{-2}, Int{3}, Int{4}, Int{5}};
   const IMask m1{true, true, false, true};
   const IMask m2{true, false, false, true};
   std::array<Float, vsize> f1d{4.0, 3.0, 2.0, -1.0};

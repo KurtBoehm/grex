@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_MASK_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_MASK_HPP
 
+#include <cstddef>
+
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
@@ -82,6 +84,17 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_MASKADDSUB_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_MASKMUL_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_MASKDIV_ALL)
+
+#define GREX_MASKARITH_SUB(NAME) \
+  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
+  inline SubVector<T, tPart, tSize> NAME(SubMask<T, tPart, tSize> m, SubVector<T, tPart, tSize> a, \
+                                         SubVector<T, tPart, tSize> b) { \
+    return {.full = NAME(m.full, a.full, b.full)}; \
+  }
+GREX_MASKARITH_SUB(mask_add)
+GREX_MASKARITH_SUB(mask_subtract)
+GREX_MASKARITH_SUB(mask_multiply)
+GREX_MASKARITH_SUB(mask_divide)
 
 #define GREX_MASKARITH_SUPER(NAME) \
   template<typename TVecHalf, typename TMaskHalf> \
