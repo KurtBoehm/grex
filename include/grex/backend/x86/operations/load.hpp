@@ -9,8 +9,6 @@
 
 #include <cstddef>
 
-#include "thesauros/types/type-tag.hpp"
-
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
@@ -29,8 +27,7 @@ namespace grex::backend {
 #define GREX_LOAD_CAST(KIND, REGISTERBITS, X) GREX_LOAD_CAST_##KIND(REGISTERBITS, X)
 
 #define GREX_LOAD(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, NAME, OP) \
-  inline Vector<KIND##BITS, SIZE> NAME(const KIND##BITS* ptr, \
-                                       thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline Vector<KIND##BITS, SIZE> NAME(const KIND##BITS* ptr, TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CAT(BITPREFIX##_##OP##_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))( \
               GREX_LOAD_CAST(KIND, REGISTERBITS, ptr))}; \
   }
@@ -48,10 +45,10 @@ namespace grex::backend {
 #define GREX_MASKLOAD_CAST_32 reinterpret_cast<const int*>(ptr)
 #define GREX_MASKLOAD_CAST_64 reinterpret_cast<const long long*>(ptr)
 #define GREX_PARTLOAD_MASKLOAD(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  return {.r = GREX_KINDCAST(i, KIND, BITS, REGISTERBITS, \
-                             BITPREFIX##_maskload_epi##BITS( \
-                               GREX_MASKLOAD_CAST_##BITS, \
-                               cutoff_mask(size, thes::type_tag<Mask<KIND##BITS, SIZE>>).r))};
+  return {.r = GREX_KINDCAST( \
+            i, KIND, BITS, REGISTERBITS, \
+            BITPREFIX##_maskload_epi##BITS( \
+              GREX_MASKLOAD_CAST_##BITS, cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r))};
 #if GREX_X86_64_LEVEL >= 3
 #define GREX_PARTLOAD_128_64(KIND) GREX_PARTLOAD_MASKLOAD(KIND, 64, 2, _mm, 128)
 #define GREX_PARTLOAD_128_32(KIND) GREX_PARTLOAD_MASKLOAD(KIND, 32, 4, _mm, 128)
@@ -88,8 +85,7 @@ namespace grex::backend {
 #define GREX_PARTLOAD_128_16(KIND) \
   const std::size_t size2 = size / 2; \
   __m128i out = \
-    load_part(reinterpret_cast<const KIND##32 *>(ptr), size2, thes::type_tag<Vector<KIND##32, 4>>) \
-      .r; \
+    load_part(reinterpret_cast<const KIND##32 *>(ptr), size2, type_tag<Vector<KIND##32, 4>>).r; \
   if ((size & 1U) != 0) { \
     switch (size2) { \
     case 0: out = _mm_loadu_si16(ptr); break; \
@@ -103,8 +99,7 @@ namespace grex::backend {
 #define GREX_PARTLOAD_128_8(KIND) \
   const std::size_t size2 = size / 2; \
   __m128i out = \
-    load_part(reinterpret_cast<const KIND##16 *>(ptr), size2, thes::type_tag<Vector<KIND##16, 8>>) \
-      .r; \
+    load_part(reinterpret_cast<const KIND##16 *>(ptr), size2, type_tag<Vector<KIND##16, 8>>).r; \
   if ((size & 1U) != 0) { \
     const std::size_t i = size - 1; \
     out = insert(Vector<KIND##8, 16>{out}, i, ptr[i]).r; \
@@ -113,22 +108,22 @@ namespace grex::backend {
 // 256 bit: Split
 #define GREX_PARTLOAD_SPLIT(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX2, REGISTERBITS2) \
   if (size == 0) [[unlikely]] { \
-    return zeros(thes::type_tag<Vector<KIND##BITS, SIZE>>); \
+    return zeros(type_tag<Vector<KIND##BITS, SIZE>>); \
   } \
   if (size >= SIZE) [[unlikely]] { \
-    return load(ptr, thes::type_tag<Vector<KIND##BITS, SIZE>>); \
+    return load(ptr, type_tag<Vector<KIND##BITS, SIZE>>); \
   } \
   if (size >= GREX_HALF(SIZE)) { \
-    return merge(load(ptr, thes::type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>), \
+    return merge(load(ptr, type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>), \
                  load_part(ptr + GREX_HALF(SIZE), size - GREX_HALF(SIZE), \
-                           thes::type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>)); \
+                           type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>)); \
   } \
-  return merge(load_part(ptr, size, thes::type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>), \
-               zeros(thes::type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>));
+  return merge(load_part(ptr, size, type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>), \
+               zeros(type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>));
 // AVX-512: Intrinsics
 #define GREX_PARTLOAD_AVX512(KIND, BITS, SIZE, BITPREFIX) \
   return {.r = GREX_CAT(BITPREFIX##_maskz_loadu_, GREX_EPI_SUFFIX(KIND, BITS))( \
-            cutoff_mask(size, thes::type_tag<Mask<KIND##BITS, SIZE>>).r, ptr)};
+            cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r, ptr)};
 // Case distinction based on register size
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_PARTLOAD_128(KIND, BITS, SIZE) GREX_PARTLOAD_AVX512(KIND, BITS, SIZE, _mm)
@@ -142,7 +137,7 @@ namespace grex::backend {
 
 #define GREX_PARTLOAD(KIND, BITS, SIZE, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> load_part(const KIND##BITS* ptr, std::size_t size, \
-                                            thes::TypeTag<Vector<KIND##BITS, SIZE>>) { \
+                                            TypeTag<Vector<KIND##BITS, SIZE>>) { \
     GREX_PARTLOAD_##REGISTERBITS(KIND, BITS, SIZE) \
   }
 
@@ -157,24 +152,24 @@ GREX_FOREACH_X86_64_LEVEL(GREX_PARTLOAD_ALL)
 
 template<typename THalf>
 inline SuperVector<THalf> load(const typename THalf::Value* ptr,
-                               thes::TypeTag<SuperVector<THalf>> /*tag*/) {
+                               TypeTag<SuperVector<THalf>> /*tag*/) {
   return {
-    .lower = load(ptr, thes::type_tag<THalf>),
-    .upper = load(ptr + THalf::size, thes::type_tag<THalf>),
+    .lower = load(ptr, type_tag<THalf>),
+    .upper = load(ptr + THalf::size, type_tag<THalf>),
   };
 }
 template<typename THalf>
 inline SuperVector<THalf> load_part(const typename THalf::Value* ptr, std::size_t size,
-                                    thes::TypeTag<SuperVector<THalf>> /*tag*/) {
+                                    TypeTag<SuperVector<THalf>> /*tag*/) {
   if (size <= THalf::size) {
     return {
-      .lower = load_part(ptr, size, thes::type_tag<THalf>),
-      .upper = zeros(thes::type_tag<THalf>),
+      .lower = load_part(ptr, size, type_tag<THalf>),
+      .upper = zeros(type_tag<THalf>),
     };
   }
   return {
-    .lower = load(ptr, thes::type_tag<THalf>),
-    .upper = load_part(ptr, size - THalf::size, thes::type_tag<THalf>),
+    .lower = load(ptr, type_tag<THalf>),
+    .upper = load_part(ptr, size - THalf::size, type_tag<THalf>),
   };
 }
 } // namespace grex::backend

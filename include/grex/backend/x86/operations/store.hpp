@@ -12,9 +12,6 @@
 
 #include <immintrin.h>
 
-#include "thesauros/types/type-tag.hpp"
-#include "thesauros/types/value-tag.hpp" // IWYU pragma: keep
-
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
@@ -52,7 +49,7 @@ namespace grex::backend {
 #define GREX_MASKSTORE_CAST_64 reinterpret_cast<long long*>(dst)
 #define GREX_PARTSTORE_MASKSTORE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   BITPREFIX##_maskstore_epi##BITS(GREX_MASKSTORE_CAST_##BITS, \
-                                  cutoff_mask(size, thes::type_tag<Mask<KIND##BITS, SIZE>>).r, \
+                                  cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r, \
                                   GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, src.r));
 #if GREX_X86_64_LEVEL >= 3
 #define GREX_PARTSTORE_128_64(KIND) GREX_PARTSTORE_MASKSTORE(KIND, 64, 2, _mm, 128)
@@ -156,15 +153,15 @@ namespace grex::backend {
     return store(dst, src); \
   } \
   if (size >= GREX_HALF(SIZE)) { \
-    store(dst, split(src, thes::index_tag<0>)); \
-    store_part(dst + GREX_HALF(SIZE), split(src, thes::index_tag<1>), size - GREX_HALF(SIZE)); \
+    store(dst, split(src, index_tag<0>)); \
+    store_part(dst + GREX_HALF(SIZE), split(src, index_tag<1>), size - GREX_HALF(SIZE)); \
   } else { \
-    store_part(dst, split(src, thes::index_tag<0>), size); \
+    store_part(dst, split(src, index_tag<0>), size); \
   } \
 // AVX-512: Intrinsics
 #define GREX_PARTSTORE_AVX512(KIND, BITS, SIZE, BITPREFIX) \
   GREX_CAT(BITPREFIX##_mask_storeu_, GREX_EPI_SUFFIX(KIND, BITS)) \
-  (dst, cutoff_mask(size, thes::type_tag<Mask<KIND##BITS, SIZE>>).r, src.r);
+  (dst, cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r, src.r);
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_PARTSTORE_128(KIND, BITS, SIZE) GREX_PARTSTORE_AVX512(KIND, BITS, SIZE, _mm)
 #define GREX_PARTSTORE_256(KIND, BITS, SIZE) GREX_PARTSTORE_AVX512(KIND, BITS, SIZE, _mm256)

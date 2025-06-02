@@ -12,8 +12,6 @@
 #include <boost/preprocessor.hpp>
 #include <immintrin.h>
 
-#include "thesauros/types/type-tag.hpp" // IWYU pragma: keep
-
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
@@ -35,8 +33,8 @@ namespace grex::backend {
 #define GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_SIZEMMASK(SIZE)(u64{1} << i)
 #else
 #define GREX_INDEX_MASK_CMPGT(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMP) \
-  BITPREFIX##_cmp##CMP##_epi##BITS(broadcast(i, thes::type_tag<Vector<i##BITS, SIZE>>).r, \
-                                   indices(thes::type_tag<Vector<i##BITS, SIZE>>).r)
+  BITPREFIX##_cmp##CMP##_epi##BITS(broadcast(i, type_tag<Vector<i##BITS, SIZE>>).r, \
+                                   indices(type_tag<Vector<i##BITS, SIZE>>).r)
 #define GREX_INDEX_MASK_8 GREX_INDEX_MASK_CMPGT
 #define GREX_INDEX_MASK_16 GREX_INDEX_MASK_CMPGT
 #define GREX_INDEX_MASK_32 GREX_INDEX_MASK_CMPGT
@@ -50,12 +48,10 @@ namespace grex::backend {
 #endif
 
 #define GREX_INDEX_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Mask<KIND##BITS, SIZE> cutoff_mask(std::size_t i, \
-                                            thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline Mask<KIND##BITS, SIZE> cutoff_mask(std::size_t i, TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CUTOFF_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   } \
-  inline Mask<KIND##BITS, SIZE> single_mask(std::size_t i, \
-                                            thes::TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline Mask<KIND##BITS, SIZE> single_mask(std::size_t i, TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   }
 #define GREX_INDEX_MASK_ALL(REGISTERBITS, BITPREFIX) \
@@ -63,7 +59,7 @@ namespace grex::backend {
 
 #define GREX_CUTOFF_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Vector<KIND##BITS, SIZE> cutoff(std::size_t i, Vector<KIND##BITS, SIZE> v) { \
-    return blend_zero(cutoff_mask(i, thes::type_tag<Mask<KIND##BITS, SIZE>>), v); \
+    return blend_zero(cutoff_mask(i, type_tag<Mask<KIND##BITS, SIZE>>), v); \
   }
 #define GREX_CUTOFF_VEC_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_CUTOFF_VEC, REGISTERBITS, BITPREFIX, REGISTERBITS)
@@ -72,8 +68,8 @@ GREX_FOREACH_X86_64_LEVEL(GREX_CUTOFF_VEC_ALL)
 
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubMask<T, tPart, tSize> cutoff_mask(std::size_t i,
-                                            thes::TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
-  return {.full = cutoff_mask(i, thes::type_tag<Mask<T, tSize>>)};
+                                            TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
+  return {.full = cutoff_mask(i, type_tag<Mask<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubVector<T, tPart, tSize> cutoff(std::size_t i, SubVector<T, tPart, tSize> v) {
@@ -81,19 +77,19 @@ inline SubVector<T, tPart, tSize> cutoff(std::size_t i, SubVector<T, tPart, tSiz
 }
 
 template<typename THalf>
-inline SuperMask<THalf> cutoff_mask(std::size_t i, thes::TypeTag<SuperMask<THalf>> /*tag*/) {
+inline SuperMask<THalf> cutoff_mask(std::size_t i, TypeTag<SuperMask<THalf>> /*tag*/) {
   if (i <= THalf::size) {
-    return {.lower = cutoff_mask(i, thes::type_tag<THalf>), .upper = zeros(thes::type_tag<THalf>)};
+    return {.lower = cutoff_mask(i, type_tag<THalf>), .upper = zeros(type_tag<THalf>)};
   }
   return {
-    .lower = ones(thes::type_tag<THalf>),
-    .upper = cutoff_mask(i - THalf::size, thes::type_tag<THalf>),
+    .lower = ones(type_tag<THalf>),
+    .upper = cutoff_mask(i - THalf::size, type_tag<THalf>),
   };
 }
 template<typename THalf>
 inline SuperVector<THalf> cutoff(std::size_t i, SuperVector<THalf> v) {
   if (i <= THalf::size) {
-    return {.lower = cutoff(i, v.lower), .upper = zeros(thes::type_tag<THalf>)};
+    return {.lower = cutoff(i, v.lower), .upper = zeros(type_tag<THalf>)};
   }
   return {.lower = v.lower, .upper = cutoff(i - THalf::size, v.upper)};
 }

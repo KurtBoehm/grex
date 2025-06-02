@@ -9,8 +9,6 @@
 
 #include <cstddef>
 
-#include "thesauros/types/type-tag.hpp" // IWYU pragma: keep
-
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
@@ -51,8 +49,8 @@ namespace grex::backend {
 #define GREX_VEC_INSERT_FALLBACK(KIND, BITS, SIZE, BITPREFIX) \
   inline Vector<KIND##BITS, SIZE> insert(Vector<KIND##BITS, SIZE> v, std::size_t index, \
                                          KIND##BITS value) { \
-    return blend(single_mask(index, thes::type_tag<Mask<KIND##BITS, SIZE>>), \
-                 broadcast(value, thes::type_tag<Vector<KIND##BITS, SIZE>>), v); \
+    return blend(single_mask(index, type_tag<Mask<KIND##BITS, SIZE>>), \
+                 broadcast(value, type_tag<Vector<KIND##BITS, SIZE>>), v); \
   }
 
 // Mask insert:

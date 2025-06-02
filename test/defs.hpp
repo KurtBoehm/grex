@@ -11,11 +11,10 @@
 #include <array>
 #include <cstddef>
 #include <cstdlib>
-#include <functional>
 
-#include "thesauros/format.hpp"
-#include "thesauros/static-ranges.hpp"
-#include "thesauros/types.hpp"
+#include <fmt/base.h>
+#include <fmt/color.h>
+#include <fmt/ranges.h>
 
 #include "grex/base/defs.hpp"
 #include "grex/types.hpp"
@@ -38,17 +37,18 @@ struct VectorChecker {
   static VectorChecker indices() {
     return VectorChecker{
       grex::Vector<T, tSize>::indices(),
-      thes::star::index_transform<tSize>([](auto i) { return T(i); }) | thes::star::to_array,
+      static_apply<tSize>([]<std::size_t... tIdxs>() { return std::array{T(tIdxs)...}; }),
     };
   }
 
   void check() const {
-    const bool same = thes::star::transform([](T v0, T v1) { return v0 == v1; }, vec, ref) |
-                      thes::star::left_reduce(std::logical_and{});
+    const bool same = static_apply<tSize>([&]<std::size_t... tIdxs>() {
+      return (... && (vec.get(index_tag<tIdxs>) == std::get<tIdxs>(ref)));
+    });
     if (same) {
-      fmt::print(thes::fg_green, "{} == {}\n", vec, ref);
+      fmt::print(fmt::fg(fmt::terminal_color::green), "{} == {}\n", vec, ref);
     } else {
-      fmt::print(thes::fg_red, "{} != {}\n", vec, ref);
+      fmt::print(fmt::fg(fmt::terminal_color::red), "{} != {}\n", vec, ref);
       std::exit(EXIT_FAILURE);
     }
   }
@@ -72,19 +72,21 @@ struct MaskChecker {
   explicit MaskChecker(Ts... values) : vec{values...}, ref{values...} {}
 
   static MaskChecker ones() {
+    auto f = [](std::size_t /*dummy*/) { return true; };
     return MaskChecker{
       grex::Mask<T, tSize>::ones(),
-      thes::star::constant<tSize>(true) | thes::star::to_array,
+      static_apply<tSize>([&]<std::size_t... tIdxs>() { return std::array{f(tIdxs)...}; }),
     };
   }
 
   void check() const {
-    const bool same = thes::star::transform([](T v0, T v1) { return v0 == v1; }, vec, ref) |
-                      thes::star::left_reduce(std::logical_and{});
+    const bool same = static_apply<tSize>([&]<std::size_t... tIdxs>() {
+      return (... && (vec.get(index_tag<tIdxs>) == std::get<tIdxs>(ref)));
+    });
     if (same) {
-      fmt::print(thes::fg_green, "{} == {}\n", vec, ref);
+      fmt::print(fmt::fg(fmt::terminal_color::green), "{} == {}\n", vec, ref);
     } else {
-      fmt::print(thes::fg_red, "{} != {}\n", vec, ref);
+      fmt::print(fmt::fg(fmt::terminal_color::red), "{} != {}\n", vec, ref);
       std::exit(EXIT_FAILURE);
     }
   }
@@ -92,27 +94,6 @@ struct MaskChecker {
 private:
   MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : vec{v}, ref{a} {}
 };
-
-inline void run_types_sizes(auto f) {
-  auto inner = [&]<typename T, std::size_t tSize>(thes::TypeTag<T> t, thes::IndexTag<tSize> s) {
-    fmt::print(thes::fg_blue, "{} × {}\n", thes::type_name<T>(), tSize);
-    f(t, s);
-  };
-  auto outer = [&]<typename T>(thes::TypeTag<T> t) {
-    thes::star::iota<1, 7> |
-      thes::star::for_each([&](auto i) { inner(t, thes::index_tag<1U << i>); });
-  };
-  outer(thes::type_tag<f32>);
-  outer(thes::type_tag<f64>);
-  outer(thes::type_tag<i8>);
-  outer(thes::type_tag<i16>);
-  outer(thes::type_tag<i32>);
-  outer(thes::type_tag<i64>);
-  outer(thes::type_tag<u8>);
-  outer(thes::type_tag<u16>);
-  outer(thes::type_tag<u32>);
-  outer(thes::type_tag<u64>);
-}
 } // namespace grex::test
 
 #endif // TEST_DEFS_HPP

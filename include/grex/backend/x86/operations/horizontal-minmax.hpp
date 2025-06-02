@@ -9,8 +9,6 @@
 
 #include <immintrin.h>
 
-#include "thesauros/types/value-tag.hpp"
-
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/operations/minmax.hpp"
@@ -21,7 +19,7 @@
 namespace grex::backend {
 // Baseline recursive definition for 256 and 512 bits
 #define GREX_HMINMAX_HALVES(OP, ...) \
-  return horizontal_##OP(OP(split(v, thes::index_tag<0>), split(v, thes::index_tag<1>)));
+  return horizontal_##OP(OP(split(v, index_tag<0>), split(v, index_tag<1>)));
 // f32
 #define GREX_HMINMAX_f32x2(OP, ...) \
   /* [v1, -, -, -] */ \

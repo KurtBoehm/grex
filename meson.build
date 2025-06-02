@@ -1,8 +1,6 @@
 project('grex', 'cpp', default_options: ['cpp_std=c++20', 'warning_level=3'])
 
-deps = [
-  dependency('thesauros'),
-]
+deps = [dependency('boost-preprocessor'), dependency('fmt')]
 
 grex_dep = declare_dependency(
   include_directories: include_directories('include'),

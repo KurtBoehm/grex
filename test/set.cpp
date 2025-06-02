@@ -6,8 +6,6 @@
 
 #include <cstddef>
 
-#include "thesauros/static-ranges.hpp"
-
 #include "grex/grex.hpp"
 
 #include "defs.hpp"
@@ -37,8 +35,8 @@ int main() {
     checker.check();
   }
   {
-    thes::star::iota<0, size> | thes::star::apply([](auto... values) {
-      test::VectorChecker<Value, size> checker{Value(size - values)...};
+    grex::static_apply<size>([]<std::size_t... tIdxs>() {
+      test::VectorChecker<Value, size> checker{Value(size - tIdxs)...};
       checker.check();
     });
   }
@@ -64,8 +62,8 @@ int main() {
     checker.check();
   }
   {
-    thes::star::iota<0, size> | thes::star::apply([](auto... values) {
-      test::MaskChecker<Value, size> checker{((values % 5) % 2 == 0)...};
+    grex::static_apply<size>([]<std::size_t... tIdxs>() {
+      test::MaskChecker<Value, size> checker{((tIdxs % 5) % 2 == 0)...};
       checker.check();
     });
   }

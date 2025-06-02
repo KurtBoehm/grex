@@ -7,8 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_MINMAX_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_MINMAX_HPP
 
-#include "thesauros/types/type-tag.hpp" // IWYU pragma: keep
-
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/bitwise.hpp" // IWYU pragma: keep
@@ -23,7 +21,7 @@ namespace grex::backend {
   return {.r = GREX_CAT(BITPREFIX##_##OP##_, GREX_EPU_SUFFIX(KIND, BITS))(a.r, b.r)};
 #define GREX_MINMAX_FLIP_IMPL(TOELEMENT, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
   auto signbit = broadcast(KIND##BITS(1U << GREX_CAT(BOOST_PP_DEC(BITS), U)), \
-                           thes::type_tag<Vector<KIND##BITS, SIZE>>); \
+                           type_tag<Vector<KIND##BITS, SIZE>>); \
   auto a1 = bitwise_xor(a, signbit); \
   auto b1 = bitwise_xor(b, signbit); \
   auto m1 = _mm_##OP##_ep##TOELEMENT(a1.r, b1.r); \

@@ -7,8 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CLASSIFICATION_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CLASSIFICATION_HPP
 
-#include "thesauros/types/type-tag.hpp" // IWYU pragma: keep
-
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
@@ -38,7 +36,7 @@ namespace grex::backend {
   /* mask out the sign bit to simplify the following comparisons */ \
   const Vector<u##BITS, SIZE> vabs{GREX_KINDCAST(KIND, u, BITS, REGISTERBITS, abs(v).r)}; \
   /* broadcast positive infinity as an unsigned integer */ \
-  const auto infty = broadcast(GREX_ISFIN_INFTY_##BITS, thes::type_tag<Vector<u##BITS, SIZE>>); \
+  const auto infty = broadcast(GREX_ISFIN_INFTY_##BITS, type_tag<Vector<u##BITS, SIZE>>); \
   /* if interpreted as an unsigned integer, positive infinity is the smalles non-finite value */ \
   return {.r = compare_lt(vabs, infty).r};
 

@@ -12,8 +12,6 @@
 #include <boost/preprocessor.hpp>
 #include <immintrin.h>
 
-#include "thesauros/types/type-tag.hpp" // IWYU pragma: keep
-
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
@@ -82,8 +80,8 @@ namespace grex::backend {
                           GREX_CAT(BITPREFIX##_cmpgt_, GREX_EPI_SUFFIX(KIND, BITS))(b.r, a.r))};
 // u8/16/32 on level 1, u64 on level 2 and 3: Flip the “sign” bit and use the signed comparison.
 #define GREX_CMPLT_UFLIP(KIND, BITS, SIZE, BITPREFIX) \
-  const auto signbits = broadcast(u##BITS{1} << u##BITS{BOOST_PP_DEC(BITS)}, \
-                                  thes::type_tag<Vector<KIND##BITS, SIZE>>); \
+  const auto signbits = \
+    broadcast(u##BITS{1} << u##BITS{BOOST_PP_DEC(BITS)}, type_tag<Vector<KIND##BITS, SIZE>>); \
   const auto a1 = bitwise_xor(a, signbits); \
   const auto b1 = bitwise_xor(b, signbits); \
   return {.r = GREX_CAT(BITPREFIX##_cmpgt_, GREX_EPI_SUFFIX(KIND, BITS))(b1.r, a1.r)};
@@ -98,7 +96,7 @@ namespace grex::backend {
 // u8/u16 on level 1: saturated difference different from zero
 #define GREX_CMPLT_SUBS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return compare_neq({.r = GREX_CAT(BITPREFIX##_subs_, GREX_EPU_SUFFIX(KIND, BITS))(b.r, a.r)}, \
-                     zeros(thes::type_tag<Vector<KIND##BITS, SIZE>>));
+                     zeros(type_tag<Vector<KIND##BITS, SIZE>>));
 // i64/u64 on level 1: Two 32 bit comparisons
 #define GREX_CMPLT_U32X2_u (u64{1} << u64{31}) | (u64{1} << u64{63})
 #define GREX_CMPLT_U32X2_i u64{1} << u64{31}
@@ -160,7 +158,7 @@ namespace grex::backend {
 // u8/u16 on level 1: saturated difference is from zero
 #define GREX_CMPGE_SUBS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return compare_eq({.r = GREX_CAT(BITPREFIX##_subs_, GREX_EPU_SUFFIX(KIND, BITS))(b.r, a.r)}, \
-                    zeros(thes::type_tag<Vector<KIND##BITS, SIZE>>));
+                    zeros(type_tag<Vector<KIND##BITS, SIZE>>));
 // f
 #define GREX_CMPGE_f(BITS, SIZE, ...) GREX_CMPGE_INTRINSIC(f, BITS, __VA_ARGS__)
 // i

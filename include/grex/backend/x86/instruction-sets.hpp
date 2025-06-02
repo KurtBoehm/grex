@@ -12,8 +12,6 @@
 #include <climits>
 #include <cstddef>
 
-#include "thesauros/static-ranges.hpp"
-
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
@@ -46,11 +44,13 @@ inline constexpr std::array<std::size_t, 1> register_bits{128};
 #endif
 template<Vectorizable T>
 inline constexpr std::array native_sizes =
-  register_bits | thes::star::transform([](std::size_t s) { return s / (sizeof(T) * CHAR_BIT); }) |
-  thes::star::to_array;
+  static_apply<register_bits.size()>([]<std::size_t... tIdxs>() {
+    return std::array{(std::get<tIdxs>(register_bits) / (sizeof(T) * CHAR_BIT))...};
+  });
 
 template<Vectorizable T, std::size_t tSize>
-inline constexpr bool is_native = native_sizes<T> | thes::star::contains(tSize);
+inline constexpr bool is_native = static_apply<native_sizes<T>.size()>(
+  []<std::size_t... tIdxs>() { return (... || (tSize == std::get<tIdxs>(native_sizes<T>))); });
 template<Vectorizable T, std::size_t tSize>
 inline constexpr bool is_subnative = tSize > 1 &&
                                      std::has_single_bit(tSize) && tSize < native_sizes<T>.front();

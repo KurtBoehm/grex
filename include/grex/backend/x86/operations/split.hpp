@@ -9,8 +9,6 @@
 
 #include <immintrin.h>
 
-#include "thesauros/types/value-tag.hpp"
-
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
@@ -44,7 +42,7 @@ namespace grex::backend {
   BOOST_PP_REMOVE_PARENS( \
     BOOST_PP_IF(BOOST_PP_CHECK_EMPTY(IMPL), (), \
                 (inline Vector<KIND##BITS, GREX_HALF(SIZE)> split( \
-                  Vector<KIND##BITS, SIZE> v, thes::IndexTag<HALF>) { return {.r = IMPL}; })))
+                  Vector<KIND##BITS, SIZE> v, IndexTag<HALF>) { return {.r = IMPL}; })))
 #define GREX_SPLIT_HALF(KIND, BITS, SIZE, HALF, BITPREFIX, REGISTERBITS) \
   GREX_SPLIT_HALF_IMPL(KIND, BITS, SIZE, HALF, \
                        GREX_SPLIT_##REGISTERBITS##_##HALF(KIND, BITS, BITPREFIX, REGISTERBITS))

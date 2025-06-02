@@ -3,7 +3,7 @@ SETUP_BASE=meson setup -Dtest=true --wrap-mode=forcefallback
 clear:
 	rm -rf build
 setup-opt: clear
-	$(SETUP_BASE) --warnlevel 1 --optimization=3 -Db_ndebug=true build
+	$(SETUP_BASE) --warnlevel 1 --buildtype=release -Db_ndebug=true build
 setup-opt-debug: clear
 	$(SETUP_BASE) --warnlevel 1 --optimization=3 -Ddebug=true build
 setup-debug: clear

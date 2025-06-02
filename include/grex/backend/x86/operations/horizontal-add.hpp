@@ -9,8 +9,6 @@
 
 #include <immintrin.h>
 
-#include "thesauros/types/value-tag.hpp"
-
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/operations/arithmetic.hpp"
@@ -21,7 +19,7 @@
 namespace grex::backend {
 // Baseline recursive definition for 256 and 512 bits
 #define GREX_HADD_HALVES(...) \
-  return horizontal_add(add(split(v, thes::index_tag<0>), split(v, thes::index_tag<1>)));
+  return horizontal_add(add(split(v, index_tag<0>), split(v, index_tag<1>)));
 // f32
 #define GREX_HADD_f32x2(...) \
   /* [v1, -, -, -] */ \

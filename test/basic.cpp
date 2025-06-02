@@ -8,13 +8,12 @@
 #include <cstddef>
 #include <limits>
 
-#include "thesauros/format.hpp"
+#include <fmt/base.h>
+#include <fmt/ranges.h>
 
 #include "grex/grex.hpp"
 
 int main() {
-  using namespace grex::literals;
-
   using Int = grex::i16;
   constexpr std::size_t vsize = 4;
   using IVec = grex::Vector<Int, vsize>;
