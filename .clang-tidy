@@ -10,6 +10,7 @@ Checks: "
   -zircon-*,
   -bugprone-easily-swappable-parameters,
   -bugprone-macro-parentheses,
+  -concurrency-mt-unsafe,
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-macro-usage,
   -cppcoreguidelines-pro-bounds-constant-array-index,

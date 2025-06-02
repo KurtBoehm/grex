@@ -28,6 +28,7 @@ namespace grex::backend {
 #define GREX_TYPES_MASK_COMPACT(KIND, BITS, SIZE, REGISTERBITS) \
   template<> \
   struct Mask<KIND##BITS, SIZE> { \
+    static constexpr std::size_t size = SIZE; \
     static constexpr std::size_t rbits = REGISTERBITS; \
     GREX_SIZEMMASK(SIZE) r; \
   }; \

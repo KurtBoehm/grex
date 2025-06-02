@@ -118,6 +118,10 @@ GREX_FOREACH_X86_64_LEVEL(GREX_SET_ALL)
 
 // SubVector
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
+inline SubVector<T, tPart, tSize> zeros(thes::TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
+  return {.full = zeros(thes::type_tag<Vector<T, tSize>>)};
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> broadcast(T value,
                                             thes::TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
   return {.full = broadcast(value, thes::type_tag<Vector<T, tSize>>)};
@@ -137,6 +141,19 @@ inline SubVector<T, tPart, tSize> indices(thes::TypeTag<SubVector<T, tPart, tSiz
 }
 
 // SubMask
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubMask<T, tPart, tSize> zeros(thes::TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
+  return {.full = zeros(thes::type_tag<Mask<T, tSize>>)};
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubMask<T, tPart, tSize> ones(thes::TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
+  return {.full = ones(thes::type_tag<Mask<T, tSize>>)};
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
+inline SubMask<T, tPart, tSize> broadcast(bool value,
+                                          thes::TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
+  return {.full = broadcast(value, thes::type_tag<Mask<T, tSize>>)};
+}
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubMask<T, tPart, tSize> set(thes::TypeTag<SubMask<T, tPart, tSize>> /*tag*/, Ts... values) {
   std::array<bool, tSize> elements{values...};

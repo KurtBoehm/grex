@@ -2,7 +2,8 @@ options_sub = subproject('options')
 args = options_sub.get_variable('all_args')
 
 foreach name, deps : {
-  'basic': []
+  'basic': [],
+  'set': [],
 }
   space_name = name.replace('-', ' ')
   test(
