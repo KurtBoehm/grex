@@ -33,10 +33,12 @@ namespace grex::backend {
 #define GREX_VEC_INSERT_AVX512_F64_4 _mm256_mask_broadcastsd_pd
 #define GREX_VEC_INSERT_AVX512_F64_8 _mm512_mask_broadcastsd_pd
 #define GREX_VEC_INSERT_AVX512_FP(KIND, BITS, SIZE, BITPREFIX) \
-  GREX_VEC_INSERT_AVX512_F##BITS##_##SIZE(v.r, GREX_SIZEMMASK(SIZE)(1U << index), \
-                                          GREX_CAT(_mm_set_s, GREX_FP_LETTER(KIND##BITS))(value))
+  GREX_VEC_INSERT_AVX512_F##BITS##_##SIZE( \
+    v.r, GREX_SIZEMMASK(SIZE)(GREX_CAT(u, GREX_MMASKSIZE(SIZE)){1} << index), \
+    GREX_CAT(_mm_set_s, GREX_FP_LETTER(KIND##BITS))(value))
 #define GREX_VEC_INSERT_AVX512_INT(KIND, BITS, SIZE, BITPREFIX) \
-  BITPREFIX##_mask_set1_epi##BITS(v.r, GREX_SIZEMMASK(SIZE)(1U << index), value)
+  BITPREFIX##_mask_set1_epi##BITS( \
+    v.r, GREX_SIZEMMASK(SIZE)(GREX_CAT(u, GREX_MMASKSIZE(SIZE)){1} << index), value)
 #define GREX_VEC_INSERT_AVX512_f GREX_VEC_INSERT_AVX512_FP
 #define GREX_VEC_INSERT_AVX512_i GREX_VEC_INSERT_AVX512_INT
 #define GREX_VEC_INSERT_AVX512_u GREX_VEC_INSERT_AVX512_INT

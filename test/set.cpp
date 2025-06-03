@@ -4,7 +4,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#include <array>
 #include <cstddef>
+
+#include <fmt/base.h>
 
 #include "grex/grex.hpp"
 
@@ -14,46 +17,70 @@ namespace test = grex::test;
 
 template<grex::Vectorizable T, std::size_t tSize>
 void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
+  using VC = test::VectorChecker<T, tSize>;
+  using MC = test::MaskChecker<T, tSize>;
+
   // vector
   {
-    test::VectorChecker<T, tSize> checker{};
+    VC checker{};
     checker.check();
   }
   {
-    test::VectorChecker<T, tSize> checker{T{127}};
+    VC checker{T{127}};
     checker.check();
   }
   {
     grex::static_apply<tSize>([]<std::size_t... tIdxs>() {
-      test::VectorChecker<T, tSize> checker{T(tSize - tIdxs)...};
+      VC checker{T(tSize - tIdxs)...};
       checker.check();
     });
   }
   {
-    auto checker = test::VectorChecker<T, tSize>::indices();
-    checker.check();
-  }
-  // mask
-  {
-    test::MaskChecker<T, tSize> checker{};
-    checker.check();
-  }
-  {
-    auto checker = test::MaskChecker<T, tSize>::ones();
-    checker.check();
-  }
-  {
-    test::MaskChecker<T, tSize> checker{false};
-    checker.check();
-  }
-  {
-    test::MaskChecker<T, tSize> checker{true};
+    auto checker = VC::indices();
     checker.check();
   }
   {
     grex::static_apply<tSize>([]<std::size_t... tIdxs>() {
-      test::MaskChecker<T, tSize> checker{((tIdxs % 5) % 2 == 0)...};
+      const VC base{T(T(tSize) - 2 * T(tIdxs) + 1)...};
+      for (std::size_t i = 0; i < tSize; ++i) {
+        const auto val = T((T(i % 7) - T(2)) * T(3));
+        VC v{base.vec.insert(i, val), std::array{((tIdxs == i) ? val : base.ref[tIdxs])...}};
+        v.check();
+      }
+    });
+  }
+
+  // mask
+  {
+    MC checker{};
+    checker.check();
+  }
+  {
+    auto checker = MC::ones();
+    checker.check();
+  }
+  {
+    MC checker{false};
+    checker.check();
+  }
+  {
+    MC checker{true};
+    checker.check();
+  }
+  {
+    grex::static_apply<tSize>([]<std::size_t... tIdxs>() {
+      MC checker{((tIdxs % 5) % 2 == 0)...};
       checker.check();
+    });
+  }
+  {
+    grex::static_apply<tSize>([]<std::size_t... tIdxs>() {
+      const MC base{(tIdxs % 3 != 1)...};
+      for (std::size_t i = 0; i < tSize; ++i) {
+        const bool val = i % 5 == 0;
+        MC v{base.mask.insert(i, val), std::array{((tIdxs == i) ? val : base.ref[tIdxs])...}};
+        v.check();
+      }
     });
   }
 }

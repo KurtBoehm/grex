@@ -6,7 +6,6 @@
 
 #include <array>
 #include <cstddef>
-#include <limits>
 
 #include <fmt/base.h>
 #include <fmt/ranges.h>
@@ -23,14 +22,8 @@ int main() {
 
   const IVec i1{Int{4}, Int{3}, Int{2}, Int{-1}};
   const IVec i2{Int{-2}, Int{3}, Int{4}, Int{5}};
-  const IMask m1{true, true, false, true};
-  const IMask m2{true, false, false, true};
   std::array<Float, vsize> f1d{4.0, 3.0, 2.0, -1.0};
   const auto f1 = FVec::load(f1d.data());
-  const FVec f2{-2.0, 3.0, 4.0, 5.0};
-  const FVec f3{1.0, -1.0, 1.0, -1.0};
-  const FVec f4{1.0, std::numeric_limits<Float>::infinity(),
-                std::numeric_limits<Float>::quiet_NaN(), -1.0};
 
   fmt::print("{}.insert(1, 2) = {}\n", i1, i1.insert(1, 2));
   fmt::print("load_part({}, 0) = {}\n", f1d, FVec::load_part(f1d.data(), 0));
@@ -53,16 +46,7 @@ int main() {
   f1.store_part(buf.data(), 4);
   fmt::print("store_part({}, 4) = {}\n", f1, buf);
 
-  fmt::print("horizontal_sum({}) = {}\n", i2, grex::horizontal_add(i2));
-  fmt::print("horizontal_sum({}) = {}\n", f1, grex::horizontal_add(f1));
-  fmt::print("horizontal_min({}) = {}\n", i2, grex::horizontal_min(i2));
-  fmt::print("horizontal_min({}) = {}\n", f1, grex::horizontal_min(f1));
-  fmt::print("horizontal_max({}) = {}\n", i2, grex::horizontal_max(i2));
-  fmt::print("horizontal_max({}) = {}\n", f1, grex::horizontal_max(f1));
-
   fmt::print("cutoff({}, {}) = {}\n", i1, IVec::size / 2, i1.cutoff(IVec::size / 2));
 
   fmt::print("cutoff_mask({}) = {}\n", IMask::size / 2, IMask::cutoff_mask(IMask::size / 2));
-  fmt::print("horizontal_and({}) = {}\n", m1, grex::horizontal_and(m1));
-  fmt::print("horizontal_and({}) = {}\n", m1 || !m2, grex::horizontal_and(m1 || !m2));
 }
