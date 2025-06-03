@@ -197,6 +197,12 @@
   inline TYPE<T, tPart, tSize> NAME(TYPE<T, tPart, tSize> a, TYPE<T, tPart, tSize> b) { \
     return {.full = NAME(a.full, b.full)}; \
   }
+#define GREX_SUB_TERNARY(TYPE, NAME) \
+  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
+  inline TYPE<T, tPart, tSize> NAME(TYPE<T, tPart, tSize> a, TYPE<T, tPart, tSize> b, \
+                                    TYPE<T, tPart, tSize> c) { \
+    return {.full = NAME(a.full, b.full, c.full)}; \
+  }
 #define GREX_SUBVECTOR_UNARY(NAME) GREX_SUB_UNARY(SubVector, NAME)
 #define GREX_SUBVECTOR_BINARY(NAME) GREX_SUB_BINARY(SubVector, NAME)
 #define GREX_SUBVECTOR_TERNARY(NAME) GREX_SUB_TERNARY(SubVector, NAME)

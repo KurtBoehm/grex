@@ -71,6 +71,16 @@ VectorChecker<T, tSize> vv2v_cw(auto op, VectorChecker<T, tSize> a, VectorChecke
       [&]<std::size_t... tIdxs>() { return std::array{T(op(a.ref[tIdxs], b.ref[tIdxs]))...}; }),
   };
 }
+template<Vectorizable T, std::size_t tSize>
+VectorChecker<T, tSize> vvv2v_cw(auto op, VectorChecker<T, tSize> a, VectorChecker<T, tSize> b,
+                                 VectorChecker<T, tSize> c) {
+  return VectorChecker<T, tSize>{
+    op(a.vec, b.vec, c.vec),
+    static_apply<tSize>([&]<std::size_t... tIdxs>() {
+      return std::array{T(op(a.ref[tIdxs], b.ref[tIdxs], c.ref[tIdxs]))...};
+    }),
+  };
+}
 
 template<Vectorizable T, std::size_t tSize>
 struct MaskChecker {
