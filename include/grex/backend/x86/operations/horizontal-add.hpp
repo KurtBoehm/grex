@@ -12,7 +12,7 @@
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/operations/arithmetic.hpp"
-#include "grex/backend/x86/operations/split.hpp"
+#include "grex/backend/x86/operations/split.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
@@ -104,7 +104,7 @@ namespace grex::backend {
   /* [v1, -, -, -] */ \
   const __m128i shuf = _mm_shuffle_epi32(vf.r, 1); \
   /* [v0 + v1, -, -, -][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si32(_mm_add_epi32(vf.r, shuf)));
+  return GREX_KINDCAST_SINGLE(i, KIND, BITS, _mm_cvtsi128_si32(_mm_add_epi32(vf.r, shuf)));
 #define GREX_HADD_i32x4(KIND, BITS, ...) \
   /* [v2, v3, v2, v3] */ \
   const __m128i unpackhi = _mm_unpackhi_epi64(v.r, v.r); \
@@ -113,7 +113,7 @@ namespace grex::backend {
   /* [v1 + v3, -, -, -] */ \
   const __m128i shuf = _mm_shuffle_epi32(pairs, 1); \
   /* [v0 + v2 + v1 + v3, -, -, -][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si32(_mm_add_epi32(pairs, shuf)));
+  return GREX_KINDCAST_SINGLE(i, KIND, BITS, _mm_cvtsi128_si32(_mm_add_epi32(pairs, shuf)));
 #define GREX_HADD_i32x8 GREX_HADD_HALVES
 #define GREX_HADD_i32x16 GREX_HADD_HALVES
 // i64/u64

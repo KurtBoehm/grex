@@ -34,9 +34,14 @@ namespace grex::backend {
 #define GREX_SET_SUFFIX_i(BITS, REGISTERBITS) GREX_SET_EPI(BITS, REGISTERBITS)
 #define GREX_SET_SUFFIX_u(BITS, REGISTERBITS) GREX_SET_EPI(BITS, REGISTERBITS)
 #define GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS) GREX_SET_SUFFIX_##KIND(BITS, REGISTERBITS)
+// Define the casts to the argument type of the intrinsics
+#define GREX_SET_CAST_f(BITS, X) X
+#define GREX_SET_CAST_i(BITS, X) X
+#define GREX_SET_CAST_u(BITS, X) i##BITS(X)
+#define GREX_SET_CAST(KIND, BITS, X) GREX_SET_CAST_##KIND(BITS, X)
 // Helpers to define function arguments for the set-based operations
 #define GREX_SET_ARG(CNT, IDX, TYPE) BOOST_PP_COMMA_IF(IDX) TYPE v##IDX
-#define GREX_SET_VAL(CNT, IDX) v##IDX BOOST_PP_COMMA_IF(IDX)
+#define GREX_SET_VAL(CNT, IDX, KIND, BITS) GREX_SET_CAST(KIND, BITS, v##IDX) BOOST_PP_COMMA_IF(IDX)
 #define GREX_SET_NEGVAL(CNT, IDX, BITS) -i##BITS(v##IDX) BOOST_PP_COMMA_IF(IDX)
 
 #define GREX_CMASK_SET_OP(CNT, IDX, TYPE) \
@@ -91,12 +96,13 @@ namespace grex::backend {
     return {.r = GREX_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))()}; \
   } \
   inline Vector<KIND##BITS, SIZE> broadcast(KIND##BITS value, TypeTag<Vector<KIND##BITS, SIZE>>) { \
-    return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))(value)}; \
+    return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))( \
+              GREX_SET_CAST(KIND, BITS, value))}; \
   } \
   inline Vector<KIND##BITS, SIZE> set(TypeTag<Vector<KIND##BITS, SIZE>>, \
                                       GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
     return {.r = GREX_CAT(BITPREFIX##_set_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))( \
-              GREX_RREPEAT(SIZE, GREX_SET_VAL))}; \
+              GREX_RREPEAT(SIZE, GREX_SET_VAL, KIND, BITS))}; \
   }
 
 #define GREX_SET(...) GREX_SET_VEC(__VA_ARGS__) GREX_SET_MASK(__VA_ARGS__)

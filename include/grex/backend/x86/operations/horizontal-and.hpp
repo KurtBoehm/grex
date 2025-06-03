@@ -23,7 +23,7 @@ namespace grex::backend {
 #define GREX_HAND_BROAD(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   GREX_HAND_TYPE_##REGISTERBITS(BITPREFIX##_movemask_epi8(m.r)) == GREX_HAND_TYPE_##REGISTERBITS(-1)
 #define GREX_HAND_BROAD_SUB(KIND, BITS, PART, SIZE) \
-  u16(_mm_movemask_epi8(m.full.r) & GREX_HAND_MASK_##PART) == GREX_HAND_MASK_##PART
+  u32(_mm_movemask_epi8(m.full.r)) & GREX_HAND_MASK_##PART == GREX_HAND_MASK_##PART
 
 #define GREX_HAND_COMPACT_64 u64(m.r) == u64(-1)
 #define GREX_HAND_COMPACT_32 u32(m.r) == u32(-1)

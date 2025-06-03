@@ -101,7 +101,7 @@ namespace grex::backend {
 #define GREX_CMPLT_U32X2_u (u64{1} << u64{31}) | (u64{1} << u64{63})
 #define GREX_CMPLT_U32X2_i u64{1} << u64{31}
 #define GREX_CMPLT_U32X2(KIND) \
-  const auto s = _mm_set1_epi64x(GREX_CMPLT_U32X2_##KIND); \
+  const auto s = _mm_set1_epi64x(i64(GREX_CMPLT_U32X2_##KIND)); \
   const auto as = _mm_xor_si128(a.r, s); \
   const auto bs = _mm_xor_si128(b.r, s); \
   const auto lt = _mm_cmplt_epi32(as, bs); \
