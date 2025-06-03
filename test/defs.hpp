@@ -92,6 +92,49 @@ struct MaskChecker {
 private:
   MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
 };
+
+template<typename T>
+struct TypeNameTrait;
+#define GREX_TYPE_TRAIT(TYPE) \
+  template<> \
+  struct TypeNameTrait<TYPE> { \
+    static constexpr auto name = #TYPE; \
+  };
+GREX_TYPE_TRAIT(f32);
+GREX_TYPE_TRAIT(f64);
+GREX_TYPE_TRAIT(i8);
+GREX_TYPE_TRAIT(i16);
+GREX_TYPE_TRAIT(i32);
+GREX_TYPE_TRAIT(i64);
+GREX_TYPE_TRAIT(u8);
+GREX_TYPE_TRAIT(u16);
+GREX_TYPE_TRAIT(u32);
+GREX_TYPE_TRAIT(u64);
+#undef GREX_TYPE_TRAIT
+template<typename T>
+constexpr auto type_name() {
+  return TypeNameTrait<T>::name;
+}
+
+inline void run_types_sizes(auto f) {
+  auto inner = [&]<typename T, std::size_t tSize>(TypeTag<T> t, IndexTag<tSize> s) {
+    fmt::print(fmt::fg(fmt::terminal_color::blue), "{}x{}\n", type_name<T>(), tSize);
+    f(t, s);
+  };
+  auto outer = [&]<typename T>(TypeTag<T> t) {
+    static_apply<1, 7>([&]<std::size_t... tIdxs>() { (..., inner(t, index_tag<1U << tIdxs>)); });
+  };
+  outer(type_tag<f32>);
+  outer(type_tag<f64>);
+  outer(type_tag<i8>);
+  outer(type_tag<i16>);
+  outer(type_tag<i32>);
+  outer(type_tag<i64>);
+  outer(type_tag<u8>);
+  outer(type_tag<u16>);
+  outer(type_tag<u32>);
+  outer(type_tag<u64>);
+}
 } // namespace grex::test
 
 #endif // TEST_DEFS_HPP

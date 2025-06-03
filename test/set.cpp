@@ -10,61 +10,54 @@
 
 #include "defs.hpp"
 
-#ifdef GREX_TEST_TYPE
-using Value = grex::GREX_TEST_TYPE;
-#else
-using Value = grex::f32;
-#endif
-
-#ifdef GREX_TEST_SIZE
-inline constexpr std::size_t size = GREX_TEST_SIZE;
-#else
-inline constexpr std::size_t size = 4;
-#endif
-
 namespace test = grex::test;
 
-int main() {
+template<grex::Vectorizable T, std::size_t tSize>
+void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
   // vector
   {
-    test::VectorChecker<Value, size> checker{};
+    test::VectorChecker<T, tSize> checker{};
     checker.check();
   }
   {
-    test::VectorChecker<Value, size> checker{Value{127}};
+    test::VectorChecker<T, tSize> checker{T{127}};
     checker.check();
   }
   {
-    grex::static_apply<size>([]<std::size_t... tIdxs>() {
-      test::VectorChecker<Value, size> checker{Value(size - tIdxs)...};
+    grex::static_apply<tSize>([]<std::size_t... tIdxs>() {
+      test::VectorChecker<T, tSize> checker{T(tSize - tIdxs)...};
       checker.check();
     });
   }
   {
-    auto checker = test::VectorChecker<Value, size>::indices();
+    auto checker = test::VectorChecker<T, tSize>::indices();
     checker.check();
   }
   // mask
   {
-    test::MaskChecker<Value, size> checker{};
+    test::MaskChecker<T, tSize> checker{};
     checker.check();
   }
   {
-    auto checker = test::MaskChecker<Value, size>::ones();
+    auto checker = test::MaskChecker<T, tSize>::ones();
     checker.check();
   }
   {
-    test::MaskChecker<Value, size> checker{false};
+    test::MaskChecker<T, tSize> checker{false};
     checker.check();
   }
   {
-    test::MaskChecker<Value, size> checker{true};
+    test::MaskChecker<T, tSize> checker{true};
     checker.check();
   }
   {
-    grex::static_apply<size>([]<std::size_t... tIdxs>() {
-      test::MaskChecker<Value, size> checker{((tIdxs % 5) % 2 == 0)...};
+    grex::static_apply<tSize>([]<std::size_t... tIdxs>() {
+      test::MaskChecker<T, tSize> checker{((tIdxs % 5) % 2 == 0)...};
       checker.check();
     });
   }
+}
+
+int main() {
+  test::run_types_sizes([](auto... args) { run(args...); });
 }
