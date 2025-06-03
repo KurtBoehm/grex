@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <cstddef>
 #include <cstdlib>
 
@@ -31,7 +32,7 @@ struct VectorChecker {
     std::ranges::fill(ref, value);
   }
   template<typename... Ts>
-  requires(sizeof...(Ts) == tSize)
+  requires(sizeof...(Ts) == tSize && (... && std::convertible_to<Ts, T>))
   explicit VectorChecker(Ts... values) : vec{values...}, ref{values...} {}
 
   static VectorChecker indices() {
@@ -52,9 +53,24 @@ struct VectorChecker {
     }
   }
 
-private:
   VectorChecker(grex::Vector<T, tSize> v, std::array<T, tSize> a) : vec{v}, ref{a} {}
 };
+
+template<Vectorizable T, std::size_t tSize>
+VectorChecker<T, tSize> v2v_cw(auto op, VectorChecker<T, tSize> a) {
+  return VectorChecker<T, tSize>{
+    op(a.vec),
+    static_apply<tSize>([&]<std::size_t... tIdxs>() { return std::array{T(op(a.ref[tIdxs]))...}; }),
+  };
+}
+template<Vectorizable T, std::size_t tSize>
+VectorChecker<T, tSize> vv2v_cw(auto op, VectorChecker<T, tSize> a, VectorChecker<T, tSize> b) {
+  return VectorChecker<T, tSize>{
+    op(a.vec, b.vec),
+    static_apply<tSize>(
+      [&]<std::size_t... tIdxs>() { return std::array{T(op(a.ref[tIdxs], b.ref[tIdxs]))...}; }),
+  };
+}
 
 template<Vectorizable T, std::size_t tSize>
 struct MaskChecker {

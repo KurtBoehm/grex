@@ -69,7 +69,7 @@ namespace grex::backend {
   __m128i negative = _mm_sub_epi8(_mm_setzero_si128(), v.r); \
   /* take unsigned min(c, -c) for each component c */ \
   /* because the bigger signed value is the smaller unsigned value due to the sign bit */ \
-  return {.r = _mm_max_epi16(v.r, negative)};
+  return {.r = _mm_min_epu8(v.r, negative)};
 // Case distinction
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_ABS_INT64 GREX_ABS_INT64_CMP

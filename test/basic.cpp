@@ -34,15 +34,6 @@ int main() {
                 std::numeric_limits<Float>::quiet_NaN(), -1.0};
   const auto fm1 = FMask::ones().insert(2, false);
 
-  fmt::print("-{} = {}, -{} = {}\n", i1, -i1, f1, -f1);
-  fmt::print("{} + {} = {}\n", i1, i2, i1 + i2);
-  fmt::print("{} - {} = {}\n", i1, i2, i1 - i2);
-  fmt::print("{} * {} = {}\n", i1, i2, i1 * i2);
-  fmt::print("{} / {} = {}\n", f1, f2, f1 / f2);
-  fmt::print("~{} = {}\n", i1, ~i1);
-  fmt::print("{} & {} = {}\n", i1, i2, i1 & i2);
-  fmt::print("{} | {} = {}\n", i1, i2, i1 | i2);
-  fmt::print("{} ^ {} = {}\n", i1, i2, i1 ^ i2);
   fmt::print("{}.insert(1, 2) = {}\n", i1, i1.insert(1, 2));
   fmt::print("load_part({}, 0) = {}\n", f1d, FVec::load_part(f1d.data(), 0));
   fmt::print("load_part({}, 1) = {}\n", f1d, FVec::load_part(f1d.data(), 1));
@@ -68,7 +59,6 @@ int main() {
   fmt::print("fmsub({}, {}, {}) = {}\n", f1, f2, f3, grex::fmsub(f1, f2, f3));
   fmt::print("fnmadd({}, {}, {}) = {}\n", f1, f2, f3, grex::fnmadd(f1, f2, f3));
   fmt::print("fnmsub({}, {}, {}) = {}\n", f1, f2, f3, grex::fnmsub(f1, f2, f3));
-  fmt::print("abs({}) = {}\n", i2, grex::abs(i2));
   fmt::print("horizontal_sum({}) = {}\n", i2, grex::horizontal_add(i2));
   fmt::print("horizontal_sum({}) = {}\n", f1, grex::horizontal_add(f1));
   fmt::print("horizontal_min({}) = {}\n", i2, grex::horizontal_min(i2));

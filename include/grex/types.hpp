@@ -10,6 +10,7 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
+#include <type_traits>
 
 #include "grex/backend.hpp"
 #include "grex/base.hpp"
@@ -196,8 +197,15 @@ struct Vector {
 private:
   Backend vec_;
 };
+template<typename T>
+struct VectorTrait : public std::false_type {};
+template<Vectorizable T, std::size_t tSize>
+struct VectorTrait<Vector<T, tSize>> : public std::true_type {};
+template<typename T>
+concept AnyVector = VectorTrait<T>::value;
 
 template<Vectorizable T, std::size_t tSize>
+requires(std::floating_point<T> || std::signed_integral<T>)
 inline Vector<T, tSize> abs(Vector<T, tSize> v) {
   return Vector<T, tSize>{backend::abs(v.backend())};
 }
