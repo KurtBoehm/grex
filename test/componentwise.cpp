@@ -18,101 +18,129 @@ namespace test = grex::test;
 
 template<grex::Vectorizable T, std::size_t tSize>
 void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
-  // vector
-  auto v2v = [](auto op) {
-    grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      test::VectorChecker<T, tSize> a{T(T(tSize) - 2 * T(tIdxs))...};
-      auto checker = test::v2v_cw(op, a);
-      checker.check();
-    });
-  };
-  auto vv2v = [](auto op) {
-    grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      test::VectorChecker<T, tSize> a{T(T(tSize) - 2 * T(tIdxs))...};
-      test::VectorChecker<T, tSize> b{T(tIdxs % 5)...};
-      auto checker = test::vv2v_cw(op, a, b);
-      checker.check();
-    });
-  };
-  auto vvv2v = [](auto op) {
-    grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      test::VectorChecker<T, tSize> a{T(T(tSize) - 2 * T(tIdxs))...};
-      test::VectorChecker<T, tSize> b{T(tIdxs % 5)...};
-      test::VectorChecker<T, tSize> c{T(T(tIdxs) - 2 * T(tIdxs % 3))...};
-      auto checker = test::vvv2v_cw(op, a, b, c);
-      checker.check();
-    });
-  };
-  v2v(std::negate{});
-  vv2v(std::plus{});
-  vv2v(std::minus{});
-  vv2v(std::multiplies{});
-  if constexpr (std::floating_point<T>) {
-    vv2v(std::divides{});
-  }
-  if constexpr (std::integral<T>) {
-    fmt::print("bit\n");
-    v2v(std::bit_not{});
-    vv2v(std::bit_and{});
-    vv2v(std::bit_or{});
-    vv2v(std::bit_xor{});
-  }
-  if constexpr (std::floating_point<T> || std::signed_integral<T>) {
-    fmt::print("abs\n");
-    v2v([]<typename TV>(TV a) {
-      if constexpr (grex::AnyVector<TV>) {
-        return grex::abs(a);
-      } else {
-        return std::abs(a);
-      }
-    });
-  }
-  fmt::print("min\n");
-  vv2v([]<typename TV>(TV a, TV b) {
-    if constexpr (grex::AnyVector<TV>) {
-      return grex::min(a, b);
-    } else {
-      return std::min(a, b);
+  using Vec = grex::Vector<T, tSize>;
+  using Mask = grex::Mask<T, tSize>;
+  using VC = test::VectorChecker<T, tSize>;
+  using MC = test::MaskChecker<T, tSize>;
+
+  // vector-only
+  {
+    auto v2v = [](auto op) {
+      grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+        VC a{T(T(tSize) - 2 * T(tIdxs))...};
+        auto checker = test::v2v_cw(op, a);
+        checker.check();
+      });
+    };
+    auto vv2v = [](auto op) {
+      grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+        VC a{T(T(tSize) - 2 * T(tIdxs))...};
+        VC b{T(tIdxs % 5)...};
+        auto checker = test::vv2v_cw(op, a, b);
+        checker.check();
+      });
+    };
+    auto vvv2v = [](auto op) {
+      grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+        VC a{T(T(tSize) - 2 * T(tIdxs))...};
+        VC b{T(tIdxs % 5)...};
+        VC c{T(T(tIdxs) - 2 * T(tIdxs % 3))...};
+        auto checker = test::vvv2v_cw(op, a, b, c);
+        checker.check();
+      });
+    };
+    v2v(std::negate{});
+    vv2v(std::plus{});
+    vv2v(std::minus{});
+    vv2v(std::multiplies{});
+    if constexpr (std::floating_point<T>) {
+      vv2v(std::divides{});
     }
-  });
-  fmt::print("max\n");
-  vv2v([]<typename TV>(TV a, TV b) {
-    if constexpr (grex::AnyVector<TV>) {
-      return grex::max(a, b);
-    } else {
-      return std::max(a, b);
+    if constexpr (std::integral<T>) {
+      fmt::print("bit\n");
+      v2v(std::bit_not{});
+      vv2v(std::bit_and{});
+      vv2v(std::bit_or{});
+      vv2v(std::bit_xor{});
     }
-  });
-  if constexpr (std::floating_point<T>) {
-    fmt::print("fmadd family\n");
-    vvv2v([]<typename TV>(TV a, TV b, TV c) {
+    if constexpr (std::floating_point<T> || std::signed_integral<T>) {
+      fmt::print("abs\n");
+      v2v([]<typename TV>(TV a) {
+        if constexpr (grex::AnyVector<TV>) {
+          return grex::abs(a);
+        } else {
+          return std::abs(a);
+        }
+      });
+    }
+    fmt::print("min\n");
+    vv2v([]<typename TV>(TV a, TV b) {
       if constexpr (grex::AnyVector<TV>) {
-        return grex::fmadd(a, b, c);
+        return grex::min(a, b);
       } else {
-        return std::fma(a, b, c);
+        return std::min(a, b);
       }
     });
-    vvv2v([]<typename TV>(TV a, TV b, TV c) {
+    fmt::print("max\n");
+    vv2v([]<typename TV>(TV a, TV b) {
       if constexpr (grex::AnyVector<TV>) {
-        return grex::fmsub(a, b, c);
+        return grex::max(a, b);
       } else {
-        return std::fma(a, b, -c);
+        return std::max(a, b);
       }
     });
-    vvv2v([]<typename TV>(TV a, TV b, TV c) {
-      if constexpr (grex::AnyVector<TV>) {
-        return grex::fnmadd(a, b, c);
-      } else {
-        return std::fma(-a, b, c);
-      }
-    });
-    vvv2v([]<typename TV>(TV a, TV b, TV c) {
-      if constexpr (grex::AnyVector<TV>) {
-        return grex::fnmsub(a, b, c);
-      } else {
-        return -std::fma(a, b, c);
-      }
-    });
+    if constexpr (std::floating_point<T>) {
+      fmt::print("fmadd family\n");
+      vvv2v([]<typename TV>(TV a, TV b, TV c) {
+        if constexpr (grex::AnyVector<TV>) {
+          return grex::fmadd(a, b, c);
+        } else {
+          return std::fma(a, b, c);
+        }
+      });
+      vvv2v([]<typename TV>(TV a, TV b, TV c) {
+        if constexpr (grex::AnyVector<TV>) {
+          return grex::fmsub(a, b, c);
+        } else {
+          return std::fma(a, b, -c);
+        }
+      });
+      vvv2v([]<typename TV>(TV a, TV b, TV c) {
+        if constexpr (grex::AnyVector<TV>) {
+          return grex::fnmadd(a, b, c);
+        } else {
+          return std::fma(-a, b, c);
+        }
+      });
+      vvv2v([]<typename TV>(TV a, TV b, TV c) {
+        if constexpr (grex::AnyVector<TV>) {
+          return grex::fnmsub(a, b, c);
+        } else {
+          return -std::fma(a, b, c);
+        }
+      });
+    }
+  }
+
+  // masked component-wise operations
+  {
+    fmt::print("masked (vector, vector) → (vector)\n");
+    auto mvv2v = [](auto mop, auto op) {
+      grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+        MC m{((tIdxs % 5) % 2 == 1)...};
+        VC a{T(T(tSize) - 2 * T(tIdxs))...};
+        VC b{T(tIdxs % 5)...};
+        fmt::print("({}, {}, {})\n", m.mask, a.vec, b.vec);
+        auto checker = test::masked_vv2v_cw(mop, op, m, a, b);
+        checker.check();
+      });
+    };
+    mvv2v([](Mask m, Vec a, Vec b) { return grex::mask_add(m, a, b); }, std::plus{});
+    mvv2v([](Mask m, Vec a, Vec b) { return grex::mask_subtract(m, a, b); }, std::minus{});
+    mvv2v([](Mask m, Vec a, Vec b) { return grex::mask_multiply(m, a, b); }, std::multiplies{});
+    if constexpr (std::floating_point<T>) {
+      mvv2v([](Mask m, Vec a, Vec b) { return grex::mask_divide(m, a, b); }, std::divides{});
+    }
   }
 }
 

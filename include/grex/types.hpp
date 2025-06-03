@@ -144,11 +144,6 @@ struct Vector {
   void store_part(T* value, std::size_t num) const {
     backend::store_part(value, vec_, num);
   }
-  std::array<T, tSize> as_array() const {
-    std::array<T, tSize> out{};
-    store(out.data());
-    return out;
-  }
 
   Vector operator~() const
   requires(std::integral<T>)

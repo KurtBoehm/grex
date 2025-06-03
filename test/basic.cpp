@@ -68,7 +68,7 @@ int main() {
   fmt::print("mask_add({}, {}, {}) = {}\n", m1, i1, i2, grex::mask_add(m1, i1, i2));
   fmt::print("mask_subtract({}, {}, {}) = {}\n", m1, i1, i2, grex::mask_subtract(m1, i1, i2));
   fmt::print("mask_multiply({}, {}, {}) = {}\n", m1, i1, i2, grex::mask_multiply(m1, i1, i2));
-  fmt::print("mask_divide({}, {}, {}) = {}\n", m1, f1, f2, grex::mask_divide(fm1, f1, f2));
+  fmt::print("mask_divide({}, {}, {}) = {}\n", fm1, f1, f2, grex::mask_divide(fm1, f1, f2));
   fmt::print("min({}, {}) = {}\n", i1, i2, grex::min(i1, i2));
   fmt::print("max({}, {}) = {}\n", i1, i2, grex::max(i1, i2));
   fmt::print("blend_zero: {}\n", grex::blend_zero(m1, i1));

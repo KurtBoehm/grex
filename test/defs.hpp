@@ -119,6 +119,17 @@ private:
   MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
 };
 
+template<Vectorizable T, std::size_t tSize>
+VectorChecker<T, tSize> masked_vv2v_cw(auto mop, auto op, MaskChecker<T, tSize> m,
+                                       VectorChecker<T, tSize> a, VectorChecker<T, tSize> b) {
+  return VectorChecker<T, tSize>{
+    mop(m.mask, a.vec, b.vec),
+    static_apply<tSize>([&]<std::size_t... tIdxs>() {
+      return std::array{T(m.ref[tIdxs] ? op(a.ref[tIdxs], b.ref[tIdxs]) : a.ref[tIdxs])...};
+    }),
+  };
+}
+
 template<typename T>
 struct TypeNameTrait;
 #define GREX_TYPE_TRAIT(TYPE) \
