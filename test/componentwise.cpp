@@ -4,6 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <functional>
@@ -139,6 +140,31 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
     mvv2v([](Mask m, Vec a, Vec b) { return grex::mask_multiply(m, a, b); }, std::multiplies{});
     if constexpr (std::floating_point<T>) {
       mvv2v([](Mask m, Vec a, Vec b) { return grex::mask_divide(m, a, b); }, std::divides{});
+    }
+    {
+      fmt::print("blend_zero\n");
+      grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+        MC m{((tIdxs % 5) % 2 == 1)...};
+        VC a{T(T(tSize) - 2 * T(tIdxs))...};
+        VC checker{
+          grex::blend_zero(m.mask, a.vec),
+          std::array{T(m.ref[tIdxs] ? a.ref[tIdxs] : 0)...},
+        };
+        checker.check();
+      });
+    }
+    {
+      fmt::print("blend\n");
+      grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+        MC m{((tIdxs % 5) % 2 == 1)...};
+        VC a{T(T(tSize) - 2 * T(tIdxs))...};
+        VC b{T(tIdxs % 5)...};
+        VC checker{
+          grex::blend(m.mask, a.vec, b.vec),
+          std::array<T, tSize>{T(m.ref[tIdxs] ? b.ref[tIdxs] : a.ref[tIdxs])...},
+        };
+        checker.check();
+      });
     }
   }
 
