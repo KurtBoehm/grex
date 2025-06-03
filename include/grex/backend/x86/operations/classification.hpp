@@ -15,6 +15,7 @@
 #include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
+#include <cstddef>
 
 namespace grex::backend {
 // based on VCL
@@ -55,6 +56,10 @@ namespace grex::backend {
   GREX_FOREACH_FP_TYPE(GREX_ISFIN, REGISTERBITS, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_ISFIN_ALL)
 
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubMask<T, tPart, tSize> is_finite(SubVector<T, tPart, tSize> v) {
+  return {.full = is_finite(v.full)};
+}
 template<typename THalf>
 inline auto is_finite(SuperVector<THalf> v) {
   return SuperMask{.lower = is_finite(v.lower), .upper = is_finite(v.upper)};

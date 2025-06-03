@@ -10,6 +10,7 @@
 #include <functional>
 
 #include <fmt/base.h>
+#include <limits>
 
 #include "grex/grex.hpp"
 
@@ -185,6 +186,17 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
     vv2m(std::greater{});
     vv2m(std::greater_equal{});
     vv2m(std::less_equal{});
+  }
+
+  // vector-to-mask operations
+  if constexpr (std::floating_point<T>) {
+    grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+      VC a{((tIdxs % 3 == 0)
+              ? std::numeric_limits<T>::quiet_NaN()
+              : ((tIdxs % 3 == 2) ? std::numeric_limits<T>::infinity() : T(tIdxs)))...};
+      MC checker{grex::is_finite(a.vec), std::array{std::isfinite(a.ref[tIdxs])...}};
+      checker.check();
+    });
   }
 
   // mask-only operations

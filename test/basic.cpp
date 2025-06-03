@@ -59,20 +59,10 @@ int main() {
   fmt::print("horizontal_min({}) = {}\n", f1, grex::horizontal_min(f1));
   fmt::print("horizontal_max({}) = {}\n", i2, grex::horizontal_max(i2));
   fmt::print("horizontal_max({}) = {}\n", f1, grex::horizontal_max(f1));
-  fmt::print("blend_zero: {}\n", grex::blend_zero(m1, i1));
-  fmt::print("blend: {}\n", grex::blend(m1, i1, i2));
 
   fmt::print("cutoff({}, {}) = {}\n", i1, IVec::size / 2, i1.cutoff(IVec::size / 2));
-  fmt::print("!{} = {}\n", m1, !m1);
-  fmt::print("{} == {}: {}\n", i1, i2, i1 == i2);
-  fmt::print("{} != {}: {}\n", i1, i2, i1 != i2);
-  fmt::print("{} < {}: {}\n", i2, i1, i2 < i1);
-  fmt::print("{} > {}: {}\n", i2, i1, i2 > i1);
-  fmt::print("{} >= {}: {}\n", i2, i1, i2 >= i1);
-  fmt::print("{} <= {}: {}\n", i2, i1, i2 <= i1);
 
   fmt::print("cutoff_mask({}) = {}\n", IMask::size / 2, IMask::cutoff_mask(IMask::size / 2));
   fmt::print("horizontal_and({}) = {}\n", m1, grex::horizontal_and(m1));
   fmt::print("horizontal_and({}) = {}\n", m1 || !m2, grex::horizontal_and(m1 || !m2));
-  fmt::print("is_finite({}) = {}\n", f4, grex::is_finite(f4));
 }
