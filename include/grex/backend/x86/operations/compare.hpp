@@ -238,6 +238,30 @@ GREX_CMP_SUPER(compare_eq)
 GREX_CMP_SUPER(compare_neq)
 GREX_CMP_SUPER(compare_lt)
 GREX_CMP_SUPER(compare_ge)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Mask equality
+// Broad masks: Compare 8-bit chunks
+
+#define GREX_MASKEQ_COMPACT(SIZE, BITPREFIX) GREX_CAT(_kxnor_mask, GREX_MMASKSIZE(SIZE))(a.r, b.r)
+#define GREX_MASKEQ_BROAD(SIZE, BITPREFIX) BITPREFIX##_cmpeq_epi8(a.r, b.r)
+#if GREX_X86_64_LEVEL >= 4
+#define GREX_MASKEQ_IMPL GREX_MASKEQ_COMPACT
+#else
+#define GREX_MASKEQ_IMPL GREX_MASKEQ_BROAD
+#endif
+
+#define GREX_MASKEQ(KIND, BITS, SIZE, BITPREFIX) \
+  inline Mask<KIND##BITS, SIZE> compare_eq(Mask<KIND##BITS, SIZE> a, Mask<KIND##BITS, SIZE> b) { \
+    return {.r = GREX_MASKEQ_IMPL(SIZE, BITPREFIX)}; \
+  }
+#define GREX_MASKEQ_ALL(REGISTERBITS, BITPREFIX) \
+  GREX_FOREACH_TYPE(GREX_MASKEQ, REGISTERBITS, BITPREFIX)
+GREX_FOREACH_X86_64_LEVEL(GREX_MASKEQ_ALL)
+GREX_SUBMASK_BINARY(compare_eq)
+GREX_SUPERMASK_BINARY(compare_eq)
+
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP

@@ -7,7 +7,6 @@
 #ifndef INCLUDE_GREX_TYPES_HPP
 #define INCLUDE_GREX_TYPES_HPP
 
-#include <array>
 #include <concepts>
 #include <cstddef>
 #include <type_traits>
@@ -51,7 +50,7 @@ struct Mask {
     return Mask{backend::logical_xor(a.mask_, b.mask_)};
   }
   friend Mask operator==(Mask a, Mask b) {
-    return !(a != b);
+    return Mask{backend::compare_eq(a.mask_, b.mask_)};
   }
 
   bool operator[](std::size_t i) const {

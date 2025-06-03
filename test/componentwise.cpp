@@ -23,7 +23,7 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
   using VC = test::VectorChecker<T, tSize>;
   using MC = test::MaskChecker<T, tSize>;
 
-  // vector-only
+  // vector-only operations
   {
     auto v2v = [](auto op) {
       grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
@@ -130,7 +130,6 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
         MC m{((tIdxs % 5) % 2 == 1)...};
         VC a{T(T(tSize) - 2 * T(tIdxs))...};
         VC b{T(tIdxs % 5)...};
-        fmt::print("({}, {}, {})\n", m.mask, a.vec, b.vec);
         auto checker = test::masked_vv2v_cw(mop, op, m, a, b);
         checker.check();
       });
@@ -141,6 +140,31 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
     if constexpr (std::floating_point<T>) {
       mvv2v([](Mask m, Vec a, Vec b) { return grex::mask_divide(m, a, b); }, std::divides{});
     }
+  }
+
+  // mask-only operations
+  {
+    fmt::print("mask-only\n");
+    auto m2m = [](auto op) {
+      grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+        MC a{((tIdxs % 5) % 2 == 1)...};
+        auto checker = test::m2m_cw(op, a);
+        checker.check();
+      });
+    };
+    auto mm2m = [](auto op) {
+      grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+        MC a{((tIdxs % 5) % 2 == 1)...};
+        MC b{(tIdxs % 3 != 1)...};
+        auto checker = test::mm2m_cw(op, a, b);
+        checker.check();
+      });
+    };
+    m2m(std::logical_not{});
+    mm2m(std::logical_and{});
+    mm2m(std::logical_or{});
+    mm2m(std::equal_to{});
+    mm2m(std::not_equal_to{});
   }
 }
 

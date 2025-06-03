@@ -20,7 +20,6 @@ int main() {
   using IMask = grex::Mask<Int, vsize>;
   using Float = grex::f64;
   using FVec = grex::Vector<Float, vsize>;
-  using FMask = grex::Mask<Float, vsize>;
 
   const IVec i1{Int{4}, Int{3}, Int{2}, Int{-1}};
   const IVec i2{Int{-2}, Int{3}, Int{4}, Int{5}};
@@ -32,7 +31,6 @@ int main() {
   const FVec f3{1.0, -1.0, 1.0, -1.0};
   const FVec f4{1.0, std::numeric_limits<Float>::infinity(),
                 std::numeric_limits<Float>::quiet_NaN(), -1.0};
-  const auto fm1 = FMask::ones().insert(2, false);
 
   fmt::print("{}.insert(1, 2) = {}\n", i1, i1.insert(1, 2));
   fmt::print("load_part({}, 0) = {}\n", f1d, FVec::load_part(f1d.data(), 0));
@@ -42,7 +40,7 @@ int main() {
   fmt::print("load_part({}, 4) = {}\n", f1d, FVec::load_part(f1d.data(), 4));
   std::array<Int, vsize> ibuf{};
   i2.store(ibuf.data());
-  fmt::print("store({}) = {}", i2, ibuf);
+  fmt::print("store({}) = {}\n", i2, ibuf);
   std::array<Float, vsize> buf{};
   f1.store_part(buf.data(), 0);
   fmt::print("store_part({}, 0) = {}\n", f1, buf);
@@ -55,22 +53,12 @@ int main() {
   f1.store_part(buf.data(), 4);
   fmt::print("store_part({}, 4) = {}\n", f1, buf);
 
-  fmt::print("fmadd({}, {}, {}) = {}\n", f1, f2, f3, grex::fmadd(f1, f2, f3));
-  fmt::print("fmsub({}, {}, {}) = {}\n", f1, f2, f3, grex::fmsub(f1, f2, f3));
-  fmt::print("fnmadd({}, {}, {}) = {}\n", f1, f2, f3, grex::fnmadd(f1, f2, f3));
-  fmt::print("fnmsub({}, {}, {}) = {}\n", f1, f2, f3, grex::fnmsub(f1, f2, f3));
   fmt::print("horizontal_sum({}) = {}\n", i2, grex::horizontal_add(i2));
   fmt::print("horizontal_sum({}) = {}\n", f1, grex::horizontal_add(f1));
   fmt::print("horizontal_min({}) = {}\n", i2, grex::horizontal_min(i2));
   fmt::print("horizontal_min({}) = {}\n", f1, grex::horizontal_min(f1));
   fmt::print("horizontal_max({}) = {}\n", i2, grex::horizontal_max(i2));
   fmt::print("horizontal_max({}) = {}\n", f1, grex::horizontal_max(f1));
-  fmt::print("mask_add({}, {}, {}) = {}\n", m1, i1, i2, grex::mask_add(m1, i1, i2));
-  fmt::print("mask_subtract({}, {}, {}) = {}\n", m1, i1, i2, grex::mask_subtract(m1, i1, i2));
-  fmt::print("mask_multiply({}, {}, {}) = {}\n", m1, i1, i2, grex::mask_multiply(m1, i1, i2));
-  fmt::print("mask_divide({}, {}, {}) = {}\n", fm1, f1, f2, grex::mask_divide(fm1, f1, f2));
-  fmt::print("min({}, {}) = {}\n", i1, i2, grex::min(i1, i2));
-  fmt::print("max({}, {}) = {}\n", i1, i2, grex::max(i1, i2));
   fmt::print("blend_zero: {}\n", grex::blend_zero(m1, i1));
   fmt::print("blend: {}\n", grex::blend(m1, i1, i2));
 
@@ -84,10 +72,6 @@ int main() {
   fmt::print("{} <= {}: {}\n", i2, i1, i2 <= i1);
 
   fmt::print("cutoff_mask({}) = {}\n", IMask::size / 2, IMask::cutoff_mask(IMask::size / 2));
-  fmt::print("{} == {}: {}\n", m1, m2, m1 == m2);
-  fmt::print("{} != {}: {}\n", m1, m2, m1 != m2);
-  fmt::print("{} && {}: {}\n", m1, m2, m1 && m2);
-  fmt::print("{} || {}: {}\n", m1, m2, m1 || m2);
   fmt::print("horizontal_and({}) = {}\n", m1, grex::horizontal_and(m1));
   fmt::print("horizontal_and({}) = {}\n", m1 || !m2, grex::horizontal_and(m1 || !m2));
   fmt::print("is_finite({}) = {}\n", f4, grex::is_finite(f4));

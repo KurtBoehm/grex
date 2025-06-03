@@ -34,6 +34,7 @@ struct VectorChecker {
   template<typename... Ts>
   requires(sizeof...(Ts) == tSize && (... && std::convertible_to<Ts, T>))
   explicit VectorChecker(Ts... values) : vec{values...}, ref{values...} {}
+  VectorChecker(grex::Vector<T, tSize> v, std::array<T, tSize> a) : vec{v}, ref{a} {}
 
   static VectorChecker indices() {
     return VectorChecker{
@@ -52,8 +53,6 @@ struct VectorChecker {
       std::exit(EXIT_FAILURE);
     }
   }
-
-  VectorChecker(grex::Vector<T, tSize> v, std::array<T, tSize> a) : vec{v}, ref{a} {}
 };
 
 template<Vectorizable T, std::size_t tSize>
@@ -95,6 +94,7 @@ struct MaskChecker {
   template<typename... Ts>
   requires(sizeof...(Ts) == tSize)
   explicit MaskChecker(Ts... values) : mask{values...}, ref{values...} {}
+  MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
 
   static MaskChecker ones() {
     auto f = [](std::size_t /*dummy*/) { return true; };
@@ -114,11 +114,23 @@ struct MaskChecker {
       std::exit(EXIT_FAILURE);
     }
   }
-
-private:
-  MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
 };
 
+template<Vectorizable T, std::size_t tSize>
+MaskChecker<T, tSize> m2m_cw(auto op, MaskChecker<T, tSize> a) {
+  return MaskChecker<T, tSize>{
+    op(a.mask),
+    static_apply<tSize>([&]<std::size_t... tIdxs>() { return std::array{op(a.ref[tIdxs])...}; }),
+  };
+}
+template<Vectorizable T, std::size_t tSize>
+MaskChecker<T, tSize> mm2m_cw(auto op, MaskChecker<T, tSize> a, MaskChecker<T, tSize> b) {
+  return MaskChecker<T, tSize>{
+    op(a.mask, b.mask),
+    static_apply<tSize>(
+      [&]<std::size_t... tIdxs>() { return std::array{op(a.ref[tIdxs], b.ref[tIdxs])...}; }),
+  };
+}
 template<Vectorizable T, std::size_t tSize>
 VectorChecker<T, tSize> masked_vv2v_cw(auto mop, auto op, MaskChecker<T, tSize> m,
                                        VectorChecker<T, tSize> a, VectorChecker<T, tSize> b) {
