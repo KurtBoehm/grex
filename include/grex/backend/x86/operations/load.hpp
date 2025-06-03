@@ -13,7 +13,7 @@
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/insert.hpp" // IWYU pragma: keep
-#include "grex/backend/x86/operations/mask-index.hpp"
+#include "grex/backend/x86/operations/mask-index.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/merge.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
@@ -59,8 +59,7 @@ namespace grex::backend {
       return {.r = GREX_KINDCAST(i, KIND, 64, 128, \
                                  _mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr)))}; \
     } \
-    return {.r = GREX_KINDCAST(i, KIND, 64, 128, \
-                               _mm_loadu_si64(reinterpret_cast<const __m128i*>(ptr)))}; \
+    return {.r = GREX_KINDCAST(i, KIND, 64, 128, _mm_loadu_si64(ptr))}; \
   } \
   return {.r = GREX_KINDCAST(i, KIND, 64, 128, _mm_setzero_si128())};
 #define GREX_PARTLOAD_128_32(KIND) \
@@ -69,16 +68,15 @@ namespace grex::backend {
       return {.r = GREX_KINDCAST(i, KIND, 32, 128, \
                                  _mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr)))}; \
     } \
-    __m128i out = _mm_loadu_si64(reinterpret_cast<const __m128i*>(ptr)); \
+    __m128i out = _mm_loadu_si64(ptr); \
     if (size == 3) { \
-      out = _mm_castps_si128(_mm_movelh_ps(_mm_castsi128_ps(out), \
-                                           _mm_loadu_ps(reinterpret_cast<const f32*>(ptr + 2)))); \
+      out = _mm_castps_si128( \
+        _mm_movelh_ps(_mm_castsi128_ps(out), _mm_castsi128_ps(_mm_loadu_si32(ptr + 2)))); \
     } \
     return {.r = GREX_KINDCAST(i, KIND, 32, 128, out)}; \
   } \
   if (size == 1) [[likely]] { \
-    return {.r = GREX_KINDCAST(i, KIND, 32, 128, \
-                               _mm_loadu_si32(reinterpret_cast<const __m128i*>(ptr)))}; \
+    return {.r = GREX_KINDCAST(i, KIND, 32, 128, _mm_loadu_si32(ptr))}; \
   } \
   return {.r = GREX_KINDCAST(i, KIND, 32, 128, _mm_setzero_si128())};
 #endif
@@ -150,12 +148,121 @@ GREX_FOREACH_X86_64_LEVEL(GREX_LOAD_ALL)
   GREX_FOREACH_TYPE(GREX_PARTLOAD, REGISTERBITS, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_PARTLOAD_ALL)
 
+// Sub-native vectors: Separate implementations which ensure to the compiler
+// that only the given amount of memory is ever touched
+#define GREX_LOADU_SUB_16 _mm_loadu_si16(ptr)
+#define GREX_LOADU_SUB_32 _mm_loadu_si32(ptr)
+#define GREX_LOADU_SUB_64 _mm_loadu_si64(ptr)
+#define GREX_LOAD_SUB_IMPL(NAME, KIND, BITS, PART, SIZE) \
+  inline SubVector<KIND##BITS, PART, SIZE> NAME(const KIND##BITS* ptr, \
+                                                TypeTag<SubVector<KIND##BITS, PART, SIZE>>) { \
+    return { \
+      .full = {.r = GREX_KINDCAST(i, KIND, BITS, 128, \
+                                  GREX_CAT(GREX_LOADU_SUB_, GREX_SUB_PARTBITS(BITS, PART)))}}; \
+  }
+#define GREX_LOAD_SUB(...) \
+  GREX_LOAD_SUB_IMPL(load, __VA_ARGS__) \
+  GREX_LOAD_SUB_IMPL(load_aligned, __VA_ARGS__)
+GREX_FOREACH_SUB(GREX_LOAD_SUB)
+
+#define GREX_PARTLOAD_SUB_32_2(KIND) \
+  if (size >= 1) [[likely]] { \
+    if (size >= 2) [[unlikely]] { \
+      return {.full = {.r = GREX_KINDCAST(i, KIND, 32, 128, _mm_loadu_si64(ptr))}}; \
+    } \
+    return {.full = {.r = GREX_KINDCAST(i, KIND, 32, 128, _mm_loadu_si32(ptr))}}; \
+  } \
+  return {.full = {.r = GREX_KINDCAST(i, KIND, 32, 128, _mm_setzero_si128())}};
+#define GREX_PARTLOAD_SUB_16_4(KIND) \
+  if (size >= 2) { \
+    if (size >= 4) [[unlikely]] { \
+      return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si64(ptr))}}; \
+    } \
+    __m128i out = _mm_loadu_si32(ptr); \
+    if (size == 3) { \
+      out = _mm_unpacklo_epi32(out, _mm_loadu_si16(ptr + 2)); \
+    } \
+    return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, out)}}; \
+  } \
+  if (size == 1) [[likely]] { \
+    return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si16(ptr))}}; \
+  } \
+  return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_setzero_si128())}};
+#define GREX_PARTLOAD_SUB_16_2(KIND) \
+  if (size >= 1) [[likely]] { \
+    if (size >= 2) [[unlikely]] { \
+      return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si32(ptr))}}; \
+    } \
+    return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si16(ptr))}}; \
+  } \
+  return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_setzero_si128())}};
+#define GREX_PARTLOAD_SUB_8_8(KIND) \
+  const std::size_t size2 = size / 2; \
+  __m128i out = \
+    load_part(reinterpret_cast<const KIND##16 *>(ptr), size2, type_tag<SubVector<KIND##16, 4, 8>>) \
+      .full.r; \
+  if ((size & 1U) != 0) { \
+    const std::size_t i = size - 1; \
+    out = insert(Vector<KIND##8, 16>{out}, i, ptr[i]).r; \
+  } \
+  return {.full = {.r = out}};
+#define GREX_PARTLOAD_SUB_8_4(KIND) \
+  if (size >= 2) { \
+    if (size >= 4) [[unlikely]] { \
+      return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_loadu_si32(ptr))}}; \
+    } \
+    __m128i out = _mm_loadu_si16(ptr); \
+    if (size == 3) { \
+      out = insert(Vector<KIND##8, 16>{out}, 2, ptr[2]).r; \
+    } \
+    return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, out)}}; \
+  } \
+  if (size == 1) [[likely]] { \
+    return { \
+      .full = {.r = GREX_KINDCAST(i, KIND, 8, 128, \
+                                  _mm_and_si128(_mm_set_epi64x(0, 255), _mm_set1_epi8(ptr[0])))}}; \
+  } \
+  return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_setzero_si128())}};
+#define GREX_PARTLOAD_SUB_8_2(KIND) \
+  if (size >= 1) [[likely]] { \
+    if (size >= 2) [[unlikely]] { \
+      return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_loadu_si16(ptr))}}; \
+    } \
+    return { \
+      .full = {.r = GREX_KINDCAST(i, KIND, 8, 128, \
+                                  _mm_and_si128(_mm_set_epi64x(0, 255), _mm_set1_epi8(ptr[0])))}}; \
+  } \
+  return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_setzero_si128())}};
+#define GREX_PARTLOAD_SUB(KIND, BITS, PART, SIZE) \
+  inline SubVector<KIND##BITS, PART, SIZE> load_part(const KIND##BITS* ptr, std::size_t size, \
+                                                     TypeTag<SubVector<KIND##BITS, PART, SIZE>>) { \
+    GREX_PARTLOAD_SUB_##BITS##_##PART(KIND) \
+  }
+GREX_FOREACH_SUB(GREX_PARTLOAD_SUB)
+
+// TODO Check if a manual implementation is necessary for optimal performance
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubVector<T, tPart, tSize> load_part(const T* ptr, std::size_t size,
+                                            TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
+  return {.full = load_part(ptr, size, type_tag<Vector<T, tSize>>)};
+}
+
+// Super-native vectors: Split into halves
+
 template<typename THalf>
 inline SuperVector<THalf> load(const typename THalf::Value* ptr,
                                TypeTag<SuperVector<THalf>> /*tag*/) {
   return {
     .lower = load(ptr, type_tag<THalf>),
     .upper = load(ptr + THalf::size, type_tag<THalf>),
+  };
+}
+template<typename THalf>
+inline SuperVector<THalf> load_aligned(const typename THalf::Value* ptr,
+                                       TypeTag<SuperVector<THalf>> /*tag*/) {
+  return {
+    .lower = load_aligned(ptr, type_tag<THalf>),
+    .upper = load_aligned(ptr + THalf::size, type_tag<THalf>),
   };
 }
 template<typename THalf>
@@ -169,7 +276,7 @@ inline SuperVector<THalf> load_part(const typename THalf::Value* ptr, std::size_
   }
   return {
     .lower = load(ptr, type_tag<THalf>),
-    .upper = load_part(ptr, size - THalf::size, type_tag<THalf>),
+    .upper = load_part(ptr + THalf::size, size - THalf::size, type_tag<THalf>),
   };
 }
 } // namespace grex::backend

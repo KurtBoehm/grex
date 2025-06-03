@@ -210,20 +210,28 @@
 #define GREX_SUBMASK_BINARY(NAME) GREX_SUB_BINARY(SubMask, NAME)
 #define GREX_SUBMASK_TERNARY(NAME) GREX_SUB_TERNARY(SubMask, NAME)
 
+#define GREX_SUB_PARTBITS_8_2 16
+#define GREX_SUB_PARTBITS_8_4 32
+#define GREX_SUB_PARTBITS_8_8 64
+#define GREX_SUB_PARTBITS_16_2 32
+#define GREX_SUB_PARTBITS_16_4 64
+#define GREX_SUB_PARTBITS_32_2 64
+#define GREX_SUB_PARTBITS(BITS, SIZE) GREX_SUB_PARTBITS_##BITS##_##SIZE
+
 #define GREX_FOREACH_SUB(MACRO, ...) \
   MACRO(f, 32, 2, 4 __VA_OPT__(, ) __VA_ARGS__) \
-  MACRO(i, 8, 2, 16 __VA_OPT__(, ) __VA_ARGS__) \
-  MACRO(i, 8, 4, 16 __VA_OPT__(, ) __VA_ARGS__) \
-  MACRO(i, 8, 8, 16 __VA_OPT__(, ) __VA_ARGS__) \
-  MACRO(i, 16, 2, 8 __VA_OPT__(, ) __VA_ARGS__) \
-  MACRO(i, 16, 4, 8 __VA_OPT__(, ) __VA_ARGS__) \
   MACRO(i, 32, 2, 4 __VA_OPT__(, ) __VA_ARGS__) \
-  MACRO(u, 8, 2, 16 __VA_OPT__(, ) __VA_ARGS__) \
-  MACRO(u, 8, 4, 16 __VA_OPT__(, ) __VA_ARGS__) \
-  MACRO(u, 8, 8, 16 __VA_OPT__(, ) __VA_ARGS__) \
-  MACRO(u, 16, 2, 8 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 32, 2, 4 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 16, 4, 8 __VA_OPT__(, ) __VA_ARGS__) \
   MACRO(u, 16, 4, 8 __VA_OPT__(, ) __VA_ARGS__) \
-  MACRO(u, 32, 2, 4 __VA_OPT__(, ) __VA_ARGS__)
+  MACRO(i, 16, 2, 8 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 16, 2, 8 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 8, 8, 16 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 8, 8, 16 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 8, 4, 16 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 8, 4, 16 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 8, 2, 16 __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 8, 2, 16 __VA_OPT__(, ) __VA_ARGS__)
 
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_FOREACH_X86_64_LEVEL(MACRO, ...) \
