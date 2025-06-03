@@ -15,7 +15,7 @@
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/mask-index.hpp"
+#include "grex/backend/x86/operations/mask-index.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/split.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
@@ -94,14 +94,18 @@ namespace grex::backend {
   const std::size_t size4 = size / 4; \
   store_part(reinterpret_cast<KIND##32 *>(dst), Vector<KIND##32, 4>{.r = src.r}, size4); \
   if ((size & 3U) != 0) { \
-    const std::size_t idx = 4 * size4; \
+    std::size_t idx = 4 * size4; \
     const __m128i shufo = _mm_set1_epi32(i32(idx * 0x01010101 + 0x03020100)); \
     const __m128i shuf = _mm_shuffle_epi8(src.r, shufo); \
     if ((size & 2U) != 0) { \
       _mm_storeu_si16(dst + idx, shuf); \
+      if ((size & 1U) != 0) { \
+        dst[idx + 2] = _mm_extract_epi8(shuf, 2); \
+      } \
+      return; \
     } \
     if ((size & 1U) != 0) { \
-      dst[idx + 2] = _mm_extract_epi8(shuf, 2); \
+      dst[idx] = _mm_extract_epi8(shuf, 0); \
     } \
   }
 #else
@@ -192,6 +196,10 @@ inline void store(T* dst, SubVector<T, tPart, tSize> src) {
   store_part(dst, src.full, tPart);
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline void store_aligned(T* dst, SubVector<T, tPart, tSize> src) {
+  store_part(dst, src.full, tPart);
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline void store_part(T* dst, SubVector<T, tPart, tSize> src, std::size_t size) {
   store_part(dst, src.full, size);
 }
@@ -203,9 +211,14 @@ inline void store(typename THalf::Value* dst, SuperVector<THalf> src) {
   store(dst + THalf::size, src.upper);
 }
 template<typename THalf>
+inline void store_aligned(typename THalf::Value* dst, SuperVector<THalf> src) {
+  store_aligned(dst, src.lower);
+  store_aligned(dst + THalf::size, src.upper);
+}
+template<typename THalf>
 inline void store_part(typename THalf::Value* dst, SuperVector<THalf> src, std::size_t size) {
   if (size <= THalf::size) {
-    store_part(dst, src.lower, size);
+    return store_part(dst, src.lower, size);
   }
   store(dst, src.lower);
   store_part(dst + THalf::size, src.upper, size - THalf::size);

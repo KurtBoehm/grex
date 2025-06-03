@@ -39,6 +39,27 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
       }
     }
   });
+
+  grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+    VC checker{T(T(tSize) - 2 * T(tIdxs) + 1)...};
+    {
+      std::array<T, tSize> buf{};
+      checker.vec.store(buf.data());
+      test::check(buf, checker.ref);
+    }
+    {
+      alignas(64) std::array<T, tSize> buf{};
+      checker.vec.store_aligned(buf.data());
+      test::check(buf, checker.ref);
+    }
+    {
+      for (std::size_t i = 0; i <= tSize; ++i) {
+        std::array<T, tSize> buf{};
+        checker.vec.store_part(buf.data(), i);
+        test::check(buf, std::array{((tIdxs < i) ? checker.ref[tIdxs] : T{})...});
+      }
+    }
+  });
 }
 
 int main() {
