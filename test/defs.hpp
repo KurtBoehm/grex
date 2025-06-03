@@ -116,6 +116,16 @@ struct MaskChecker {
   }
 };
 
+template<typename T>
+inline void check(T a, T b) {
+  if (a == b) {
+    fmt::print(fmt::fg(fmt::terminal_color::green), "{} == {}\n", a, b);
+  } else {
+    fmt::print(fmt::fg(fmt::terminal_color::red), "{} != {}\n", a, b);
+    std::exit(EXIT_FAILURE);
+  }
+}
+
 template<Vectorizable T, std::size_t tSize>
 MaskChecker<T, tSize> m2m_cw(auto op, MaskChecker<T, tSize> a) {
   return MaskChecker<T, tSize>{

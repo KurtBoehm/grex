@@ -12,7 +12,7 @@
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/operations/minmax.hpp"
-#include "grex/backend/x86/operations/split.hpp"
+#include "grex/backend/x86/operations/split.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
@@ -46,54 +46,54 @@ namespace grex::backend {
 // i8/u8
 #define GREX_HMINMAX_i8x2(OP, KIND, BITS, ...) \
   /* [v1, -, …, -] */ \
-  const __m128i unpackhi8 = _mm_unpackhi_epi8(vf.r, vf.r); \
-  /* [op(v0, v2, v1, v3), -, …, -] */ \
-  const auto full = OP(vf, {.r = unpackhi8}); \
+  const __m128i srli = _mm_srli_epi16(vf.r, 8); \
+  /* [op(v0, v1), -, …, -] */ \
+  const auto full = OP(vf, {.r = srli}); \
   /* extract low 32 bits and cast the upper 24 bits away */ \
   return KIND##BITS(_mm_cvtsi128_si32(full.r));
 #define GREX_HMINMAX_i8x4(OP, KIND, BITS, ...) \
   /* [v2, v3, -, …, -] */ \
-  const __m128i unpackhi16 = _mm_unpackhi_epi16(vf.r, vf.r); \
+  const __m128i srli16 = _mm_srli_epi32(vf.r, 16); \
   /* [op(v0, v2), op(v1, v3), -, …, -] */ \
-  const auto pairs = OP(vf, {.r = unpackhi16}); \
+  const auto pairs = OP(vf, {.r = srli16}); \
   /* [op(v1, v3), -, …, -] */ \
-  const __m128i unpackhi8 = _mm_unpackhi_epi8(pairs.r, pairs.r); \
+  const __m128i srli8 = _mm_srli_epi16(pairs.r, 8); \
   /* [op(v0, v2, v1, v3), -, …, -] */ \
-  const auto full = OP(pairs, {.r = unpackhi8}); \
+  const auto full = OP(pairs, {.r = srli8}); \
   /* extract low 32 bits and cast the upper 24 bits away */ \
   return KIND##BITS(_mm_cvtsi128_si32(full.r));
 #define GREX_HMINMAX_i8x8(OP, KIND, BITS, ...) \
-  /* [v3, …, v7, -, …, -] */ \
-  const __m128i unpackhi32 = _mm_unpackhi_epi32(vf.r, vf.r); \
-  /* [op(v0, v3), …, op(v3, v7), -, …, -] */ \
-  const auto pairs = OP(vf, {.r = unpackhi32}); \
-  /* [op(v2, v5), op(v3, v7), -, …, -] */ \
-  const __m128i unpackhi16 = _mm_unpackhi_epi16(pairs.r, pairs.r); \
-  /* [op(v0, v3, v2, v5), op(v1, v4, v3, v6), -, …, -] */ \
-  const auto quads = OP(pairs, {.r = unpackhi16}); \
-  /* [op(v1, v4, v3, v6), -, …, -] */ \
-  const __m128i unpackhi8 = _mm_unpackhi_epi8(quads.r, quads.r); \
-  /* [op(v0, v3, v2, v5, v1, v4, v3, v6), -, …, -] */ \
-  const auto full = OP(quads, {.r = unpackhi8}); \
+  /* [v4, …, v7, -, …, -] */ \
+  const __m128i srli32 = _mm_srli_epi64(vf.r, 32); \
+  /* [op(v0, v4), …, op(v3, v7), -, …, -] */ \
+  const auto pairs = OP(vf, {.r = srli32}); \
+  /* [op(v2, v6), op(v3, v7), -, …, -] */ \
+  const __m128i srli16 = _mm_srli_epi32(pairs.r, 16); \
+  /* [op(v0, v4, v2, v6), op(v1, v5, v3, v7), -, …, -] */ \
+  const auto quads = OP(pairs, {.r = srli16}); \
+  /* [op(v1, v5, v3, v7), -, …, -] */ \
+  const __m128i srli8 = _mm_srli_epi16(quads.r, 8); \
+  /* [op(v0, v4, v2, v6, v1, v5, v3, v7), -, …, -] */ \
+  const auto full = OP(quads, {.r = srli8}); \
   /* extract low 32 bits and cast the upper 24 bits away */ \
   return KIND##BITS(_mm_cvtsi128_si32(full.r));
 #define GREX_HMINMAX_i8x16(OP, KIND, BITS, ...) \
   /* [v8, …, v15, -, …, -] */ \
-  const __m128i unpackhi64 = _mm_unpackhi_epi64(v.r, v.r); \
+  const __m128i srli64 = _mm_srli_si128(v.r, 8); \
   /* [op(v0, v8), …, op(v7, v15), -, …, -] */ \
-  const auto pairs = OP(v, {.r = unpackhi64}); \
-  /* [op(v3, v11), …, op(v7, v15), -, …, -] */ \
-  const __m128i unpackhi32 = _mm_unpackhi_epi32(pairs.r, pairs.r); \
-  /* [op(v0, v8, v3, v11), …, op(v3, v11, v7, v15), -, …, -] */ \
-  const auto quads = OP(pairs, {.r = unpackhi32}); \
-  /* [op(v2, v10, v5, v13), op(v3, v11, v7, v15), -, …, -] */ \
-  const __m128i unpackhi16 = _mm_unpackhi_epi16(quads.r, quads.r); \
-  /* [op(v0, v8, v3, v11, v2, v10, v5, v13), op(v1, v9, v4, v12, v3, v11, v6, v14), -, …, -] */ \
-  const auto octs = OP(quads, {.r = unpackhi16}); \
-  /* [op(v1, v9, v4, v12, v3, v11, v6, v14), -, …, -] */ \
-  const __m128i unpackhi8 = _mm_unpackhi_epi8(octs.r, octs.r); \
-  /* [op(v0, v8, v3, v11, v2, v10, v5, v13, v1, v9, v4, v12, v3, v11, v6, v14), -, …, -] */ \
-  const auto full = OP(octs, {.r = unpackhi8}); \
+  const auto pairs = OP(v, {.r = srli64}); \
+  /* [op(v4, v12), …, op(v7, v15), -, …, -] */ \
+  const __m128i srli32 = _mm_srli_epi64(pairs.r, 32); \
+  /* [op(v0, v8, v4, v12), …, op(v3, v11, v7, v15), -, …, -] */ \
+  const auto quads = OP(pairs, {.r = srli32}); \
+  /* [op(v2, v10, v6, v14), op(v3, v11, v7, v15), -, …, -] */ \
+  const __m128i srli16 = _mm_srli_epi32(quads.r, 16); \
+  /* [op(v0, v8, v4, v12, v2, v10, v6, v14), op(v1, v9, v5, v13, v3, v11, v7, v15), -, …, -] */ \
+  const auto octs = OP(quads, {.r = srli16}); \
+  /* [op(v1, v9, v5, v13, v3, v11, v7, v15), -, …, -] */ \
+  const __m128i srli8 = _mm_srli_epi16(octs.r, 8); \
+  /* [op(v0, v8, v4, v12, v2, v10, v6, v14, v1, v9, v5, v13, v3, v11, v7, v15), -, …, -] */ \
+  const auto full = OP(octs, {.r = srli8}); \
   /* extract low 32 bits and cast the upper 24 bits away */ \
   return KIND##BITS(_mm_cvtsi128_si32(full.r));
 #define GREX_HMINMAX_i8x32 GREX_HMINMAX_HALVES
@@ -101,48 +101,48 @@ namespace grex::backend {
 // i16/u16
 #define GREX_HMINMAX_i16x2(OP, KIND, BITS, ...) \
   /* [v1, -, -, -, -, -, -, -] */ \
-  const __m128i shuf = _mm_shufflelo_epi16(vf.r, 1); \
-  /* [op(v1, …, v7), -, -, -, -, -, -, -][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si32(OP(vf, {.r = shuf}).r));
+  const __m128i srli16 = _mm_srli_epi32(vf.r, 16); \
+  /* [op(v0, v1), -, -, -, -, -, -, -][0] */ \
+  return KIND##BITS(_mm_cvtsi128_si32(OP(vf, {.r = srli16}).r));
 #define GREX_HMINMAX_i16x4(OP, KIND, BITS, ...) \
   /* [v2, v3, -, -, -, -, -, -] */ \
-  const __m128i shuf = _mm_shuffle_epi32(vf.r, 1); \
+  const __m128i srli32 = _mm_srli_epi64(vf.r, 32); \
   /* [op(v0, v2), op(v1, v3), -, -, -, -, -, -] */ \
-  const auto pairs = OP(vf, {.r = shuf}); \
+  const auto pairs = OP(vf, {.r = srli32}); \
   /* [op(v1, v3), -, -, -, -, -, -, -] */ \
-  const __m128i spairs = _mm_shufflelo_epi16(pairs.r, 1); \
+  const __m128i srli16 = _mm_srli_epi32(pairs.r, 16); \
   /* [op(v1, …, v7), -, -, -, -, -, -, -][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si32(OP(pairs, {.r = spairs}).r));
+  return KIND##BITS(_mm_cvtsi128_si32(OP(pairs, {.r = srli16}).r));
 #define GREX_HMINMAX_i16x8(OP, KIND, BITS, ...) \
-  /* [v4, v5, v6, v7, v4, v5, v6, v7] */ \
-  const __m128i unpackhi = _mm_unpackhi_epi64(v.r, v.r); \
+  /* [v4, v5, v6, v7, -, -, -, -] */ \
+  const __m128i srli64 = _mm_srli_si128(v.r, 8); \
   /* [op(v0, v4), op(v1, v5), op(v2, v6), op(v3, v7), -, -, -, -] */ \
-  const auto pairs = OP(v, {.r = unpackhi}); \
+  const auto pairs = OP(v, {.r = srli64}); \
   /* [op(v2, v6), op(v3, v7), -, -, -, -, -, -] */ \
-  const __m128i spairs = _mm_shuffle_epi32(pairs.r, 1); \
+  const __m128i srli32 = _mm_srli_epi64(pairs.r, 32); \
   /* [op(v0, v4, v2, v6), op(v1, v5, v3, v7), -, -, -, -, -, -] */ \
-  const auto quads = OP(pairs, {.r = spairs}); \
+  const auto quads = OP(pairs, {.r = srli32}); \
   /* [op(v1, v5, v3, v7), -, -, -, -, -, -, -] */ \
-  const __m128i squads = _mm_shufflelo_epi16(quads.r, 1); \
+  const __m128i srli16 = _mm_srli_epi32(quads.r, 16); \
   /* [op(v1, …, v7), -, -, -, -, -, -, -][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si32(OP(quads, {.r = squads}).r));
+  return KIND##BITS(_mm_cvtsi128_si32(OP(quads, {.r = srli16}).r));
 #define GREX_HMINMAX_i16x16 GREX_HMINMAX_HALVES
 #define GREX_HMINMAX_i16x32 GREX_HMINMAX_HALVES
 // i32/u32
 #define GREX_HMINMAX_i32x2(OP, KIND, BITS, ...) \
   /* [v1, -, -, -] */ \
-  const __m128i shuf = _mm_shuffle_epi32(vf.r, 1); \
+  const __m128i srli32 = _mm_srli_epi64(vf.r, 32); \
   /* [op(v0, v1), -, -, -][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si32(OP(vf, {.r = shuf}).r));
+  return KIND##BITS(_mm_cvtsi128_si32(OP(vf, {.r = srli32}).r));
 #define GREX_HMINMAX_i32x4(OP, KIND, BITS, ...) \
-  /* [v2, v3, v2, v3] */ \
-  const __m128i unpackhi = _mm_unpackhi_epi64(v.r, v.r); \
+  /* [v2, v3, -, -] */ \
+  const __m128i srli64 = _mm_srli_si128(v.r, 8); \
   /* [op(v0, v2), op(v1, v3), -, -] */ \
-  const auto pairs = OP(v, {.r = unpackhi}); \
+  const auto pairs = OP(v, {.r = srli64}); \
   /* [op(v1, v3), -, -, -] */ \
-  const __m128i shuf = _mm_shuffle_epi32(pairs.r, 1); \
+  const __m128i srli32 = _mm_srli_epi64(pairs.r, 32); \
   /* [op(v0, v2, v1, v3), -, -, -][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si32(OP(pairs, {.r = shuf}).r));
+  return KIND##BITS(_mm_cvtsi128_si32(OP(pairs, {.r = srli32}).r));
 #define GREX_HMINMAX_i32x8 GREX_HMINMAX_HALVES
 #define GREX_HMINMAX_i32x16 GREX_HMINMAX_HALVES
 // i64/u64

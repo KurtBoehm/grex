@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CLASSIFICATION_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CLASSIFICATION_HPP
 
+#include <cstddef>
+
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
@@ -15,7 +17,6 @@
 #include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
-#include <cstddef>
 
 namespace grex::backend {
 // based on VCL

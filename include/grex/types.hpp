@@ -231,7 +231,7 @@ inline T horizontal_max(Vector<T, tSize> v) {
   return backend::horizontal_max(v.backend());
 }
 template<Vectorizable T, std::size_t tSize>
-inline T horizontal_and(Mask<T, tSize> m) {
+inline bool horizontal_and(Mask<T, tSize> m) {
   return backend::horizontal_and(m.backend());
 }
 

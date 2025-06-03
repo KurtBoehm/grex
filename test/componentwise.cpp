@@ -8,9 +8,9 @@
 #include <concepts>
 #include <cstddef>
 #include <functional>
+#include <limits>
 
 #include <fmt/base.h>
-#include <limits>
 
 #include "grex/grex.hpp"
 
