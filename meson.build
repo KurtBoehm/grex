@@ -19,6 +19,12 @@ pc.generate(
   description: 'Generic C++ SIMD',
 )
 
+x86_64_levels = run_command(
+  import('python').find_installation('python3'),
+  files('tools/x86_64_levels.py'),
+  check: true,
+).stdout().split()
+
 if get_option('test')
   subdir('test')
 endif
