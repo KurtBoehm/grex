@@ -42,9 +42,8 @@ struct VectorChecker {
   }
 
   void check() const {
-    const bool same = static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      return (... && (vec.get(index_tag<tIdxs>) == std::get<tIdxs>(ref)));
-    });
+    const bool same = static_apply<tSize>(
+      [&]<std::size_t... tIdxs>() { return (... && (vec[tIdxs] == ref[tIdxs])); });
     if (same) {
       fmt::print(fmt::fg(fmt::terminal_color::green), "{} == {}\n", vec, ref);
     } else {
@@ -59,17 +58,17 @@ private:
 
 template<Vectorizable T, std::size_t tSize>
 struct MaskChecker {
-  grex::Mask<T, tSize> vec{};
+  grex::Mask<T, tSize> mask{};
   std::array<bool, tSize> ref{};
 
   MaskChecker() = default;
 
-  explicit MaskChecker(bool value) : vec{value} {
+  explicit MaskChecker(bool value) : mask{value} {
     std::ranges::fill(ref, value);
   }
   template<typename... Ts>
   requires(sizeof...(Ts) == tSize)
-  explicit MaskChecker(Ts... values) : vec{values...}, ref{values...} {}
+  explicit MaskChecker(Ts... values) : mask{values...}, ref{values...} {}
 
   static MaskChecker ones() {
     auto f = [](std::size_t /*dummy*/) { return true; };
@@ -80,19 +79,18 @@ struct MaskChecker {
   }
 
   void check() const {
-    const bool same = static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      return (... && (vec.get(index_tag<tIdxs>) == std::get<tIdxs>(ref)));
-    });
+    const bool same = static_apply<tSize>(
+      [&]<std::size_t... tIdxs>() { return (... && (mask[tIdxs] == ref[tIdxs])); });
     if (same) {
-      fmt::print(fmt::fg(fmt::terminal_color::green), "{} == {}\n", vec, ref);
+      fmt::print(fmt::fg(fmt::terminal_color::green), "{} == {}\n", mask, ref);
     } else {
-      fmt::print(fmt::fg(fmt::terminal_color::red), "{} != {}\n", vec, ref);
+      fmt::print(fmt::fg(fmt::terminal_color::red), "{} != {}\n", mask, ref);
       std::exit(EXIT_FAILURE);
     }
   }
 
 private:
-  MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : vec{v}, ref{a} {}
+  MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
 };
 } // namespace grex::test
 

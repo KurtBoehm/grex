@@ -36,14 +36,8 @@ namespace grex::backend {
 #define GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS) GREX_SET_SUFFIX_##KIND(BITS, REGISTERBITS)
 // Helpers to define function arguments for the set-based operations
 #define GREX_SET_ARG(CNT, IDX, TYPE) BOOST_PP_COMMA_IF(IDX) TYPE v##IDX
-#define GREX_SET_VAL(CNT, IDX, SIZE) \
-  BOOST_PP_COMMA_IF(IDX) GREX_CAT(v, BOOST_PP_SUB(SIZE, BOOST_PP_INC(IDX)))
-#define GREX_SET_NEGVAL_IMPLI(CNT, IDX, BITS, SIZE) \
-  BOOST_PP_COMMA_IF(IDX) - i##BITS(GREX_CAT(v, BOOST_PP_SUB(SIZE, BOOST_PP_INC(IDX))))
-#define GREX_SET_NEGVAL_IMPL(CNT, IDX, PAIR) GREX_SET_NEGVAL_IMPLI(CNT, IDX, PAIR)
-#define GREX_SET_NEGVAL(CNT, IDX, PAIR) GREX_SET_NEGVAL_IMPL(CNT, IDX, BOOST_PP_REMOVE_PARENS(PAIR))
-// Helper to generate indices
-#define GREX_SET_IDX(CNT, IDX) BOOST_PP_COMMA_IF(IDX) IDX
+#define GREX_SET_VAL(CNT, IDX) v##IDX BOOST_PP_COMMA_IF(IDX)
+#define GREX_SET_NEGVAL(CNT, IDX, BITS) -i##BITS(v##IDX) BOOST_PP_COMMA_IF(IDX)
 
 #define GREX_CMASK_SET_OP(CNT, IDX, TYPE) \
   BOOST_PP_IF(IDX, |, BOOST_PP_EMPTY()) \
@@ -87,7 +81,7 @@ namespace grex::backend {
   inline Mask<KIND##BITS, SIZE> set(TypeTag<Mask<KIND##BITS, SIZE>>, \
                                     GREX_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
     return {.r = GREX_CAT(BITPREFIX##_set_, GREX_SET_EPI(BITS, REGISTERBITS))( \
-              GREX_REPEAT(SIZE, GREX_SET_NEGVAL, (BITS, SIZE)))}; \
+              GREX_RREPEAT(SIZE, GREX_SET_NEGVAL, BITS))}; \
   }
 #endif
 
@@ -102,16 +96,19 @@ namespace grex::backend {
   inline Vector<KIND##BITS, SIZE> set(TypeTag<Vector<KIND##BITS, SIZE>>, \
                                       GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
     return {.r = GREX_CAT(BITPREFIX##_set_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))( \
-              GREX_REPEAT(SIZE, GREX_SET_VAL, SIZE))}; \
-  } \
-  inline Vector<KIND##BITS, SIZE> indices(TypeTag<Vector<KIND##BITS, SIZE>>) { \
-    return set(type_tag<Vector<KIND##BITS, SIZE>>, GREX_REPEAT(SIZE, GREX_SET_IDX)); \
+              GREX_RREPEAT(SIZE, GREX_SET_VAL))}; \
   }
 
 #define GREX_SET(...) GREX_SET_VEC(__VA_ARGS__) GREX_SET_MASK(__VA_ARGS__)
 #define GREX_SET_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_SET, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_SET_ALL)
+
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> indices(TypeTag<Vector<T, tSize>> /*tag*/) {
+  return static_apply<tSize>(
+    []<std::size_t... tIdxs>() { return set(type_tag<Vector<T, tSize>>, T(tIdxs)...); });
+}
 
 // SubVector
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
