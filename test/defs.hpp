@@ -141,6 +141,14 @@ VectorChecker<T, tSize> masked_vv2v_cw(auto mop, auto op, MaskChecker<T, tSize> 
     }),
   };
 }
+template<Vectorizable T, std::size_t tSize>
+MaskChecker<T, tSize> vv2m_cw(auto op, VectorChecker<T, tSize> a, VectorChecker<T, tSize> b) {
+  return MaskChecker<T, tSize>{
+    op(a.vec, b.vec),
+    static_apply<tSize>(
+      [&]<std::size_t... tIdxs>() { return std::array{op(a.ref[tIdxs], b.ref[tIdxs])...}; }),
+  };
+}
 
 template<typename T>
 struct TypeNameTrait;

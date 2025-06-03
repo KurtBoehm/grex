@@ -124,7 +124,7 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
 
   // masked component-wise operations
   {
-    fmt::print("masked (vector, vector) → (vector)\n");
+    fmt::print("masked (vector, vector) → vector\n");
     auto mvv2v = [](auto mop, auto op) {
       grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
         MC m{((tIdxs % 5) % 2 == 1)...};
@@ -140,6 +140,25 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
     if constexpr (std::floating_point<T>) {
       mvv2v([](Mask m, Vec a, Vec b) { return grex::mask_divide(m, a, b); }, std::divides{});
     }
+  }
+
+  // vector-vector comparison operations
+  {
+    fmt::print("(vector, vector) → mask\n");
+    auto vv2m = [](auto op) {
+      grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+        VC a{T(T(32 * (tIdxs % 7)) - T(tSize))...};
+        VC b{T(tIdxs % 5)...};
+        auto checker = test::vv2m_cw(op, a, b);
+        checker.check();
+      });
+    };
+    vv2m(std::equal_to{});
+    vv2m(std::not_equal_to{});
+    vv2m(std::less{});
+    vv2m(std::greater{});
+    vv2m(std::greater_equal{});
+    vv2m(std::less_equal{});
   }
 
   // mask-only operations
