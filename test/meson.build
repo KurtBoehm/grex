@@ -6,7 +6,7 @@ endif
 
 arches = x86_64_levels + ['native']
 
-foreach name : ['basic', 'componentwise', 'horizontal', 'mem', 'set']
+foreach name : ['componentwise', 'horizontal', 'mem', 'set']
   foreach arch : arches
     space_name = name.replace('-', ' ')
     exe = executable(

@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <concepts>
 #include <cstddef>
 #include <cstdlib>
@@ -17,6 +18,7 @@
 #include <fmt/color.h>
 #include <fmt/ranges.h>
 
+#include "grex/backend.hpp"
 #include "grex/base/defs.hpp"
 #include "grex/types.hpp"
 
@@ -189,7 +191,8 @@ inline void run_types_sizes(auto f) {
     f(t, s);
   };
   auto outer = [&]<typename T>(TypeTag<T> t) {
-    static_apply<1, 7>([&]<std::size_t... tIdxs>() { (..., inner(t, index_tag<1U << tIdxs>)); });
+    static_apply<1, std::bit_width(backend::native_sizes<T>.back()) + 1>(
+      [&]<std::size_t... tIdxs>() { (..., inner(t, index_tag<1U << tIdxs>)); });
   };
   outer(type_tag<f32>);
   outer(type_tag<f64>);
