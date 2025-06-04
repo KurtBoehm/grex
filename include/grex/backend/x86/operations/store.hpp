@@ -189,16 +189,19 @@ GREX_FOREACH_X86_64_LEVEL(GREX_STORE_ALL)
   GREX_FOREACH_TYPE(GREX_PARTSTORE, REGISTERBITS, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_PARTSTORE_ALL)
 
-// SubVector
+// Sub-native vectors: Separate implementations which ensure to the compiler
+// that only the given amount of memory is ever touched
+#define GREX_STORE_SUB_IMPL(NAME, KIND, BITS, PART, SIZE) \
+  inline void NAME(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src) { \
+    const __m128i r = GREX_KINDCAST(KIND, i, BITS, 128, src.full.r); \
+    GREX_CAT(_mm_storeu_si, GREX_SUB_PARTBITS(BITS, PART))(dst, r); \
+  }
+#define GREX_STORE_SUB(...) \
+  GREX_STORE_SUB_IMPL(store, __VA_ARGS__) \
+  GREX_STORE_SUB_IMPL(store_aligned, __VA_ARGS__)
+GREX_FOREACH_SUB(GREX_STORE_SUB)
+
 // TODO Check if a manual implementation is necessary for optimal performance
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline void store(T* dst, SubVector<T, tPart, tSize> src) {
-  store_part(dst, src.full, tPart);
-}
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline void store_aligned(T* dst, SubVector<T, tPart, tSize> src) {
-  store_part(dst, src.full, tPart);
-}
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline void store_part(T* dst, SubVector<T, tPart, tSize> src, std::size_t size) {
   store_part(dst, src.full, size);

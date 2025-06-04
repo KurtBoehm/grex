@@ -1,5 +1,8 @@
 options_sub = subproject('options')
 args = options_sub.get_variable('all_args')
+if ['gcc'].contains(options_sub.get_variable('compiler_id'))
+  args += ['-Wno-useless-cast']
+endif
 
 arches = x86_64_levels + ['native']
 

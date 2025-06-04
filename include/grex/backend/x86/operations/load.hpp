@@ -150,15 +150,11 @@ GREX_FOREACH_X86_64_LEVEL(GREX_PARTLOAD_ALL)
 
 // Sub-native vectors: Separate implementations which ensure to the compiler
 // that only the given amount of memory is ever touched
-#define GREX_LOADU_SUB_16 _mm_loadu_si16(ptr)
-#define GREX_LOADU_SUB_32 _mm_loadu_si32(ptr)
-#define GREX_LOADU_SUB_64 _mm_loadu_si64(ptr)
 #define GREX_LOAD_SUB_IMPL(NAME, KIND, BITS, PART, SIZE) \
   inline SubVector<KIND##BITS, PART, SIZE> NAME(const KIND##BITS* ptr, \
                                                 TypeTag<SubVector<KIND##BITS, PART, SIZE>>) { \
-    return { \
-      .full = {.r = GREX_KINDCAST(i, KIND, BITS, 128, \
-                                  GREX_CAT(GREX_LOADU_SUB_, GREX_SUB_PARTBITS(BITS, PART)))}}; \
+    const __m128i r = GREX_CAT(_mm_loadu_si, GREX_SUB_PARTBITS(BITS, PART))(ptr); \
+    return {.full = {.r = GREX_KINDCAST(i, KIND, BITS, 128, r)}}; \
   }
 #define GREX_LOAD_SUB(...) \
   GREX_LOAD_SUB_IMPL(load, __VA_ARGS__) \
@@ -218,9 +214,9 @@ GREX_FOREACH_SUB(GREX_LOAD_SUB)
     return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, out)}}; \
   } \
   if (size == 1) [[likely]] { \
+    const __m128i bc = _mm_set1_epi8(GREX_KINDCAST_SINGLE(KIND, i, 8, ptr[0])); \
     return { \
-      .full = {.r = GREX_KINDCAST(i, KIND, 8, 128, \
-                                  _mm_and_si128(_mm_set_epi64x(0, 255), _mm_set1_epi8(ptr[0])))}}; \
+      .full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_and_si128(_mm_set_epi64x(0, 255), bc))}}; \
   } \
   return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_setzero_si128())}};
 #define GREX_PARTLOAD_SUB_8_2(KIND) \
@@ -228,9 +224,9 @@ GREX_FOREACH_SUB(GREX_LOAD_SUB)
     if (size >= 2) [[unlikely]] { \
       return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_loadu_si16(ptr))}}; \
     } \
+    const __m128i bc = _mm_set1_epi8(GREX_KINDCAST_SINGLE(KIND, i, 8, ptr[0])); \
     return { \
-      .full = {.r = GREX_KINDCAST(i, KIND, 8, 128, \
-                                  _mm_and_si128(_mm_set_epi64x(0, 255), _mm_set1_epi8(ptr[0])))}}; \
+      .full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_and_si128(_mm_set_epi64x(0, 255), bc))}}; \
   } \
   return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_setzero_si128())}};
 #define GREX_PARTLOAD_SUB(KIND, BITS, PART, SIZE) \
