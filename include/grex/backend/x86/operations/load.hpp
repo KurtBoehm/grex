@@ -236,13 +236,6 @@ GREX_FOREACH_SUB(GREX_LOAD_SUB)
   }
 GREX_FOREACH_SUB(GREX_PARTLOAD_SUB)
 
-// TODO Check if a manual implementation is necessary for optimal performance
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubVector<T, tPart, tSize> load_part(const T* ptr, std::size_t size,
-                                            TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
-  return {.full = load_part(ptr, size, type_tag<Vector<T, tSize>>)};
-}
-
 // Super-native vectors: Split into halves
 
 template<typename THalf>

@@ -60,25 +60,27 @@ namespace grex::backend {
   [[unlikely]] case 0: \
     return; \
   [[likely]] case 1: \
-    return _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 64, 128, src.r)); \
+    _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 64, 128, src.r)); \
+    return; \
   [[unlikely]] default: \
-    return _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), \
-                            GREX_KINDCAST(KIND, i, 64, 128, src.r)); \
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), GREX_KINDCAST(KIND, i, 64, 128, src.r)); \
+    return; \
   }
 #define GREX_PARTSTORE_128_32(KIND) \
   switch (size) { \
   [[unlikely]] case 0: \
     return; \
-  case 1: return _mm_storeu_si32(dst, GREX_KINDCAST(KIND, i, 32, 128, src.r)); \
-  case 2: return _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.r)); \
+  case 1: _mm_storeu_si32(dst, GREX_KINDCAST(KIND, i, 32, 128, src.r)); return; \
+  case 2: _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.r)); return; \
   case 3: \
     _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.r)); \
-    return _mm_storeu_si32( \
-      dst + 2, _mm_castps_si128(_mm_movehl_ps(GREX_KINDCAST(KIND, f, 32, 128, src.r), \
-                                              GREX_KINDCAST(KIND, f, 32, 128, src.r)))); \
+    _mm_storeu_si32(dst + 2, \
+                    _mm_castps_si128(_mm_movehl_ps(GREX_KINDCAST(KIND, f, 32, 128, src.r), \
+                                                   GREX_KINDCAST(KIND, f, 32, 128, src.r)))); \
+    return; \
   [[unlikely]] default: \
-    return _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), \
-                            GREX_KINDCAST(KIND, i, 32, 128, src.r)); \
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), GREX_KINDCAST(KIND, i, 32, 128, src.r)); \
+    return; \
   }
 #endif
 #if GREX_X86_64_LEVEL >= 2
@@ -114,7 +116,7 @@ namespace grex::backend {
   store_part(reinterpret_cast<KIND##32 *>(dst), Vector<KIND##32, 4>{.r = src.r}, size2); \
   if ((size & 1U) != 0) { \
     switch (size2) { \
-    case 0: return _mm_storeu_si16(dst, src.r); \
+    case 0: _mm_storeu_si16(dst, src.r); return; \
     case 1: dst[2] = _mm_extract_epi16(src.r, 2); return; \
     case 2: dst[4] = _mm_extract_epi16(src.r, 4); return; \
     case 3: dst[6] = _mm_extract_epi16(src.r, 6); return; \
@@ -154,7 +156,8 @@ namespace grex::backend {
     return; \
   } \
   if (size >= SIZE) [[unlikely]] { \
-    return store(dst, src); \
+    store(dst, src); \
+    return; \
   } \
   if (size >= GREX_HALF(SIZE)) { \
     store(dst, split(src, index_tag<0>)); \
@@ -201,11 +204,98 @@ GREX_FOREACH_X86_64_LEVEL(GREX_PARTSTORE_ALL)
   GREX_STORE_SUB_IMPL(store_aligned, __VA_ARGS__)
 GREX_FOREACH_SUB(GREX_STORE_SUB)
 
-// TODO Check if a manual implementation is necessary for optimal performance
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline void store_part(T* dst, SubVector<T, tPart, tSize> src, std::size_t size) {
-  store_part(dst, src.full, size);
-}
+#define GREX_PARTSTORE_SUB_32_2(KIND) \
+  switch (size) { \
+  [[unlikely]] case 0: \
+    return; \
+  [[likely]] case 1: \
+    _mm_storeu_si32(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)); \
+    return; \
+  [[unlikely]] default: \
+    _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)); \
+    return; \
+  }
+#define GREX_PARTSTORE_SUB_16_4(KIND) \
+  switch (size) { \
+  [[unlikely]] case 0: \
+    return; \
+  case 1: _mm_storeu_si16(dst, src.full.r); return; \
+  case 2: _mm_storeu_si32(dst, src.full.r); return; \
+  case 3: \
+    _mm_storeu_si32(dst, src.full.r); \
+    _mm_storeu_si16(dst + 2, _mm_srli_epi64(src.full.r, 32)); \
+    return; \
+  [[unlikely]] default: \
+    _mm_storeu_si64(dst, src.full.r); \
+    return; \
+  }
+#define GREX_PARTSTORE_SUB_16_2(KIND) \
+  switch (size) { \
+  [[unlikely]] case 0: \
+    return; \
+  [[likely]] case 1: \
+    _mm_storeu_si16(dst, src.full.r); \
+    return; \
+  [[unlikely]] default: \
+    _mm_storeu_si32(dst, src.full.r); \
+    return; \
+  }
+#define GREX_PARTSTORE_STORE8(KIND) \
+  std::array<KIND##8, 16> arr{}; \
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(arr.data()), src.full.r)
+#define GREX_PARTSTORE_SUB_8_8(KIND) \
+  const std::size_t size2 = size / 2; \
+  store_part(reinterpret_cast<KIND##16 *>(dst), \
+             SubVector<KIND##16, 4, 8>{.full = {.r = src.full.r}}, size2); \
+  if ((size & 1U) != 0) { \
+    GREX_PARTSTORE_STORE8(KIND); \
+    switch (size2) { \
+    case 0: dst[0] = arr[0]; return; \
+    case 1: dst[2] = arr[2]; return; \
+    case 2: dst[4] = arr[4]; return; \
+    case 3: dst[6] = arr[6]; return; \
+    default: break; \
+    } \
+  }
+#define GREX_PARTSTORE_SUB_8_4(KIND) \
+  switch (size) { \
+  [[unlikely]] case 0: \
+    return; \
+  case 1: { \
+    GREX_PARTSTORE_STORE8(KIND); \
+    dst[0] = arr[0]; \
+    return; \
+  } \
+  case 2: _mm_storeu_si16(dst, src.full.r); return; \
+  case 3: { \
+    _mm_storeu_si16(dst, src.full.r); \
+    GREX_PARTSTORE_STORE8(KIND); \
+    dst[2] = arr[2]; \
+    return; \
+  } \
+  [[unlikely]] default: \
+    _mm_storeu_si32(dst, src.full.r); \
+    return; \
+  }
+#define GREX_PARTSTORE_SUB_8_2(KIND) \
+  switch (size) { \
+  [[unlikely]] case 0: \
+    return; \
+  [[likely]] case 1: { \
+    GREX_PARTSTORE_STORE8(KIND); \
+    dst[0] = arr[0]; \
+    return; \
+  } \
+  [[unlikely]] default: \
+    _mm_storeu_si16(dst, src.full.r); \
+    return; \
+  }
+#define GREX_PARTSTORE_SUB(KIND, BITS, PART, SIZE) \
+  inline void store_part(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src, \
+                         std::size_t size) { \
+    GREX_PARTSTORE_SUB_##BITS##_##PART(KIND) \
+  }
+GREX_FOREACH_SUB(GREX_PARTSTORE_SUB)
 
 // SuperVector
 template<typename THalf>
@@ -221,7 +311,8 @@ inline void store_aligned(typename THalf::Value* dst, SuperVector<THalf> src) {
 template<typename THalf>
 inline void store_part(typename THalf::Value* dst, SuperVector<THalf> src, std::size_t size) {
   if (size <= THalf::size) {
-    return store_part(dst, src.lower, size);
+    store_part(dst, src.lower, size);
+    return;
   }
   store(dst, src.lower);
   store_part(dst + THalf::size, src.upper, size - THalf::size);
