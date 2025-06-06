@@ -4,15 +4,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_GLUE_CHOOSERS_HPP
-#define INCLUDE_GREX_GLUE_CHOOSERS_HPP
+#ifndef INCLUDE_GREX_BACKEND_CHOOSERS_HPP
+#define INCLUDE_GREX_BACKEND_CHOOSERS_HPP
 
 #include <cstddef>
 
-#include "grex/backend.hpp"
+#include "grex/backend/active/types.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/base/defs.hpp"
 
-namespace grex::glue {
+namespace grex::backend {
 template<Vectorizable T, std::size_t tSize,
          bool tIsSub = (tSize < backend::native_sizes<T>.front()),
          bool tIsSuper = (tSize > backend::native_sizes<T>.back())>
@@ -31,7 +32,7 @@ struct VectorTrait<T, tSize, false, true> {
   using Type = backend::SuperVector<Half>;
 };
 template<Vectorizable T, std::size_t tSize>
-using Vector = VectorTrait<T, tSize>::Type;
+using VectorFor = VectorTrait<T, tSize>::Type;
 
 template<Vectorizable T, std::size_t tSize,
          bool tIsSub = (tSize < backend::native_sizes<T>.front()),
@@ -51,7 +52,7 @@ struct MaskTrait<T, tSize, false, true> {
   using Type = backend::SuperMask<Half>;
 };
 template<Vectorizable T, std::size_t tSize>
-using Mask = MaskTrait<T, tSize>::Type;
-} // namespace grex::glue
+using MaskFor = MaskTrait<T, tSize>::Type;
+} // namespace grex::backend
 
-#endif // INCLUDE_GREX_GLUE_CHOOSERS_HPP
+#endif // INCLUDE_GREX_BACKEND_CHOOSERS_HPP

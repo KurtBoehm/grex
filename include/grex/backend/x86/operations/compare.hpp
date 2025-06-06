@@ -222,7 +222,7 @@ GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, ge, cmpge, 5)
   template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
   inline SubMask<T, tPart, tSize> NAME(SubVector<T, tPart, tSize> a, \
                                        SubVector<T, tPart, tSize> b) { \
-    return {.full = NAME(a.full, b.full)}; \
+    return SubMask<T, tPart, tSize>{NAME(a.full, b.full)}; \
   }
 GREX_CMP_SUB(compare_eq)
 GREX_CMP_SUB(compare_neq)

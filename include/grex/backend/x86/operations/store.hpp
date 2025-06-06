@@ -197,7 +197,7 @@ GREX_FOREACH_X86_64_LEVEL(GREX_PARTSTORE_ALL)
 #define GREX_STORE_SUB_IMPL(NAME, KIND, BITS, PART, SIZE) \
   inline void NAME(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src) { \
     const __m128i r = GREX_KINDCAST(KIND, i, BITS, 128, src.full.r); \
-    GREX_CAT(_mm_storeu_si, GREX_SUB_PARTBITS(BITS, PART))(dst, r); \
+    GREX_CAT(_mm_storeu_si, GREX_PARTBITS(BITS, PART))(dst, r); \
   }
 #define GREX_STORE_SUB(...) \
   GREX_STORE_SUB_IMPL(store, __VA_ARGS__) \
@@ -245,8 +245,7 @@ GREX_FOREACH_SUB(GREX_STORE_SUB)
   _mm_storeu_si128(reinterpret_cast<__m128i*>(arr.data()), src.full.r)
 #define GREX_PARTSTORE_SUB_8_8(KIND) \
   const std::size_t size2 = size / 2; \
-  store_part(reinterpret_cast<KIND##16 *>(dst), \
-             SubVector<KIND##16, 4, 8>{.full = {.r = src.full.r}}, size2); \
+  store_part(reinterpret_cast<KIND##16 *>(dst), SubVector<KIND##16, 4, 8>{src.full.r}, size2); \
   if ((size & 1U) != 0) { \
     GREX_PARTSTORE_STORE8(KIND); \
     switch (size2) { \

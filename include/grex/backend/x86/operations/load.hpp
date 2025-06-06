@@ -153,8 +153,8 @@ GREX_FOREACH_X86_64_LEVEL(GREX_PARTLOAD_ALL)
 #define GREX_LOAD_SUB_IMPL(NAME, KIND, BITS, PART, SIZE) \
   inline SubVector<KIND##BITS, PART, SIZE> NAME(const KIND##BITS* ptr, \
                                                 TypeTag<SubVector<KIND##BITS, PART, SIZE>>) { \
-    const __m128i r = GREX_CAT(_mm_loadu_si, GREX_SUB_PARTBITS(BITS, PART))(ptr); \
-    return {.full = {.r = GREX_KINDCAST(i, KIND, BITS, 128, r)}}; \
+    const __m128i r = GREX_CAT(_mm_loadu_si, GREX_PARTBITS(BITS, PART))(ptr); \
+    return SubVector<KIND##BITS, PART, SIZE>{GREX_KINDCAST(i, KIND, BITS, 128, r)}; \
   }
 #define GREX_LOAD_SUB(...) \
   GREX_LOAD_SUB_IMPL(load, __VA_ARGS__) \
@@ -162,36 +162,39 @@ GREX_FOREACH_X86_64_LEVEL(GREX_PARTLOAD_ALL)
 GREX_FOREACH_SUB(GREX_LOAD_SUB)
 
 #define GREX_PARTLOAD_SUB_32_2(KIND) \
+  using Out = SubVector<KIND##32, 2, 4>; \
   if (size >= 1) [[likely]] { \
     if (size >= 2) [[unlikely]] { \
-      return {.full = {.r = GREX_KINDCAST(i, KIND, 32, 128, _mm_loadu_si64(ptr))}}; \
+      return Out{GREX_KINDCAST(i, KIND, 32, 128, _mm_loadu_si64(ptr))}; \
     } \
-    return {.full = {.r = GREX_KINDCAST(i, KIND, 32, 128, _mm_loadu_si32(ptr))}}; \
+    return Out{GREX_KINDCAST(i, KIND, 32, 128, _mm_loadu_si32(ptr))}; \
   } \
-  return {.full = {.r = GREX_KINDCAST(i, KIND, 32, 128, _mm_setzero_si128())}};
+  return Out{GREX_KINDCAST(i, KIND, 32, 128, _mm_setzero_si128())};
 #define GREX_PARTLOAD_SUB_16_4(KIND) \
+  using Out = SubVector<KIND##16, 4, 8>; \
   if (size >= 2) { \
     if (size >= 4) [[unlikely]] { \
-      return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si64(ptr))}}; \
+      return Out{GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si64(ptr))}; \
     } \
     __m128i out = _mm_loadu_si32(ptr); \
     if (size == 3) { \
       out = _mm_unpacklo_epi32(out, _mm_loadu_si16(ptr + 2)); \
     } \
-    return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, out)}}; \
+    return Out{GREX_KINDCAST(i, KIND, 16, 128, out)}; \
   } \
   if (size == 1) [[likely]] { \
-    return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si16(ptr))}}; \
+    return Out{GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si16(ptr))}; \
   } \
-  return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_setzero_si128())}};
+  return Out{GREX_KINDCAST(i, KIND, 16, 128, _mm_setzero_si128())};
 #define GREX_PARTLOAD_SUB_16_2(KIND) \
+  using Out = SubVector<KIND##16, 2, 8>; \
   if (size >= 1) [[likely]] { \
     if (size >= 2) [[unlikely]] { \
-      return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si32(ptr))}}; \
+      return Out{GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si32(ptr))}; \
     } \
-    return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si16(ptr))}}; \
+    return Out{GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si16(ptr))}; \
   } \
-  return {.full = {.r = GREX_KINDCAST(i, KIND, 16, 128, _mm_setzero_si128())}};
+  return Out{GREX_KINDCAST(i, KIND, 16, 128, _mm_setzero_si128())};
 #define GREX_PARTLOAD_SUB_8_8(KIND) \
   const std::size_t size2 = size / 2; \
   __m128i out = \
@@ -201,34 +204,34 @@ GREX_FOREACH_SUB(GREX_LOAD_SUB)
     const std::size_t i = size - 1; \
     out = insert(Vector<KIND##8, 16>{out}, i, ptr[i]).r; \
   } \
-  return {.full = {.r = out}};
+  return SubVector<KIND##8, 8, 16>{out};
 #define GREX_PARTLOAD_SUB_8_4(KIND) \
+  using Out = SubVector<KIND##8, 4, 16>; \
   if (size >= 2) { \
     if (size >= 4) [[unlikely]] { \
-      return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_loadu_si32(ptr))}}; \
+      return Out{GREX_KINDCAST(i, KIND, 8, 128, _mm_loadu_si32(ptr))}; \
     } \
     __m128i out = _mm_loadu_si16(ptr); \
     if (size == 3) { \
       out = insert(Vector<KIND##8, 16>{out}, 2, ptr[2]).r; \
     } \
-    return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, out)}}; \
+    return Out{GREX_KINDCAST(i, KIND, 8, 128, out)}; \
   } \
   if (size == 1) [[likely]] { \
     const __m128i bc = _mm_set1_epi8(GREX_KINDCAST_SINGLE(KIND, i, 8, ptr[0])); \
-    return { \
-      .full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_and_si128(_mm_set_epi64x(0, 255), bc))}}; \
+    return Out{GREX_KINDCAST(i, KIND, 8, 128, _mm_and_si128(_mm_set_epi64x(0, 255), bc))}; \
   } \
-  return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_setzero_si128())}};
+  return Out{GREX_KINDCAST(i, KIND, 8, 128, _mm_setzero_si128())};
 #define GREX_PARTLOAD_SUB_8_2(KIND) \
+  using Out = SubVector<KIND##8, 2, 16>; \
   if (size >= 1) [[likely]] { \
     if (size >= 2) [[unlikely]] { \
-      return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_loadu_si16(ptr))}}; \
+      return Out{GREX_KINDCAST(i, KIND, 8, 128, _mm_loadu_si16(ptr))}; \
     } \
     const __m128i bc = _mm_set1_epi8(GREX_KINDCAST_SINGLE(KIND, i, 8, ptr[0])); \
-    return { \
-      .full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_and_si128(_mm_set_epi64x(0, 255), bc))}}; \
+    return Out{GREX_KINDCAST(i, KIND, 8, 128, _mm_and_si128(_mm_set_epi64x(0, 255), bc))}; \
   } \
-  return {.full = {.r = GREX_KINDCAST(i, KIND, 8, 128, _mm_setzero_si128())}};
+  return Out{GREX_KINDCAST(i, KIND, 8, 128, _mm_setzero_si128())};
 #define GREX_PARTLOAD_SUB(KIND, BITS, PART, SIZE) \
   inline SubVector<KIND##BITS, PART, SIZE> load_part(const KIND##BITS* ptr, std::size_t size, \
                                                      TypeTag<SubVector<KIND##BITS, PART, SIZE>>) { \

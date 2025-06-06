@@ -9,6 +9,7 @@
 #include "operations/blend.hpp"
 #include "operations/classification.hpp"
 #include "operations/compare.hpp"
+#include "operations/convert.hpp"
 #include "operations/extract.hpp"
 #include "operations/fmadd-family.hpp"
 #include "operations/horizontal-add.hpp"

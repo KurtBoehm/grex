@@ -13,13 +13,12 @@
 
 #include "grex/backend.hpp"
 #include "grex/base.hpp"
-#include "grex/glue.hpp"
 
 namespace grex {
 template<Vectorizable T, std::size_t tSize>
 struct Mask {
   using Value = bool;
-  using Backend = glue::Mask<T, tSize>;
+  using Backend = backend::MaskFor<T, tSize>;
   static constexpr std::size_t size = tSize;
 
   Mask() : mask_{backend::zeros(type_tag<Backend>)} {}
@@ -75,7 +74,7 @@ template<Vectorizable T, std::size_t tSize>
 struct Vector {
   using Value = T;
   using Mask = grex::Mask<T, tSize>;
-  using Backend = glue::Vector<T, tSize>;
+  using Backend = backend::VectorFor<T, tSize>;
   static constexpr std::size_t size = tSize;
 
   Vector() : vec_{backend::zeros(type_tag<Backend>)} {}

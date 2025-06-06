@@ -21,6 +21,7 @@ Checks: "
   -misc-use-internal-linkage,
   -modernize-use-trailing-return-type,
   -portability-simd-intrinsics,
+  -readability-avoid-nested-conditional-operator,
   -readability-function-cognitive-complexity,
   -readability-identifier-length,
   -readability-magic-numbers,

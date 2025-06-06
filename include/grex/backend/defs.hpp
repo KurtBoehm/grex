@@ -16,10 +16,19 @@ template<Vectorizable T, std::size_t tSize>
 struct Vector;
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 struct SubVector {
+  using Full = Vector<T, tSize>;
+  using Register = Full::Register;
   using Value = T;
   static constexpr std::size_t size = tPart;
 
-  Vector<T, tSize> full;
+  Full full;
+
+  explicit SubVector(Full v) : full{v} {}
+  explicit SubVector(Register r) : full{.r = r} {}
+
+  Register registr() const {
+    return full.r;
+  }
 };
 template<typename THalf>
 struct SuperVector {
@@ -36,9 +45,14 @@ template<Vectorizable T, std::size_t tSize>
 struct Mask;
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 struct SubMask {
+  using Full = Mask<T, tSize>;
+  using Register = Full::Register;
   static constexpr std::size_t size = tPart;
 
-  Mask<T, tSize> full;
+  explicit SubMask(Full m) : full{m} {}
+  explicit SubMask(Register r) : full{.r = r} {}
+
+  Full full;
 };
 template<typename THalf>
 struct SuperMask {

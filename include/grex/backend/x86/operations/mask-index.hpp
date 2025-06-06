@@ -69,11 +69,11 @@ GREX_FOREACH_X86_64_LEVEL(GREX_CUTOFF_VEC_ALL)
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubMask<T, tPart, tSize> cutoff_mask(std::size_t i,
                                             TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
-  return {.full = cutoff_mask(i, type_tag<Mask<T, tSize>>)};
+  return SubMask<T, tPart, tSize>{cutoff_mask(i, type_tag<Mask<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubVector<T, tPart, tSize> cutoff(std::size_t i, SubVector<T, tPart, tSize> v) {
-  return {.full = cutoff(i, v.full)};
+  return SubVector<T, tPart, tSize>{cutoff(i, v.full)};
 }
 
 template<typename THalf>

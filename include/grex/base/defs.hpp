@@ -23,6 +23,35 @@ using i16 = std::int16_t;
 using i32 = std::int32_t;
 using i64 = std::int64_t;
 
+#if defined(__GNUC__)
+#define GREX_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define GREX_ALWAYS_INLINE
+#endif
+
+template<typename T>
+struct SignednessTrait;
+#define GREX_DEF_SIGNEDNESS(U, S) \
+  template<> \
+  struct SignednessTrait<U> { \
+    using Unsigned = U; \
+    using Signed = S; \
+  }; \
+  template<> \
+  struct SignednessTrait<S> { \
+    using Unsigned = U; \
+    using Signed = S; \
+  };
+GREX_DEF_SIGNEDNESS(u8, i8)
+GREX_DEF_SIGNEDNESS(u16, i16)
+GREX_DEF_SIGNEDNESS(u32, i32)
+GREX_DEF_SIGNEDNESS(u64, i64)
+#undef GREX_DEF_SIGNEDNESS
+template<typename T>
+using UnsignedOf = SignednessTrait<T>::Unsigned;
+template<typename T>
+using SignedOf = SignednessTrait<T>::Signed;
+
 using f32 = float;
 static_assert(std::numeric_limits<f32>::is_iec559 && sizeof(f32) == 4);
 using f64 = double;

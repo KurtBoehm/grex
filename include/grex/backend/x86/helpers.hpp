@@ -21,6 +21,15 @@
 #define GREX_CAT(...) BOOST_PP_CAT(GREX_CAT, BOOST_PP_VARIADIC_SIZE(__VA_ARGS__))(__VA_ARGS__)
 #define GREX_APPLY(MACRO, ...) MACRO(__VA_ARGS__)
 
+#define GREX_DOUBLE_256 512
+#define GREX_DOUBLE_128 256
+#define GREX_DOUBLE_32 64
+#define GREX_DOUBLE_16 32
+#define GREX_DOUBLE_8 16
+#define GREX_DOUBLE_4 8
+#define GREX_DOUBLE_2 4
+#define GREX_DOUBLE(SIZE) GREX_DOUBLE_##SIZE
+
 #define GREX_HALF_512 256
 #define GREX_HALF_256 128
 #define GREX_HALF_64 32
@@ -202,18 +211,18 @@
 #define GREX_SUB_UNARY(TYPE, NAME) \
   template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
   inline TYPE<T, tPart, tSize> NAME(TYPE<T, tPart, tSize> v) { \
-    return {.full = NAME(v.full)}; \
+    return TYPE<T, tPart, tSize>{NAME(v.full)}; \
   }
 #define GREX_SUB_BINARY(TYPE, NAME) \
   template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
   inline TYPE<T, tPart, tSize> NAME(TYPE<T, tPart, tSize> a, TYPE<T, tPart, tSize> b) { \
-    return {.full = NAME(a.full, b.full)}; \
+    return TYPE<T, tPart, tSize>{NAME(a.full, b.full)}; \
   }
 #define GREX_SUB_TERNARY(TYPE, NAME) \
   template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
   inline TYPE<T, tPart, tSize> NAME(TYPE<T, tPart, tSize> a, TYPE<T, tPart, tSize> b, \
                                     TYPE<T, tPart, tSize> c) { \
-    return {.full = NAME(a.full, b.full, c.full)}; \
+    return TYPE<T, tPart, tSize>{NAME(a.full, b.full, c.full)}; \
   }
 #define GREX_SUBVECTOR_UNARY(NAME) GREX_SUB_UNARY(SubVector, NAME)
 #define GREX_SUBVECTOR_BINARY(NAME) GREX_SUB_BINARY(SubVector, NAME)
@@ -222,13 +231,40 @@
 #define GREX_SUBMASK_BINARY(NAME) GREX_SUB_BINARY(SubMask, NAME)
 #define GREX_SUBMASK_TERNARY(NAME) GREX_SUB_TERNARY(SubMask, NAME)
 
-#define GREX_SUB_PARTBITS_8_2 16
-#define GREX_SUB_PARTBITS_8_4 32
-#define GREX_SUB_PARTBITS_8_8 64
-#define GREX_SUB_PARTBITS_16_2 32
-#define GREX_SUB_PARTBITS_16_4 64
-#define GREX_SUB_PARTBITS_32_2 64
-#define GREX_SUB_PARTBITS(BITS, SIZE) GREX_SUB_PARTBITS_##BITS##_##SIZE
+#define GREX_PARTBITS_8_2 16
+#define GREX_PARTBITS_8_4 32
+#define GREX_PARTBITS_8_8 64
+#define GREX_PARTBITS_8_16 128
+#define GREX_PARTBITS_8_32 256
+#define GREX_PARTBITS_8_64 512
+#define GREX_PARTBITS_16_2 32
+#define GREX_PARTBITS_16_4 64
+#define GREX_PARTBITS_16_8 128
+#define GREX_PARTBITS_16_16 256
+#define GREX_PARTBITS_16_32 512
+#define GREX_PARTBITS_32_2 64
+#define GREX_PARTBITS_32_4 128
+#define GREX_PARTBITS_32_8 256
+#define GREX_PARTBITS_32_16 512
+#define GREX_PARTBITS_64_2 128
+#define GREX_PARTBITS_64_4 256
+#define GREX_PARTBITS_64_8 512
+#define GREX_PARTBITS(BITS, SIZE) GREX_PARTBITS_##BITS##_##SIZE
+
+#define GREX_MINSIZE_8 16
+#define GREX_MINSIZE_16 8
+#define GREX_MINSIZE_32 4
+#define GREX_MINSIZE_64 2
+#define GREX_MINSIZE(BITS) GREX_MINSIZE_##BITS
+
+#define GREX_VECTOR_TYPE_16(KIND, BITS, SIZE) SubVector<KIND##BITS, SIZE, GREX_MINSIZE(BITS)>
+#define GREX_VECTOR_TYPE_32(KIND, BITS, SIZE) SubVector<KIND##BITS, SIZE, GREX_MINSIZE(BITS)>
+#define GREX_VECTOR_TYPE_64(KIND, BITS, SIZE) SubVector<KIND##BITS, SIZE, GREX_MINSIZE(BITS)>
+#define GREX_VECTOR_TYPE_128(KIND, BITS, SIZE) Vector<KIND##BITS, SIZE>
+#define GREX_VECTOR_TYPE_256(KIND, BITS, SIZE) Vector<KIND##BITS, SIZE>
+#define GREX_VECTOR_TYPE_512(KIND, BITS, SIZE) Vector<KIND##BITS, SIZE>
+#define GREX_VECTOR_TYPE(KIND, BITS, SIZE) \
+  GREX_CAT(GREX_VECTOR_TYPE_, GREX_PARTBITS(BITS, SIZE))(KIND, BITS, SIZE)
 
 #define GREX_FOREACH_SUB(MACRO, ...) \
   MACRO(f, 32, 2, 4 __VA_OPT__(, ) __VA_ARGS__) \

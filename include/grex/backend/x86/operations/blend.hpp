@@ -77,12 +77,12 @@ GREX_FOREACH_X86_64_LEVEL(GREX_BLEND_ALL, GREX_BLEND)
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubVector<T, tPart, tSize> blend_zero(SubMask<T, tPart, tSize> m,
                                              SubVector<T, tPart, tSize> v1) {
-  return {.full = blend_zero(m.full, v1.full)};
+  return SubVector<T, tPart, tSize>{blend_zero(m.full, v1.full)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubVector<T, tPart, tSize> blend(SubMask<T, tPart, tSize> m, SubVector<T, tPart, tSize> v0,
                                         SubVector<T, tPart, tSize> v1) {
-  return {.full = blend(m.full, v0.full, v1.full)};
+  return SubVector<T, tPart, tSize>{blend(m.full, v0.full, v1.full)};
 }
 
 template<typename TVecHalf, typename TMaskHalf>

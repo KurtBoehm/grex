@@ -119,11 +119,11 @@ inline Vector<T, tSize> indices(TypeTag<Vector<T, tSize>> /*tag*/) {
 // SubVector
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> zeros(TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
-  return {.full = zeros(type_tag<Vector<T, tSize>>)};
+  return SubVector<T, tPart, tSize>{zeros(type_tag<Vector<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> broadcast(T value, TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
-  return {.full = broadcast(value, type_tag<Vector<T, tSize>>)};
+  return SubVector<T, tPart, tSize>{broadcast(value, type_tag<Vector<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> set(TypeTag<SubVector<T, tPart, tSize>> /*tag*/, Ts... values) {
@@ -131,32 +131,32 @@ inline SubVector<T, tPart, tSize> set(TypeTag<SubVector<T, tPart, tSize>> /*tag*
   const auto full = static_apply<tSize>([&]<std::size_t... tIdxs> {
     return set(type_tag<Vector<T, tSize>>, std::get<tIdxs>(elements)...);
   });
-  return {.full = full};
+  return SubVector<T, tPart, tSize>{full};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> indices(TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
-  return {.full = indices(type_tag<Vector<T, tSize>>)};
+  return SubVector<T, tPart, tSize>{indices(type_tag<Vector<T, tSize>>)};
 }
 
 // SubMask
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubMask<T, tPart, tSize> zeros(TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
-  return {.full = zeros(type_tag<Mask<T, tSize>>)};
+  return SubMask<T, tPart, tSize>{zeros(type_tag<Mask<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubMask<T, tPart, tSize> ones(TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
-  return {.full = ones(type_tag<Mask<T, tSize>>)};
+  return SubMask<T, tPart, tSize>{ones(type_tag<Mask<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubMask<T, tPart, tSize> broadcast(bool value, TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
-  return {.full = broadcast(value, type_tag<Mask<T, tSize>>)};
+  return SubMask<T, tPart, tSize>{broadcast(value, type_tag<Mask<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubMask<T, tPart, tSize> set(TypeTag<SubMask<T, tPart, tSize>> /*tag*/, Ts... values) {
   std::array<bool, tSize> buf{values...};
   const auto full = static_apply<tSize>(
     [&]<std::size_t... tIdxs>() { return set(type_tag<Mask<T, tSize>>, buf[tIdxs]...); });
-  return {.full = full};
+  return SubMask<T, tPart, tSize>{full};
 }
 
 // SuperVector

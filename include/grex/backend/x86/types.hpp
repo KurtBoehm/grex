@@ -23,7 +23,12 @@ namespace grex::backend {
     using Register = __m##REGISTERBITS##i; \
     static constexpr std::size_t size = SIZE; \
     static constexpr std::size_t rbits = REGISTERBITS; \
+\
     Register r; \
+\
+    Register registr() const { \
+      return r; \
+    } \
   }; \
   using b##KIND##x##SIZE = Mask<KIND, SIZE>
 #define GREX_TYPES_MASK_COMPACT(KIND, BITS, SIZE, REGISTERBITS) \
@@ -32,7 +37,12 @@ namespace grex::backend {
     using Register = GREX_SIZEMMASK(SIZE); \
     static constexpr std::size_t size = SIZE; \
     static constexpr std::size_t rbits = REGISTERBITS; \
+\
     Register r; \
+\
+    Register registr() const { \
+      return r; \
+    } \
   }; \
   using b##KIND##BITS##x##SIZE = Mask<KIND##BITS, SIZE>
 #if GREX_X86_64_LEVEL >= 4
@@ -49,7 +59,12 @@ namespace grex::backend {
     using Register = GREX_REGISTER(KIND, BITS, REGISTERBITS); \
     using Value = KIND##BITS; \
     static constexpr std::size_t size = SIZE; \
+\
     Register r; \
+\
+    Register registr() const { \
+      return r; \
+    } \
   }; \
   using KIND##BITS##x##SIZE = Vector<KIND##BITS, SIZE>; \
   GREX_TYPES_MASK(KIND, BITS, SIZE, REGISTERBITS);

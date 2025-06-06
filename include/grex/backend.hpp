@@ -2,6 +2,8 @@
 #define INCLUDE_GREX_BACKEND_HPP
 
 // IWYU pragma: begin_exports
+#include "backend/active.hpp"
+#include "backend/choosers.hpp"
 #include "backend/defs.hpp"
 #include "backend/x86.hpp"
 // IWYU pragma: end_exports

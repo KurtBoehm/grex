@@ -59,7 +59,7 @@ GREX_FOREACH_X86_64_LEVEL(GREX_ISFIN_ALL)
 
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubMask<T, tPart, tSize> is_finite(SubVector<T, tPart, tSize> v) {
-  return {.full = is_finite(v.full)};
+  return SubMask<T, tPart, tSize>{is_finite(v.full)};
 }
 template<typename THalf>
 inline auto is_finite(SuperVector<THalf> v) {
