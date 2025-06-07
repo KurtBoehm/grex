@@ -163,6 +163,10 @@ namespace grex::backend {
   return GREX_VECTOR_TYPE(u, 8, 2){r};
 #endif
 
+// Floating-point conversion
+#define GREX_CVT_IMPL_f64_f32_2 GREX_CVT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_f32_f64_2 GREX_CVT_INTRINSIC_EPU
+
 // Integers → floating-point
 // Integers with less than 32 bits: Convert to i32 and go from there
 #define GREX_CVT_IMPL_SMALLI2F(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
@@ -382,6 +386,11 @@ namespace grex::backend {
     GREX_CVT_IMPL(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
   }
 
+// The same type: no-op
+template<Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> convert(Vector<T, tSize> v, TypeTag<T> /*tag*/) {
+  return v;
+}
 // Integers with the same number of bits: No-op
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
 requires(std::integral<TDst> && std::integral<TSrc> && sizeof(TDst) == sizeof(TSrc))
@@ -417,7 +426,7 @@ inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<T
   return VectorFor<TDst, tPart>{s.registr()};
 }
 
-// Level 1
+// Up to 128 bit
 // Double integer size
 GREX_CVT(i, 16, i, 8, 8, _mm, 128)
 GREX_CVT(u, 16, u, 8, 8, _mm, 128)
@@ -443,6 +452,10 @@ GREX_CVT(u, 8, u, 32, 4, _mm, 128)
 GREX_CVT(u, 16, u, 64, 2, _mm, 128)
 // Divide integer size by eight
 GREX_CVT(u, 8, u, 64, 2, _mm, 128)
+
+// Floating-point conversions
+GREX_CVT(f, 64, f, 32, 2, _mm, 128)
+GREX_CVT(f, 32, f, 64, 2, _mm, 128)
 
 // Integer → floating-point
 // f64

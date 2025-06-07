@@ -55,7 +55,7 @@ inline auto make_distribution() {
   }
 }
 
-void for_each_integral(auto op) {
+void for_each_type(auto op) {
   op(grex::type_tag<grex::i64>);
   op(grex::type_tag<grex::i32>);
   op(grex::type_tag<grex::i16>);
@@ -64,37 +64,32 @@ void for_each_integral(auto op) {
   op(grex::type_tag<grex::u32>);
   op(grex::type_tag<grex::u16>);
   op(grex::type_tag<grex::u8>);
+  op(grex::type_tag<grex::f64>);
+  op(grex::type_tag<grex::f32>);
 };
 
 template<grex::Vectorizable TSrc>
 void convert_from_base(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
   fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::text_style(fmt::emphasis::bold), "{}\n",
              test::type_name<TSrc>());
-  auto to_integral = [&]<std::integral TDst>(grex::TypeTag<TDst> /*tag*/) {
-    if (!std::same_as<TSrc, TDst>) {
-      fmt::print(fmt::fg(fmt::terminal_color::blue), "{}\n", test::type_name<TDst>());
-      constexpr std::size_t size =
-        std::min(grex::native_sizes<TSrc>.front(), grex::native_sizes<TDst>.front());
-      auto dist = make_distribution<TSrc, TDst>();
-      auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+  auto cvt = [&]<typename TDst>(grex::TypeTag<TDst> /*tag*/) {
+    fmt::print(fmt::fg(fmt::terminal_color::blue), "{}\n", test::type_name<TDst>());
+    constexpr std::size_t size =
+      std::min(grex::native_sizes<TSrc>.front(), grex::native_sizes<TDst>.front());
+    auto dist = make_distribution<TSrc, TDst>();
+    auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
 
-      for (std::size_t i = 0; i < repetitions; ++i) {
-        grex::static_apply<size>([&]<std::size_t... tIdxs> {
-          test::VectorChecker<TSrc, size>{dval(tIdxs)...}
-            .convert(grex::type_tag<TDst>)
-            .check(false);
-        });
-      }
+    for (std::size_t i = 0; i < repetitions; ++i) {
+      grex::static_apply<size>([&]<std::size_t... tIdxs> {
+        test::VectorChecker<TSrc, size>{dval(tIdxs)...}.convert(grex::type_tag<TDst>).check(false);
+      });
     }
   };
-  for_each_integral(to_integral);
+  for_each_type(cvt);
 }
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   Rng rng{seed_source};
-
-  for_each_integral([&](auto tag) { convert_from_base(rng, tag); });
-  convert_from_base<grex::f32>(rng);
-  convert_from_base<grex::f64>(rng);
+  for_each_type([&](auto tag) { convert_from_base(rng, tag); });
 }
