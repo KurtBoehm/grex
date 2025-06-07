@@ -41,20 +41,13 @@ namespace grex::backend {
                                          GREX_EPU_SUFFIX(DSTKIND, DSTBITS))(v.registr())};
 
 // Increasing integer size
+#if GREX_X86_64_LEVEL >= 2
+#define GREX_CVT_IMPL_Ux2 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_HALFINCR GREX_CVT_INTRINSIC_EPUI
+#else
 // Doubling unsigned: unpacklo with zero as the upper part
 #define GREX_CVT_IMPL_Ux2(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
   return {.r = _mm_unpacklo_epi##SRCBITS(v.registr(), _mm_setzero_si128())};
-// i32→i64: unpacklo with sign mask computed using srai
-#define GREX_CVT_IMPL_I32x2(...) \
-  return {.r = _mm_unpacklo_epi32(v.registr(), _mm_srai_epi32(v.registr(), 31))};
-// i16→i32: duplicate each value and extend the sign using srai
-#define GREX_CVT_IMPL_I16x2(...) \
-  return {.r = _mm_srai_epi32(_mm_unpacklo_epi16(v.registr(), v.registr()), 16)};
-// i8→i16: unpacklo with itself, then srai to extend sign
-#define GREX_CVT_IMPL_I8x2(...) \
-  const __m128i r = v.registr(); \
-  const __m128i unpacklo = _mm_unpacklo_epi8(r, r); \
-  return {.r = _mm_srai_epi16(unpacklo, 8)};
 // Recursive case for larger increases: Cast to the next smaller size first, then cast from there
 #define GREX_CVT_IMPL_HALFINCR(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
   using Half = GREX_CAT(DSTKIND, GREX_HALF(DSTBITS)); \
@@ -62,37 +55,36 @@ namespace grex::backend {
     convert(GREX_VECTOR_TYPE(SRCKIND, SRCBITS, GREX_DOUBLE(SIZE)){v.registr()}, type_tag<Half>).r; \
   return convert(GREX_VECTOR_TYPE(DSTKIND, GREX_HALF(DSTBITS), SIZE){half}, \
                  type_tag<DSTKIND##DSTBITS>);
-
-#if GREX_X86_64_LEVEL >= 2
-#define GREX_CVT_IMPL_L2_Ux2 GREX_CVT_INTRINSIC_EPUI
-#define GREX_CVT_IMPL_L2_I32x2 GREX_CVT_INTRINSIC_EPUI
-#define GREX_CVT_IMPL_L2_I16x2 GREX_CVT_INTRINSIC_EPUI
-#define GREX_CVT_IMPL_L2_I8x2 GREX_CVT_INTRINSIC_EPUI
-#define GREX_CVT_IMPL_L2_HALFINCR GREX_CVT_INTRINSIC_EPUI
-#else
-#define GREX_CVT_IMPL_L2_Ux2 GREX_CVT_IMPL_Ux2
-#define GREX_CVT_IMPL_L2_I32x2 GREX_CVT_IMPL_I32x2
-#define GREX_CVT_IMPL_L2_I16x2 GREX_CVT_IMPL_I16x2
-#define GREX_CVT_IMPL_L2_I8x2 GREX_CVT_IMPL_I8x2
-#define GREX_CVT_IMPL_L2_HALFINCR GREX_CVT_IMPL_HALFINCR
 #endif
-
-// SSE
 // Double integer size
-#define GREX_CVT_IMPL_i16_i8_8 GREX_CVT_IMPL_L2_I8x2
-#define GREX_CVT_IMPL_u16_u8_8 GREX_CVT_IMPL_L2_Ux2
-#define GREX_CVT_IMPL_i32_i16_4 GREX_CVT_IMPL_L2_I16x2
-#define GREX_CVT_IMPL_u32_u16_4 GREX_CVT_IMPL_L2_Ux2
-#define GREX_CVT_IMPL_i64_i32_2 GREX_CVT_IMPL_L2_I32x2
-#define GREX_CVT_IMPL_u64_u32_2 GREX_CVT_IMPL_L2_Ux2
+#if GREX_X86_64_LEVEL >= 2
+#define GREX_CVT_IMPL_i16_i8_8 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_i32_i16_4 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_i64_i32_2 GREX_CVT_INTRINSIC_EPUI
+#else
+// i8→i16: unpacklo with itself, then srai to extend sign
+#define GREX_CVT_IMPL_i16_i8_8(...) \
+  const __m128i r = v.registr(); \
+  const __m128i unpacklo = _mm_unpacklo_epi8(r, r); \
+  return {.r = _mm_srai_epi16(unpacklo, 8)};
+// i16→i32: duplicate each value and extend the sign using srai
+#define GREX_CVT_IMPL_i32_i16_4(...) \
+  return {.r = _mm_srai_epi32(_mm_unpacklo_epi16(v.registr(), v.registr()), 16)};
+// i32→i64: unpacklo with sign mask computed using srai
+#define GREX_CVT_IMPL_i64_i32_2(...) \
+  return {.r = _mm_unpacklo_epi32(v.registr(), _mm_srai_epi32(v.registr(), 31))};
+#endif
+#define GREX_CVT_IMPL_u16_u8_8 GREX_CVT_IMPL_Ux2
+#define GREX_CVT_IMPL_u32_u16_4 GREX_CVT_IMPL_Ux2
+#define GREX_CVT_IMPL_u64_u32_2 GREX_CVT_IMPL_Ux2
 // Quadruple integer size
-#define GREX_CVT_IMPL_i32_i8_4 GREX_CVT_IMPL_L2_HALFINCR
-#define GREX_CVT_IMPL_u32_u8_4 GREX_CVT_IMPL_L2_HALFINCR
-#define GREX_CVT_IMPL_i64_i16_2 GREX_CVT_IMPL_L2_HALFINCR
-#define GREX_CVT_IMPL_u64_u16_2 GREX_CVT_IMPL_L2_HALFINCR
+#define GREX_CVT_IMPL_i32_i8_4 GREX_CVT_IMPL_HALFINCR
+#define GREX_CVT_IMPL_u32_u8_4 GREX_CVT_IMPL_HALFINCR
+#define GREX_CVT_IMPL_i64_i16_2 GREX_CVT_IMPL_HALFINCR
+#define GREX_CVT_IMPL_u64_u16_2 GREX_CVT_IMPL_HALFINCR
 // Octuple integer size
-#define GREX_CVT_IMPL_i64_i8_2 GREX_CVT_IMPL_L2_HALFINCR
-#define GREX_CVT_IMPL_u64_u8_2 GREX_CVT_IMPL_L2_HALFINCR
+#define GREX_CVT_IMPL_i64_i8_2 GREX_CVT_IMPL_HALFINCR
+#define GREX_CVT_IMPL_u64_u8_2 GREX_CVT_IMPL_HALFINCR
 
 // Decreasing integer size
 #if GREX_X86_64_LEVEL >= 4
@@ -443,7 +435,6 @@ inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<T
   return Out{s.registr()};
 }
 
-// Up to 128 bit
 // Double integer size
 GREX_CVT(i, 16, i, 8, 8, _mm, 128)
 GREX_CVT(u, 16, u, 8, 8, _mm, 128)
