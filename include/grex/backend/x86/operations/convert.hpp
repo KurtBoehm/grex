@@ -11,7 +11,6 @@
 #include <cstddef>
 #include <type_traits>
 
-// #define GREX_X86_64_LEVEL 4
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
@@ -413,7 +412,8 @@ template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tS
 inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
   using Out = VectorFor<TDst, tPart>;
   constexpr std::size_t work_size = std::min(tSize, Out::Full::size);
-  const auto s = convert(VectorFor<TDst, work_size>{v.full.r}, type_tag<UnsignedOf<TDst>>);
+  static_assert(work_size >= tPart);
+  const auto s = convert(VectorFor<TSrc, work_size>{v.full.r}, type_tag<UnsignedOf<TDst>>);
   return VectorFor<TDst, tPart>{s.registr()};
 }
 

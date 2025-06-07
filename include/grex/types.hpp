@@ -15,6 +15,8 @@
 #include "grex/base.hpp"
 
 namespace grex {
+using backend::native_sizes;
+
 template<Vectorizable T, std::size_t tSize>
 struct Mask {
   using Value = bool;
@@ -121,6 +123,10 @@ struct Vector {
 
   Vector cutoff(std::size_t i) const {
     return Vector{backend::cutoff(i, vec_)};
+  }
+  template<Vectorizable TDst>
+  Vector<TDst, tSize> convert(TypeTag<TDst> /*tag*/ = {}) const {
+    return Vector<TDst, tSize>{backend::convert(vec_, type_tag<TDst>)};
   }
 
   T operator[](std::size_t i) const {

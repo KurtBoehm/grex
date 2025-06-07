@@ -89,7 +89,7 @@ GREX_FOREACH_X86_64_LEVEL(GREX_MASKDIV_ALL)
   template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
   inline SubVector<T, tPart, tSize> NAME(SubMask<T, tPart, tSize> m, SubVector<T, tPart, tSize> a, \
                                          SubVector<T, tPart, tSize> b) { \
-    return {NAME(m.full, a.full, b.full)}; \
+    return SubVector<T, tPart, tSize>{NAME(m.full, a.full, b.full)}; \
   }
 GREX_MASKARITH_SUB(mask_add)
 GREX_MASKARITH_SUB(mask_subtract)
