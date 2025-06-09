@@ -86,7 +86,7 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_i64_i8_2 GREX_CVT_IMPL_HALFINCR
 #define GREX_CVT_IMPL_u64_u8_2 GREX_CVT_IMPL_HALFINCR
 
-// Decreasing integer size
+// Decreasing integer size: Truncation works the same for signed and unsigned types
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_CVT_IMPL_u8_u16_8 GREX_CVT_INTRINSIC_EPI
 #define GREX_CVT_IMPL_u16_u32_4 GREX_CVT_INTRINSIC_EPI
@@ -98,45 +98,45 @@ namespace grex::backend {
 #elif GREX_X86_64_LEVEL >= 2
 #define GREX_CVT_IMPL_u8_u16_8(...) \
   const auto m = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, -1, -1, -1, -1, -1, -1, -1, -1); \
-  return GREX_VECTOR_TYPE(u, 8, 8){_mm_shuffle_epi8(v.r, m)};
+  return SubVector<u8, 8, 16>{_mm_shuffle_epi8(v.r, m)};
 #define GREX_CVT_IMPL_u16_u32_4(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, ...) \
   const auto m = _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1); \
-  return GREX_VECTOR_TYPE(u, 16, SIZE){_mm_shuffle_epi8(v.registr(), m)};
+  return SubVector<u16, SIZE, 8>{_mm_shuffle_epi8(v.registr(), m)};
 #define GREX_CVT_IMPL_u16_u32_2 GREX_CVT_IMPL_u16_u32_4
 #define GREX_CVT_IMPL_u32_u64_2(...) \
   const __m128 i = _mm_insert_ps(_mm_castsi128_ps(v.r), _mm_castsi128_ps(v.r), 0b10011100); \
-  return GREX_VECTOR_TYPE(u, 32, 2){_mm_castps_si128(i)};
+  return SubVector<u32, 2, 4>{_mm_castps_si128(i)};
 
 #define GREX_CVT_IMPL_u8_u32_4(...) \
   const auto m = _mm_setr_epi8(0, 4, 8, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1); \
-  return GREX_VECTOR_TYPE(u, 8, 4){_mm_shuffle_epi8(v.r, m)};
+  return SubVector<u8, 4, 16>{_mm_shuffle_epi8(v.r, m)};
 #define GREX_CVT_IMPL_u16_u64_2(...) \
   const auto m = _mm_setr_epi8(0, 1, 8, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1); \
-  return GREX_VECTOR_TYPE(u, 16, 2){_mm_shuffle_epi8(v.r, m)};
+  return SubVector<u16, 2, 8>{_mm_shuffle_epi8(v.r, m)};
 
 #define GREX_CVT_IMPL_u8_u64_2(...) \
   const auto m = _mm_setr_epi8(0, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1); \
-  return GREX_VECTOR_TYPE(u, 8, 2){_mm_shuffle_epi8(v.r, m)};
+  return SubVector<u8, 2, 16>{_mm_shuffle_epi8(v.r, m)};
 #else
 // i16→i8 on level 1: Mask out upper 8 bits and use a saturated cast
 // TODO This can be extended to 2×super-native i16→i8
 #define GREX_CVT_IMPL_u8_u16_8(...) \
   const auto r = _mm_packus_epi16(_mm_and_si128(v.r, _mm_set1_epi16(0xFF)), _mm_setzero_si128()); \
-  return GREX_VECTOR_TYPE(u, 8, 8){r};
+  return SubVector<u8, 8, 16>{r};
 #define GREX_CVT_IMPL_u16_u32_4(...) \
   /* lo = [u16(v[0]), u16(v[1]), -, ...] */ \
   const auto lo = _mm_shufflelo_epi16(v.r, 0b1000); \
   /* hi = [u16(v[0]), u16(v[1]), -, -, u16(v[2]), u16(v[3]), -, -] */ \
   const auto hi = _mm_shufflehi_epi16(lo, 0b1000); \
   /* sh = [u16(v[0]), u16(v[1]), u16(v[2]), u16(v[3]), -, -, -, -] */ \
-  return GREX_VECTOR_TYPE(u, 16, 4){_mm_shuffle_epi32(hi, 0b1000)};
+  return SubVector<u16, 4, 8>{_mm_shuffle_epi32(hi, 0b1000)};
 #define GREX_CVT_IMPL_u16_u32_2(...) \
   /* lo = [u16(v[0]), u16(v[1]), -, ...] */ \
-  return GREX_VECTOR_TYPE(u, 16, 2){_mm_shufflelo_epi16(v.registr(), 0b1000)};
+  return SubVector<u16, 2, 8>{_mm_shufflelo_epi16(v.registr(), 0b1000)};
 #define GREX_CVT_IMPL_u32_u64_2(...) \
   /* [u32(v[0]), u32(v[1]), 0, 0] */ \
   const __m128 sh = _mm_shuffle_ps(_mm_castsi128_ps(v.r), _mm_setzero_ps(), 0b1000); \
-  return GREX_VECTOR_TYPE(u, 32, 2){_mm_castps_si128(sh)};
+  return SubVector<u32, 2, 4>{_mm_castps_si128(sh)};
 
 #define GREX_CVT_IMPL_u8_u32_4(...) \
   /* [u8(v[0]), u8(v[1]), u8(v[2]), u8(v[3])] as u32x4 */ \
@@ -145,12 +145,12 @@ namespace grex::backend {
   const __m128i vu16 = _mm_packus_epi16(vu32, _mm_setzero_si128()); \
   /* [u8(v[0]), u8(v[1]), u8(v[2]), u8(v[3]), 0, …, 0] as u8x16 */ \
   const auto r = _mm_packus_epi16(vu16, _mm_setzero_si128()); \
-  return GREX_VECTOR_TYPE(u, 8, 4){r};
+  return SubVector<u8, 4, 16>{r};
 #define GREX_CVT_IMPL_u16_u64_2(...) \
   /* lo = [u32(v0), u32(v1), -, -] as u32x4 */ \
   const auto lo = _mm_shuffle_epi32(v.r, 0b1000); \
   /* [u16(v0), u16(v1), -, …, -]  */ \
-  return GREX_VECTOR_TYPE(u, 16, 2){_mm_shufflelo_epi16(lo, 0b1000)};
+  return SubVector<u16, 2, 8>{_mm_shufflelo_epi16(lo, 0b1000)};
 
 #define GREX_CVT_IMPL_u8_u64_2(...) \
   /* [u8(v[0]), u8(v[1])] as u64x2 */ \
@@ -160,18 +160,18 @@ namespace grex::backend {
   /* [u8(v[0]), u8(v[1]), 0, …, 0] as u16x8 */ \
   const __m128i vu16 = _mm_shufflelo_epi16(vu32, 0b11011000); \
   /* [u8(v[0]), u8(v[1]), 0, …, 0] as u8x16 */ \
-  return GREX_VECTOR_TYPE(u, 8, 2){_mm_packus_epi16(vu16, _mm_setzero_si128())};
+  return SubVector<u8, 2, 16>{_mm_packus_epi16(vu16, _mm_setzero_si128())};
 #endif
 
 // Floating-point conversion
 #define GREX_CVT_IMPL_f64_f32_2 GREX_CVT_INTRINSIC_EPU
 #define GREX_CVT_IMPL_f32_f64_2 GREX_CVT_INTRINSIC_EPU
 
-// Integers → floating-point
+// Integer → floating-point
 // Integers with less than 32 bits: Convert to i32 and go from there
 #define GREX_CVT_IMPL_SMALLI2F(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  const __m##REGISTERBITS##i vi32 = \
-    convert(GREX_VECTOR_TYPE(SRCKIND, SRCBITS, 4){v.full.r}, type_tag<i32>).r; \
+  const GREX_VECTOR_TYPE(SRCKIND, SRCBITS, GREX_MAX(SIZE, 4)) full{v.registr()}; \
+  const auto vi32 = convert(full, type_tag<i32>).r; \
   return convert(GREX_VECTOR_TYPE(i, 32, SIZE){vi32}, type_tag<DSTKIND##DSTBITS>);
 
 // f64
@@ -195,12 +195,12 @@ namespace grex::backend {
   /* subtract 2^84 * (1 + 2^-32) = 2^84 + 2^52, i.e. the hidden bits of both parts */ \
   const __m128d hsub = _mm_sub_pd(hf64, _mm_castsi128_pd(_mm_set1_epi64x(0x4530000000100000))); \
   /* add both parts together */ \
-  return f64x2{_mm_add_pd(lf64, hsub)};
+  return {.r = _mm_add_pd(lf64, hsub)};
 // i64 → f64: Extraction and scalar conversion
 #define GREX_CVT_IMPL_f64_i64_2(...) \
   const __m128d lf64 = _mm_cvtsi64_sd(_mm_undefined_pd(), _mm_cvtsi128_si64(v.r)); \
   const __m128d hf64 = _mm_cvtsi64_sd(_mm_undefined_pd(), extract(v, 1)); \
-  return f64x2{_mm_unpacklo_pd(lf64, hf64)};
+  return {.r = _mm_unpacklo_pd(lf64, hf64)};
 // u32 → f64: Relatively simple because the conversion is precise
 #define GREX_CVT_IMPL_f64_u32_2(...) \
   /* [u64(v[0]), u64(v[1])], i.e. the integer is in the lower bits of the mantissa */ \
@@ -211,7 +211,7 @@ namespace grex::backend {
    * however, the hidden bit leads to the double value being the original value + 2^52  */ \
   const __m128i iv64 = _mm_or_si128(_mm_castps_si128(unpack64), exponent); \
   /* subtract the value of the hidden bit to get the correct value */ \
-  return f64x2{_mm_sub_pd(_mm_castsi128_pd(iv64), _mm_castsi128_pd(exponent))};
+  return {.r = _mm_sub_pd(_mm_castsi128_pd(iv64), _mm_castsi128_pd(exponent))};
 #endif
 #define GREX_CVT_IMPL_f64_i32_2 GREX_CVT_INTRINSIC_EPU
 #define GREX_CVT_IMPL_f64_i16_2 GREX_CVT_IMPL_SMALLI2F
@@ -259,7 +259,7 @@ namespace grex::backend {
   /* subtract 2^39 * (1 + 2^-16) = 2^39 + 2^23, i.e. the hidden bits of both parts */ \
   const __m128 d = _mm_sub_ps(_mm_castsi128_ps(c), _mm_castsi128_ps(_mm_set1_epi32(0x53000080))); \
   /* add both parts together */ \
-  return f32x4{_mm_add_ps(_mm_castsi128_ps(a), d)};
+  return {.r = _mm_add_ps(_mm_castsi128_ps(a), d)};
 #else
 // Convert the upper/lower 16 bits separately and add them (with some hidden bit fixes)
 #define GREX_CVT_IMPL_f32_u32_4(...) \
@@ -276,7 +276,7 @@ namespace grex::backend {
   /* subtract 2^39 * (1 + 2^-16) = 2^39 + 2^23, i.e. the hidden bits of both parts */ \
   const __m128 hsub = _mm_sub_ps(hf32, _mm_castsi128_ps(_mm_set1_epi32(0x53000080))); \
   /* add both parts together */ \
-  return f32x4{_mm_add_ps(lf32, hsub)};
+  return {.r = _mm_add_ps(lf32, hsub)};
 #endif
 #define GREX_CVT_IMPL_f32_i32_4 GREX_CVT_INTRINSIC_EPU
 #define GREX_CVT_IMPL_f32_i16_4 GREX_CVT_IMPL_SMALLI2F
@@ -287,7 +287,7 @@ namespace grex::backend {
 // Floating-point → integer
 // Integers with less than 32 bits: Convert to i32 and go from there
 #define GREX_CVT_IMPL_F2SMALLI(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  const __m##REGISTERBITS##i vi32 = convert(v, type_tag<i32>).registr(); \
+  const auto vi32 = convert(v, type_tag<i32>).registr(); \
   return convert(GREX_VECTOR_TYPE(i, 32, SIZE){vi32}, type_tag<DSTKIND##DSTBITS>);
 
 // f64
@@ -313,7 +313,7 @@ namespace grex::backend {
   /* mask out the element for which the offset version is required */ \
   const __m128i mi64 = _mm_and_si128(oi64, sign); \
   /* due to modular arithmetic, it suffices to update using bitwise OR */ \
-  return {_mm_or_si128(vi64, mi64)};
+  return {.r = _mm_or_si128(vi64, mi64)};
 #define GREX_CVT_IMPL_u32_f64_2(...) \
   /* [i32(v[0]), i32(v[1]), -, -] */ \
   const __m128i vi32 = _mm_cvttpd_epi32(v.r); \
@@ -356,7 +356,7 @@ namespace grex::backend {
   /* mask out the element for which the offset version is required */ \
   const __m128i mi64 = _mm_and_si128(oi64, sign); \
   /* due to modular arithmetic, it suffices to update using bitwise OR */ \
-  return {_mm_or_si128(vi64, mi64)};
+  return {.r = _mm_or_si128(vi64, mi64)};
 #define GREX_CVT_IMPL_u32_f32_4(...) \
   /* [i32(v[0]), i32(v[1]), i32(v[2]), i32(v[3])] */ \
   const __m128i vi32 = _mm_cvttps_epi32(v.r); \
@@ -369,7 +369,7 @@ namespace grex::backend {
   /* mask out the element for which the offset version is required */ \
   const __m128i mi32 = _mm_and_si128(oi32, sign); \
   /* due to modular arithmetic, it suffices to update using bitwise OR */ \
-  return {_mm_or_si128(vi32, mi32)};
+  return {.r = _mm_or_si128(vi32, mi32)};
 #endif
 #define GREX_CVT_IMPL_i32_f32_4 GREX_CVTT_INTRINSIC_EPU
 #define GREX_CVT_IMPL_i16_f32_4 GREX_CVT_IMPL_F2SMALLI
@@ -398,6 +398,15 @@ inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/)
   return {.r = v.r};
 }
 // Converting to a larger integer with different signedness: Increase size while keeping signedness
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
+requires(std::integral<TDst> && std::integral<TSrc> &&
+         (std::unsigned_integral<TDst> != std::unsigned_integral<TSrc>) &&
+         sizeof(TDst) > sizeof(TSrc))
+inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
+  using Temp = std::conditional_t<std::unsigned_integral<TSrc>, UnsignedOf<TDst>, SignedOf<TDst>>;
+  const auto s = convert(v, type_tag<Temp>);
+  return {.r = s.r};
+}
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
 requires(std::integral<TDst> && std::integral<TSrc> &&
          (std::unsigned_integral<TDst> != std::unsigned_integral<TSrc>) &&
@@ -414,7 +423,7 @@ requires(std::integral<TDst> && std::integral<TSrc> &&
          sizeof(TDst) < sizeof(TSrc))
 inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
   const auto s = convert(Vector<UnsignedOf<TSrc>, tSize>{v.r}, type_tag<UnsignedOf<TDst>>);
-  return VectorFor<TDst, tSize>{s.full.r};
+  return VectorFor<TDst, tSize>{s.registr()};
 }
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
 requires(std::integral<TDst> && std::integral<TSrc> &&

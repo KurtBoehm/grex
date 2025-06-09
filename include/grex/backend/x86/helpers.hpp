@@ -39,6 +39,11 @@
 #define GREX_HALF_4 2
 #define GREX_HALF(SIZE) GREX_HALF_##SIZE
 
+#define GREX_MAX_2_4 4
+#define GREX_MAX_4_4 4
+#define GREX_MAX_8_4 8
+#define GREX_MAX(A, B) GREX_MAX_##A##_##B
+
 #define GREX_FP_LETTER_f32 s
 #define GREX_FP_LETTER_f64 d
 #define GREX_FP_LETTER(TYPE) GREX_FP_LETTER_##TYPE
