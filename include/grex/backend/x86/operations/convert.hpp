@@ -4,6 +4,7 @@
 // IWYU pragma: begin_exports
 #include "convert/128.hpp"
 #include "convert/256.hpp"
+#include "convert/512.hpp"
 #include "convert/base.hpp"
 // IWYU pragma: end_exports
 

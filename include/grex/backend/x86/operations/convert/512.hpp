@@ -1,0 +1,92 @@
+// This file is part of https://github.com/KurtBoehm/grex.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_512_HPP
+#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_512_HPP
+
+#include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/operations/convert/128.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/convert/256.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/convert/base.hpp"
+
+// AVX-512 includes intrinsics for everything except for (most instances of) truncation
+
+namespace grex::backend {
+// Increasing integer size
+// Double integer size
+#define GREX_CVT_IMPL_i16_i8_32 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u16_u8_32 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_i32_i16_16 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u32_u16_16 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_i64_i32_8 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u64_u32_8 GREX_CVT_INTRINSIC_EPUI
+// Quadruple integer size
+#define GREX_CVT_IMPL_i32_i8_16 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u32_u8_16 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_i64_i16_8 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u64_u16_8 GREX_CVT_INTRINSIC_EPUI
+// Octuple integer size
+#define GREX_CVT_IMPL_i64_i8_8 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u64_u8_8 GREX_CVT_INTRINSIC_EPUI
+
+// Decreasing integer size: Truncation works the same for signed and unsigned types
+#define GREX_CVT_IMPL_u8_u16_32 GREX_CVT_INTRINSIC_EPI
+#define GREX_CVT_IMPL_u16_u32_16 GREX_CVT_INTRINSIC_EPI
+#define GREX_CVT_IMPL_u32_u64_8 GREX_CVT_INTRINSIC_EPI
+#define GREX_CVT_IMPL_u8_u32_16 GREX_CVT_INTRINSIC_EPI
+#define GREX_CVT_IMPL_u16_u64_8 GREX_CVT_INTRINSIC_EPI
+#define GREX_CVT_IMPL_u8_u64_8 GREX_CVT_INTRINSIC_EPI
+
+// Floating-point conversion
+#define GREX_CVT_IMPL_f64_f32_8 GREX_CVT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_f32_f64_8 GREX_CVT_INTRINSIC_EPU
+
+// Integer → floating-point
+// f64
+#define GREX_CVT_IMPL_f64_u64_8 GREX_CVT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_f64_i64_8 GREX_CVT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_f64_u32_8 GREX_CVT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_f64_i32_8 GREX_CVT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_f64_i16_8 GREX_CVT_IMPL_SMALLI2F
+#define GREX_CVT_IMPL_f64_u16_8 GREX_CVT_IMPL_SMALLI2F
+#define GREX_CVT_IMPL_f64_i8_8 GREX_CVT_IMPL_SMALLI2F
+#define GREX_CVT_IMPL_f64_u8_8 GREX_CVT_IMPL_SMALLI2F
+// f32
+#define GREX_CVT_IMPL_f32_i64_8 GREX_CVT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_f32_u64_8 GREX_CVT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_f32_u32_16 GREX_CVT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_f32_i32_16 GREX_CVT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_f32_i16_16 GREX_CVT_IMPL_SMALLI2F
+#define GREX_CVT_IMPL_f32_u16_16 GREX_CVT_IMPL_SMALLI2F
+#define GREX_CVT_IMPL_f32_i8_16 GREX_CVT_IMPL_SMALLI2F
+#define GREX_CVT_IMPL_f32_u8_16 GREX_CVT_IMPL_SMALLI2F
+
+// Floating-point → integer
+// f64
+#define GREX_CVT_IMPL_i64_f64_8 GREX_CVTT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_u64_f64_8 GREX_CVTT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_u32_f64_8 GREX_CVTT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_i32_f64_8 GREX_CVTT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_i16_f64_8 GREX_CVT_IMPL_F2SMALLI
+#define GREX_CVT_IMPL_u16_f64_8 GREX_CVT_IMPL_F2SMALLI
+#define GREX_CVT_IMPL_i8_f64_8 GREX_CVT_IMPL_F2SMALLI
+#define GREX_CVT_IMPL_u8_f64_8 GREX_CVT_IMPL_F2SMALLI
+// f32
+#define GREX_CVT_IMPL_i64_f32_8 GREX_CVTT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_u64_f32_8 GREX_CVTT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_u32_f32_16 GREX_CVTT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_i32_f32_16 GREX_CVTT_INTRINSIC_EPU
+#define GREX_CVT_IMPL_i16_f32_16 GREX_CVT_IMPL_F2SMALLI
+#define GREX_CVT_IMPL_u16_f32_16 GREX_CVT_IMPL_F2SMALLI
+#define GREX_CVT_IMPL_i8_f32_16 GREX_CVT_IMPL_F2SMALLI
+#define GREX_CVT_IMPL_u8_f32_16 GREX_CVT_IMPL_F2SMALLI
+
+#if GREX_X86_64_LEVEL >= 4
+GREX_CVT_DEF_ALL(_mm512, 512)
+#endif
+} // namespace grex::backend
+
+#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_512_HPP

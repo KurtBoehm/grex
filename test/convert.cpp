@@ -75,9 +75,8 @@ void convert_from_base(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
              test::type_name<TSrc>());
   auto cvt = [&]<typename TDst>(grex::TypeTag<TDst> /*tag*/) {
     fmt::print(fmt::fg(fmt::terminal_color::blue), "{}\n", test::type_name<TDst>());
-    constexpr std::size_t size_idx = std::min<std::size_t>(1, grex::register_bits.size() - 1);
     constexpr std::size_t size =
-      std::min(grex::native_sizes<TSrc>[size_idx], grex::native_sizes<TDst>[size_idx]);
+      std::min(grex::native_sizes<TSrc>.back(), grex::native_sizes<TDst>.back());
     auto dist = make_distribution<TSrc, TDst>();
     auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
 

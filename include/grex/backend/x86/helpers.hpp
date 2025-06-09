@@ -42,6 +42,7 @@
 #define GREX_MAX_2_4 4
 #define GREX_MAX_4_4 4
 #define GREX_MAX_8_4 8
+#define GREX_MAX_16_4 16
 #define GREX_MAX(A, B) GREX_MAX_##A##_##B
 
 #define GREX_FP_LETTER_f32 s
