@@ -15,31 +15,13 @@
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/operations/convert/base.hpp"
 #include "grex/backend/x86/operations/extract.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp" // IWYU pragma: keep
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
-// Use conversion intrinsics
-#define GREX_CVT_INTRINSIC_EPUI(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  return GREX_VECTOR_TYPE(DSTKIND, DSTBITS, \
-                          SIZE){GREX_CAT(BITPREFIX##_cvt, GREX_EPU_SUFFIX(SRCKIND, SRCBITS), _, \
-                                         GREX_EPI_SUFFIX(DSTKIND, DSTBITS))(v.registr())};
-#define GREX_CVT_INTRINSIC_EPU(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  return GREX_VECTOR_TYPE(DSTKIND, DSTBITS, \
-                          SIZE){GREX_CAT(BITPREFIX##_cvt, GREX_EPU_SUFFIX(SRCKIND, SRCBITS), _, \
-                                         GREX_EPU_SUFFIX(DSTKIND, DSTBITS))(v.registr())};
-#define GREX_CVT_INTRINSIC_EPI(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  return GREX_VECTOR_TYPE(DSTKIND, DSTBITS, \
-                          SIZE){GREX_CAT(BITPREFIX##_cvt, GREX_EPI_SUFFIX(SRCKIND, SRCBITS), _, \
-                                         GREX_EPI_SUFFIX(DSTKIND, DSTBITS))(v.registr())};
-
-#define GREX_CVTT_INTRINSIC_EPU(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  return GREX_VECTOR_TYPE(DSTKIND, DSTBITS, \
-                          SIZE){GREX_CAT(BITPREFIX##_cvtt, GREX_EPU_SUFFIX(SRCKIND, SRCBITS), _, \
-                                         GREX_EPU_SUFFIX(DSTKIND, DSTBITS))(v.registr())};
-
 // Increasing integer size
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_CVT_IMPL_Ux2 GREX_CVT_INTRINSIC_EPUI
@@ -168,12 +150,6 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_f32_f64_2 GREX_CVT_INTRINSIC_EPU
 
 // Integer → floating-point
-// Integers with less than 32 bits: Convert to i32 and go from there
-#define GREX_CVT_IMPL_SMALLI2F(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  const GREX_VECTOR_TYPE(SRCKIND, SRCBITS, GREX_MAX(SIZE, 4)) full{v.registr()}; \
-  const auto vi32 = convert(full, type_tag<i32>).r; \
-  return convert(GREX_VECTOR_TYPE(i, 32, SIZE){vi32}, type_tag<DSTKIND##DSTBITS>);
-
 // f64
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_CVT_IMPL_f64_i64_2 GREX_CVT_INTRINSIC_EPU
@@ -285,11 +261,6 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_f32_u8_4 GREX_CVT_IMPL_SMALLI2F
 
 // Floating-point → integer
-// Integers with less than 32 bits: Convert to i32 and go from there
-#define GREX_CVT_IMPL_F2SMALLI(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  const auto vi32 = convert(v, type_tag<i32>).registr(); \
-  return convert(GREX_VECTOR_TYPE(i, 32, SIZE){vi32}, type_tag<DSTKIND##DSTBITS>);
-
 // f64
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_CVT_IMPL_i64_f64_2 GREX_CVTT_INTRINSIC_EPU
@@ -377,15 +348,6 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_i8_f32_4 GREX_CVT_IMPL_F2SMALLI
 #define GREX_CVT_IMPL_u8_f32_4 GREX_CVT_IMPL_F2SMALLI
 
-#define GREX_CVT_IMPL(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_CVT_IMPL_##DSTKIND##DSTBITS##_##SRCKIND##SRCBITS##_##SIZE( \
-    DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS)
-#define GREX_CVT(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline GREX_VECTOR_TYPE(DSTKIND, DSTBITS, SIZE) \
-    convert(GREX_VECTOR_TYPE(SRCKIND, SRCBITS, SIZE) v, TypeTag<DSTKIND##DSTBITS>) { \
-    GREX_CVT_IMPL(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  }
-
 // The same type: no-op
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> convert(Vector<T, tSize> v, TypeTag<T> /*tag*/) {
@@ -444,76 +406,8 @@ inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<T
   return Out{s.registr()};
 }
 
-// Double integer size
-GREX_CVT(i, 16, i, 8, 8, _mm, 128)
-GREX_CVT(u, 16, u, 8, 8, _mm, 128)
-GREX_CVT(i, 32, i, 16, 4, _mm, 128)
-GREX_CVT(u, 32, u, 16, 4, _mm, 128)
-GREX_CVT(i, 64, i, 32, 2, _mm, 128)
-GREX_CVT(u, 64, u, 32, 2, _mm, 128)
-// Quadruple size
-GREX_CVT(i, 32, i, 8, 4, _mm, 128)
-GREX_CVT(u, 32, u, 8, 4, _mm, 128)
-GREX_CVT(i, 64, i, 16, 2, _mm, 128)
-GREX_CVT(u, 64, u, 16, 2, _mm, 128)
-// Octuple size
-GREX_CVT(i, 64, i, 8, 2, _mm, 128)
-GREX_CVT(u, 64, u, 8, 2, _mm, 128)
-
-// Halve integer size
-GREX_CVT(u, 8, u, 16, 8, _mm, 128)
-GREX_CVT(u, 16, u, 32, 4, _mm, 128)
+GREX_CVT_DEF_ALL(_mm, 128)
 GREX_CVT(u, 16, u, 32, 2, _mm, 128)
-GREX_CVT(u, 32, u, 64, 2, _mm, 128)
-// Quarter integer size
-GREX_CVT(u, 8, u, 32, 4, _mm, 128)
-GREX_CVT(u, 16, u, 64, 2, _mm, 128)
-// Divide integer size by eight
-GREX_CVT(u, 8, u, 64, 2, _mm, 128)
-
-// Floating-point conversions
-GREX_CVT(f, 64, f, 32, 2, _mm, 128)
-GREX_CVT(f, 32, f, 64, 2, _mm, 128)
-
-// Integer → floating-point
-// f64
-GREX_CVT(f, 64, i, 64, 2, _mm, 128)
-GREX_CVT(f, 64, u, 64, 2, _mm, 128)
-GREX_CVT(f, 64, i, 32, 2, _mm, 128)
-GREX_CVT(f, 64, u, 32, 2, _mm, 128)
-GREX_CVT(f, 64, i, 16, 2, _mm, 128)
-GREX_CVT(f, 64, u, 16, 2, _mm, 128)
-GREX_CVT(f, 64, i, 8, 2, _mm, 128)
-GREX_CVT(f, 64, u, 8, 2, _mm, 128)
-// f32
-GREX_CVT(f, 32, i, 64, 2, _mm, 128)
-GREX_CVT(f, 32, u, 64, 2, _mm, 128)
-GREX_CVT(f, 32, i, 32, 4, _mm, 128)
-GREX_CVT(f, 32, u, 32, 4, _mm, 128)
-GREX_CVT(f, 32, i, 16, 4, _mm, 128)
-GREX_CVT(f, 32, u, 16, 4, _mm, 128)
-GREX_CVT(f, 32, i, 8, 4, _mm, 128)
-GREX_CVT(f, 32, u, 8, 4, _mm, 128)
-
-// Floating-point → integer
-// f64
-GREX_CVT(i, 64, f, 64, 2, _mm, 128)
-GREX_CVT(u, 64, f, 64, 2, _mm, 128)
-GREX_CVT(i, 32, f, 64, 2, _mm, 128)
-GREX_CVT(u, 32, f, 64, 2, _mm, 128)
-GREX_CVT(i, 16, f, 64, 2, _mm, 128)
-GREX_CVT(u, 16, f, 64, 2, _mm, 128)
-GREX_CVT(i, 8, f, 64, 2, _mm, 128)
-GREX_CVT(u, 8, f, 64, 2, _mm, 128)
-// f32
-GREX_CVT(i, 64, f, 32, 2, _mm, 128)
-GREX_CVT(u, 64, f, 32, 2, _mm, 128)
-GREX_CVT(i, 32, f, 32, 4, _mm, 128)
-GREX_CVT(u, 32, f, 32, 4, _mm, 128)
-GREX_CVT(i, 16, f, 32, 4, _mm, 128)
-GREX_CVT(u, 16, f, 32, 4, _mm, 128)
-GREX_CVT(i, 8, f, 32, 4, _mm, 128)
-GREX_CVT(u, 8, f, 32, 4, _mm, 128)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_HPP

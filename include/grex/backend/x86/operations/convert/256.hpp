@@ -7,12 +7,15 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_256_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_256_HPP
 
-#include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/convert/128.hpp"
+#include "grex/backend/x86/operations/convert/128.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/convert/base.hpp"
+
+#if GREX_X86_64_LEVEL >= 3
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
+#endif
 
 // AVX/AVX2 come with a lot more intrinsics built in than baseline x86-64,
 // simplifying the implementation somewhat
@@ -289,75 +292,7 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_u8_f32_8 GREX_CVT_IMPL_F2SMALLI
 
 #if GREX_X86_64_LEVEL >= 3
-// Double integer size
-GREX_CVT(i, 16, i, 8, 16, _mm256, 256)
-GREX_CVT(u, 16, u, 8, 16, _mm256, 256)
-GREX_CVT(i, 32, i, 16, 8, _mm256, 256)
-GREX_CVT(u, 32, u, 16, 8, _mm256, 256)
-GREX_CVT(i, 64, i, 32, 4, _mm256, 256)
-GREX_CVT(u, 64, u, 32, 4, _mm256, 256)
-// Quadruple integer size
-GREX_CVT(i, 32, i, 8, 8, _mm256, 256)
-GREX_CVT(u, 32, u, 8, 8, _mm256, 256)
-GREX_CVT(i, 64, i, 16, 4, _mm256, 256)
-GREX_CVT(u, 64, u, 16, 4, _mm256, 256)
-// Octuple integer size
-GREX_CVT(i, 64, i, 8, 4, _mm256, 256)
-GREX_CVT(u, 64, u, 8, 4, _mm256, 256)
-
-// Halve integer size
-GREX_CVT(u, 8, u, 16, 16, _mm256, 256)
-GREX_CVT(u, 16, u, 32, 8, _mm256, 256)
-GREX_CVT(u, 32, u, 64, 4, _mm256, 256)
-// Quarter integer size
-GREX_CVT(u, 8, u, 32, 8, _mm256, 256)
-GREX_CVT(u, 16, u, 64, 4, _mm256, 256)
-// Divide integer size by eight
-GREX_CVT(u, 8, u, 64, 4, _mm256, 256)
-
-// Floating-point conversions
-GREX_CVT(f, 64, f, 32, 4, _mm256, 256)
-GREX_CVT(f, 32, f, 64, 4, _mm256, 256)
-
-// Integer → floating-point
-// f64
-GREX_CVT(f, 64, i, 64, 4, _mm256, 256)
-GREX_CVT(f, 64, u, 64, 4, _mm256, 256)
-GREX_CVT(f, 64, i, 32, 4, _mm256, 256)
-GREX_CVT(f, 64, u, 32, 4, _mm256, 256)
-GREX_CVT(f, 64, i, 16, 4, _mm256, 256)
-GREX_CVT(f, 64, u, 16, 4, _mm256, 256)
-GREX_CVT(f, 64, i, 8, 4, _mm256, 256)
-GREX_CVT(f, 64, u, 8, 4, _mm256, 256)
-// f32
-GREX_CVT(f, 32, i, 64, 4, _mm256, 256)
-GREX_CVT(f, 32, u, 64, 4, _mm256, 256)
-GREX_CVT(f, 32, i, 32, 8, _mm256, 256)
-GREX_CVT(f, 32, u, 32, 8, _mm256, 256)
-GREX_CVT(f, 32, i, 16, 8, _mm256, 256)
-GREX_CVT(f, 32, u, 16, 8, _mm256, 256)
-GREX_CVT(f, 32, i, 8, 8, _mm256, 256)
-GREX_CVT(f, 32, u, 8, 8, _mm256, 256)
-
-// Floating-point → integer
-// f64
-GREX_CVT(i, 64, f, 64, 4, _mm256, 256)
-GREX_CVT(u, 64, f, 64, 4, _mm256, 256)
-GREX_CVT(i, 32, f, 64, 4, _mm256, 256)
-GREX_CVT(u, 32, f, 64, 4, _mm256, 256)
-GREX_CVT(i, 16, f, 64, 4, _mm256, 256)
-GREX_CVT(u, 16, f, 64, 4, _mm256, 256)
-GREX_CVT(i, 8, f, 64, 4, _mm256, 256)
-GREX_CVT(u, 8, f, 64, 4, _mm256, 256)
-// f32
-GREX_CVT(i, 64, f, 32, 4, _mm256, 256)
-GREX_CVT(u, 64, f, 32, 4, _mm256, 256)
-GREX_CVT(i, 32, f, 32, 8, _mm256, 256)
-GREX_CVT(u, 32, f, 32, 8, _mm256, 256)
-GREX_CVT(i, 16, f, 32, 8, _mm256, 256)
-GREX_CVT(u, 16, f, 32, 8, _mm256, 256)
-GREX_CVT(i, 8, f, 32, 8, _mm256, 256)
-GREX_CVT(u, 8, f, 32, 8, _mm256, 256)
+GREX_CVT_DEF_ALL(_mm256, 256)
 #endif
 } // namespace grex::backend
 
