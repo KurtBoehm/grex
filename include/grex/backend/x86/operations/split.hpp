@@ -55,12 +55,15 @@ namespace grex::backend {
 
 GREX_FOREACH_X86_64_LEVEL(GREX_SPLIT_ALL)
 
-#define GREX_SPLIT_64x2_0(KIND, BITS, SIZE) v.registr()
-#define GREX_SPLIT_64x2_1(KIND, BITS, SIZE) _mm_unpackhi_epi64(v.registr(), _mm_setzero_si128())
-#define GREX_SPLIT_32x2_0(KIND, BITS, SIZE) v.registr()
-#define GREX_SPLIT_32x2_1(KIND, BITS, SIZE) _mm_shuffle_epi32(v.registr(), 1)
-#define GREX_SPLIT_16x2_0(KIND, BITS, SIZE) v.registr()
-#define GREX_SPLIT_16x2_1(KIND, BITS, SIZE) _mm_shufflelo_epi16(v.registr(), 1)
+#define GREX_SPLIT_f64x2_0(KIND, BITS, SIZE) v.registr()
+#define GREX_SPLIT_f64x2_1(KIND, BITS, SIZE) \
+  _mm_castsi128_ps(_mm_unpackhi_epi64(_mm_castps_si128(v.registr()), _mm_setzero_si128()))
+#define GREX_SPLIT_i64x2_0(KIND, BITS, SIZE) v.registr()
+#define GREX_SPLIT_i64x2_1(KIND, BITS, SIZE) _mm_unpackhi_epi64(v.registr(), _mm_setzero_si128())
+#define GREX_SPLIT_i32x2_0(KIND, BITS, SIZE) v.registr()
+#define GREX_SPLIT_i32x2_1(KIND, BITS, SIZE) _mm_shuffle_epi32(v.registr(), 1)
+#define GREX_SPLIT_i16x2_0(KIND, BITS, SIZE) v.registr()
+#define GREX_SPLIT_i16x2_1(KIND, BITS, SIZE) _mm_shufflelo_epi16(v.registr(), 1)
 #define GREX_SPLIT_SUB(KIND, BITS, SIZE, HALF, IMPL) \
   inline VectorFor<KIND##BITS, GREX_HALF(SIZE)> split(VectorFor<KIND##BITS, SIZE> v, \
                                                       IndexTag<HALF>) { \
@@ -71,17 +74,21 @@ GREX_FOREACH_X86_64_LEVEL(GREX_SPLIT_ALL)
   GREX_SPLIT_SUB(KIND, BITS, SIZE, 1, IMPL)
 
 // 64×2
-GREX_SPLIT_SUB_ALL(i, 32, 4, GREX_SPLIT_64x2)
-GREX_SPLIT_SUB_ALL(u, 32, 4, GREX_SPLIT_64x2)
-GREX_SPLIT_SUB_ALL(i, 16, 8, GREX_SPLIT_64x2)
-GREX_SPLIT_SUB_ALL(u, 16, 8, GREX_SPLIT_64x2)
-GREX_SPLIT_SUB_ALL(i, 8, 16, GREX_SPLIT_64x2)
-GREX_SPLIT_SUB_ALL(u, 8, 16, GREX_SPLIT_64x2)
+GREX_SPLIT_SUB_ALL(f, 32, 4, GREX_SPLIT_f64x2)
+GREX_SPLIT_SUB_ALL(i, 32, 4, GREX_SPLIT_i64x2)
+GREX_SPLIT_SUB_ALL(u, 32, 4, GREX_SPLIT_i64x2)
+GREX_SPLIT_SUB_ALL(i, 16, 8, GREX_SPLIT_i64x2)
+GREX_SPLIT_SUB_ALL(u, 16, 8, GREX_SPLIT_i64x2)
+GREX_SPLIT_SUB_ALL(i, 8, 16, GREX_SPLIT_i64x2)
+GREX_SPLIT_SUB_ALL(u, 8, 16, GREX_SPLIT_i64x2)
 // 32×2
-GREX_SPLIT_SUB_ALL(i, 16, 4, GREX_SPLIT_32x2)
-GREX_SPLIT_SUB_ALL(u, 16, 4, GREX_SPLIT_32x2)
-GREX_SPLIT_SUB_ALL(i, 8, 8, GREX_SPLIT_32x2)
-GREX_SPLIT_SUB_ALL(u, 8, 8, GREX_SPLIT_32x2)
+GREX_SPLIT_SUB_ALL(i, 16, 4, GREX_SPLIT_i32x2)
+GREX_SPLIT_SUB_ALL(u, 16, 4, GREX_SPLIT_i32x2)
+GREX_SPLIT_SUB_ALL(i, 8, 8, GREX_SPLIT_i32x2)
+GREX_SPLIT_SUB_ALL(u, 8, 8, GREX_SPLIT_i32x2)
+// 16×2
+GREX_SPLIT_SUB_ALL(i, 8, 4, GREX_SPLIT_i16x2)
+GREX_SPLIT_SUB_ALL(u, 8, 4, GREX_SPLIT_i16x2)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SPLIT_HPP

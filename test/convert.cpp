@@ -90,11 +90,7 @@ void convert_from_base(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
 
     constexpr std::size_t size =
       std::min(grex::native_sizes<TSrc>.back(), grex::native_sizes<TDst>.back());
-#if GREX_X86_64_LEVEL >= 3
     op(grex::index_tag<2 * size>);
-#else
-    op(grex::index_tag<size>);
-#endif
   };
   for_each_type(cvt);
 }
