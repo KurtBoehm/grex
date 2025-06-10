@@ -102,12 +102,12 @@ namespace grex::backend {
     if ((size & 2U) != 0) { \
       _mm_storeu_si16(dst + idx, shuf); \
       if ((size & 1U) != 0) { \
-        dst[idx + 2] = _mm_extract_epi8(shuf, 2); \
+        dst[idx + 2] = KIND##8(_mm_extract_epi8(shuf, 2)); \
       } \
       return; \
     } \
     if ((size & 1U) != 0) { \
-      dst[idx] = _mm_extract_epi8(shuf, 0); \
+      dst[idx] = KIND##8(_mm_extract_epi8(shuf, 0)); \
     } \
   }
 #else
@@ -117,9 +117,9 @@ namespace grex::backend {
   if ((size & 1U) != 0) { \
     switch (size2) { \
     case 0: _mm_storeu_si16(dst, src.r); return; \
-    case 1: dst[2] = _mm_extract_epi16(src.r, 2); return; \
-    case 2: dst[4] = _mm_extract_epi16(src.r, 4); return; \
-    case 3: dst[6] = _mm_extract_epi16(src.r, 6); return; \
+    case 1: dst[2] = KIND##16(_mm_extract_epi16(src.r, 2)); return; \
+    case 2: dst[4] = KIND##16(_mm_extract_epi16(src.r, 4)); return; \
+    case 3: dst[6] = KIND##16(_mm_extract_epi16(src.r, 6)); return; \
     default: break; \
     } \
   }

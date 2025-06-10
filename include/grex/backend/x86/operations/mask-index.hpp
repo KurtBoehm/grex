@@ -33,7 +33,7 @@ namespace grex::backend {
 #define GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_SIZEMMASK(SIZE)(u64{1} << i)
 #else
 #define GREX_INDEX_MASK_CMPGT(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMP) \
-  BITPREFIX##_cmp##CMP##_epi##BITS(broadcast(i, type_tag<Vector<i##BITS, SIZE>>).r, \
+  BITPREFIX##_cmp##CMP##_epi##BITS(broadcast(i##BITS(i), type_tag<Vector<i##BITS, SIZE>>).r, \
                                    indices(type_tag<Vector<i##BITS, SIZE>>).r)
 #define GREX_INDEX_MASK_8 GREX_INDEX_MASK_CMPGT
 #define GREX_INDEX_MASK_16 GREX_INDEX_MASK_CMPGT
@@ -42,7 +42,7 @@ namespace grex::backend {
 #define GREX_INDEX_MASK_64_256 _mm256_set_epi32(3, 3, 2, 2, 1, 1, 0, 0)
 #define GREX_INDEX_MASK_64(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMP) \
   /* perform a 32 bit comparison */ \
-  BITPREFIX##_cmp##CMP##_epi32(BITPREFIX##_set1_epi32(i), GREX_INDEX_MASK_64_##REGISTERBITS)
+  BITPREFIX##_cmp##CMP##_epi32(BITPREFIX##_set1_epi32(i32(i)), GREX_INDEX_MASK_64_##REGISTERBITS)
 #define GREX_CUTOFF_MASK_IMPL(KIND, BITS, ...) GREX_INDEX_MASK_##BITS(KIND, BITS, __VA_ARGS__, gt)
 #define GREX_SINGLE_MASK_IMPL(KIND, BITS, ...) GREX_INDEX_MASK_##BITS(KIND, BITS, __VA_ARGS__, eq)
 #endif

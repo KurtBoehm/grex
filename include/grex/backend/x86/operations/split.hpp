@@ -9,8 +9,9 @@
 
 #include <immintrin.h>
 
+#include "grex/backend/choosers.hpp"
 #include "grex/backend/x86/helpers.hpp"
-#include "grex/backend/x86/types.hpp"
+#include "grex/backend/x86/types.hpp" // IWYU pragma: keep
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
@@ -53,6 +54,34 @@ namespace grex::backend {
   GREX_FOREACH_TYPE(GREX_SPLIT, REGISTERBITS, BITPREFIX, REGISTERBITS)
 
 GREX_FOREACH_X86_64_LEVEL(GREX_SPLIT_ALL)
+
+#define GREX_SPLIT_64x2_0(KIND, BITS, SIZE) v.registr()
+#define GREX_SPLIT_64x2_1(KIND, BITS, SIZE) _mm_unpackhi_epi64(v.registr(), _mm_setzero_si128())
+#define GREX_SPLIT_32x2_0(KIND, BITS, SIZE) v.registr()
+#define GREX_SPLIT_32x2_1(KIND, BITS, SIZE) _mm_shuffle_epi32(v.registr(), 1)
+#define GREX_SPLIT_16x2_0(KIND, BITS, SIZE) v.registr()
+#define GREX_SPLIT_16x2_1(KIND, BITS, SIZE) _mm_shufflelo_epi16(v.registr(), 1)
+#define GREX_SPLIT_SUB(KIND, BITS, SIZE, HALF, IMPL) \
+  inline VectorFor<KIND##BITS, GREX_HALF(SIZE)> split(VectorFor<KIND##BITS, SIZE> v, \
+                                                      IndexTag<HALF>) { \
+    return VectorFor<KIND##BITS, GREX_HALF(SIZE)>{IMPL##_##HALF(KIND, BITS, SIZE)}; \
+  }
+#define GREX_SPLIT_SUB_ALL(KIND, BITS, SIZE, IMPL) \
+  GREX_SPLIT_SUB(KIND, BITS, SIZE, 0, IMPL) \
+  GREX_SPLIT_SUB(KIND, BITS, SIZE, 1, IMPL)
+
+// 64×2
+GREX_SPLIT_SUB_ALL(i, 32, 4, GREX_SPLIT_64x2)
+GREX_SPLIT_SUB_ALL(u, 32, 4, GREX_SPLIT_64x2)
+GREX_SPLIT_SUB_ALL(i, 16, 8, GREX_SPLIT_64x2)
+GREX_SPLIT_SUB_ALL(u, 16, 8, GREX_SPLIT_64x2)
+GREX_SPLIT_SUB_ALL(i, 8, 16, GREX_SPLIT_64x2)
+GREX_SPLIT_SUB_ALL(u, 8, 16, GREX_SPLIT_64x2)
+// 32×2
+GREX_SPLIT_SUB_ALL(i, 16, 4, GREX_SPLIT_32x2)
+GREX_SPLIT_SUB_ALL(u, 16, 4, GREX_SPLIT_32x2)
+GREX_SPLIT_SUB_ALL(i, 8, 8, GREX_SPLIT_32x2)
+GREX_SPLIT_SUB_ALL(u, 8, 8, GREX_SPLIT_32x2)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SPLIT_HPP

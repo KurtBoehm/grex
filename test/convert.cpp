@@ -37,7 +37,7 @@ inline auto make_distribution() {
         const TSrc base = std::uniform_real_distribution<TSrc>{TSrc(0.5), TSrc(1)}(rng);
         const int expo =
           std::uniform_int_distribution<int>{Limits::min_exponent, Limits::max_exponent}(rng);
-        return sign * std::ldexp(base, expo);
+        return TSrc(sign) * std::ldexp(base, expo);
       };
       TSrc f = gen();
       if constexpr (std::integral<TDst>) {
@@ -75,16 +75,26 @@ void convert_from_base(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
              test::type_name<TSrc>());
   auto cvt = [&]<typename TDst>(grex::TypeTag<TDst> /*tag*/) {
     fmt::print(fmt::fg(fmt::terminal_color::blue), "{}\n", test::type_name<TDst>());
+    auto op = [&]<std::size_t tSize>(grex::IndexTag<tSize> /*tag*/) {
+      auto dist = make_distribution<TSrc, TDst>();
+      auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+
+      for (std::size_t i = 0; i < repetitions; ++i) {
+        grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
+          test::VectorChecker<TSrc, tSize>{dval(tIdxs)...}
+            .convert(grex::type_tag<TDst>)
+            .check(false);
+        });
+      }
+    };
+
     constexpr std::size_t size =
       std::min(grex::native_sizes<TSrc>.back(), grex::native_sizes<TDst>.back());
-    auto dist = make_distribution<TSrc, TDst>();
-    auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
-
-    for (std::size_t i = 0; i < repetitions; ++i) {
-      grex::static_apply<size>([&]<std::size_t... tIdxs> {
-        test::VectorChecker<TSrc, size>{dval(tIdxs)...}.convert(grex::type_tag<TDst>).check(false);
-      });
-    }
+#if GREX_X86_64_LEVEL >= 3
+    op(grex::index_tag<2 * size>);
+#else
+    op(grex::index_tag<size>);
+#endif
   };
   for_each_type(cvt);
 }

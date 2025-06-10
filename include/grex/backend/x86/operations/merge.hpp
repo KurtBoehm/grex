@@ -7,9 +7,10 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_MERGE_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_MERGE_HPP
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/choosers.hpp"
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/helpers.hpp"
-#include "grex/backend/x86/types.hpp"
+#include "grex/backend/x86/types.hpp" // IWYU pragma: keep
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
@@ -42,6 +43,30 @@ namespace grex::backend {
   GREX_FOREACH_TYPE(GREX_MERGE, REGISTERBITS, BITPREFIX, REGISTERBITS)
 
 GREX_FOREACH_X86_64_LEVEL(GREX_MERGE_ALL)
+
+// Merging sub-native vectors
+#define GREX_MERGE_32x2(KIND, BITS, SIZE) \
+  return SubVector<KIND##BITS, SIZE, GREX_MINSIZE(BITS)>{ \
+    _mm_unpacklo_epi32(v0.registr(), v1.registr())};
+#define GREX_MERGE_64x2(KIND, BITS, SIZE) \
+  return {.r = _mm_unpacklo_epi64(v0.registr(), v1.registr())};
+#define GREX_MERGE_SUB(KIND, BITS, SIZE, IMPL) \
+  inline VectorFor<KIND##BITS, SIZE> merge(VectorFor<KIND##BITS, GREX_HALF(SIZE)> v0, \
+                                           VectorFor<KIND##BITS, GREX_HALF(SIZE)> v1) { \
+    IMPL(KIND, BITS, SIZE) \
+  }
+// 2×32
+GREX_MERGE_SUB(i, 16, 4, GREX_MERGE_32x2)
+GREX_MERGE_SUB(u, 16, 4, GREX_MERGE_32x2)
+GREX_MERGE_SUB(i, 8, 8, GREX_MERGE_32x2)
+GREX_MERGE_SUB(u, 8, 8, GREX_MERGE_32x2)
+// 2×64
+GREX_MERGE_SUB(i, 32, 4, GREX_MERGE_64x2)
+GREX_MERGE_SUB(u, 32, 4, GREX_MERGE_64x2)
+GREX_MERGE_SUB(i, 16, 8, GREX_MERGE_64x2)
+GREX_MERGE_SUB(u, 16, 8, GREX_MERGE_64x2)
+GREX_MERGE_SUB(i, 8, 16, GREX_MERGE_64x2)
+GREX_MERGE_SUB(u, 8, 16, GREX_MERGE_64x2)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_MERGE_HPP

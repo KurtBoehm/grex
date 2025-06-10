@@ -7,11 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_HPP
 
-#include <concepts>
-#include <cstddef>
-#include <type_traits>
-
-#include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
@@ -347,64 +342,6 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_u16_f32_4 GREX_CVT_IMPL_F2SMALLI
 #define GREX_CVT_IMPL_i8_f32_4 GREX_CVT_IMPL_F2SMALLI
 #define GREX_CVT_IMPL_u8_f32_4 GREX_CVT_IMPL_F2SMALLI
-
-// The same type: no-op
-template<Vectorizable T, std::size_t tSize>
-inline Vector<T, tSize> convert(Vector<T, tSize> v, TypeTag<T> /*tag*/) {
-  return v;
-}
-// Integers with the same number of bits: No-op
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-requires(std::integral<TDst> && std::integral<TSrc> && sizeof(TDst) == sizeof(TSrc))
-inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
-  return {.r = v.r};
-}
-// Converting to a larger integer with different signedness: Increase size while keeping signedness
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-requires(std::integral<TDst> && std::integral<TSrc> &&
-         (std::unsigned_integral<TDst> != std::unsigned_integral<TSrc>) &&
-         sizeof(TDst) > sizeof(TSrc))
-inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
-  using Temp = std::conditional_t<std::unsigned_integral<TSrc>, UnsignedOf<TDst>, SignedOf<TDst>>;
-  const auto s = convert(v, type_tag<Temp>);
-  return {.r = s.r};
-}
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
-requires(std::integral<TDst> && std::integral<TSrc> &&
-         (std::unsigned_integral<TDst> != std::unsigned_integral<TSrc>) &&
-         sizeof(TDst) > sizeof(TSrc))
-inline Vector<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
-  using Temp = std::conditional_t<std::unsigned_integral<TSrc>, UnsignedOf<TDst>, SignedOf<TDst>>;
-  const auto s = convert(v, type_tag<Temp>);
-  return {.r = s.r};
-}
-// Converting to a smaller integer: Truncation → ignore signedness
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-requires(std::integral<TDst> && std::integral<TSrc> &&
-         (!std::unsigned_integral<TDst> || !std::unsigned_integral<TSrc>) &&
-         sizeof(TDst) < sizeof(TSrc))
-inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
-  const auto s = convert(Vector<UnsignedOf<TSrc>, tSize>{v.r}, type_tag<UnsignedOf<TDst>>);
-  return VectorFor<TDst, tSize>{s.registr()};
-}
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
-requires(std::integral<TDst> && std::integral<TSrc> &&
-         (!std::unsigned_integral<TDst> || !std::unsigned_integral<TSrc>) &&
-         sizeof(TDst) < sizeof(TSrc))
-inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
-  const auto s =
-    convert(SubVector<UnsignedOf<TSrc>, tPart, tSize>{v.registr()}, type_tag<UnsignedOf<TDst>>);
-  return VectorFor<TDst, tPart>{s.registr()};
-}
-// Baseline for converting sub-native vectors: Use the native vector for the small
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
-inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
-  using Out = VectorFor<TDst, tPart>;
-  constexpr std::size_t work_size = std::min(tSize, Out::Full::size);
-  static_assert(work_size >= tPart);
-  const auto s = convert(VectorFor<TSrc, work_size>{v.registr()}, type_tag<TDst>);
-  return Out{s.registr()};
-}
 
 GREX_CVT_DEF_ALL(_mm, 128)
 GREX_CVT(u, 16, u, 32, 2, _mm, 128)
