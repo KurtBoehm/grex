@@ -96,10 +96,16 @@ namespace grex::backend {
   return SubVector<u8, 2, 16>{_mm_shuffle_epi8(v.r, m)};
 #else
 // i16→i8 on level 1: Mask out upper 8 bits and use a saturated cast
-// TODO This can be extended to 2×super-native i16→i8
 #define GREX_CVT_IMPL_u8_u16_8(...) \
   const auto r = _mm_packus_epi16(_mm_and_si128(v.r, _mm_set1_epi16(0xFF)), _mm_setzero_si128()); \
   return SubVector<u8, 8, 16>{r};
+// super-native variant
+#if GREX_X86_64_LEVEL == 1
+#define GREX_CVT_IMPL_u8_u16_16(...) \
+  const auto m = _mm_set1_epi16(0xFF); \
+  const auto r = _mm_packus_epi16(_mm_and_si128(v.lower.r, m), _mm_and_si128(v.upper.r, m)); \
+  return u8x16{r};
+#endif
 #define GREX_CVT_IMPL_u16_u32_4(...) \
   /* lo = [u16(v[0]), u16(v[1]), -, ...] */ \
   const auto lo = _mm_shufflelo_epi16(v.r, 0b1000); \
@@ -123,6 +129,27 @@ namespace grex::backend {
   /* [u8(v[0]), u8(v[1]), u8(v[2]), u8(v[3]), 0, …, 0] as u8x16 */ \
   const auto r = _mm_packus_epi16(vu16, _mm_setzero_si128()); \
   return SubVector<u8, 4, 16>{r};
+// super-native variants
+#if GREX_X86_64_LEVEL == 1
+#define GREX_CVT_IMPL_u8_u32_8(...) \
+  const __m128i mask = _mm_set1_epi32(0xFF); \
+  const __m128i lu32 = _mm_and_si128(v.lower.r, mask); \
+  const __m128i hu32 = _mm_and_si128(v.upper.r, mask); \
+  const __m128i vu16 = _mm_packus_epi16(lu32, hu32); \
+  const auto r = _mm_packus_epi16(vu16, _mm_setzero_si128()); \
+  return SubVector<u8, 8, 16>{r};
+#define GREX_CVT_IMPL_u8_u32_16(...) \
+  const __m128i mask = _mm_set1_epi32(0xFF); \
+  const __m128i u32i0 = _mm_and_si128(v.lower.lower.r, mask); \
+  const __m128i u32i1 = _mm_and_si128(v.lower.upper.r, mask); \
+  const __m128i u32i2 = _mm_and_si128(v.upper.lower.r, mask); \
+  const __m128i u32i3 = _mm_and_si128(v.upper.upper.r, mask); \
+  const __m128i lu16 = _mm_packus_epi16(u32i0, u32i1); \
+  const __m128i hu16 = _mm_packus_epi16(u32i2, u32i3); \
+  const auto r = _mm_packus_epi16(lu16, hu16); \
+  return u8x16{r};
+#endif
+// sub-native variant
 #define GREX_CVT_IMPL_u16_u64_2(...) \
   /* lo = [u32(v0), u32(v1), -, -] as u32x4 */ \
   const auto lo = _mm_shuffle_epi32(v.r, 0b1000); \
@@ -345,6 +372,11 @@ namespace grex::backend {
 
 GREX_CVT_DEF_ALL(_mm, 128)
 GREX_CVT(u, 16, u, 32, 2, _mm, 128)
+#if GREX_X86_64_LEVEL == 1
+GREX_CVT_SUPER(u, 8, u, 16, 16, _mm, 128)
+GREX_CVT_SUPER(u, 8, u, 32, 8, _mm, 128)
+GREX_CVT_SUPER(u, 8, u, 32, 16, _mm, 128)
+#endif
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_HPP

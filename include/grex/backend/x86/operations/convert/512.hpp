@@ -8,13 +8,17 @@
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_512_HPP
 
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/convert/128.hpp" // IWYU pragma: keep
-#include "grex/backend/x86/operations/convert/256.hpp" // IWYU pragma: keep
+
+#if GREX_X86_64_LEVEL >= 4
+#include "grex/backend/x86/operations/convert/128.hpp"
+#include "grex/backend/x86/operations/convert/256.hpp"
 #include "grex/backend/x86/operations/convert/base.hpp"
+#endif
 
 // AVX-512 includes intrinsics for everything except for (most instances of) truncation
 
 namespace grex::backend {
+#if GREX_X86_64_LEVEL >= 4
 // Increasing integer size
 // Double integer size
 #define GREX_CVT_IMPL_i16_i8_32 GREX_CVT_INTRINSIC_EPUI
@@ -84,7 +88,6 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_i8_f32_16 GREX_CVT_IMPL_F2SMALLI
 #define GREX_CVT_IMPL_u8_f32_16 GREX_CVT_IMPL_F2SMALLI
 
-#if GREX_X86_64_LEVEL >= 4
 GREX_CVT_DEF_ALL(_mm512, 512)
 #endif
 } // namespace grex::backend

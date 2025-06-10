@@ -46,7 +46,7 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_u8_u32_8 GREX_CVT_INTRINSIC_EPI
 #define GREX_CVT_IMPL_u16_u64_4 GREX_CVT_INTRINSIC_EPI
 #define GREX_CVT_IMPL_u8_u64_4 GREX_CVT_INTRINSIC_EPI
-#else
+#elif GREX_X86_64_LEVEL >= 3
 #define GREX_CVT_IMPL_u8_u16_16(...) \
   const __m256i idxs8 = \
     _mm256_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, -1, -1, -1, -1, -1, -1, -1, -1, 0, 2, 4, 6, 8, 10, \
@@ -84,6 +84,15 @@ namespace grex::backend {
   const __m128i vu32 = _mm_packus_epi32(_mm256_castsi256_si128(blended), hu128); \
   /* [u16(v0), …, u16(v3), 0, …, 0] */ \
   return SubVector<u16, 4, 8>{_mm_packus_epi32(vu32, _mm_setzero_si128())};
+// super-native variant
+#define GREX_CVT_IMPL_u16_u64_8(...) \
+  const __m256i lb = _mm256_blend_epi16(v.lower.r, _mm256_setzero_si256(), 0b11101110); \
+  const __m256i hb = _mm256_blend_epi16(v.upper.r, _mm256_setzero_si256(), 0b11101110); \
+  const __m128i lhu128 = _mm256_extracti128_si256(lb, 1); \
+  const __m128i hhu128 = _mm256_extracti128_si256(hb, 1); \
+  const __m128i lu32 = _mm_packus_epi32(_mm256_castsi256_si128(lb), lhu128); \
+  const __m128i hu32 = _mm_packus_epi32(_mm256_castsi256_si128(hb), hhu128); \
+  return u16x8{_mm_packus_epi32(lu32, hu32)};
 #define GREX_CVT_IMPL_u8_u64_4(...) \
   const __m128i idxs = \
     _mm_setr_epi8(0, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1); \
@@ -293,6 +302,9 @@ namespace grex::backend {
 
 #if GREX_X86_64_LEVEL >= 3
 GREX_CVT_DEF_ALL(_mm256, 256)
+#endif
+#if GREX_X86_64_LEVEL == 3
+GREX_CVT_SUPER(u, 16, u, 64, 8, _mm256, 256)
 #endif
 } // namespace grex::backend
 
