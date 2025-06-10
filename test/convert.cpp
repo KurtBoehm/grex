@@ -5,6 +5,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <algorithm>
+#include <bit>
 #include <concepts>
 #include <cstddef>
 #include <limits>
@@ -90,7 +91,8 @@ void convert_from_base(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
 
     constexpr std::size_t size =
       std::min(grex::native_sizes<TSrc>.back(), grex::native_sizes<TDst>.back());
-    op(grex::index_tag<2 * size>);
+    grex::static_apply<1, std::bit_width(size) + 2>(
+      [&]<std::size_t... tSizes> { (..., op(grex::index_tag<1ULL << tSizes>)); });
   };
   for_each_type(cvt);
 }

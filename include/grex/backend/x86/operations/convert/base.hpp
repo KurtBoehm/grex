@@ -133,76 +133,64 @@ namespace grex::backend {
   GREX_CVT(i, 8, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
   GREX_CVT(u, 8, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS)
 
-// The same type: no-op
+// Trivial no-op cases
+// Source and destination type identical
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> convert(Vector<T, tSize> v, TypeTag<T> /*tag*/) {
   return v;
 }
-// Integers with the same number of bits: No-op
+// Integers with the same number of bits
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
 requires(std::integral<TDst> && std::integral<TSrc> && sizeof(TDst) == sizeof(TSrc))
 inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
   return {.r = v.r};
 }
-// Converting to a larger integer with different signedness: Increase size while keeping signedness
+
+// Integer to larger integer with different signedness: Increase size while retaining signedness,
+// main condition: mixed signedness, increasing size
+template<typename TDst, typename TSrc>
+concept ConvertIntegralUp = std::integral<TDst> && std::integral<TSrc> &&
+                            (std::unsigned_integral<TDst> != std::unsigned_integral<TSrc>) &&
+                            sizeof(TDst) > sizeof(TSrc);
+// native → native
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-requires(std::integral<TDst> && std::integral<TSrc> &&
-         (std::unsigned_integral<TDst> != std::unsigned_integral<TSrc>) && is_native<TDst, tSize> &&
-         sizeof(TDst) > sizeof(TSrc))
+requires(ConvertIntegralUp<TDst, TSrc> && is_native<TDst, tSize>)
 inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
-  using Temp = std::conditional_t<std::unsigned_integral<TSrc>, UnsignedOf<TDst>, SignedOf<TDst>>;
-  const auto s = convert(v, type_tag<Temp>);
-  return {.r = s.r};
+  using Tmp = std::conditional_t<std::unsigned_integral<TSrc>, UnsignedOf<TDst>, SignedOf<TDst>>;
+  return {.r = convert(v, type_tag<Tmp>).r};
 }
+// sub-native → native (sub-native → sub-native: covered by the base case)
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
-requires(std::integral<TDst> && std::integral<TSrc> &&
-         (std::unsigned_integral<TDst> != std::unsigned_integral<TSrc>) &&
-         sizeof(TDst) > sizeof(TSrc))
+requires(ConvertIntegralUp<TDst, TSrc> && is_native<TDst, tPart>)
 inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
   using Temp = std::conditional_t<std::unsigned_integral<TSrc>, UnsignedOf<TDst>, SignedOf<TDst>>;
-  const auto s = convert(v, type_tag<Temp>);
-  // The output can be native or super-native (sub-native to sub-native is handled elsewhere)
-  if constexpr (is_supernative<TDst, tPart>) {
-    // TODO Is this too restrictive?
-    return {.lower = {.r = s.lower.r}, .upper = {.r = s.upper.r}};
-  } else {
-    return {.r = s.r};
-  }
+  return {.r = convert(v, type_tag<Temp>).r};
 }
-// Converting to a smaller integer: Truncation → ignore signedness
+
+// Integer to smaller integer where one is signed: Truncation → use unsigned version
+// main condition: at least one signed, decreasing size
+template<typename TDst, typename TSrc>
+concept ConvertIntegralDown =
+  std::integral<TDst> && std::integral<TSrc> &&
+  (!std::unsigned_integral<TDst> || !std::unsigned_integral<TSrc>) && sizeof(TDst) < sizeof(TSrc);
+// native → sub-native/native
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-requires(std::integral<TDst> && std::integral<TSrc> &&
-         (!std::unsigned_integral<TDst> || !std::unsigned_integral<TSrc>) &&
-         sizeof(TDst) < sizeof(TSrc))
+requires(ConvertIntegralDown<TDst, TSrc> && !is_supernative<TDst, tSize>)
 inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
   const auto s = convert(Vector<UnsignedOf<TSrc>, tSize>{v.r}, type_tag<UnsignedOf<TDst>>);
   return VectorFor<TDst, tSize>{s.registr()};
 }
+// sub-native → sub-native: Covered by the base case
+
+// Conversion between sub-native vectors: Increase size so that the larger is/both are native
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
-requires(std::integral<TDst> && std::integral<TSrc> &&
-         (!std::unsigned_integral<TDst> || !std::unsigned_integral<TSrc>) &&
-         sizeof(TDst) < sizeof(TSrc))
-inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
-  const auto s =
-    convert(SubVector<UnsignedOf<TSrc>, tPart, tSize>{v.registr()}, type_tag<UnsignedOf<TDst>>);
-  return VectorFor<TDst, tPart>{s.registr()};
-}
-// Baseline for converting sub-native vectors: Use the smaller of the two native sizes if the output
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
+requires(is_subnative<TDst, tPart>)
 inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
   using Out = VectorFor<TDst, tPart>;
-  if constexpr (is_subnative<TDst, tPart>) {
-    constexpr std::size_t work_size = std::min(tSize, Out::Full::size);
-    static_assert(work_size >= tPart);
-    const auto s = convert(VectorFor<TSrc, work_size>{v.registr()}, type_tag<TDst>);
-    return Out{s.registr()};
-  } else {
-    static_assert(is_supernative<TDst, tPart>);
-    return Out{
-      .lower = convert(split(v, index_tag<0>), type_tag<TDst>),
-      .upper = convert(split(v, index_tag<1>), type_tag<TDst>),
-    };
-  }
+  constexpr std::size_t work_size = std::min(tSize, Out::Full::size);
+  static_assert(work_size > tPart);
+  const auto s = convert(VectorFor<TSrc, work_size>{v.registr()}, type_tag<TDst>);
+  return Out{s.registr()};
 }
 
 // Conversion between super-native vectors: Work on the halves separately
@@ -211,7 +199,10 @@ requires(is_supernative<TDst, THalf::size * 2>)
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
   return {.lower = convert(v.lower, type_tag<TDst>), .upper = convert(v.upper, type_tag<TDst>)};
 }
-// From native to super-native: Split into parts and convert separately
+
+// Conversion between super-native and non-super-native
+// native → super-native: Split into halves and convert separately
+// TODO Separate implementations for four-fold and eight-fold super-native vectors?!
 template<typename TDst, typename TSrc, std::size_t tSize>
 requires(is_supernative<TDst, tSize>)
 inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
@@ -220,13 +211,23 @@ inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag
     .upper = convert(split(v, index_tag<1>), type_tag<TDst>),
   };
 }
-// From super-native to native: Convert parts separately and merge
+// sub-native → super-native: Split into halves and convert separately
+// TODO Separate implementations for four-fold and eight-fold super-native vectors?!
+template<typename TDst, typename TSrc, std::size_t tPart, std::size_t tSize>
+requires(is_supernative<TDst, tPart>)
+inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
+  return {
+    .lower = convert(split(v, index_tag<0>), type_tag<TDst>),
+    .upper = convert(split(v, index_tag<1>), type_tag<TDst>),
+  };
+}
+// Super-native → sub-native/native: Convert halves separately and merge
+// TODO Separate implementations for four-fold and eight-fold super-native vectors?!
 template<typename TDst, typename THalf>
 requires(!is_supernative<TDst, THalf::size * 2>)
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
   return merge(convert(v.lower, type_tag<TDst>), convert(v.upper, type_tag<TDst>));
 }
-// TODO Separate implementations for four-fold and eight-fold super-native vectors?!
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_BASE_HPP
