@@ -6,16 +6,28 @@ endif
 
 arches = x86_64_levels + ['native']
 pcg_dep = dependency('pcg-cpp')
+omp_dep = dependency('openmp')
 
-foreach name : ['componentwise', 'convert', 'horizontal', 'mem', 'set']
+foreach name, parallel : {
+  'componentwise': true,
+  'convert': true,
+  'gather': false,
+  'horizontal': true,
+  'mem': true,
+  'set': true,
+}
+  deps = [grex_dep, pcg_dep]
+  if not parallel
+    deps += [omp_dep]
+  endif
   foreach arch : arches
     space_name = name.replace('-', ' ')
     exe = executable(
       f'test-@name@-@arch@',
       [f'@name@.cpp'],
       cpp_args: args + [f'-march=@arch@'],
-      dependencies: [grex_dep, pcg_dep],
+      dependencies: deps,
     )
-    test(f'test @space_name@ @arch@', exe)
+    test(f'test @space_name@ @arch@', exe, is_parallel: parallel, timeout: -1)
   endforeach
 endforeach

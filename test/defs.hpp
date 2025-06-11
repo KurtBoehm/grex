@@ -227,6 +227,22 @@ constexpr std::string_view type_name() {
   return TypeNameTrait<T>::name;
 }
 
+void for_each_integral(auto op) {
+  op(grex::type_tag<grex::i64>);
+  op(grex::type_tag<grex::i32>);
+  op(grex::type_tag<grex::i16>);
+  op(grex::type_tag<grex::i8>);
+  op(grex::type_tag<grex::u64>);
+  op(grex::type_tag<grex::u32>);
+  op(grex::type_tag<grex::u16>);
+  op(grex::type_tag<grex::u8>);
+};
+void for_each_type(auto op) {
+  op(grex::type_tag<grex::f64>);
+  op(grex::type_tag<grex::f32>);
+  for_each_integral(op);
+};
+
 inline void run_types_sizes(auto f) {
   auto inner = [&]<typename T, std::size_t tSize>(TypeTag<T> t, IndexTag<tSize> s) {
     fmt::print(fmt::fg(fmt::terminal_color::blue), "{}x{}\n", type_name<T>(), tSize);
@@ -236,16 +252,7 @@ inline void run_types_sizes(auto f) {
     static_apply<1, std::bit_width(native_sizes<T>.back()) + 1>(
       [&]<std::size_t... tIdxs>() { (..., inner(t, index_tag<1U << tIdxs>)); });
   };
-  outer(type_tag<f32>);
-  outer(type_tag<f64>);
-  outer(type_tag<i8>);
-  outer(type_tag<i16>);
-  outer(type_tag<i32>);
-  outer(type_tag<i64>);
-  outer(type_tag<u8>);
-  outer(type_tag<u16>);
-  outer(type_tag<u32>);
-  outer(type_tag<u64>);
+  for_each_type(outer);
 }
 } // namespace grex::test
 

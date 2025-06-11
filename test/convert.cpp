@@ -57,21 +57,8 @@ inline auto make_distribution() {
   }
 }
 
-void for_each_type(auto op) {
-  op(grex::type_tag<grex::i64>);
-  op(grex::type_tag<grex::i32>);
-  op(grex::type_tag<grex::i16>);
-  op(grex::type_tag<grex::i8>);
-  op(grex::type_tag<grex::u64>);
-  op(grex::type_tag<grex::u32>);
-  op(grex::type_tag<grex::u16>);
-  op(grex::type_tag<grex::u8>);
-  op(grex::type_tag<grex::f64>);
-  op(grex::type_tag<grex::f32>);
-};
-
 template<grex::Vectorizable TSrc>
-void convert_from_base(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
+void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
   fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::text_style(fmt::emphasis::bold), "{}\n",
              test::type_name<TSrc>());
   auto cvt = [&]<typename TDst>(grex::TypeTag<TDst> /*tag*/) {
@@ -94,11 +81,11 @@ void convert_from_base(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
     grex::static_apply<1, std::bit_width(size) + 2>(
       [&]<std::size_t... tSizes> { (..., op(grex::index_tag<1ULL << tSizes>)); });
   };
-  for_each_type(cvt);
+  test::for_each_type(cvt);
 }
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   Rng rng{seed_source};
-  for_each_type([&](auto tag) { convert_from_base(rng, tag); });
+  test::for_each_type([&](auto tag) { convert_from(rng, tag); });
 }

@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_MERGE_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_MERGE_HPP
 
+#include <cstddef>
+
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/helpers.hpp"
@@ -77,6 +79,17 @@ GREX_MERGE_SUB(u, 8, 8, GREX_MERGE_i32x2)
 // 2×16
 GREX_MERGE_SUB(i, 8, 4, GREX_MERGE_i16x2)
 GREX_MERGE_SUB(u, 8, 4, GREX_MERGE_i16x2)
+
+// Merge to super-native vector
+template<Vectorizable T, std::size_t tSize>
+requires(is_supernative<T, 2 * tSize>)
+inline SuperVector<Vector<T, tSize>> merge(Vector<T, tSize> a, Vector<T, tSize> b) {
+  return {.lower = a, .upper = b};
+}
+template<typename THalf>
+inline SuperVector<SuperVector<THalf>> merge(SuperVector<THalf> a, SuperVector<THalf> b) {
+  return {.lower = a, .upper = b};
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_MERGE_HPP

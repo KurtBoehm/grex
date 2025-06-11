@@ -9,6 +9,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <span>
 #include <type_traits>
 
 #include "grex/backend.hpp"
@@ -287,6 +288,11 @@ template<Vectorizable T, std::size_t tSize>
 requires(std::floating_point<T>)
 inline Vector<T, tSize> mask_divide(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b) {
   return Vector<T, tSize>{backend::mask_divide(mask.backend(), a.backend(), b.backend())};
+}
+
+template<Vectorizable TValue, Vectorizable TIndex, std::size_t tSize>
+inline Vector<TValue, tSize> gather(std::span<const TValue> data, Vector<TIndex, tSize> indices) {
+  return Vector<TValue, tSize>{backend::gather(data, indices.backend())};
 }
 } // namespace grex
 
