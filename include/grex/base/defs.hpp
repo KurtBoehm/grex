@@ -52,6 +52,24 @@ using UnsignedOf = SignednessTrait<T>::Unsigned;
 template<typename T>
 using SignedOf = SignednessTrait<T>::Signed;
 
+template<std::size_t tBytes>
+struct SizedIntegerTrait;
+#define GREX_DEF_SIZEDI(B, U, S) \
+  template<> \
+  struct SizedIntegerTrait<B> { \
+    using Unsigned = U; \
+    using Signed = S; \
+  };
+GREX_DEF_SIZEDI(1, u8, i8)
+GREX_DEF_SIZEDI(2, u16, i16)
+GREX_DEF_SIZEDI(4, u32, i32)
+GREX_DEF_SIZEDI(8, u64, i64)
+#undef GREX_DEF_SIZEDI
+template<std::size_t tBytes>
+using UnsignedInt = SizedIntegerTrait<tBytes>::Unsigned;
+template<std::size_t tBytes>
+using SignedInt = SizedIntegerTrait<tBytes>::Signed;
+
 using f32 = float;
 static_assert(std::numeric_limits<f32>::is_iec559 && sizeof(f32) == 4);
 using f64 = double;

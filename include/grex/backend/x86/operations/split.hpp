@@ -7,10 +7,14 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_SPLIT_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SPLIT_HPP
 
+#include <cstddef>
+
 #include <immintrin.h>
 
 #include "grex/backend/choosers.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
+#include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp" // IWYU pragma: keep
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
@@ -89,6 +93,55 @@ GREX_SPLIT_SUB_ALL(u, 8, 8, GREX_SPLIT_i32x2)
 // 16×2
 GREX_SPLIT_SUB_ALL(i, 8, 4, GREX_SPLIT_i16x2)
 GREX_SPLIT_SUB_ALL(u, 8, 4, GREX_SPLIT_i16x2)
+
+// Split super-native vector
+template<typename THalf>
+inline THalf split(SuperVector<THalf> v, IndexTag<0> /*tag*/) {
+  return v.lower;
+}
+template<typename THalf>
+inline THalf split(SuperVector<THalf> v, IndexTag<1> /*tag*/) {
+  return v.upper;
+}
+
+// Mask splitting
+#if GREX_X86_64_LEVEL >= 4
+// AVX-512: No-op for the lower half, bit shift for the upper
+template<Vectorizable T, std::size_t tSize>
+inline MaskFor<T, tSize / 2> split(Mask<T, tSize> m, IndexTag<0> /*tag*/) {
+  using Out = MaskFor<T, tSize / 2>;
+  using Register = Out::Register;
+  return Out{Register(m.r)};
+}
+template<Vectorizable T, std::size_t tSize>
+inline MaskFor<T, tSize / 2> split(Mask<T, tSize> m, IndexTag<1> /*tag*/) {
+  using Out = MaskFor<T, tSize / 2>;
+  using Register = Out::Register;
+  return Out{Register(m.r >> (tSize / 2))};
+}
+#else
+// Pre-AVX-512: Reinterpret as signed integer and split that way
+template<Vectorizable T, std::size_t tSize, std::size_t tIdx>
+inline MaskFor<T, tSize / 2> split(Mask<T, tSize> m, IndexTag<tIdx> tag) {
+  const auto r = split(VectorFor<SignedInt<sizeof(T)>, tSize>{m.registr()}, tag).registr();
+  return MaskFor<T, tSize / 2>{r};
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize, std::size_t tIdx>
+inline MaskFor<T, tPart / 2> split(SubMask<T, tPart, tSize> m, IndexTag<tIdx> tag) {
+  const auto r = split(VectorFor<SignedInt<sizeof(T)>, tPart>{m.registr()}, tag).registr();
+  return MaskFor<T, tPart / 2>{r};
+}
+#endif
+
+// Split super-native mask
+template<typename THalf>
+inline THalf split(SuperMask<THalf> m, IndexTag<0> /*tag*/) {
+  return m.lower;
+}
+template<typename THalf>
+inline THalf split(SuperMask<THalf> m, IndexTag<1> /*tag*/) {
+  return m.upper;
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SPLIT_HPP

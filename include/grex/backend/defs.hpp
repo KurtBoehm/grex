@@ -49,10 +49,14 @@ struct SubMask {
   using Register = Full::Register;
   static constexpr std::size_t size = tPart;
 
+  Full full;
+
   explicit SubMask(Full m) : full{m} {}
   explicit SubMask(Register r) : full{.r = r} {}
 
-  Full full;
+  Register registr() const {
+    return full.r;
+  }
 };
 template<typename THalf>
 struct SuperMask {

@@ -294,6 +294,11 @@ template<Vectorizable TValue, Vectorizable TIndex, std::size_t tSize>
 inline Vector<TValue, tSize> gather(std::span<const TValue> data, Vector<TIndex, tSize> indices) {
   return Vector<TValue, tSize>{backend::gather(data, indices.backend())};
 }
+template<Vectorizable TValue, Vectorizable TIndex, std::size_t tSize>
+inline Vector<TValue, tSize> mask_gather(std::span<const TValue> data, Mask<TValue, tSize> mask,
+                                         Vector<TIndex, tSize> indices) {
+  return Vector<TValue, tSize>{backend::mask_gather(data, mask.backend(), indices.backend())};
+}
 } // namespace grex
 
 #endif // INCLUDE_GREX_TYPES_HPP
