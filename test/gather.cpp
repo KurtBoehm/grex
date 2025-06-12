@@ -8,7 +8,6 @@
 #include <bit>
 #include <concepts>
 #include <cstddef>
-#include <execution>
 #include <limits>
 #include <memory>
 #include <random>
@@ -51,7 +50,7 @@ template<grex::Vectorizable TValue>
 void gather(Rng& rng, grex::TypeTag<TValue> /*tag*/) {
   fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::text_style(fmt::emphasis::bold),
              "value: {}\n", test::type_name<TValue>());
-  constexpr std::size_t data_size = (std::size_t(1) << 33) / sizeof(TValue);
+  constexpr std::size_t data_size = 3 * (std::size_t(1) << 32) / sizeof(TValue);
 
   const auto data = std::make_unique<TValue[]>(data_size);
   auto vdist = make_distribution<TValue>();
