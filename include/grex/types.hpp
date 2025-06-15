@@ -88,6 +88,13 @@ struct Vector {
   explicit Vector(Ts... values) : vec_{backend::set(type_tag<Backend>, T{values}...)} {}
   explicit Vector(Backend v) : vec_(v) {}
 
+  static Vector expand_any(T x) {
+    return Vector{backend::expand_any(x)};
+  }
+  static Vector expand_zero(T x) {
+    return Vector{backend::expand_zero(x)};
+  }
+
   static Vector load(const T* ptr) {
     return Vector{backend::load(ptr, type_tag<Backend>)};
   }

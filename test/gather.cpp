@@ -17,43 +17,25 @@
 #include <fmt/base.h>
 #include <fmt/color.h>
 #include <pcg_extras.hpp>
-#include <pcg_random.hpp>
 
 #include "grex/grex.hpp"
 
 #include "defs.hpp"
 
 namespace test = grex::test;
-using Rng = pcg64;
 inline constexpr std::size_t repetitions = 4096;
 template<typename T>
 using Distribution = std::conditional_t<std::floating_point<T>, std::uniform_real_distribution<T>,
                                         std::uniform_int_distribution<T>>;
 
-template<typename T>
-inline auto make_distribution() {
-  using Limits = std::numeric_limits<T>;
-  if constexpr (std::floating_point<T>) {
-    return [](Rng& rng) {
-      const int sign = std::uniform_int_distribution<int>{0, 1}(rng) * 2 - 1;
-      const T base = std::uniform_real_distribution<T>{T(0.5), T(1)}(rng);
-      const int expo =
-        std::uniform_int_distribution<int>{Limits::min_exponent, Limits::max_exponent}(rng);
-      return T(sign) * std::ldexp(base, expo);
-    };
-  } else {
-    return std::uniform_int_distribution<T>{Limits::min(), Limits::max()};
-  }
-}
-
 template<grex::Vectorizable TValue>
-void gather(Rng& rng, grex::TypeTag<TValue> /*tag*/) {
+void gather(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
   fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::text_style(fmt::emphasis::bold),
              "value: {}\n", test::type_name<TValue>());
   constexpr std::size_t data_size = 3 * (std::size_t(1) << 32) / sizeof(TValue);
 
   const auto data = std::make_unique<TValue[]>(data_size);
-  auto vdist = make_distribution<TValue>();
+  auto vdist = test::make_distribution<TValue>();
 #pragma omp parallel for default(shared) private(vdist, rng) schedule(guided)
   for (std::size_t i = 0; i < data_size; ++i) {
     data[i] = vdist(rng);
@@ -107,6 +89,6 @@ void gather(Rng& rng, grex::TypeTag<TValue> /*tag*/) {
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
-  Rng rng{seed_source};
+  test::Rng rng{seed_source};
   test::for_each_type([&](auto vtag) { gather(rng, vtag); });
 }

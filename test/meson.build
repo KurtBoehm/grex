@@ -11,6 +11,7 @@ omp_dep = dependency('openmp')
 foreach name, parallel : {
   'componentwise': true,
   'convert': true,
+  'expand': true,
   'gather': false,
   'horizontal': true,
   'mem': true,

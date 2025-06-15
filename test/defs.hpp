@@ -13,17 +13,38 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdlib>
+#include <limits>
+#include <random>
 #include <string_view>
 #include <type_traits>
 
 #include <fmt/base.h>
 #include <fmt/color.h>
 #include <fmt/ranges.h>
+#include <pcg_random.hpp>
 
 #include "grex/base/defs.hpp"
 #include "grex/types.hpp"
 
 namespace grex::test {
+using Rng = pcg64;
+
+template<typename T>
+inline auto make_distribution() {
+  using Limits = std::numeric_limits<T>;
+  if constexpr (std::floating_point<T>) {
+    return [](Rng& rng) {
+      const int sign = std::uniform_int_distribution<int>{0, 1}(rng) * 2 - 1;
+      const T base = std::uniform_real_distribution<T>{T(0.5), T(1)}(rng);
+      const int expo =
+        std::uniform_int_distribution<int>{Limits::min_exponent, Limits::max_exponent}(rng);
+      return T(sign) * std::ldexp(base, expo);
+    };
+  } else {
+    return std::uniform_int_distribution<T>{Limits::min(), Limits::max()};
+  }
+}
+
 struct Empty {};
 
 template<Vectorizable T, std::size_t tSize, typename TParent = void>

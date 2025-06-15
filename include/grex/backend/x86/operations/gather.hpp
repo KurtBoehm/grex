@@ -100,17 +100,17 @@ inline VectorFor<TValue, 2 * TVecHalf::size> mask_gather(std::span<const TValue>
 #define GREX_MGATHER_MMASK_512 mask
 #define GREX_MGATHER_MMASK(REGISTERBITS) GREX_MGATHER_MMASK_##REGISTERBITS
 #if GREX_X86_64_LEVEL >= 4
-#define GREX_MGATHER_INSTRINSIC(VALKIND, VALBITS, IDXBITS, REGISTERBITS) \
+#define GREX_MGATHER_INSTRINSIC(VALKIND, VALBITS, VALRRBITS, IDXBITS, SIZE, REGISTERBITS) \
   GREX_CAT(GREX_BITPREFIX(REGISTERBITS), _, GREX_MGATHER_MMASK(REGISTERBITS), \
            _i##IDXBITS##gather_, GREX_EPI_SUFFIX(VALKIND, VALBITS))( \
     zeros(type_tag<Out>).registr(), m.registr(), idxs.registr(), \
     GREX_GATHER_CAST(VALKIND, VALBITS), GREX_BIT2BYTE(VALBITS))
 #else
-#define GREX_MGATHER_INSTRINSIC(VALKIND, VALBITS, IDXBITS, REGISTERBITS) \
+#define GREX_MGATHER_INSTRINSIC(VALKIND, VALBITS, VALRRBITS, IDXBITS, SIZE, REGISTERBITS) \
   GREX_CAT(GREX_BITPREFIX(REGISTERBITS), _mask_i##IDXBITS##gather_, \
-           GREX_EPI_SUFFIX(VALKIND, VALBITS))(zeros(type_tag<Out>).registr(), \
-                                              GREX_GATHER_CAST(VALKIND, VALBITS), idxs.registr(), \
-                                              m.registr(), GREX_BIT2BYTE(VALBITS))
+           GREX_EPI_SUFFIX(VALKIND, VALBITS))( \
+    zeros(type_tag<Out>).registr(), GREX_GATHER_CAST(VALKIND, VALBITS), idxs.registr(), \
+    GREX_KINDCAST(i, VALKIND, VALBITS, VALRRBITS, m.registr()), GREX_BIT2BYTE(VALBITS))
 #endif
 
 #define GREX_GATHER_DEFINE(VALKIND, VALBITS, IDXKIND, IDXBITS, SIZE, REGISTERBITS) \
@@ -120,7 +120,8 @@ inline VectorFor<TValue, 2 * TVecHalf::size> mask_gather(std::span<const TValue>
   } \
   GREX_MGATHER_PREFIX(VALKIND##VALBITS, IDXKIND##IDXBITS, SIZE) { \
     using Out = VectorFor<VALKIND##VALBITS, SIZE>; \
-    return Out{GREX_MGATHER_INSTRINSIC(VALKIND, VALBITS, IDXBITS, REGISTERBITS)}; \
+    return Out{GREX_MGATHER_INSTRINSIC(VALKIND, VALBITS, GREX_REGISTERBITS(VALBITS, SIZE), \
+                                       IDXBITS, SIZE, REGISTERBITS)}; \
   }
 
 // TODO Check in practice whether all of this is useful at all!

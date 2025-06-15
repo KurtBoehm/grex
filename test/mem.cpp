@@ -7,8 +7,6 @@
 #include <array>
 #include <cstddef>
 
-#include <fmt/base.h>
-
 #include "grex/grex.hpp"
 
 #include "defs.hpp"

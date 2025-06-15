@@ -10,6 +10,7 @@
 #include "operations/classification.hpp"
 #include "operations/compare.hpp"
 #include "operations/convert.hpp"
+#include "operations/expand-scalar.hpp"
 #include "operations/extract.hpp"
 #include "operations/fmadd-family.hpp"
 #include "operations/gather.hpp"
