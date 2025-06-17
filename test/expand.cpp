@@ -23,6 +23,7 @@ inline constexpr std::size_t repetitions = 4096;
 template<grex::Vectorizable T, std::size_t tSize>
 void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
   using Vec = grex::Vector<T, tSize>;
+  using VC = test::VectorChecker<T, tSize>;
 
   auto dist = test::make_distribution<T>();
   auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
@@ -46,7 +47,6 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
 
   // expand vectors
   auto expav = [&]<std::size_t tDstSize>(grex::IndexTag<tDstSize> /*tag*/) {
-    using VC = test::VectorChecker<T, tSize>;
     using VDC = test::VectorChecker<T, tDstSize>;
 
     fmt::print("size: {}\n", tDstSize);

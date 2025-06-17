@@ -206,8 +206,12 @@ struct Vector {
   Vector<T, tDstSize> expand_zero(IndexTag<tDstSize> /*size*/) const {
     return Vector<T, tDstSize>{backend::expand_zero(vec_, index_tag<tDstSize>)};
   }
+
   Vector shingle_up() const {
     return Vector{backend::shingle_up(vec_)};
+  }
+  Vector shingle_up(Value v0) const {
+    return Vector{backend::shingle_up(v0, vec_)};
   }
 
   Backend backend() const {

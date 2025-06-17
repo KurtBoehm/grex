@@ -16,6 +16,7 @@ foreach name, parallel : {
   'horizontal': true,
   'mem': true,
   'set': true,
+  'shingle': true,
 }
   deps = [grex_dep, pcg_dep]
   if not parallel
