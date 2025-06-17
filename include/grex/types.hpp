@@ -213,6 +213,9 @@ struct Vector {
   Vector shingle_up(Value v0) const {
     return Vector{backend::shingle_up(v0, vec_)};
   }
+  Vector shingle_down() const {
+    return Vector{backend::shingle_down(vec_)};
+  }
 
   Backend backend() const {
     return vec_;
