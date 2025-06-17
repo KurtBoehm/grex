@@ -41,6 +41,40 @@ struct SuperVector {
 template<Vectorizable T, std::size_t tSize>
 using VectorPair = SuperVector<Vector<T, tSize>>;
 
+enum struct VectorKind : u8 { none, native, subnative, supernative };
+template<typename T>
+struct AnyVectorTrait {
+  static constexpr bool is_vector = false;
+  static constexpr bool has_register = false;
+  static constexpr VectorKind kind = VectorKind::none;
+};
+template<Vectorizable T, std::size_t tSize>
+struct AnyVectorTrait<Vector<T, tSize>> {
+  static constexpr bool is_vector = true;
+  static constexpr bool has_register = true;
+  static constexpr VectorKind kind = VectorKind::native;
+};
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+struct AnyVectorTrait<SubVector<T, tPart, tSize>> {
+  static constexpr bool is_vector = true;
+  static constexpr bool has_register = true;
+  static constexpr VectorKind kind = VectorKind::subnative;
+};
+template<typename THalf>
+struct AnyVectorTrait<SuperVector<THalf>> {
+  static constexpr bool is_vector = true;
+  static constexpr bool has_register = false;
+  static constexpr VectorKind kind = VectorKind::supernative;
+};
+template<typename T>
+concept AnyVector = AnyVectorTrait<T>::is_vector;
+template<typename T>
+concept AnyNativeVector = AnyVectorTrait<T>::kind == VectorKind::native;
+template<typename T>
+concept AnySubNativeVector = AnyVectorTrait<T>::kind == VectorKind::subnative;
+template<typename T>
+concept AnySuperNativeVector = AnyVectorTrait<T>::kind == VectorKind::supernative;
+
 template<Vectorizable T, std::size_t tSize>
 struct Mask;
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>

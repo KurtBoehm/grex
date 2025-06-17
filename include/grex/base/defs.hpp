@@ -100,6 +100,20 @@ concept AnyIndexTag = requires {
   { T::value } -> std::convertible_to<std::size_t>;
 };
 
+template<bool tVal>
+struct BoolTag {
+  static constexpr bool value = tVal;
+  constexpr operator bool() const {
+    return value;
+  }
+};
+template<bool tVal>
+inline constexpr BoolTag<tVal> bool_tag;
+template<typename T>
+concept AnyBoolTag = requires {
+  { T::value } -> std::convertible_to<bool>;
+};
+
 template<std::size_t tSize>
 constexpr decltype(auto) static_apply(auto f) {
   return [&]<std::size_t... tIdxs>(std::index_sequence<tIdxs...> /*seq*/) -> decltype(auto) {

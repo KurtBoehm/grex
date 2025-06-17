@@ -11,6 +11,7 @@
 #include "operations/compare.hpp"
 #include "operations/convert.hpp"
 #include "operations/expand-scalar.hpp"
+#include "operations/expand-vector.hpp"
 #include "operations/extract.hpp"
 #include "operations/fmadd-family.hpp"
 #include "operations/gather.hpp"
@@ -25,6 +26,7 @@
 #include "operations/set.hpp"
 #include "operations/split.hpp"
 #include "operations/store.hpp"
+#include "operations/subnative.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_HPP

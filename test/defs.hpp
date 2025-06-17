@@ -47,6 +47,18 @@ inline auto make_distribution() {
 
 struct Empty {};
 
+template<typename T1, typename T2>
+inline void check_msg(bool same, T1 a, T2 b, bool verbose = true) {
+  if (same) {
+    if (verbose) {
+      fmt::print(fmt::fg(fmt::terminal_color::green), "{} == {}\n", a, b);
+    }
+  } else {
+    fmt::print(fmt::fg(fmt::terminal_color::red), "{} != {}\n", a, b);
+    std::exit(EXIT_FAILURE);
+  }
+}
+
 template<Vectorizable T, std::size_t tSize, typename TParent = void>
 struct VectorChecker {
   static constexpr bool has_parent = !std::is_void_v<TParent>;
@@ -170,25 +182,13 @@ struct MaskChecker {
   void check(bool verbose = true) const {
     const bool same = static_apply<tSize>(
       [&]<std::size_t... tIdxs>() { return (... && (mask[tIdxs] == ref[tIdxs])); });
-    if (same) {
-      if (verbose) {
-        fmt::print(fmt::fg(fmt::terminal_color::green), "{} == {}\n", mask, ref);
-      }
-    } else {
-      fmt::print(fmt::fg(fmt::terminal_color::red), "{} != {}\n", mask, ref);
-      std::exit(EXIT_FAILURE);
-    }
+    check_msg(same, mask, ref, verbose);
   }
 };
 
 template<typename T>
-inline void check(T a, T b) {
-  if (a == b) {
-    fmt::print(fmt::fg(fmt::terminal_color::green), "{} == {}\n", a, b);
-  } else {
-    fmt::print(fmt::fg(fmt::terminal_color::red), "{} != {}\n", a, b);
-    std::exit(EXIT_FAILURE);
-  }
+inline void check(T a, T b, bool verbose = true) {
+  check_msg(a == b, a, b, verbose);
 }
 
 template<Vectorizable T, std::size_t tSize>
@@ -266,7 +266,7 @@ void for_each_type(auto op) {
 
 inline void run_types_sizes(auto f) {
   auto inner = [&]<typename T, std::size_t tSize>(TypeTag<T> t, IndexTag<tSize> s) {
-    fmt::print(fmt::fg(fmt::terminal_color::blue), "{}x{}\n", type_name<T>(), tSize);
+    fmt::print(fmt::fg(fmt::terminal_color::blue), "{}×{}\n", type_name<T>(), tSize);
     f(t, s);
   };
   auto outer = [&]<typename T>(TypeTag<T> t) {

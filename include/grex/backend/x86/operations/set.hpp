@@ -43,6 +43,17 @@ namespace grex::backend {
 #define GREX_SET_ARG(CNT, IDX, TYPE) BOOST_PP_COMMA_IF(IDX) TYPE v##IDX
 #define GREX_SET_VAL(CNT, IDX, KIND, BITS) GREX_SET_CAST(KIND, BITS, v##IDX) BOOST_PP_COMMA_IF(IDX)
 #define GREX_SET_NEGVAL(CNT, IDX, BITS) -i##BITS(v##IDX) BOOST_PP_COMMA_IF(IDX)
+// Define the messy undefined macros
+#define GREX_UNDEF_BASE(KIND, BITS, BITPREFIX, REGISTERBITS) \
+  GREX_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))
+#define GREX_UNDEF_I128 _mm_undefined_si128
+#define GREX_UNDEF_I256 _mm256_undefined_si256
+#define GREX_UNDEF_I512 _mm512_undefined_epi32
+#define GREX_UNDEF_INT(KIND, BITS, BITPREFIX, REGISTERBITS) GREX_UNDEF_I##REGISTERBITS
+#define GREX_UNDEF_f GREX_UNDEF_BASE
+#define GREX_UNDEF_i GREX_UNDEF_INT
+#define GREX_UNDEF_u GREX_UNDEF_INT
+#define GREX_UNDEF(KIND, ...) GREX_UNDEF_##KIND(KIND, __VA_ARGS__)
 
 #define GREX_CMASK_SET_OP(CNT, IDX, TYPE) \
   BOOST_PP_IF(IDX, |, BOOST_PP_EMPTY()) \
@@ -95,6 +106,9 @@ namespace grex::backend {
   inline Vector<KIND##BITS, SIZE> zeros(TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))()}; \
   } \
+  inline Vector<KIND##BITS, SIZE> undefined(TypeTag<Vector<KIND##BITS, SIZE>>) { \
+    return {.r = GREX_UNDEF(KIND, BITS, BITPREFIX, REGISTERBITS)()}; \
+  } \
   inline Vector<KIND##BITS, SIZE> broadcast(KIND##BITS value, TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))( \
               GREX_SET_CAST(KIND, BITS, value))}; \
@@ -120,6 +134,10 @@ inline Vector<T, tSize> indices(TypeTag<Vector<T, tSize>> /*tag*/) {
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> zeros(TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
   return SubVector<T, tPart, tSize>{zeros(type_tag<Vector<T, tSize>>)};
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
+inline SubVector<T, tPart, tSize> undefined(TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
+  return SubVector<T, tPart, tSize>{undefined(type_tag<Vector<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> broadcast(T value, TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
@@ -163,6 +181,11 @@ inline SubMask<T, tPart, tSize> set(TypeTag<SubMask<T, tPart, tSize>> /*tag*/, T
 template<typename THalf>
 inline SuperVector<THalf> zeros(TypeTag<SuperVector<THalf>> /*tag*/) {
   const auto half = zeros(type_tag<THalf>);
+  return {.lower = half, .upper = half};
+}
+template<typename THalf>
+inline SuperVector<THalf> undefined(TypeTag<SuperVector<THalf>> /*tag*/) {
+  const auto half = undefined(type_tag<THalf>);
   return {.lower = half, .upper = half};
 }
 template<typename THalf>

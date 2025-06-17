@@ -88,11 +88,11 @@ struct Vector {
   explicit Vector(Ts... values) : vec_{backend::set(type_tag<Backend>, T{values}...)} {}
   explicit Vector(Backend v) : vec_(v) {}
 
-  static Vector expand_any(T x) {
-    return Vector{backend::expand_any(x)};
+  static Vector expanded_any(T x) {
+    return Vector{backend::expand_any(x, index_tag<tSize>)};
   }
-  static Vector expand_zero(T x) {
-    return Vector{backend::expand_zero(x)};
+  static Vector expanded_zero(T x) {
+    return Vector{backend::expand_zero(x, index_tag<tSize>)};
   }
 
   static Vector load(const T* ptr) {
@@ -196,6 +196,15 @@ struct Vector {
   }
   friend Mask operator<=(Vector a, Vector b) {
     return Mask{backend::compare_ge(b.vec_, a.vec_)};
+  }
+
+  template<std::size_t tDstSize>
+  Vector<T, tDstSize> expand_any(IndexTag<tDstSize> /*size*/) {
+    return Vector<T, tDstSize>{backend::expand_any(vec_, index_tag<tDstSize>)};
+  }
+  template<std::size_t tDstSize>
+  Vector<T, tDstSize> expand_zero(IndexTag<tDstSize> /*size*/) {
+    return Vector<T, tDstSize>{backend::expand_zero(vec_, index_tag<tDstSize>)};
   }
 
   Backend backend() const {
