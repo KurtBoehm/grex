@@ -199,12 +199,15 @@ struct Vector {
   }
 
   template<std::size_t tDstSize>
-  Vector<T, tDstSize> expand_any(IndexTag<tDstSize> /*size*/) {
+  Vector<T, tDstSize> expand_any(IndexTag<tDstSize> /*size*/) const {
     return Vector<T, tDstSize>{backend::expand_any(vec_, index_tag<tDstSize>)};
   }
   template<std::size_t tDstSize>
-  Vector<T, tDstSize> expand_zero(IndexTag<tDstSize> /*size*/) {
+  Vector<T, tDstSize> expand_zero(IndexTag<tDstSize> /*size*/) const {
     return Vector<T, tDstSize>{backend::expand_zero(vec_, index_tag<tDstSize>)};
+  }
+  Vector shingle_up() const {
+    return Vector{backend::shingle_up(vec_)};
   }
 
   Backend backend() const {
