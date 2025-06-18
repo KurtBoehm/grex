@@ -25,10 +25,10 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
   auto dist = test::make_distribution<T>();
   auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
 
-  // shingle up
   grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
     for (std::size_t i = 0; i < repetitions; ++i) {
       VC base{dval(tIdxs)...};
+      // shingle up
       {
         VC checker{
           base.vec.shingle_up(),
@@ -37,10 +37,26 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
         checker.check(false);
       }
       {
-        const T v0 = dist(rng);
+        const T front = dist(rng);
         VC checker{
-          base.vec.shingle_up(v0),
-          {((tIdxs == 0) ? v0 : base.ref[tIdxs - 1])...},
+          base.vec.shingle_up(front),
+          {((tIdxs == 0) ? front : base.ref[tIdxs - 1])...},
+        };
+        checker.check(false);
+      }
+      // shingle down
+      {
+        VC checker{
+          base.vec.shingle_down(),
+          {((tIdxs + 1 == tSize) ? T{} : base.ref[tIdxs + 1])...},
+        };
+        checker.check(false);
+      }
+      {
+        const T back = dist(rng);
+        VC checker{
+          base.vec.shingle_down(back),
+          {((tIdxs + 1 == tSize) ? back : base.ref[tIdxs + 1])...},
         };
         checker.check(false);
       }

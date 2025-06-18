@@ -210,11 +210,14 @@ struct Vector {
   Vector shingle_up() const {
     return Vector{backend::shingle_up(vec_)};
   }
-  Vector shingle_up(Value v0) const {
-    return Vector{backend::shingle_up(v0, vec_)};
+  Vector shingle_up(Value front) const {
+    return Vector{backend::shingle_up(front, vec_)};
   }
   Vector shingle_down() const {
     return Vector{backend::shingle_down(vec_)};
+  }
+  Vector shingle_down(Value back) const {
+    return Vector{backend::shingle_down(vec_, back)};
   }
 
   Backend backend() const {

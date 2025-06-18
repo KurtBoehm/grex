@@ -11,7 +11,6 @@
 
 #include <immintrin.h>
 
-// #define GREX_X86_64_LEVEL 4
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
@@ -28,44 +27,42 @@ inline TVec expand(TVec v, IndexTag<TVec::size> /*size*/, BoolTag<tZero> /*zero*
   return v;
 }
 
-// expand with arbitrary values in the expanded area
-// native → native
-#define GREX_EXPANDV_ANY_INTRINSIC(KIND, BITS, DSTSIZE, SRCRBITS, DSTRBITS) \
+// native → native: use cast/zext intrinsics
+#define GREX_EXPANDV_INTRINSIC(KIND, BITS, DSTSIZE, SRCRBITS, DSTRBITS) \
   inline Vector<KIND##BITS, DSTSIZE> expand(Vector<KIND##BITS, GREX_ELEMENTS(SRCRBITS, BITS)> v, \
                                             IndexTag<DSTSIZE>, BoolTag<false>) { \
     return {.r = GREX_CAT(GREX_BITPREFIX(DSTRBITS), _cast, GREX_SIR_SUFFIX(KIND, BITS, SRCRBITS), \
                           _, GREX_SIR_SUFFIX(KIND, BITS, DSTRBITS))(v.r)}; \
+  } \
+  inline Vector<KIND##BITS, DSTSIZE> expand(Vector<KIND##BITS, GREX_ELEMENTS(SRCRBITS, BITS)> v, \
+                                            IndexTag<DSTSIZE>, BoolTag<true>) { \
+    return {.r = GREX_CAT(GREX_BITPREFIX(DSTRBITS), _zext, GREX_SIR_SUFFIX(KIND, BITS, SRCRBITS), \
+                          _, GREX_SIR_SUFFIX(KIND, BITS, DSTRBITS))(v.r)}; \
   }
 #if GREX_X86_64_LEVEL >= 3
-GREX_FOREACH_TYPE(GREX_EXPANDV_ANY_INTRINSIC, 256, 128, 256)
+GREX_FOREACH_TYPE(GREX_EXPANDV_INTRINSIC, 256, 128, 256)
 #endif
 #if GREX_X86_64_LEVEL >= 4
-GREX_FOREACH_TYPE(GREX_EXPANDV_ANY_INTRINSIC, 512, 128, 512)
-GREX_FOREACH_TYPE(GREX_EXPANDV_ANY_INTRINSIC, 512, 256, 512)
+GREX_FOREACH_TYPE(GREX_EXPANDV_INTRINSIC, 512, 128, 512)
+GREX_FOREACH_TYPE(GREX_EXPANDV_INTRINSIC, 512, 256, 512)
 #endif
+
+// expand with arbitrary values in the expanded area
 // native/super-native → super-native
-template<AnyVector TVec, std::size_t tDstSize>
+template<AnyVector TVec, std::size_t tDstSize, bool tZero>
 requires(tDstSize > TVec::size && is_supernative<typename TVec::Value, tDstSize> &&
          (AnyNativeVector<TVec> || AnySuperNativeVector<TVec>))
 inline VectorFor<typename TVec::Value, tDstSize> expand(TVec v, IndexTag<tDstSize> /*size*/,
-                                                        BoolTag<false> zero_tag) {
+                                                        BoolTag<tZero> zero_tag) {
   using Value = TVec::Value;
-  constexpr std::size_t tsize = tDstSize / 2;
-  return merge(expand(v, index_tag<tsize>, zero_tag), undefined(type_tag<VectorFor<Value, tsize>>));
+  using Half = VectorFor<Value, tDstSize / 2>;
+  if constexpr (tZero) {
+    return merge(expand(v, index_tag<Half::size>, zero_tag), zeros(type_tag<Half>));
+  } else {
+    return merge(expand(v, index_tag<Half::size>, zero_tag), undefined(type_tag<Half>));
+  }
 }
 
-// expand with zeros in the expanded area
-// native/super-native → native/super-native
-template<AnyVector TVec, std::size_t tDstSize>
-requires(tDstSize > TVec::size && (AnyNativeVector<TVec> || AnySuperNativeVector<TVec>))
-inline VectorFor<typename TVec::Value, tDstSize> expand(TVec v, IndexTag<tDstSize> /*size*/,
-                                                        BoolTag<true> zero_tag) {
-  using Value = TVec::Value;
-  constexpr std::size_t tsize = tDstSize / 2;
-  return merge(expand(v, index_tag<tsize>, zero_tag), zeros(type_tag<VectorFor<Value, tsize>>));
-}
-
-// both kinds of expansion
 // sub-native → sub-native/native
 template<typename T, std::size_t tPart, std::size_t tSize, std::size_t tDstSize, bool tZero>
 inline VectorFor<T, tDstSize> expand(SubVector<T, tPart, tSize> v, IndexTag<tDstSize> size_tag,
