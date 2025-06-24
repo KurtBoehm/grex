@@ -76,7 +76,7 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_TYPES_ALL)
 
 template<typename T>
-struct ValWrap {
+struct Scalar {
   T value;
 };
 } // namespace grex::backend

@@ -14,6 +14,7 @@
 #include <utility>
 
 namespace grex {
+namespace primitives {
 using u8 = std::uint8_t;
 using u16 = std::uint16_t;
 using u32 = std::uint32_t;
@@ -22,6 +23,13 @@ using i8 = std::int8_t;
 using i16 = std::int16_t;
 using i32 = std::int32_t;
 using i64 = std::int64_t;
+
+using f32 = float;
+static_assert(std::numeric_limits<f32>::is_iec559 && sizeof(f32) == 4);
+using f64 = double;
+static_assert(std::numeric_limits<f64>::is_iec559 && sizeof(f64) == 8);
+} // namespace primitives
+using namespace primitives;
 
 #if defined(__GNUC__)
 #define GREX_ALWAYS_INLINE __attribute__((always_inline))
@@ -69,11 +77,6 @@ template<std::size_t tBytes>
 using UnsignedInt = SizedIntegerTrait<tBytes>::Unsigned;
 template<std::size_t tBytes>
 using SignedInt = SizedIntegerTrait<tBytes>::Signed;
-
-using f32 = float;
-static_assert(std::numeric_limits<f32>::is_iec559 && sizeof(f32) == 4);
-using f64 = double;
-static_assert(std::numeric_limits<f64>::is_iec559 && sizeof(f64) == 8);
 
 template<typename T>
 concept Vectorizable =

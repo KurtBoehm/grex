@@ -20,7 +20,7 @@
 
 namespace grex::backend {
 template<bool tZero>
-inline f32x4 expand(ValWrap<f32> x, IndexTag<4> /*tag*/, BoolTag<tZero> /*tag*/) {
+inline f32x4 expand(Scalar<f32> x, IndexTag<4> /*tag*/, BoolTag<tZero> /*tag*/) {
   if constexpr (!tZero) {
 #if defined(__GNUC__) && !defined(__clang__)
     __m128 retval;
@@ -35,7 +35,7 @@ inline f32x4 expand(ValWrap<f32> x, IndexTag<4> /*tag*/, BoolTag<tZero> /*tag*/)
   return {.r = _mm_set_ss(x.value)};
 }
 template<bool tZero>
-inline f64x2 expand(ValWrap<f64> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
+inline f64x2 expand(Scalar<f64> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
   if constexpr (!tZero) {
 #if defined(__GNUC__) && !defined(__clang__)
     __m128d retval;
@@ -53,7 +53,7 @@ inline f64x2 expand(ValWrap<f64> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/)
 template<Vectorizable T, bool tZero>
 requires(std::integral<T> && sizeof(T) <= 4)
 inline Vector<T, native_sizes<T>.front()>
-expand(ValWrap<T> x, IndexTag<native_sizes<T>.front()> /*tag*/, BoolTag<tZero> /*tag*/) {
+expand(Scalar<T> x, IndexTag<native_sizes<T>.front()> /*tag*/, BoolTag<tZero> /*tag*/) {
   // force zero extension
   using Unsigned = UnsignedOf<T>;
   return {.r = _mm_cvtsi32_si128(i32(Unsigned(x.value)))};
@@ -61,32 +61,32 @@ expand(ValWrap<T> x, IndexTag<native_sizes<T>.front()> /*tag*/, BoolTag<tZero> /
 // Integers with 64 bits: Cast to i64
 template<Vectorizable T, bool tZero>
 requires(std::integral<T> && sizeof(T) == 8)
-inline Vector<T, 2> expand(ValWrap<T> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
+inline Vector<T, 2> expand(Scalar<T> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
   return {.r = _mm_cvtsi64_si128(i64(x.value))};
 }
 
 // Sub-native: Delegate to the native version
 template<Vectorizable T, std::size_t tSize, bool tZero>
 requires(tSize < native_sizes<T>.front())
-inline VectorFor<T, tSize> expand(ValWrap<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
+inline VectorFor<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
   return VectorFor<T, tSize>{expand(x, index_tag<native_sizes<T>.front()>, zero)};
 }
 
 // Larger than the smallest native size: Merge with zero/undefined
 template<Vectorizable T, std::size_t tSize, bool tZero>
 requires(tSize > native_sizes<T>.front())
-inline VectorFor<T, tSize> expand(ValWrap<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
+inline VectorFor<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
   constexpr std::size_t half = tSize / 2;
   return expand(expand(x, index_tag<half>, zero), index_tag<tSize>, zero);
 }
 
 template<Vectorizable T, std::size_t tSize>
-inline VectorFor<T, tSize> expand_any(T x, IndexTag<tSize> size) {
-  return expand(ValWrap{x}, size, bool_tag<false>);
+inline VectorFor<T, tSize> expand_any(Scalar<T> x, IndexTag<tSize> size) {
+  return expand(x, size, bool_tag<false>);
 }
 template<Vectorizable T, std::size_t tSize>
-inline VectorFor<T, tSize> expand_zero(T x, IndexTag<tSize> size) {
-  return expand(ValWrap{x}, size, bool_tag<true>);
+inline VectorFor<T, tSize> expand_zero(Scalar<T> x, IndexTag<tSize> size) {
+  return expand(x, size, bool_tag<true>);
 }
 } // namespace grex::backend
 

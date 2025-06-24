@@ -75,6 +75,16 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
         }
       });
     }
+    if constexpr (std::floating_point<T>) {
+      fmt::print("sqrt\n");
+      v2v([]<typename TV>(TV a) {
+        if constexpr (grex::AnyVector<TV>) {
+          return grex::sqrt(a);
+        } else {
+          return std::sqrt(a);
+        }
+      });
+    }
     fmt::print("min\n");
     vv2v([]<typename TV>(TV a, TV b) {
       if constexpr (grex::AnyVector<TV>) {

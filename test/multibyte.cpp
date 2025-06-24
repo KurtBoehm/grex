@@ -10,11 +10,11 @@
 #include <limits>
 #include <random>
 
-#include "thesauros/ranges/iota.hpp"
 #include <fmt/base.h>
 #include <fmt/color.h>
 #include <pcg_extras.hpp>
 #include <thesauros/containers/multi-byte-integers.hpp>
+#include <thesauros/ranges/iota.hpp>
 #include <thesauros/utility/byte-integer.hpp>
 
 #include "grex/grex.hpp"

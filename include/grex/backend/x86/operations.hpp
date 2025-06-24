@@ -27,6 +27,7 @@
 #include "operations/set.hpp"
 #include "operations/shingle.hpp"
 #include "operations/split.hpp"
+#include "operations/sqrt.hpp"
 #include "operations/store.hpp"
 #include "operations/subnative.hpp"
 // IWYU pragma: end_exports

@@ -109,8 +109,17 @@ struct VectorChecker {
   }
 
   void check(bool verbose = true) const {
-    const bool same = static_apply<tSize>(
-      [&]<std::size_t... tIdxs>() { return (... && (vec[tIdxs] == ref[tIdxs])); });
+    const bool same = static_apply<tSize>([&]<std::size_t... tIdxs>() {
+      auto f = [&](std::size_t i) {
+        if constexpr (std::floating_point<T>) {
+          if (std::isnan(vec[i]) && std::isnan(ref[i])) {
+            return true;
+          }
+        }
+        return vec[i] == ref[i];
+      };
+      return (... && f(tIdxs));
+    });
     if (same) {
       if (verbose) {
         if constexpr (has_parent) {

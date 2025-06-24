@@ -89,10 +89,10 @@ struct Vector {
   explicit Vector(Backend v) : vec_(v) {}
 
   static Vector expanded_any(T x) {
-    return Vector{backend::expand_any(x, index_tag<tSize>)};
+    return Vector{backend::expand_any(backend::Scalar<T>{x}, index_tag<tSize>)};
   }
   static Vector expanded_zero(T x) {
-    return Vector{backend::expand_zero(x, index_tag<tSize>)};
+    return Vector{backend::expand_zero(backend::Scalar<T>{x}, index_tag<tSize>)};
   }
 
   static Vector load(const T* ptr) {
@@ -217,13 +217,13 @@ struct Vector {
     return Vector{backend::shingle_up(vec_)};
   }
   Vector shingle_up(Value front) const {
-    return Vector{backend::shingle_up(front, vec_)};
+    return Vector{backend::shingle_up(backend::Scalar<T>{front}, vec_)};
   }
   Vector shingle_down() const {
     return Vector{backend::shingle_down(vec_)};
   }
   Vector shingle_down(Value back) const {
-    return Vector{backend::shingle_down(vec_, back)};
+    return Vector{backend::shingle_down(vec_, backend::Scalar<T>{back})};
   }
 
   Backend backend() const {
@@ -245,6 +245,12 @@ requires(std::floating_point<T> || std::signed_integral<T>)
 inline Vector<T, tSize> abs(Vector<T, tSize> v) {
   return Vector<T, tSize>{backend::abs(v.backend())};
 }
+template<Vectorizable T, std::size_t tSize>
+requires(std::floating_point<T>)
+inline Vector<T, tSize> sqrt(Vector<T, tSize> v) {
+  return Vector<T, tSize>{backend::sqrt(v.backend())};
+}
+
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> min(Vector<T, tSize> a, Vector<T, tSize> b) {
   return Vector<T, tSize>{backend::min(a.backend(), b.backend())};
