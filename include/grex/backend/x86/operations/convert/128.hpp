@@ -95,7 +95,7 @@ namespace grex::backend {
   const auto m = _mm_setr_epi8(0, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1); \
   return SubVector<u8, 2, 16>{_mm_shuffle_epi8(v.r, m)};
 #else
-// i16→i8 on level 1: Mask out upper 8 bits and use a saturated cast
+// u16→u8 on level 1: Mask out upper 8 bits and use a saturated cast
 #define GREX_CVT_IMPL_u8_u16_8(...) \
   const auto r = _mm_packus_epi16(_mm_and_si128(v.r, _mm_set1_epi16(0xFF)), _mm_setzero_si128()); \
   return SubVector<u8, 8, 16>{r};

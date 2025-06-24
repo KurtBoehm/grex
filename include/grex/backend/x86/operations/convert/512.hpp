@@ -15,7 +15,7 @@
 #include "grex/backend/x86/operations/convert/base.hpp"
 #endif
 
-// AVX-512 includes intrinsics for everything except for (most instances of) truncation
+// AVX-512 includes intrinsics for everything except for small integers ↔ floating-point values
 
 namespace grex::backend {
 #if GREX_X86_64_LEVEL >= 4
@@ -36,7 +36,7 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_i64_i8_8 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_u64_u8_8 GREX_CVT_INTRINSIC_EPUI
 
-// Decreasing integer size: Truncation works the same for signed and unsigned types
+// Decreasing integer size
 #define GREX_CVT_IMPL_u8_u16_32 GREX_CVT_INTRINSIC_EPI
 #define GREX_CVT_IMPL_u16_u32_16 GREX_CVT_INTRINSIC_EPI
 #define GREX_CVT_IMPL_u32_u64_8 GREX_CVT_INTRINSIC_EPI

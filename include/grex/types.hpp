@@ -73,6 +73,14 @@ struct Mask {
 private:
   Backend mask_;
 };
+template<typename T>
+struct MaskTrait : public std::false_type {};
+template<Vectorizable T, std::size_t tSize>
+struct MaskTrait<Mask<T, tSize>> : public std::true_type {};
+template<typename T>
+concept AnyMask = MaskTrait<T>::value;
+template<typename T, std::size_t tSize>
+concept SizedMask = MaskTrait<T>::value && T::size == tSize;
 
 template<Vectorizable T, std::size_t tSize>
 struct Vector {
@@ -239,6 +247,8 @@ template<Vectorizable T, std::size_t tSize>
 struct VectorTrait<Vector<T, tSize>> : public std::true_type {};
 template<typename T>
 concept AnyVector = VectorTrait<T>::value;
+template<typename T, std::size_t tSize>
+concept SizedVector = VectorTrait<T>::value && T::size == tSize;
 
 template<Vectorizable T, std::size_t tSize>
 requires(std::floating_point<T> || std::signed_integral<T>)
