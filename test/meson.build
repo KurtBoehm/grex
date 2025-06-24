@@ -5,8 +5,9 @@ if ['gcc'].contains(options_sub.get_variable('compiler_id'))
 endif
 
 arches = x86_64_levels + ['native']
-pcg_dep = dependency('pcg-cpp')
 omp_dep = dependency('openmp')
+pcg_dep = dependency('pcg-cpp')
+thesauros_dep = dependency('thesauros')
 
 foreach name, parallel : {
   'componentwise': true,
@@ -15,10 +16,11 @@ foreach name, parallel : {
   'gather': false,
   'horizontal': true,
   'mem': true,
+  'multibyte': true,
   'set': true,
   'shingle': true,
 }
-  deps = [grex_dep, pcg_dep]
+  deps = [grex_dep, pcg_dep, thesauros_dep]
   if not parallel
     deps += [omp_dep]
   endif

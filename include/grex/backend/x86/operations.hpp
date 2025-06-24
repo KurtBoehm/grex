@@ -23,6 +23,7 @@
 #include "operations/mask-index.hpp"
 #include "operations/merge.hpp"
 #include "operations/minmax.hpp"
+#include "operations/multibyte.hpp"
 #include "operations/set.hpp"
 #include "operations/shingle.hpp"
 #include "operations/split.hpp"

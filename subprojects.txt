@@ -2,3 +2,4 @@ boost-preprocessor
 fmt
 options
 pcg-cpp
+thesauros

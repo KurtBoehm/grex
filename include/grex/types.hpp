@@ -105,6 +105,12 @@ struct Vector {
     return Vector{backend::load_part(ptr, num, type_tag<Backend>)};
   }
 
+  template<std::size_t tSrcBytes>
+  static Vector load_multibyte(const std::byte* data, IndexTag<tSrcBytes> src_bytes) {
+    const auto* raw = reinterpret_cast<const u8*>(data);
+    return Vector{backend::load_multibyte(raw, src_bytes, type_tag<Backend>)};
+  }
+
   static Vector indices() {
     return Vector{backend::indices(type_tag<Backend>)};
   }
