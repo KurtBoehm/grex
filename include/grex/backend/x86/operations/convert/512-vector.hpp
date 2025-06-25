@@ -4,14 +4,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_512_HPP
-#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_512_HPP
+#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_512_VECTOR_HPP
+#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_512_VECTOR_HPP
 
 #include "grex/backend/x86/instruction-sets.hpp"
 
 #if GREX_X86_64_LEVEL >= 4
-#include "grex/backend/x86/operations/convert/128.hpp"
-#include "grex/backend/x86/operations/convert/256.hpp"
+#include "grex/backend/x86/operations/convert/128-vector.hpp"
+#include "grex/backend/x86/operations/convert/256-vector.hpp"
 #include "grex/backend/x86/operations/convert/base.hpp"
 #endif
 
@@ -92,4 +92,4 @@ GREX_CVT_DEF_ALL(_mm512, 512)
 #endif
 } // namespace grex::backend
 
-#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_512_HPP
+#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_512_VECTOR_HPP

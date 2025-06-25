@@ -39,6 +39,11 @@ struct Mask {
     return Mask{backend::cutoff_mask(i, type_tag<Backend>)};
   }
 
+  template<Vectorizable TDst>
+  Mask<TDst, tSize> convert(TypeTag<TDst> /*tag*/ = {}) const {
+    return Mask<TDst, tSize>{backend::convert(mask_, type_tag<TDst>)};
+  }
+
   Mask operator!() const {
     return Mask{backend::logical_not(mask_)};
   }

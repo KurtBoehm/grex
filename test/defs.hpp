@@ -188,6 +188,11 @@ struct MaskChecker {
     };
   }
 
+  template<Vectorizable TDst>
+  MaskChecker<TDst, tSize> convert(TypeTag<TDst> tag = {}) const {
+    return MaskChecker<TDst, tSize>{mask.convert(tag), ref};
+  }
+
   void check(bool verbose = true) const {
     const bool same = static_apply<tSize>(
       [&]<std::size_t... tIdxs>() { return (... && (mask[tIdxs] == ref[tIdxs])); });

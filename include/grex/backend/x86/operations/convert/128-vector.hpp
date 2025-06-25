@@ -4,8 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_HPP
-#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_HPP
+#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_VECTOR_HPP
+#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_VECTOR_HPP
 
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
@@ -38,6 +38,17 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_i16_i8_8 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_i32_i16_4 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_i64_i32_2 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u16_u8_8 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u32_u16_4 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u64_u32_2 GREX_CVT_INTRINSIC_EPUI
+// Quadruple integer size
+#define GREX_CVT_IMPL_i32_i8_4 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u32_u8_4 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_i64_i16_2 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u64_u16_2 GREX_CVT_INTRINSIC_EPUI
+// Octuple integer size
+#define GREX_CVT_IMPL_i64_i8_2 GREX_CVT_INTRINSIC_EPUI
+#define GREX_CVT_IMPL_u64_u8_2 GREX_CVT_INTRINSIC_EPUI
 #else
 // i8→i16: unpacklo with itself, then srai to extend sign
 #define GREX_CVT_IMPL_i16_i8_8(...) \
@@ -50,7 +61,6 @@ namespace grex::backend {
 // i32→i64: unpacklo with sign mask computed using srai
 #define GREX_CVT_IMPL_i64_i32_2(...) \
   return {.r = _mm_unpacklo_epi32(v.registr(), _mm_srai_epi32(v.registr(), 31))};
-#endif
 #define GREX_CVT_IMPL_u16_u8_8 GREX_CVT_IMPL_Ux2
 #define GREX_CVT_IMPL_u32_u16_4 GREX_CVT_IMPL_Ux2
 #define GREX_CVT_IMPL_u64_u32_2 GREX_CVT_IMPL_Ux2
@@ -62,6 +72,7 @@ namespace grex::backend {
 // Octuple integer size
 #define GREX_CVT_IMPL_i64_i8_2 GREX_CVT_IMPL_HALFINCR
 #define GREX_CVT_IMPL_u64_u8_2 GREX_CVT_IMPL_HALFINCR
+#endif
 
 // Decreasing integer size: Truncation works the same for signed and unsigned types
 #if GREX_X86_64_LEVEL >= 4
@@ -100,12 +111,10 @@ namespace grex::backend {
   const auto r = _mm_packus_epi16(_mm_and_si128(v.r, _mm_set1_epi16(0xFF)), _mm_setzero_si128()); \
   return SubVector<u8, 8, 16>{r};
 // super-native variant
-#if GREX_X86_64_LEVEL == 1
 #define GREX_CVT_IMPL_u8_u16_16(...) \
   const auto m = _mm_set1_epi16(0xFF); \
   const auto r = _mm_packus_epi16(_mm_and_si128(v.lower.r, m), _mm_and_si128(v.upper.r, m)); \
   return u8x16{r};
-#endif
 #define GREX_CVT_IMPL_u16_u32_4(...) \
   /* lo = [u16(v[0]), u16(v[1]), -, ...] */ \
   const auto lo = _mm_shufflelo_epi16(v.r, 0b1000); \
@@ -129,8 +138,7 @@ namespace grex::backend {
   /* [u8(v[0]), u8(v[1]), u8(v[2]), u8(v[3]), 0, …, 0] as u8x16 */ \
   const auto r = _mm_packus_epi16(vu16, _mm_setzero_si128()); \
   return SubVector<u8, 4, 16>{r};
-// super-native variants
-#if GREX_X86_64_LEVEL == 1
+// super-native variants at level 1
 #define GREX_CVT_IMPL_u8_u32_8(...) \
   const __m128i mask = _mm_set1_epi32(0xFF); \
   const __m128i lu32 = _mm_and_si128(v.lower.r, mask); \
@@ -148,7 +156,6 @@ namespace grex::backend {
   const __m128i hu16 = _mm_packus_epi16(u32i2, u32i3); \
   const auto r = _mm_packus_epi16(lu16, hu16); \
   return u8x16{r};
-#endif
 // sub-native variant
 #define GREX_CVT_IMPL_u16_u64_2(...) \
   /* lo = [u32(v0), u32(v1), -, -] as u32x4 */ \
@@ -166,6 +173,15 @@ namespace grex::backend {
   /* [u8(v[0]), u8(v[1]), 0, …, 0] as u8x16 */ \
   return SubVector<u8, 2, 16>{_mm_packus_epi16(vu16, _mm_setzero_si128())};
 #endif
+// Super-native variant
+#define GREX_CVT_IMPL_i32_i64_4(DSTKIND, ...) \
+  /* [u32(v[0]), u32(v[1]), 0, 0] */ \
+  const __m128 sh = \
+    _mm_shuffle_ps(_mm_castsi128_ps(v.lower.r), _mm_castsi128_ps(v.upper.r), 0b1000'1000); \
+  return DSTKIND##32x4 {_mm_castps_si128(sh)};
+#define GREX_CVT_IMPL_i32_u64_4 GREX_CVT_IMPL_i32_i64_4
+#define GREX_CVT_IMPL_u32_i64_4 GREX_CVT_IMPL_i32_i64_4
+#define GREX_CVT_IMPL_u32_u64_4 GREX_CVT_IMPL_i32_i64_4
 
 // Floating-point conversion
 #define GREX_CVT_IMPL_f64_f32_2 GREX_CVT_INTRINSIC_EPU
@@ -377,6 +393,10 @@ GREX_CVT_SUPER(u, 8, u, 16, 16, _mm, 128)
 GREX_CVT_SUPER(u, 8, u, 32, 8, _mm, 128)
 GREX_CVT_SUPER(u, 8, u, 32, 16, _mm, 128)
 #endif
+GREX_CVT_SUPER(i, 32, i, 64, 4, _mm, 128)
+GREX_CVT_SUPER(i, 32, u, 64, 4, _mm, 128)
+GREX_CVT_SUPER(u, 32, i, 64, 4, _mm, 128)
+GREX_CVT_SUPER(u, 32, u, 64, 4, _mm, 128)
 } // namespace grex::backend
 
-#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_HPP
+#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_VECTOR_HPP

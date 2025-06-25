@@ -16,6 +16,7 @@
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
+#include "grex/backend/x86/operations/mask-convert.hpp"
 #include "grex/backend/x86/operations/merge.hpp"
 #include "grex/backend/x86/operations/split.hpp"
 #include "grex/base/defs.hpp"
@@ -52,6 +53,7 @@ namespace grex::backend {
   return convert(GREX_VECTOR_TYPE(i, 32, SIZE){vi32}, type_tag<DSTKIND##DSTBITS>);
 
 // Base macros
+// Vector
 #define GREX_CVT_IMPL(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, ...) \
   GREX_CVT_IMPL_##DSTKIND##DSTBITS##_##SRCKIND##SRCBITS##_##SIZE( \
     DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE __VA_OPT__(, ) __VA_ARGS__)
@@ -65,73 +67,91 @@ namespace grex::backend {
                                                    TypeTag<DSTKIND##DSTBITS>) { \
     GREX_CVT_IMPL(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE __VA_OPT__(, ) __VA_ARGS__) \
   }
+// Mask
+#define GREX_CVTMSK_IMPL(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, ...) \
+  GREX_CVTMSK_IMPL_##DSTBITS##_##SRCBITS##_##SIZE(DSTKIND, DSTBITS, SRCKIND, SRCBITS, \
+                                                  SIZE __VA_OPT__(, ) __VA_ARGS__)
+#define GREX_CVTMSK(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, ...) \
+  inline GREX_MASK_TYPE(DSTKIND, DSTBITS, SIZE) \
+    convert(GREX_MASK_TYPE(SRCKIND, SRCBITS, SIZE) m, TypeTag<DSTKIND##DSTBITS>) { \
+    GREX_CVTMSK_IMPL(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE __VA_OPT__(, ) __VA_ARGS__) \
+  }
+#define GREX_CVTMSK_SUPER(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, ...) \
+  inline MaskFor<DSTKIND##DSTBITS, SIZE> convert(MaskFor<SRCKIND##SRCBITS, SIZE> m, \
+                                                 TypeTag<DSTKIND##DSTBITS>) { \
+    GREX_CVTMSK_IMPL(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE __VA_OPT__(, ) __VA_ARGS__) \
+  }
 
-#define GREX_CVT_DEF_ALL(BITPREFIX, REGISTERBITS) \
+#define GREX_CVT_DEF_ALL_BASE(MACRO, BITPREFIX, REGISTERBITS) \
   /* Double integer size */ \
-  GREX_CVT(i, 16, i, 8, GREX_ELEMENTS(REGISTERBITS, 16), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 16, u, 8, GREX_ELEMENTS(REGISTERBITS, 16), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(i, 32, i, 16, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 32, u, 16, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(i, 64, i, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 64, u, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 16, i, 8, GREX_ELEMENTS(REGISTERBITS, 16), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 16, u, 8, GREX_ELEMENTS(REGISTERBITS, 16), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 32, i, 16, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 32, u, 16, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 64, i, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 64, u, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   /* Quadruple size */ \
-  GREX_CVT(i, 32, i, 8, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 32, u, 8, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(i, 64, i, 16, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 64, u, 16, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 32, i, 8, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 32, u, 8, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 64, i, 16, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 64, u, 16, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   /* Octuple size */ \
-  GREX_CVT(i, 64, i, 8, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 64, u, 8, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 64, i, 8, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 64, u, 8, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   /* Halve integer size */ \
-  GREX_CVT(u, 8, u, 16, GREX_ELEMENTS(REGISTERBITS, 16), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 16, u, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 32, u, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 8, u, 16, GREX_ELEMENTS(REGISTERBITS, 16), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 16, u, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 32, u, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   /* Quarter integer size */ \
-  GREX_CVT(u, 8, u, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 16, u, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 8, u, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 16, u, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   /* Divide integer size by eight */ \
-  GREX_CVT(u, 8, u, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 8, u, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   /* Floating-point conversions */ \
-  GREX_CVT(f, 64, f, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 32, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 64, f, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 32, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   /* Integer → floating-point */ \
   /* f64 */ \
-  GREX_CVT(f, 64, i, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 64, u, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 64, i, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 64, u, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 64, i, 16, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 64, u, 16, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 64, i, 8, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 64, u, 8, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 64, i, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 64, u, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 64, i, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 64, u, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 64, i, 16, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 64, u, 16, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 64, i, 8, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 64, u, 8, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   /* f32 */ \
-  GREX_CVT(f, 32, i, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 32, u, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 32, i, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 32, u, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 32, i, 16, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 32, u, 16, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 32, i, 8, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(f, 32, u, 8, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 32, i, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 32, u, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 32, i, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 32, u, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 32, i, 16, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 32, u, 16, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 32, i, 8, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(f, 32, u, 8, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
   /* Floating-point → integer */ \
   /* f64 */ \
-  GREX_CVT(i, 64, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 64, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(i, 32, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 32, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(i, 16, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 16, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(i, 8, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 8, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 64, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 64, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 32, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 32, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 16, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 16, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 8, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 8, f, 64, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   /* f32 */ \
-  GREX_CVT(i, 64, f, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 64, f, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(i, 32, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 32, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(i, 16, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 16, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(i, 8, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
-  GREX_CVT(u, 8, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS)
+  MACRO(i, 64, f, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 64, f, 32, GREX_ELEMENTS(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 32, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 32, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 16, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 16, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(i, 8, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
+  MACRO(u, 8, f, 32, GREX_ELEMENTS(REGISTERBITS, 32), BITPREFIX, REGISTERBITS)
+#define GREX_CVT_DEF_ALL(BITPREFIX, REGISTERBITS) \
+  GREX_CVT_DEF_ALL_BASE(GREX_CVT, BITPREFIX, REGISTERBITS)
+#define GREX_CVTMSK_DEF_ALL(BITPREFIX, REGISTERBITS) \
+  GREX_CVT_DEF_ALL_BASE(GREX_CVTMSK, BITPREFIX, REGISTERBITS)
 
 // Trivial no-op cases
 // Source and destination type identical
@@ -144,6 +164,12 @@ template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
 requires(std::integral<TDst> && std::integral<TSrc> && sizeof(TDst) == sizeof(TSrc))
 inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
   return {.r = v.r};
+}
+
+// Baseline for masks: Convert as signed integer
+template<AnyMask TMask, typename TDst>
+inline auto convert(TMask mask, TypeTag<TDst> /*tag*/) {
+  return vector2mask(convert(mask2vector(mask), type_tag<SignedInt<sizeof(TDst)>>), type_tag<TDst>);
 }
 
 // Integer to larger integer with different signedness: Increase size while retaining signedness,
@@ -199,6 +225,11 @@ requires(is_supernative<TDst, THalf::size * 2>)
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
   return {.lower = convert(v.lower, type_tag<TDst>), .upper = convert(v.upper, type_tag<TDst>)};
 }
+template<typename TDst, typename THalf>
+requires(is_supernative<TDst, THalf::size * 2>)
+inline MaskFor<TDst, THalf::size * 2> convert(SuperMask<THalf> v, TypeTag<TDst> /*tag*/) {
+  return {.lower = convert(v.lower, type_tag<TDst>), .upper = convert(v.upper, type_tag<TDst>)};
+}
 
 // Conversion between super-native and non-super-native
 // native → super-native: Split into halves and convert separately
@@ -221,12 +252,27 @@ inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<T
     .upper = convert(split(v, index_tag<1>), type_tag<TDst>),
   };
 }
-// Super-native → sub-native/native: Convert halves separately and merge
-// TODO Separate implementations for four-fold and eight-fold super-native vectors?!
+// Super-native → sub-native/native for non-integers: Convert halves separately and merge
+// TODO Separate implementations for four-fold and eight-fold super-native vectors?
 template<typename TDst, typename THalf>
-requires(!is_supernative<TDst, THalf::size * 2>)
+requires((!std::integral<TDst> || !std::integral<typename THalf::Value>) &&
+         !is_supernative<TDst, THalf::size * 2>)
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
   return merge(convert(v.lower, type_tag<TDst>), convert(v.upper, type_tag<TDst>));
+}
+// Super-native → sub-native/native for integers: Convert to next-smaller integer type, merge,
+// and continue
+// TODO Separate implementations for four-fold and eight-fold super-native vectors?
+template<typename TDst, typename THalf>
+requires(std::integral<TDst> && std::integral<typename THalf::Value> &&
+         !is_supernative<TDst, THalf::size * 2>)
+inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
+  using Src = THalf::Value;
+  static constexpr std::size_t tmp_bytes = sizeof(Src) / 2;
+  static constexpr bool tmp_signed = std::signed_integral<Src>;
+  using Tmp = std::conditional_t<tmp_signed, SignedInt<tmp_bytes>, UnsignedInt<tmp_bytes>>;
+  const auto tmp = merge(convert(v.lower, type_tag<Tmp>), convert(v.upper, type_tag<Tmp>));
+  return convert(tmp, type_tag<TDst>);
 }
 } // namespace grex::backend
 

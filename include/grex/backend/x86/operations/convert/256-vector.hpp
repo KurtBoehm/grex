@@ -4,11 +4,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_256_HPP
-#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_256_HPP
+#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_256_VECTOR_HPP
+#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_256_VECTOR_HPP
 
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/convert/128.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/convert/128-vector.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/convert/base.hpp"
 
 #if GREX_X86_64_LEVEL >= 3
@@ -308,4 +308,4 @@ GREX_CVT_SUPER(u, 16, u, 64, 8, _mm256, 256)
 #endif
 } // namespace grex::backend
 
-#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_256_HPP
+#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_256_VECTOR_HPP

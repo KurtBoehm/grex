@@ -41,39 +41,39 @@ struct SuperVector {
 template<Vectorizable T, std::size_t tSize>
 using VectorPair = SuperVector<Vector<T, tSize>>;
 
-enum struct VectorKind : u8 { none, native, subnative, supernative };
+enum struct SimdKind : u8 { none, native, subnative, supernative };
 template<typename T>
 struct AnyVectorTrait {
   static constexpr bool is_vector = false;
   static constexpr bool has_register = false;
-  static constexpr VectorKind kind = VectorKind::none;
+  static constexpr SimdKind kind = SimdKind::none;
 };
 template<Vectorizable T, std::size_t tSize>
 struct AnyVectorTrait<Vector<T, tSize>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = true;
-  static constexpr VectorKind kind = VectorKind::native;
+  static constexpr SimdKind kind = SimdKind::native;
 };
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 struct AnyVectorTrait<SubVector<T, tPart, tSize>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = true;
-  static constexpr VectorKind kind = VectorKind::subnative;
+  static constexpr SimdKind kind = SimdKind::subnative;
 };
 template<typename THalf>
 struct AnyVectorTrait<SuperVector<THalf>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = false;
-  static constexpr VectorKind kind = VectorKind::supernative;
+  static constexpr SimdKind kind = SimdKind::supernative;
 };
 template<typename T>
 concept AnyVector = AnyVectorTrait<T>::is_vector;
 template<typename T>
-concept AnyNativeVector = AnyVectorTrait<T>::kind == VectorKind::native;
+concept AnyNativeVector = AnyVectorTrait<T>::kind == SimdKind::native;
 template<typename T>
-concept AnySubNativeVector = AnyVectorTrait<T>::kind == VectorKind::subnative;
+concept AnySubNativeVector = AnyVectorTrait<T>::kind == SimdKind::subnative;
 template<typename T>
-concept AnySuperNativeVector = AnyVectorTrait<T>::kind == VectorKind::supernative;
+concept AnySuperNativeVector = AnyVectorTrait<T>::kind == SimdKind::supernative;
 
 template<Vectorizable T, std::size_t tSize>
 struct Mask;
@@ -81,6 +81,7 @@ template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 struct SubMask {
   using Full = Mask<T, tSize>;
   using Register = Full::Register;
+  using VecValue = T;
   static constexpr std::size_t size = tPart;
 
   Full full;
@@ -94,6 +95,7 @@ struct SubMask {
 };
 template<typename THalf>
 struct SuperMask {
+  using VecValue = THalf::VecValue;
   static constexpr std::size_t size = 2 * THalf::size;
 
   THalf lower;
@@ -101,6 +103,39 @@ struct SuperMask {
 };
 template<Vectorizable T, std::size_t tSize>
 using MaskPair = SuperMask<Mask<T, tSize>>;
+
+template<typename T>
+struct AnyMaskTrait {
+  static constexpr bool is_vector = false;
+  static constexpr bool has_register = false;
+  static constexpr SimdKind kind = SimdKind::none;
+};
+template<Vectorizable T, std::size_t tSize>
+struct AnyMaskTrait<Mask<T, tSize>> {
+  static constexpr bool is_vector = true;
+  static constexpr bool has_register = true;
+  static constexpr SimdKind kind = SimdKind::native;
+};
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+struct AnyMaskTrait<SubMask<T, tPart, tSize>> {
+  static constexpr bool is_vector = true;
+  static constexpr bool has_register = true;
+  static constexpr SimdKind kind = SimdKind::subnative;
+};
+template<typename THalf>
+struct AnyMaskTrait<SuperMask<THalf>> {
+  static constexpr bool is_vector = true;
+  static constexpr bool has_register = false;
+  static constexpr SimdKind kind = SimdKind::supernative;
+};
+template<typename T>
+concept AnyMask = AnyMaskTrait<T>::is_vector;
+template<typename T>
+concept AnyNativeMask = AnyMaskTrait<T>::kind == SimdKind::native;
+template<typename T>
+concept AnySubNativeMask = AnyMaskTrait<T>::kind == SimdKind::subnative;
+template<typename T>
+concept AnySuperNativeMask = AnyMaskTrait<T>::kind == SimdKind::supernative;
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_DEFS_HPP

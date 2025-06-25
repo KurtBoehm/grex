@@ -59,19 +59,22 @@ inline auto make_distribution() {
 
 template<grex::Vectorizable TSrc>
 void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
-  fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::text_style(fmt::emphasis::bold), "{}\n",
-             test::type_name<TSrc>());
   auto cvt = [&]<typename TDst>(grex::TypeTag<TDst> /*tag*/) {
-    fmt::print(fmt::fg(fmt::terminal_color::blue), "{}\n", test::type_name<TDst>());
+    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::text_style(fmt::emphasis::bold),
+               "{} → {}\n", test::type_name<TSrc>(), test::type_name<TDst>());
     auto op = [&]<std::size_t tSize>(grex::IndexTag<tSize> /*tag*/) {
+      fmt::print(fmt::fg(fmt::terminal_color::magenta), "{}\n", tSize);
       auto dist = make_distribution<TSrc, TDst>();
       auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+      auto bdst = std::uniform_int_distribution<grex::u8>(0, 1);
+      auto bval = [&](std::size_t /*dummy*/) { return bdst(rng) != 0; };
 
       for (std::size_t i = 0; i < repetitions; ++i) {
         grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
           test::VectorChecker<TSrc, tSize>{dval(tIdxs)...}
             .convert(grex::type_tag<TDst>)
             .check(false);
+          test::MaskChecker<TSrc, tSize>{bval(tIdxs)...}.convert(grex::type_tag<TDst>).check(false);
         });
       }
     };

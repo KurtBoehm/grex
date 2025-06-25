@@ -20,6 +20,7 @@
 #include "operations/horizontal-minmax.hpp"
 #include "operations/insert.hpp"
 #include "operations/load.hpp"
+#include "operations/mask-convert.hpp"
 #include "operations/mask-index.hpp"
 #include "operations/merge.hpp"
 #include "operations/minmax.hpp"
