@@ -7,14 +7,20 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_VECTOR_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_VECTOR_HPP
 
-#include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
+#include <immintrin.h>
+
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/convert/base.hpp"
-#include "grex/backend/x86/operations/extract.hpp" // IWYU pragma: keep
-#include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
-#include "grex/backend/x86/types.hpp" // IWYU pragma: keep
+
+#if GREX_X86_64_LEVEL == 1
+#include "grex/backend/x86/helpers.hpp"
+#endif
+#if GREX_X86_64_LEVEL < 4
+#include "grex/backend/defs.hpp"
+#include "grex/backend/x86/operations/extract.hpp"
+#include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
+#endif
 
 namespace grex::backend {
 // Increasing integer size

@@ -9,13 +9,15 @@
 
 #include <cstddef>
 
+#include <immintrin.h>
+
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/arithmetic.hpp" // IWYU pragma: keep
-#include "grex/backend/x86/operations/blend.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/arithmetic.hpp"
+#include "grex/backend/x86/operations/blend.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp" // IWYU pragma: keep
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 // AVX-512: Use intrinsics

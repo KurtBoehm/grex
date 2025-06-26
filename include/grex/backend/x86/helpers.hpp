@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_HELPERS_HPP
 #define INCLUDE_GREX_BACKEND_X86_HELPERS_HPP
 
+#include <cstddef> // IWYU pragma: keep
+
 #include <boost/preprocessor.hpp>
 
 #include "grex/backend/x86/instruction-sets.hpp"

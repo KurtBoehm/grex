@@ -9,6 +9,8 @@
 
 #include <cstddef>
 
+#include <immintrin.h>
+
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
@@ -21,30 +23,29 @@
 #endif
 
 namespace grex::backend {
+#define GREX_MERGE_WRAP(KIND, BITS, SIZE, IMPL) \
+  inline Vector<KIND##BITS, SIZE> merge(Vector<KIND##BITS, GREX_HALF(SIZE)> v0, \
+                                        Vector<KIND##BITS, GREX_HALF(SIZE)> v1) { \
+    return {.r = IMPL}; \
+  }
+
 // 128 bit: No merging
 #define GREX_MERGE_128(...)
 // 256 bit
-#define GREX_MERGE_256(KIND, BITS, SIZE, REGISTERBITS, REGISTERBITS2) \
-  GREX_CAT(_mm##REGISTERBITS##_set_, GREX_M_SUFFIX(KIND, BITS, REGISTERBITS2))(v1.r, v0.r)
+#define GREX_MERGE_256(KIND, BITS, SIZE) \
+  GREX_MERGE_WRAP(KIND, BITS, SIZE, \
+                  GREX_CAT(_mm256_set_, GREX_M_SUFFIX(KIND, BITS, 128))(v1.r, v0.r))
 // 512 bit
 #define GREX_MERGE_512_f32 _mm512_insertf32x8(_mm512_castps256_ps512(v0.r), v1.r, 1)
 #define GREX_MERGE_512_f64 _mm512_insertf64x4(_mm512_castpd256_pd512(v0.r), v1.r, 1)
 #define GREX_MERGE_512_f(BITS) GREX_MERGE_512_f##BITS
 #define GREX_MERGE_512_i(BITS) _mm512_inserti64x4(_mm512_castsi256_si512(v0.r), v1.r, 1)
 #define GREX_MERGE_512_u(BITS) _mm512_inserti64x4(_mm512_castsi256_si512(v0.r), v1.r, 1)
-#define GREX_MERGE_512(KIND, BITS, ...) GREX_MERGE_512_##KIND(BITS)
+#define GREX_MERGE_512(KIND, BITS, SIZE) \
+  GREX_MERGE_WRAP(KIND, BITS, SIZE, GREX_MERGE_512_##KIND(BITS))
 
-#define GREX_MERGE_IMPL(KIND, BITS, SIZE, IMPL) \
-  BOOST_PP_REMOVE_PARENS( \
-    BOOST_PP_IF(BOOST_PP_CHECK_EMPTY(IMPL), (), \
-                (inline Vector<KIND##BITS, SIZE> merge(Vector<KIND##BITS, GREX_HALF(SIZE)> v0, \
-                                                       Vector<KIND##BITS, GREX_HALF(SIZE)> v1) { \
-                  return {.r = IMPL}; \
-                })))
 #define GREX_MERGE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_MERGE_IMPL( \
-    KIND, BITS, SIZE, \
-    GREX_MERGE_##REGISTERBITS(KIND, BITS, BITPREFIX, REGISTERBITS, GREX_HALF(REGISTERBITS)))
+  GREX_MERGE_##REGISTERBITS(KIND, BITS, SIZE)
 
 #define GREX_MERGE_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_MERGE, REGISTERBITS, BITPREFIX, REGISTERBITS)
@@ -115,7 +116,7 @@ inline MaskFor<typename TMask::VecValue, TMask::size * 2> merge(TMask a, TMask b
   }
 }
 // Merge compact masks to super-native
-template<typename TMask>
+template<AnyMask TMask>
 requires(is_supernative<typename TMask::VecValue, TMask::size * 2>)
 inline SuperMask<TMask> merge(TMask a, TMask b) {
   return {.lower = a, .upper = b};

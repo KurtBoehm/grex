@@ -16,9 +16,9 @@
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/blend.hpp"
-#include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp" // IWYU pragma: keep
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 // Since the largest vector size is 64, signed comparisons can be used even with i8

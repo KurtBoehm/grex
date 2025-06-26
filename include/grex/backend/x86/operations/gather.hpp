@@ -22,6 +22,8 @@
 #include "grex/base/defs.hpp"
 
 #if GREX_X86_64_LEVEL >= 3
+#include <immintrin.h>
+
 #include "grex/backend/x86/operations/convert.hpp"
 #endif
 

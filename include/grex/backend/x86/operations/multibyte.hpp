@@ -10,15 +10,15 @@
 #include <array>
 #include <cstddef>
 
+#include <immintrin.h>
+
+#include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/load.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
-#if GREX_X86_64_LEVEL >= 2
-#include "grex/backend/choosers.hpp"
-#endif
 #if GREX_X86_64_LEVEL >= 3
 #include "grex/backend/x86/operations/set.hpp"
 #endif

@@ -7,15 +7,22 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_MASK_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_128_MASK_HPP
 
-#include "grex/backend/choosers.hpp"
-#include "grex/backend/defs.hpp"
+#include <immintrin.h>
+
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
+
+#if GREX_X86_64_LEVEL == 1
+#include "grex/backend/choosers.hpp"
 #include "grex/backend/x86/operations/convert/128-vector.hpp"
-#include "grex/backend/x86/operations/convert/base.hpp"
 #include "grex/backend/x86/operations/mask-convert.hpp"
 #include "grex/backend/x86/types.hpp"
+#endif
+#if GREX_X86_64_LEVEL < 4
+#include "grex/backend/defs.hpp"
+#include "grex/backend/x86/operations/convert/base.hpp"
 #include "grex/base/defs.hpp"
+#endif
 
 // Definitions for 128-bit masks below level 4
 

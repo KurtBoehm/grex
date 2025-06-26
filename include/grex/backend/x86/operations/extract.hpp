@@ -7,13 +7,15 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_EXTRACT_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_EXTRACT_HPP
 
-#include <array> // IWYU pragma: keep
+#include <array>
 #include <cstddef>
+
+#include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/store.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/store.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 

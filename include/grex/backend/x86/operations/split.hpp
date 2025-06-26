@@ -16,7 +16,7 @@
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp" // IWYU pragma: keep
-#include "grex/base/defs.hpp" // IWYU pragma: keep
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 // The lower half can always be extracted using a cast

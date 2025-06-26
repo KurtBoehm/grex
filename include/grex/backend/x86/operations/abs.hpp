@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_ABS_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_ABS_HPP
 
+#include <cstddef> // IWYU pragma: keep
+
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"

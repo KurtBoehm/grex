@@ -7,12 +7,14 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_256_VECTOR_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_256_VECTOR_HPP
 
+#include <immintrin.h>
+
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/convert/128-vector.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/convert/base.hpp"
 
 #if GREX_X86_64_LEVEL >= 3
 #include "grex/backend/defs.hpp"
+#include "grex/backend/x86/operations/convert/128-vector.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 #endif

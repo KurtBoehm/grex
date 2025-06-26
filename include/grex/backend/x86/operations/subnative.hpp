@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_SUBNATIVE_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SUBNATIVE_HPP
 
+#include <immintrin.h>
+
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"

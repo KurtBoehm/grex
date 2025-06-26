@@ -7,11 +7,13 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_AND_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_AND_HPP
 
+#include <immintrin.h>
+
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp" // IWYU pragma: keep
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 #define GREX_HAND_MASK_2 0x3U

@@ -9,7 +9,7 @@
 
 #include <cstddef>
 
-#include "grex/backend/active/types.hpp" // IWYU pragma: keep
+#include "grex/backend/active/instruction-sets.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/base/defs.hpp"
 

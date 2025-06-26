@@ -14,6 +14,8 @@
 #include <concepts>
 #include <cstddef>
 
+#include <immintrin.h>
+
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/base/defs.hpp"

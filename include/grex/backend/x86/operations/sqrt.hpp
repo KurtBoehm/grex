@@ -7,16 +7,13 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_SQRT_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SQRT_HPP
 
-#include <cstddef> // IWYU pragma: keep
-
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
-#include "grex/backend/x86/operations/arithmetic.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/expand-scalar.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp" // IWYU pragma: keep
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 #define GREX_SQRT_INSTRINSIC(KIND, BITS, BITPREFIX) \

@@ -18,7 +18,7 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp" // IWYU pragma: keep
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 // Define the very messy suffixes used by the set intrinsics

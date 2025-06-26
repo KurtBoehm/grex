@@ -15,10 +15,13 @@
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/bitwise.hpp" // IWYU pragma: keep
-#include "grex/backend/x86/operations/set.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp" // IWYU pragma: keep
+#include "grex/base/defs.hpp"
+
+#if GREX_X86_64_LEVEL < 4
+#include "grex/backend/x86/operations/bitwise.hpp"
+#include "grex/backend/x86/operations/set.hpp"
+#endif
 
 namespace grex::backend {
 #define GREX_CMP_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \

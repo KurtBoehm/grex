@@ -17,8 +17,11 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/operations/subnative.hpp"
-#include "grex/backend/x86/types.hpp" // IWYU pragma: keep
 #include "grex/base/defs.hpp"
+
+#if GREX_X86_64_LEVEL >= 3
+#include "grex/backend/x86/types.hpp"
+#endif
 
 namespace grex::backend {
 // unchanged size: no-op
