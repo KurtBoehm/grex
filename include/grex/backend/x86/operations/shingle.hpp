@@ -14,6 +14,7 @@
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/macros/base.hpp"
 #include "grex/backend/x86/operations/expand-scalar.hpp"
 #include "grex/backend/x86/operations/extract.hpp"
 #include "grex/backend/x86/operations/set.hpp"

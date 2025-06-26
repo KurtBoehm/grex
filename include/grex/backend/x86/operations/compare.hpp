@@ -9,12 +9,13 @@
 
 #include <cstddef>
 
-#include <boost/preprocessor.hpp>
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/decrement.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
@@ -84,7 +85,7 @@ namespace grex::backend {
 // u8/16/32 on level 1, u64 on level 2 and 3: Flip the “sign” bit and use the signed comparison.
 #define GREX_CMPLT_UFLIP(KIND, BITS, SIZE, BITPREFIX) \
   const auto signbits = \
-    broadcast(u##BITS{1} << u##BITS{BOOST_PP_DEC(BITS)}, type_tag<Vector<KIND##BITS, SIZE>>); \
+    broadcast(u##BITS{1} << u##BITS{GREX_DECR(BITS)}, type_tag<Vector<KIND##BITS, SIZE>>); \
   const auto a1 = bitwise_xor(a, signbits); \
   const auto b1 = bitwise_xor(b, signbits); \
   return {.r = GREX_CAT(BITPREFIX##_cmpgt_, GREX_EPI_SUFFIX(KIND, BITS))(b1.r, a1.r)};

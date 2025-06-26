@@ -9,7 +9,6 @@
 
 #include <cstddef>
 
-#include <boost/preprocessor.hpp>
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"

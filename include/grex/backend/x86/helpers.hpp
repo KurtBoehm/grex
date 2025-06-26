@@ -9,19 +9,8 @@
 
 #include <cstddef> // IWYU pragma: keep
 
-#include <boost/preprocessor.hpp>
-
 #include "grex/backend/x86/instruction-sets.hpp"
-
-#define GREX_NOOP GREX_KINDCAST_DUMMY
-#define GREX_IDENTITY(X) X
-#define GREX_CAT1(X0) X0
-#define GREX_CAT2(X0, X1) X0##X1
-#define GREX_CAT3(X0, X1, X2) X0##X1##X2
-#define GREX_CAT4(X0, X1, X2, X3) X0##X1##X2##X3
-#define GREX_CAT5(X0, X1, X2, X3, X4) X0##X1##X2##X3##X4
-#define GREX_CAT(...) BOOST_PP_CAT(GREX_CAT, BOOST_PP_VARIADIC_SIZE(__VA_ARGS__))(__VA_ARGS__)
-#define GREX_APPLY(MACRO, ...) MACRO(__VA_ARGS__)
+#include "grex/backend/x86/macros/base.hpp"
 
 #define GREX_DOUBLE_256 512
 #define GREX_DOUBLE_128 256

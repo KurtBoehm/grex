@@ -16,7 +16,9 @@
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/macros.hpp"
+#include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/conditional.hpp"
+#include "grex/backend/x86/macros/repeat.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
@@ -40,9 +42,9 @@ namespace grex::backend {
 #define GREX_SET_CAST_u(BITS, X) i##BITS(X)
 #define GREX_SET_CAST(KIND, BITS, X) GREX_SET_CAST_##KIND(BITS, X)
 // Helpers to define function arguments for the set-based operations
-#define GREX_SET_ARG(CNT, IDX, TYPE) BOOST_PP_COMMA_IF(IDX) TYPE v##IDX
-#define GREX_SET_VAL(CNT, IDX, KIND, BITS) GREX_SET_CAST(KIND, BITS, v##IDX) BOOST_PP_COMMA_IF(IDX)
-#define GREX_SET_NEGVAL(CNT, IDX, BITS) -i##BITS(v##IDX) BOOST_PP_COMMA_IF(IDX)
+#define GREX_SET_ARG(CNT, IDX, TYPE) GREX_COMMA_IF(IDX) TYPE v##IDX
+#define GREX_SET_VAL(CNT, IDX, KIND, BITS) GREX_SET_CAST(KIND, BITS, v##IDX) GREX_COMMA_IF(IDX)
+#define GREX_SET_NEGVAL(CNT, IDX, BITS) -i##BITS(v##IDX) GREX_COMMA_IF(IDX)
 // Define the messy undefined macros
 #define GREX_UNDEF_BASE(KIND, BITS, BITPREFIX, REGISTERBITS) \
   GREX_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))
@@ -56,8 +58,8 @@ namespace grex::backend {
 #define GREX_UNDEF(KIND, ...) GREX_UNDEF_##KIND(KIND, __VA_ARGS__)
 
 #define GREX_CMASK_SET_OP(CNT, IDX, TYPE) \
-  BOOST_PP_IF(IDX, |, BOOST_PP_EMPTY()) \
-  BOOST_PP_IF(IDX, (TYPE(v##IDX) << IDX##U), TYPE(v##IDX))
+  GREX_IF(IDX, |, GREX_EMPTY()) \
+  GREX_IF(IDX, (TYPE(v##IDX) << IDX##U), TYPE(v##IDX))
 #define GREX_CMASK_SET(SIZE, TYPE) GREX_REPEAT(SIZE, GREX_CMASK_SET_OP, TYPE)
 
 #define GREX_ONEMASK_2 0x3

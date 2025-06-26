@@ -11,6 +11,7 @@
 
 #include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/macros/base.hpp"
 
 #if GREX_X86_64_LEVEL == 1
 #include "grex/backend/choosers.hpp"

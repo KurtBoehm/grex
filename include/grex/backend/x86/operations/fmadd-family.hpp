@@ -16,6 +16,7 @@
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
 #if GREX_X86_64_LEVEL >= 3
+#include "grex/backend/x86/macros/base.hpp"
 #include "grex/backend/x86/operations/expand-scalar.hpp"
 #else
 #include "grex/backend/x86/operations/arithmetic.hpp"

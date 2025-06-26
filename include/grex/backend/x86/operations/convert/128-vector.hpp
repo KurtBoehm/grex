@@ -10,6 +10,7 @@
 #include <immintrin.h>
 
 #include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/macros/base.hpp"
 #include "grex/backend/x86/operations/convert/base.hpp"
 
 #if GREX_X86_64_LEVEL == 1
