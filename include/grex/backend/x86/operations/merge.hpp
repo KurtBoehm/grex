@@ -10,10 +10,15 @@
 #include <cstddef>
 
 #include "grex/backend/choosers.hpp"
-#include "grex/backend/defs.hpp" // IWYU pragma: keep
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
+#include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp" // IWYU pragma: keep
-#include "grex/base/defs.hpp" // IWYU pragma: keep
+#include "grex/base/defs.hpp"
+
+#if GREX_X86_64_LEVEL >= 4
+#include <climits>
+#endif
 
 namespace grex::backend {
 // 128 bit: No merging
@@ -90,6 +95,37 @@ template<typename THalf>
 inline SuperVector<SuperVector<THalf>> merge(SuperVector<THalf> a, SuperVector<THalf> b) {
   return {.lower = a, .upper = b};
 }
+
+#if GREX_X86_64_LEVEL >= 4
+// Merge compact masks to native/sub-native: Bit shift and logical or
+template<typename TMask>
+requires(!is_supernative<typename TMask::VecValue, TMask::size * 2>)
+inline MaskFor<typename TMask::VecValue, TMask::size * 2> merge(TMask a, TMask b) {
+  using Register = TMask::Register;
+  static constexpr std::size_t size = TMask::size;
+  static constexpr std::size_t rdigits = sizeof(Register) * CHAR_BIT;
+  using Out = MaskFor<typename TMask::VecValue, size * 2>;
+  using OutRegister = Out::Register;
+  if constexpr (size < rdigits) {
+    // Mask out the upper bits before merging
+    static constexpr auto mask = ~Register(Register(-1) << size);
+    return Out{OutRegister(OutRegister(a.registr() & mask) | (OutRegister(b.registr()) << size))};
+  } else {
+    return Out{OutRegister(OutRegister(a.registr()) | (OutRegister(b.registr()) << size))};
+  }
+}
+// Merge compact masks to super-native
+template<typename TMask>
+requires(is_supernative<typename TMask::VecValue, TMask::size * 2>)
+inline SuperMask<TMask> merge(TMask a, TMask b) {
+  return {.lower = a, .upper = b};
+}
+#else
+template<AnyMask TMask>
+inline MaskFor<typename TMask::VecValue, TMask::size * 2> merge(TMask a, TMask b) {
+  return vector2mask(merge(mask2vector(a), mask2vector(b)));
+}
+#endif
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_MERGE_HPP

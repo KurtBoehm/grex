@@ -36,7 +36,7 @@ namespace grex::backend {
   template<> \
   struct Mask<KIND##BITS, SIZE> { \
     using Register = GREX_SIZEMMASK(SIZE); \
-    using VecValue = KIND; \
+    using VecValue = KIND##BITS; \
     static constexpr std::size_t size = SIZE; \
     static constexpr std::size_t rbits = REGISTERBITS; \
 \

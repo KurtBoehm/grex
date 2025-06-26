@@ -7,6 +7,10 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_MASK_CONVERT_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_MASK_CONVERT_HPP
 
+// reinterpret-casts between signed integer vectors and masks → only defined for levels below 4
+#include "grex/backend/x86/instruction-sets.hpp"
+
+#if GREX_X86_64_LEVEL < 4
 #include <concepts>
 #include <cstddef>
 
@@ -49,5 +53,6 @@ inline MaskFor<TDst, 2 * THalf::size> vector2mask(SuperVector<THalf> m, TypeTag<
   return {.lower = vector2mask(m.lower, tag), .upper = vector2mask(m.upper, tag)};
 }
 } // namespace grex::backend
+#endif
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_MASK_CONVERT_HPP

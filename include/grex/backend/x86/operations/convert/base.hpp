@@ -16,6 +16,7 @@
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/helpers.hpp"
+#include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/mask-convert.hpp"
 #include "grex/backend/x86/operations/merge.hpp"
 #include "grex/backend/x86/operations/split.hpp"
@@ -166,11 +167,34 @@ inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/)
   return {.r = v.r};
 }
 
-// Baseline for masks: Convert as signed integer
+#if GREX_X86_64_LEVEL >= 4
+// Baseline for compact masks: Reinterpret
+template<AnyMask TMask, typename TDst>
+requires(!AnySuperNativeMask<TMask>)
+inline MaskFor<TDst, TMask::size> convert(TMask mask, TypeTag<TDst> tag) {
+  using Out = MaskFor<TDst, TMask::size>;
+  if constexpr (is_supernative<TDst, TMask::size>) {
+    return Out{
+      .lower = convert(split(mask, index_tag<0>), tag),
+      .upper = convert(split(mask, index_tag<1>), tag),
+    };
+  } else {
+    using OutRegister = Out::Register;
+    return Out{OutRegister(mask.registr())};
+  }
+}
+// Super-native to native/sub-native
+template<AnySuperNativeMask TMask, typename TDst>
+inline MaskFor<TDst, TMask::size> convert(TMask mask, TypeTag<TDst> tag) {
+  return merge(convert(mask.lower, tag), convert(mask.upper, tag));
+}
+#else
+// Baseline for broad masks: Convert as signed integer
 template<AnyMask TMask, typename TDst>
 inline auto convert(TMask mask, TypeTag<TDst> /*tag*/) {
   return vector2mask(convert(mask2vector(mask), type_tag<SignedInt<sizeof(TDst)>>), type_tag<TDst>);
 }
+#endif
 
 // Integer to larger integer with different signedness: Increase size while retaining signedness,
 // main condition: mixed signedness, increasing size
@@ -219,17 +243,19 @@ inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<T
   return Out{s.registr()};
 }
 
-// Conversion between super-native vectors: Work on the halves separately
+// Conversion between super-native vectors/masks: Work on the halves separately
 template<typename TDst, typename THalf>
 requires(is_supernative<TDst, THalf::size * 2>)
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
   return {.lower = convert(v.lower, type_tag<TDst>), .upper = convert(v.upper, type_tag<TDst>)};
 }
+#if GREX_X86_64_LEVEL < 4
 template<typename TDst, typename THalf>
 requires(is_supernative<TDst, THalf::size * 2>)
 inline MaskFor<TDst, THalf::size * 2> convert(SuperMask<THalf> v, TypeTag<TDst> /*tag*/) {
   return {.lower = convert(v.lower, type_tag<TDst>), .upper = convert(v.upper, type_tag<TDst>)};
 }
+#endif
 
 // Conversion between super-native and non-super-native
 // native → super-native: Split into halves and convert separately

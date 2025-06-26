@@ -17,6 +17,8 @@
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
+// Definitions for 128-bit masks below level 4
+
 namespace grex::backend {
 // Baseline: Delegate to signed integer casts
 #define GREX_CVTMSK_IMPL_INT(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
@@ -105,6 +107,7 @@ namespace grex::backend {
 #define GREX_CVTMSK_IMPL_8_64_2 GREX_CVTMSK_IMPL_HALFDECR
 
 // Zen 4 prefers unpacking to integer conversions while Tigerlake/Arrowlake do not care
+#if GREX_X86_64_LEVEL < 4
 // ×2
 GREX_CVTMSK(i, 16, i, 8, 8)
 GREX_CVTMSK(i, 32, i, 16, 4)
@@ -114,7 +117,8 @@ GREX_CVTMSK(i, 32, i, 8, 4)
 GREX_CVTMSK(i, 64, i, 16, 2)
 // ×8
 GREX_CVTMSK(i, 64, i, 8, 2)
-// super-native 128→256
+#endif
+// 256-bit super-native
 #if GREX_X86_64_LEVEL < 3
 // ×2
 GREX_CVTMSK(i, 16, i, 8, 16)
@@ -143,8 +147,7 @@ GREX_CVTMSK(i, 8, i, 32, 2) // sub
 GREX_CVTMSK(i, 16, i, 64, 2)
 // ÷8
 GREX_CVTMSK(i, 8, i, 64, 2)
-// 256-bit super-native
-#if GREX_X86_64_LEVEL < 3
+//// 256-bit super-native
 // ÷2
 GREX_CVTMSK(i, 8, i, 16, 16) // super
 GREX_CVTMSK(i, 16, i, 32, 8) // super
@@ -153,16 +156,13 @@ GREX_CVTMSK(i, 8, i, 32, 8) // super
 GREX_CVTMSK(i, 16, i, 64, 4) // super
 // ÷8
 GREX_CVTMSK(i, 8, i, 64, 4) // super
-#endif
-// 512-bit super-native
-#if GREX_X86_64_LEVEL < 4
+//// 512-bit super-native
 // ÷4
 GREX_CVTMSK(i, 8, i, 32, 16) // super
 GREX_CVTMSK(i, 16, i, 64, 8) // super
 // ÷8
 GREX_CVTMSK(i, 8, i, 64, 8) // super
-#endif
-// 1024-bit super-native
+//// 1024-bit super-native
 GREX_CVTMSK(i, 8, i, 64, 16) // super
 #endif
 } // namespace grex::backend
