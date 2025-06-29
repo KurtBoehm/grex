@@ -11,8 +11,8 @@
 
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
-#include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/math.hpp"
+#include "grex/backend/x86/macros/types.hpp"
 
 #if GREX_X86_64_LEVEL == 1
 #include "grex/backend/choosers.hpp"

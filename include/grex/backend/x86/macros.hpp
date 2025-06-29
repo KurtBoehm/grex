@@ -9,6 +9,7 @@
 #include "macros/intrinsics.hpp"
 #include "macros/math.hpp"
 #include "macros/repeat.hpp"
+#include "macros/types.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_BACKEND_X86_MACROS_HPP
