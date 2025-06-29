@@ -248,7 +248,7 @@ GREX_CMP_SUPER(compare_ge)
 // Mask equality
 // Broad masks: Compare 8-bit chunks
 
-#define GREX_MASKEQ_COMPACT(SIZE, BITPREFIX) GREX_CAT(_kxnor_mask, GREX_MMASKSIZE(SIZE))(a.r, b.r)
+#define GREX_MASKEQ_COMPACT(SIZE, BITPREFIX) GREX_CAT(_kxnor_mask, GREX_MAX(SIZE, 8))(a.r, b.r)
 #define GREX_MASKEQ_BROAD(SIZE, BITPREFIX) BITPREFIX##_cmpeq_epi8(a.r, b.r)
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_MASKEQ_IMPL GREX_MASKEQ_COMPACT

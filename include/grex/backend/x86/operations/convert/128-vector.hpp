@@ -35,10 +35,10 @@ namespace grex::backend {
   return {.r = _mm_unpacklo_epi##SRCBITS(v.registr(), _mm_setzero_si128())};
 // Recursive case for larger increases: Cast to the next smaller size first, then cast from there
 #define GREX_CVT_IMPL_HALFINCR(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  using Half = GREX_CAT(DSTKIND, GREX_HALVE(DSTBITS)); \
-  const __m128i half = \
-    convert(GREX_VECTOR_TYPE(SRCKIND, SRCBITS, GREX_DOUBLE(SIZE)){v.registr()}, type_tag<Half>).r; \
-  return convert(GREX_VECTOR_TYPE(DSTKIND, GREX_HALVE(DSTBITS), SIZE){half}, \
+  using Double = GREX_VECTOR_TYPE(SRCKIND, SRCBITS, GREX_MULTIPLY(SIZE, 2)); \
+  using Half = GREX_CAT(DSTKIND, GREX_DIVIDE(DSTBITS, 2)); \
+  const __m128i half = convert(Double{v.registr()}, type_tag<Half>).r; \
+  return convert(GREX_VECTOR_TYPE(DSTKIND, GREX_DIVIDE(DSTBITS, 2), SIZE){half}, \
                  type_tag<DSTKIND##DSTBITS>);
 #endif
 // Double integer size

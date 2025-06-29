@@ -34,12 +34,12 @@ inline TVec expand(TVec v, IndexTag<TVec::size> /*size*/, BoolTag<tZero> /*zero*
 
 // native → native: use cast/zext intrinsics
 #define GREX_EXPANDV_INTRINSIC(KIND, BITS, DSTSIZE, SRCRBITS, DSTRBITS) \
-  inline Vector<KIND##BITS, DSTSIZE> expand(Vector<KIND##BITS, GREX_ELEMENTS(SRCRBITS, BITS)> v, \
+  inline Vector<KIND##BITS, DSTSIZE> expand(Vector<KIND##BITS, GREX_DIVIDE(SRCRBITS, BITS)> v, \
                                             IndexTag<DSTSIZE>, BoolTag<false>) { \
     return {.r = GREX_CAT(GREX_BITPREFIX(DSTRBITS), _cast, GREX_SIR_SUFFIX(KIND, BITS, SRCRBITS), \
                           _, GREX_SIR_SUFFIX(KIND, BITS, DSTRBITS))(v.r)}; \
   } \
-  inline Vector<KIND##BITS, DSTSIZE> expand(Vector<KIND##BITS, GREX_ELEMENTS(SRCRBITS, BITS)> v, \
+  inline Vector<KIND##BITS, DSTSIZE> expand(Vector<KIND##BITS, GREX_DIVIDE(SRCRBITS, BITS)> v, \
                                             IndexTag<DSTSIZE>, BoolTag<true>) { \
     return {.r = GREX_CAT(GREX_BITPREFIX(DSTRBITS), _zext, GREX_SIR_SUFFIX(KIND, BITS, SRCRBITS), \
                           _, GREX_SIR_SUFFIX(KIND, BITS, DSTRBITS))(v.r)}; \

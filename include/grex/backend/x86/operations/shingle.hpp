@@ -31,7 +31,7 @@ namespace grex::backend {
 // the value is added through zero extension and a bit-wise OR
 #define GREX_ZUSHINGLE_SHIFT128(KIND, BITS, ...) \
   const __m128i ivec = GREX_KINDCAST(KIND, i, BITS, 128, v.r); \
-  return {.r = GREX_KINDCAST(i, KIND, BITS, 128, _mm_bslli_si128(ivec, GREX_BIT2BYTE(BITS)))};
+  return {.r = GREX_KINDCAST(i, KIND, BITS, 128, _mm_bslli_si128(ivec, GREX_DIVIDE(BITS, 8)))};
 #define GREX_VUSHINGLE_OR(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   const auto xval = expand_zero(front, index_tag<SIZE>).r; \
   const auto zval = GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, xval); \
@@ -40,12 +40,12 @@ namespace grex::backend {
   return {.r = GREX_KINDCAST(i, KIND, BITS, REGISTERBITS, merged)};
 #define GREX_ZDSHINGLE_SHIFT128(KIND, BITS, ...) \
   const __m128i ivec = GREX_KINDCAST(KIND, i, BITS, 128, v.r); \
-  return {.r = GREX_KINDCAST(i, KIND, BITS, 128, _mm_bsrli_si128(ivec, GREX_BIT2BYTE(BITS)))};
+  return {.r = GREX_KINDCAST(i, KIND, BITS, 128, _mm_bsrli_si128(ivec, GREX_DIVIDE(BITS, 8)))};
 
 // shingling downwards with value, 128 bits at level 2: using shift and insert
 #define GREX_VDSHINGLE_INSERT(KIND, BITS, SIZE, ...) \
   const __m128i ivec = GREX_KINDCAST(KIND, i, BITS, 128, v.r); \
-  const __m128i sh = _mm_bsrli_si128(ivec, GREX_BIT2BYTE(BITS)); \
+  const __m128i sh = _mm_bsrli_si128(ivec, GREX_DIVIDE(BITS, 8)); \
   return {.r = GREX_KINDCAST(i, KIND, BITS, 128, _mm_insert_epi##BITS(sh, back.value, SIZE - 1))};
 
 // 256-bit with AVX: shuffle the lower into the upper 128 bits and use alignr
@@ -56,7 +56,7 @@ namespace grex::backend {
   const __m256i hlo = _mm256_inserti128_si256(_mm256_setzero_si256(), lo, 1); \
   /* shift v up by one element in each half, shifting in 0 in the lower \
    * and v[n/2-1] in the upper half */ \
-  const __m256i alignr = _mm256_alignr_epi8(ivec, hlo, 16 - GREX_BIT2BYTE(BITS)); \
+  const __m256i alignr = _mm256_alignr_epi8(ivec, hlo, 16 - GREX_DIVIDE(BITS, 8)); \
   return {.r = GREX_KINDCAST(i, KIND, BITS, 256, alignr)};
 #define GREX_VUSHINGLE_ALIGNR_AVX(KIND, BITS, SIZE, ...) \
   const __m256i ivec = GREX_KINDCAST(KIND, i, BITS, 256, v.r); \
@@ -64,7 +64,7 @@ namespace grex::backend {
   const __m256i xval = _mm256_zextsi128_si256(GREX_KINDCAST(KIND, i, BITS, 128, xval128)); \
   /* the broadcast value in the lower, v[n/2:] in the upper half */ \
   const __m256i mix = _mm256_inserti128_si256(xval, _mm256_castsi256_si128(ivec), 1); \
-  const __m256i alignr = _mm256_alignr_epi8(ivec, mix, 16 - GREX_BIT2BYTE(BITS)); \
+  const __m256i alignr = _mm256_alignr_epi8(ivec, mix, 16 - GREX_DIVIDE(BITS, 8)); \
   return {.r = GREX_KINDCAST(i, KIND, BITS, 256, alignr)};
 #define GREX_ZDSHINGLE_ALIGNR_AVX(KIND, BITS, ...) \
   const __m256i ivec = GREX_KINDCAST(KIND, i, BITS, 256, v.r); \
@@ -72,7 +72,7 @@ namespace grex::backend {
   const __m256i zhi = _mm256_zextsi128_si256(_mm256_extracti128_si256(ivec, 1)); \
   /* shift v down by one element in each half, shifting in 0 in the upper \
    * and v[n/2] in the lower half */ \
-  const __m256i alignr = _mm256_alignr_epi8(zhi, ivec, GREX_BIT2BYTE(BITS)); \
+  const __m256i alignr = _mm256_alignr_epi8(zhi, ivec, GREX_DIVIDE(BITS, 8)); \
   return {.r = GREX_KINDCAST(i, KIND, BITS, 256, alignr)};
 #define GREX_VDSHINGLE_ALIGNR_AVX(KIND, BITS, SIZE, ...) \
   const __m256i ivec = GREX_KINDCAST(KIND, i, BITS, 256, v.r); \
@@ -80,7 +80,7 @@ namespace grex::backend {
   const auto xval256 = _mm256_castsi128_si256(GREX_KINDCAST(KIND, i, BITS, 128, xval128)); \
   /* v[n/2:] in the lower, the broadcast value in the upper half */ \
   const __m256i shin = _mm256_permute2x128_si256(ivec, xval256, 0x21); \
-  const __m256i alignr = _mm256_alignr_epi8(shin, ivec, GREX_BIT2BYTE(BITS)); \
+  const __m256i alignr = _mm256_alignr_epi8(shin, ivec, GREX_DIVIDE(BITS, 8)); \
   return {.r = GREX_KINDCAST(i, KIND, BITS, 256, alignr)};
 
 // AVX-512 with 32- or 64-bit values: Use alignr intrinsics
@@ -114,21 +114,21 @@ namespace grex::backend {
   /* [0]*16 + v[:48] → alr[i] = 0 if i < 16 else v[i-16] */ \
   const __m512i alr = _mm512_alignr_epi64(v.r, _mm512_setzero_si512(), 6); \
   /* [alr[15], *v[:15], alr[31], *v[16:31], alr[47], v[32:47], alr[63], v[48:63] = [0, *v[1:]] */ \
-  return {.r = _mm512_alignr_epi8(v.r, alr, 16 - GREX_BIT2BYTE(BITS))};
+  return {.r = _mm512_alignr_epi8(v.r, alr, 16 - GREX_DIVIDE(BITS, 8))};
 #define GREX_VUSHINGLE_DBLALIGN(KIND, BITS, SIZE, ...) \
   const __m512i xval = broadcast(front.value, type_tag<Vector<KIND##BITS, SIZE>>).r; \
   const __m512i alr = _mm512_alignr_epi64(v.r, xval, 6); \
-  return {.r = _mm512_alignr_epi8(v.r, alr, 16 - GREX_BIT2BYTE(BITS))};
+  return {.r = _mm512_alignr_epi8(v.r, alr, 16 - GREX_DIVIDE(BITS, 8))};
 #define GREX_ZDSHINGLE_DBLALIGN(KIND, BITS, ...) \
   /* the comments assume 8-bit integers, but the steps are completely analogous for 16 bits */ \
   /* v[16:] + [0]*16 → alr[i] = v[i+16] if i < 48 else 0 */ \
   const __m512i alr = _mm512_alignr_epi64(_mm512_setzero_si512(), v.r, 2); \
   /* [alr[15], *v[:15], alr[31], *v[16:31], alr[47], v[32:47], alr[63], v[48:63] = [0, *v[1:]] */ \
-  return {.r = _mm512_alignr_epi8(alr, v.r, GREX_BIT2BYTE(BITS))};
+  return {.r = _mm512_alignr_epi8(alr, v.r, GREX_DIVIDE(BITS, 8))};
 #define GREX_VDSHINGLE_DBLALIGN(KIND, BITS, SIZE, ...) \
   const __m512i xval = broadcast(back.value, type_tag<Vector<KIND##BITS, SIZE>>).r; \
   const __m512i alr = _mm512_alignr_epi64(xval, v.r, 2); \
-  return {.r = _mm512_alignr_epi8(alr, v.r, GREX_BIT2BYTE(BITS))};
+  return {.r = _mm512_alignr_epi8(alr, v.r, GREX_DIVIDE(BITS, 8))};
 
 // upwards shingle with a zero
 // 128 bit

@@ -88,7 +88,7 @@ namespace grex::backend {
     return (UMMASK(UMMASK(v.r) >> i) & 1U) != 0; \
   }
 #define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \
-  GREX_EXTRACT_MASK_IMPL(KIND, BITS, SIZE, GREX_CAT(u, GREX_MMASKSIZE(SIZE)))
+  GREX_EXTRACT_MASK_IMPL(KIND, BITS, SIZE, GREX_CAT(u, GREX_MAX(SIZE, 8)))
 #else
 // Pre-AVX-512, we extract the corresponding part of the vector and compare it to 0
 #define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \

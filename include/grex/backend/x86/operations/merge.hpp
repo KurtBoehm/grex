@@ -27,8 +27,8 @@
 
 namespace grex::backend {
 #define GREX_MERGE_WRAP(KIND, BITS, SIZE, IMPL) \
-  inline Vector<KIND##BITS, SIZE> merge(Vector<KIND##BITS, GREX_HALVE(SIZE)> v0, \
-                                        Vector<KIND##BITS, GREX_HALVE(SIZE)> v1) { \
+  inline Vector<KIND##BITS, SIZE> merge(Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v0, \
+                                        Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v1) { \
     return {.r = IMPL}; \
   }
 
@@ -62,14 +62,14 @@ GREX_FOREACH_X86_64_LEVEL(GREX_MERGE_ALL)
   return {.r = _mm_castsi128_ps( \
             _mm_unpacklo_epi64(_mm_castps_si128(v0.registr()), _mm_castps_si128(v1.registr())))};
 #define GREX_MERGE_i32x2(KIND, BITS, SIZE) \
-  return SubVector<KIND##BITS, SIZE, GREX_MINSIZE(BITS)>{ \
+  return SubVector<KIND##BITS, SIZE, GREX_DIVIDE(128, BITS)>{ \
     _mm_unpacklo_epi32(v0.registr(), v1.registr())};
 #define GREX_MERGE_i16x2(KIND, BITS, SIZE) \
-  return SubVector<KIND##BITS, SIZE, GREX_MINSIZE(BITS)>{ \
+  return SubVector<KIND##BITS, SIZE, GREX_DIVIDE(128, BITS)>{ \
     _mm_unpacklo_epi16(v0.registr(), v1.registr())};
 #define GREX_MERGE_SUB(KIND, BITS, SIZE, IMPL) \
-  inline VectorFor<KIND##BITS, SIZE> merge(VectorFor<KIND##BITS, GREX_HALVE(SIZE)> v0, \
-                                           VectorFor<KIND##BITS, GREX_HALVE(SIZE)> v1) { \
+  inline VectorFor<KIND##BITS, SIZE> merge(VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v0, \
+                                           VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v1) { \
     IMPL(KIND, BITS, SIZE) \
   }
 // 2×64

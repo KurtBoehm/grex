@@ -167,9 +167,9 @@ namespace grex::backend {
     store(dst, src); \
     return; \
   } \
-  if (size >= GREX_HALVE(SIZE)) { \
+  if (size >= GREX_DIVIDE(SIZE, 2)) { \
     store(dst, split(src, index_tag<0>)); \
-    store_part(dst + GREX_HALVE(SIZE), split(src, index_tag<1>), size - GREX_HALVE(SIZE)); \
+    store_part(dst + GREX_DIVIDE(SIZE, 2), split(src, index_tag<1>), size - GREX_DIVIDE(SIZE, 2)); \
   } else { \
     store_part(dst, split(src, index_tag<0>), size); \
   } \
@@ -205,7 +205,7 @@ GREX_FOREACH_X86_64_LEVEL(GREX_PARTSTORE_ALL)
 #define GREX_STORE_SUB_IMPL(NAME, KIND, BITS, PART, SIZE) \
   inline void NAME(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src) { \
     const __m128i r = GREX_KINDCAST(KIND, i, BITS, 128, src.full.r); \
-    GREX_CAT(_mm_storeu_si, GREX_PARTBITS(BITS, PART))(dst, r); \
+    GREX_CAT(_mm_storeu_si, GREX_MULTIPLY(BITS, PART))(dst, r); \
   }
 #define GREX_STORE_SUB(...) \
   GREX_STORE_SUB_IMPL(store, __VA_ARGS__) \

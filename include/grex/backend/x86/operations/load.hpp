@@ -121,13 +121,13 @@ namespace grex::backend {
   if (size >= SIZE) [[unlikely]] { \
     return load(ptr, type_tag<Vector<KIND##BITS, SIZE>>); \
   } \
-  if (size >= GREX_HALVE(SIZE)) { \
-    return merge(load(ptr, type_tag<Vector<KIND##BITS, GREX_HALVE(SIZE)>>), \
-                 load_part(ptr + GREX_HALVE(SIZE), size - GREX_HALVE(SIZE), \
-                           type_tag<Vector<KIND##BITS, GREX_HALVE(SIZE)>>)); \
+  if (size >= GREX_DIVIDE(SIZE, 2)) { \
+    return merge(load(ptr, type_tag<Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>), \
+                 load_part(ptr + GREX_DIVIDE(SIZE, 2), size - GREX_DIVIDE(SIZE, 2), \
+                           type_tag<Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>)); \
   } \
-  return merge(load_part(ptr, size, type_tag<Vector<KIND##BITS, GREX_HALVE(SIZE)>>), \
-               zeros(type_tag<Vector<KIND##BITS, GREX_HALVE(SIZE)>>));
+  return merge(load_part(ptr, size, type_tag<Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>), \
+               zeros(type_tag<Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>));
 // AVX-512: Intrinsics
 #define GREX_PARTLOAD_AVX512(KIND, BITS, SIZE, BITPREFIX) \
   return {.r = GREX_CAT(BITPREFIX##_maskz_loadu_, GREX_EPI_SUFFIX(KIND, BITS))( \
@@ -163,7 +163,7 @@ GREX_FOREACH_X86_64_LEVEL(GREX_PARTLOAD_ALL)
 #define GREX_LOAD_SUB_IMPL(NAME, KIND, BITS, PART, SIZE) \
   inline SubVector<KIND##BITS, PART, SIZE> NAME(const KIND##BITS* ptr, \
                                                 TypeTag<SubVector<KIND##BITS, PART, SIZE>>) { \
-    const __m128i r = GREX_CAT(_mm_loadu_si, GREX_PARTBITS(BITS, PART))(ptr); \
+    const __m128i r = GREX_CAT(_mm_loadu_si, GREX_MULTIPLY(BITS, PART))(ptr); \
     return SubVector<KIND##BITS, PART, SIZE>{GREX_KINDCAST(i, KIND, BITS, 128, r)}; \
   }
 #define GREX_LOAD_SUB(...) \

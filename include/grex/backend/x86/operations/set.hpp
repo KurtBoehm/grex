@@ -80,11 +80,11 @@ namespace grex::backend {
     return {.r = GREX_SIZEMMASK(SIZE)(GREX_ONEMASK_##SIZE)}; \
   } \
   inline Mask<KIND##BITS, SIZE> broadcast(bool value, TypeTag<Mask<KIND##BITS, SIZE>>) { \
-    return {.r = GREX_SIZEMMASK(SIZE)(-GREX_CAT(i, GREX_MMASKSIZE(SIZE))(value))}; \
+    return {.r = GREX_SIZEMMASK(SIZE)(-GREX_CAT(i, GREX_MAX(SIZE, 8))(value))}; \
   } \
   inline Mask<KIND##BITS, SIZE> set(TypeTag<Mask<KIND##BITS, SIZE>>, \
                                     GREX_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
-    return {.r = GREX_SIZEMMASK(SIZE)(GREX_CMASK_SET(SIZE, GREX_CAT(u, GREX_MMASKSIZE(SIZE))))}; \
+    return {.r = GREX_SIZEMMASK(SIZE)(GREX_CMASK_SET(SIZE, GREX_CAT(u, GREX_MAX(SIZE, 8))))}; \
   }
 #else
 #define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
