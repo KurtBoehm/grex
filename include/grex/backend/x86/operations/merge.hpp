@@ -37,7 +37,7 @@ namespace grex::backend {
 // 256 bit
 #define GREX_MERGE_256(KIND, BITS, SIZE) \
   GREX_MERGE_WRAP(KIND, BITS, SIZE, \
-                  GREX_CAT(_mm256_set_, GREX_M_SUFFIX(KIND, BITS, 128))(v1.r, v0.r))
+                  GREX_CAT(_mm256_set_, m128, GREX_REGISTER_SUFFIX(KIND, BITS))(v1.r, v0.r))
 // 512 bit
 #define GREX_MERGE_512_f32 _mm512_insertf32x8(_mm512_castps256_ps512(v0.r), v1.r, 1)
 #define GREX_MERGE_512_f64 _mm512_insertf64x4(_mm512_castpd256_pd512(v0.r), v1.r, 1)

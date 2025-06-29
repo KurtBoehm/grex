@@ -29,7 +29,7 @@ namespace grex::backend {
 #define GREX_CUTOFF_MASK_32 __mmask32(~(u64(-1) << i))
 #define GREX_CUTOFF_MASK_64 __mmask64((i < 64) ? ~(u64(-1) << i) : u64(-1))
 #define GREX_CUTOFF_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_CUTOFF_MASK_##SIZE
-#define GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_SIZEMMASK(SIZE)(u64{1} << i)
+#define GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_MMASK(SIZE)(u64{1} << i)
 #else
 #define GREX_INDEX_MASK_CMPGT(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMP) \
   BITPREFIX##_cmp##CMP##_epi##BITS(broadcast(i##BITS(i), type_tag<Vector<i##BITS, SIZE>>).r, \

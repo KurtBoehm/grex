@@ -22,6 +22,11 @@
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
+#define GREX_SPLIT_LETTER_f f
+#define GREX_SPLIT_LETTER_i i
+#define GREX_SPLIT_LETTER_u i
+#define GREX_SPLIT_LETTER(KIND) GREX_SPLIT_LETTER_##KIND
+
 #define GREX_SPLIT_WRAP(KIND, BITS, SIZE, HALF, IMPL) \
   inline Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)> split(Vector<KIND##BITS, SIZE> v, \
                                                         IndexTag<HALF>) { \
@@ -31,8 +36,8 @@ namespace grex::backend {
 // The lower half can always be extracted using a cast
 #define GREX_SPLIT_LOWER(KIND, BITS, SIZE, HALF, BITPREFIX, REGISTERBITS) \
   GREX_SPLIT_WRAP(KIND, BITS, SIZE, HALF, \
-                  GREX_CAT(BITPREFIX##_cast, GREX_REGISTER_SUFFIX(KIND, BITS, REGISTERBITS), _, \
-                           GREX_REGISTER_SUFFIX(KIND, BITS, GREX_DIVIDE(REGISTERBITS, 2)))(v.r))
+                  GREX_CAT(BITPREFIX##_cast, GREX_SIR_SUFFIX(KIND, BITS, REGISTERBITS), _, \
+                           GREX_SIR_SUFFIX(KIND, BITS, GREX_DIVIDE(REGISTERBITS, 2)))(v.r))
 
 // 128 bit: No splitting
 #define GREX_SPLIT_128_0(...)
@@ -41,7 +46,7 @@ namespace grex::backend {
 #define GREX_SPLIT_256_0 GREX_SPLIT_LOWER
 #define GREX_SPLIT_256_1(KIND, BITS, SIZE, HALF, ...) \
   GREX_SPLIT_WRAP(KIND, BITS, SIZE, HALF, \
-                  GREX_CAT(_mm256_extract, GREX_REGISTER_LETTER(KIND), 128_, \
+                  GREX_CAT(_mm256_extract, GREX_SPLIT_LETTER(KIND), 128_, \
                            GREX_SI_SUFFIX(KIND, BITS, 256))(v.r, 1))
 // 512 bit
 #define GREX_SPLIT_512_0 GREX_SPLIT_LOWER

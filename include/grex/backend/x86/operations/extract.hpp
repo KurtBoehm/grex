@@ -31,7 +31,7 @@ namespace grex::backend {
   return CONVERT;
 #define GREX_MASKZ_CMPR(KIND, BITS, SIZE, BITPREFIX) \
   GREX_CAT(BITPREFIX##_maskz_compress_, GREX_EPI_SUFFIX(KIND, BITS)) \
-  (GREX_SIZEMMASK(SIZE)(u64{1} << i), v.r)
+  (GREX_MMASK(SIZE)(u64{1} << i), v.r)
 
 // Define for floating-point types
 #if GREX_X86_64_LEVEL >= 4

@@ -13,6 +13,7 @@
 
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/macros/base.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 
@@ -36,7 +37,7 @@ namespace grex::backend {
 #define GREX_TYPES_MASK_COMPACT(KIND, BITS, SIZE, REGISTERBITS) \
   template<> \
   struct Mask<KIND##BITS, SIZE> { \
-    using Register = GREX_SIZEMMASK(SIZE); \
+    using Register = GREX_MMASK(SIZE); \
     using VecValue = KIND##BITS; \
     static constexpr std::size_t size = SIZE; \
     static constexpr std::size_t rbits = REGISTERBITS; \
@@ -59,7 +60,7 @@ namespace grex::backend {
 #define GREX_TYPES_IMPL(KIND, BITS, SIZE, REGISTERBITS) \
   template<> \
   struct Vector<KIND##BITS, SIZE> { \
-    using Register = GREX_REGISTER(KIND, BITS, REGISTERBITS); \
+    using Register = GREX_CAT(__m##REGISTERBITS, GREX_REGISTER_SUFFIX(KIND, BITS)); \
     using Value = KIND##BITS; \
     static constexpr std::size_t size = SIZE; \
 \

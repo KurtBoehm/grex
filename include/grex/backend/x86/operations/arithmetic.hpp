@@ -67,7 +67,7 @@ namespace grex::backend {
 #define GREX_MUL_INT8(KIND, BITS, SIZE, BITPREFIX) \
   GREX_MULLO_INT8_BASE(KIND, BITS, SIZE, BITPREFIX) \
   return {.r = \
-            BITPREFIX##_mask_mov_epi8(mulodd, GREX_SIZEMMASK(SIZE)(0x5555555555555555), muleven)};
+            BITPREFIX##_mask_mov_epi8(mulodd, GREX_MMASK(SIZE)(0x5555555555555555), muleven)};
 #else
 #define GREX_MUL_INT8(KIND, BITS, SIZE, BITPREFIX) \
   GREX_MULLO_INT8_BASE(KIND, BITS, SIZE, BITPREFIX) \
