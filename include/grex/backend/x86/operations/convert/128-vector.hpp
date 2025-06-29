@@ -11,10 +11,11 @@
 
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/math.hpp"
 #include "grex/backend/x86/operations/convert/base.hpp"
 
 #if GREX_X86_64_LEVEL == 1
-#include "grex/backend/x86/helpers.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
 #endif
 #if GREX_X86_64_LEVEL < 4
 #include "grex/backend/defs.hpp"
@@ -34,10 +35,10 @@ namespace grex::backend {
   return {.r = _mm_unpacklo_epi##SRCBITS(v.registr(), _mm_setzero_si128())};
 // Recursive case for larger increases: Cast to the next smaller size first, then cast from there
 #define GREX_CVT_IMPL_HALFINCR(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
-  using Half = GREX_CAT(DSTKIND, GREX_HALF(DSTBITS)); \
+  using Half = GREX_CAT(DSTKIND, GREX_HALVE(DSTBITS)); \
   const __m128i half = \
     convert(GREX_VECTOR_TYPE(SRCKIND, SRCBITS, GREX_DOUBLE(SIZE)){v.registr()}, type_tag<Half>).r; \
-  return convert(GREX_VECTOR_TYPE(DSTKIND, GREX_HALF(DSTBITS), SIZE){half}, \
+  return convert(GREX_VECTOR_TYPE(DSTKIND, GREX_HALVE(DSTBITS), SIZE){half}, \
                  type_tag<DSTKIND##DSTBITS>);
 #endif
 // Double integer size

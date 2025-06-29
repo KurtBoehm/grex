@@ -9,9 +9,10 @@
 
 #include <immintrin.h>
 
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/macros/math.hpp"
 
 #if GREX_X86_64_LEVEL == 1
 #include "grex/backend/choosers.hpp"
@@ -44,13 +45,13 @@ namespace grex::backend {
 // Recursive case for larger increases: Cast to the next smaller size first, then cast from there
 #define GREX_CVTMSK_IMPL_HALFINCR(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
   using TempMask = GREX_MASK_TYPE(SRCKIND, SRCBITS, GREX_DOUBLE(SIZE)); \
-  using Half = GREX_CAT(DSTKIND, GREX_HALF(DSTBITS)); \
+  using Half = GREX_CAT(DSTKIND, GREX_HALVE(DSTBITS)); \
   const __m128i half = convert(TempMask{m.registr()}, type_tag<Half>).r; \
-  return convert(GREX_MASK_TYPE(DSTKIND, GREX_HALF(DSTBITS), SIZE){half}, \
+  return convert(GREX_MASK_TYPE(DSTKIND, GREX_HALVE(DSTBITS), SIZE){half}, \
                  type_tag<DSTKIND##DSTBITS>);
 #define GREX_CVTMSK_IMPL_HALFINCR_SUPER(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
-  const __m128i half = convert(m, type_tag<GREX_CAT(DSTKIND, GREX_HALF(DSTBITS))>).r; \
-  return convert(GREX_MASK_TYPE(DSTKIND, GREX_HALF(DSTBITS), SIZE){half}, \
+  const __m128i half = convert(m, type_tag<GREX_CAT(DSTKIND, GREX_HALVE(DSTBITS))>).r; \
+  return convert(GREX_MASK_TYPE(DSTKIND, GREX_HALVE(DSTBITS), SIZE){half}, \
                  type_tag<DSTKIND##DSTBITS>);
 
 // Halving: Use packuswb
@@ -60,7 +61,7 @@ namespace grex::backend {
   return GREX_MASK_TYPE(DSTKIND, DSTBITS, SIZE){_mm_packs_epi16(m.lower.r, m.upper.r)};
 // Recursive case for larger decreases: Halve, then go on
 #define GREX_CVTMSK_IMPL_HALFDECR(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
-  using Half = GREX_CAT(SRCKIND, GREX_HALF(SRCBITS)); \
+  using Half = GREX_CAT(SRCKIND, GREX_HALVE(SRCBITS)); \
   const auto half = convert(m, type_tag<Half>); \
   return GREX_MASK_TYPE(DSTKIND, DSTBITS, \
                         SIZE){convert(half, type_tag<DSTKIND##DSTBITS>).registr()};

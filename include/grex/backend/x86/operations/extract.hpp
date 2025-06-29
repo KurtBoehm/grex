@@ -13,9 +13,10 @@
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/store.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
@@ -69,7 +70,7 @@ namespace grex::backend {
 
 // Merge vector implementations
 #define GREX_EXTRACT_VEC_f(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_EXTRACT_F##BITS(REGISTERBITS, BITPREFIX, BITS, SIZE, GREX_FP_LETTER(f##BITS))
+  GREX_EXTRACT_F##BITS(REGISTERBITS, BITPREFIX, BITS, SIZE, GREX_FP_LETTER(BITS))
 #define GREX_EXTRACT_VEC_i GERX_EXTRACT_INT_IMPL
 #define GREX_EXTRACT_VEC_u GERX_EXTRACT_INT_IMPL
 #define GREX_EXTRACT_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \

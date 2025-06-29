@@ -12,9 +12,10 @@
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
@@ -22,7 +23,7 @@ namespace grex::backend {
 // Floating-point
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_ABS_FP(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  return {.r = GREX_CAT(BITPREFIX##_range_, GREX_FP_SUFFIX(KIND##BITS))(v.r, v.r, 8)};
+  return {.r = GREX_CAT(BITPREFIX##_range_, GREX_FP_SUFFIX(BITS))(v.r, v.r, 8)};
 #else
 #define GREX_ABS_FP32(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   BITPREFIX##_castsi##REGISTERBITS##_ps(BITPREFIX##_set1_epi32(0x7FFFFFFF))
@@ -30,7 +31,7 @@ namespace grex::backend {
   BITPREFIX##_castsi##REGISTERBITS##_pd(BITPREFIX##_set1_epi64x(0x7FFFFFFFFFFFFFFF))
 #define GREX_ABS_FP(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   auto mask = GREX_ABS_FP##BITS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS); \
-  return {.r = GREX_CAT(BITPREFIX##_and_, GREX_FP_SUFFIX(KIND##BITS))(v.r, mask)};
+  return {.r = GREX_CAT(BITPREFIX##_and_, GREX_FP_SUFFIX(BITS))(v.r, mask)};
 #endif
 
 // Integer

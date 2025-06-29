@@ -10,9 +10,11 @@
 #include <cstddef>
 
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/macros/math.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
@@ -39,7 +41,7 @@ namespace grex::backend {
 #define GREX_VEC_INSERT_AVX512_FP(KIND, BITS, SIZE, BITPREFIX) \
   GREX_VEC_INSERT_AVX512_F##BITS##_##SIZE( \
     v.r, GREX_SIZEMMASK(SIZE)(GREX_CAT(u, GREX_MMASKSIZE(SIZE)){1} << index), \
-    GREX_CAT(_mm_set_s, GREX_FP_LETTER(KIND##BITS))(value))
+    GREX_CAT(_mm_set_s, GREX_FP_LETTER(BITS))(value))
 #define GREX_VEC_INSERT_AVX512_INT(KIND, BITS, SIZE, BITPREFIX) \
   BITPREFIX##_mask_set1_epi##BITS( \
     v.r, GREX_SIZEMMASK(SIZE)(GREX_CAT(u, GREX_MMASKSIZE(SIZE)){1} << index), \

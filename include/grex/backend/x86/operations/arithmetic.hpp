@@ -12,9 +12,10 @@
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
@@ -117,7 +118,7 @@ namespace grex::backend {
 #endif
 
 #define GREX_MUL_f(KIND, BITS, SIZE, BITPREFIX) \
-  return {.r = GREX_CAT(BITPREFIX##_mul_, GREX_FP_SUFFIX(KIND##BITS))(a.r, b.r)};
+  return {.r = GREX_CAT(BITPREFIX##_mul_, GREX_FP_SUFFIX(BITS))(a.r, b.r)};
 #define GREX_MUL_i(KIND, BITS, ...) GREX_MUL_INT##BITS(KIND, BITS, __VA_ARGS__)
 #define GREX_MUL_u(KIND, BITS, ...) GREX_MUL_INT##BITS(KIND, BITS, __VA_ARGS__)
 #define GREX_MUL(KIND, BITS, SIZE, BITPREFIX) \

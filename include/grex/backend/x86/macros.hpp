@@ -5,7 +5,9 @@
 #include "macros/base.hpp"
 #include "macros/bool-conversion.hpp"
 #include "macros/conditional.hpp"
-#include "macros/decrement.hpp"
+#include "macros/for-each.hpp"
+#include "macros/intrinsics.hpp"
+#include "macros/math.hpp"
 #include "macros/repeat.hpp"
 // IWYU pragma: end_exports
 

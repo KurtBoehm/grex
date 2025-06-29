@@ -10,8 +10,8 @@
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/operations/minmax.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep

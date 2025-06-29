@@ -12,9 +12,11 @@
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/macros/math.hpp"
 #include "grex/backend/x86/operations/insert.hpp"
 #include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
@@ -119,13 +121,13 @@ namespace grex::backend {
   if (size >= SIZE) [[unlikely]] { \
     return load(ptr, type_tag<Vector<KIND##BITS, SIZE>>); \
   } \
-  if (size >= GREX_HALF(SIZE)) { \
-    return merge(load(ptr, type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>), \
-                 load_part(ptr + GREX_HALF(SIZE), size - GREX_HALF(SIZE), \
-                           type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>)); \
+  if (size >= GREX_HALVE(SIZE)) { \
+    return merge(load(ptr, type_tag<Vector<KIND##BITS, GREX_HALVE(SIZE)>>), \
+                 load_part(ptr + GREX_HALVE(SIZE), size - GREX_HALVE(SIZE), \
+                           type_tag<Vector<KIND##BITS, GREX_HALVE(SIZE)>>)); \
   } \
-  return merge(load_part(ptr, size, type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>), \
-               zeros(type_tag<Vector<KIND##BITS, GREX_HALF(SIZE)>>));
+  return merge(load_part(ptr, size, type_tag<Vector<KIND##BITS, GREX_HALVE(SIZE)>>), \
+               zeros(type_tag<Vector<KIND##BITS, GREX_HALVE(SIZE)>>));
 // AVX-512: Intrinsics
 #define GREX_PARTLOAD_AVX512(KIND, BITS, SIZE, BITPREFIX) \
   return {.r = GREX_CAT(BITPREFIX##_maskz_loadu_, GREX_EPI_SUFFIX(KIND, BITS))( \

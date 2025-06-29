@@ -13,9 +13,10 @@
 
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/macros/math.hpp"
 #include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/operations/subnative.hpp"
 #include "grex/base/defs.hpp"

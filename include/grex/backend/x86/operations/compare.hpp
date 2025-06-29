@@ -12,10 +12,11 @@
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
-#include "grex/backend/x86/macros/decrement.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/macros/math.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
@@ -70,7 +71,7 @@ namespace grex::backend {
 // Inequality: Separate cmpneq intrinsic only for f, negated equality for i and u
 #define GREX_CMPNEQ_f(BITS, BITPREFIX, REGISTERBITS) \
   return {.r = GREX_KINDCAST(f, i, BITS, REGISTERBITS, \
-                             GREX_CAT(BITPREFIX##_cmpneq_, GREX_FP_SUFFIX(f##BITS))(a.r, b.r))};
+                             GREX_CAT(BITPREFIX##_cmpneq_, GREX_FP_SUFFIX(BITS))(a.r, b.r))};
 #define GREX_CMPNEQ_i(...) return logical_not(compare_eq(a, b));
 #define GREX_CMPNEQ_u(...) return logical_not(compare_eq(a, b));
 #define GREX_CMP_IMPL_BASE_cmpneq(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
@@ -191,9 +192,8 @@ namespace grex::backend {
 #define GREX_CMP_IMPL_128 GREX_CMP_IMPL_BASE
 // AVX/AVX2 definitions
 #define GREX_CMP_IMPL_256f(BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
-  return {.r = \
-            GREX_KINDCAST(f, i, BITS, REGISTERBITS, \
-                          GREX_CAT(BITPREFIX##_cmp_, GREX_FP_SUFFIX(f##BITS))(a.r, b.r, CMPIDX))};
+  return {.r = GREX_KINDCAST(f, i, BITS, REGISTERBITS, \
+                             GREX_CAT(BITPREFIX##_cmp_, GREX_FP_SUFFIX(BITS))(a.r, b.r, CMPIDX))};
 #define GREX_CMP_IMPL_256i(...) GREX_CMP_IMPL_BASE(i, __VA_ARGS__)
 #define GREX_CMP_IMPL_256u(...) GREX_CMP_IMPL_BASE(u, __VA_ARGS__)
 #define GREX_CMP_IMPL_256(KIND, ...) GREX_CMP_IMPL_256##KIND(__VA_ARGS__)

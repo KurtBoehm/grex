@@ -13,9 +13,11 @@
 
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/macros/math.hpp"
 #include "grex/backend/x86/types.hpp" // IWYU pragma: keep
 #include "grex/base/defs.hpp"
 
@@ -25,8 +27,8 @@
 
 namespace grex::backend {
 #define GREX_MERGE_WRAP(KIND, BITS, SIZE, IMPL) \
-  inline Vector<KIND##BITS, SIZE> merge(Vector<KIND##BITS, GREX_HALF(SIZE)> v0, \
-                                        Vector<KIND##BITS, GREX_HALF(SIZE)> v1) { \
+  inline Vector<KIND##BITS, SIZE> merge(Vector<KIND##BITS, GREX_HALVE(SIZE)> v0, \
+                                        Vector<KIND##BITS, GREX_HALVE(SIZE)> v1) { \
     return {.r = IMPL}; \
   }
 
@@ -66,8 +68,8 @@ GREX_FOREACH_X86_64_LEVEL(GREX_MERGE_ALL)
   return SubVector<KIND##BITS, SIZE, GREX_MINSIZE(BITS)>{ \
     _mm_unpacklo_epi16(v0.registr(), v1.registr())};
 #define GREX_MERGE_SUB(KIND, BITS, SIZE, IMPL) \
-  inline VectorFor<KIND##BITS, SIZE> merge(VectorFor<KIND##BITS, GREX_HALF(SIZE)> v0, \
-                                           VectorFor<KIND##BITS, GREX_HALF(SIZE)> v1) { \
+  inline VectorFor<KIND##BITS, SIZE> merge(VectorFor<KIND##BITS, GREX_HALVE(SIZE)> v0, \
+                                           VectorFor<KIND##BITS, GREX_HALVE(SIZE)> v1) { \
     IMPL(KIND, BITS, SIZE) \
   }
 // 2×64

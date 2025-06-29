@@ -10,13 +10,14 @@
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
 #if GREX_X86_64_LEVEL >= 3
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/expand-scalar.hpp"
 #else
 #include "grex/backend/x86/operations/arithmetic.hpp"
@@ -30,8 +31,8 @@ namespace grex::backend {
   const auto va = expand_any(a, index_tag<SIZE>).r; \
   const auto vb = expand_any(b, index_tag<SIZE>).r; \
   const auto vc = expand_any(c, index_tag<SIZE>).r; \
-  const auto vout = GREX_CAT(_mm_##NAME##_s, GREX_FP_LETTER(KIND##BITS))(va, vb, vc); \
-  return {.value = GREX_CAT(_mm_cvts, GREX_FP_LETTER(KIND##BITS), _f##BITS)(vout)};
+  const auto vout = GREX_CAT(_mm_##NAME##_s, GREX_FP_LETTER(BITS))(va, vb, vc); \
+  return {.value = GREX_CAT(_mm_cvts, GREX_FP_LETTER(BITS), _f##BITS)(vout)};
 #else
 #define GREX_FMADDF_CALL_fmadd add(multiply(a, b), c)
 #define GREX_FMADDF_CALL_fmsub subtract(multiply(a, b), c)

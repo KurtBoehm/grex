@@ -13,15 +13,17 @@
 
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/macros/math.hpp"
 #include "grex/backend/x86/types.hpp" // IWYU pragma: keep
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
 #define GREX_SPLIT_WRAP(KIND, BITS, SIZE, HALF, IMPL) \
-  inline Vector<KIND##BITS, GREX_HALF(SIZE)> split(Vector<KIND##BITS, SIZE> v, IndexTag<HALF>) { \
+  inline Vector<KIND##BITS, GREX_HALVE(SIZE)> split(Vector<KIND##BITS, SIZE> v, IndexTag<HALF>) { \
     return {.r = IMPL}; \
   }
 
@@ -29,7 +31,7 @@ namespace grex::backend {
 #define GREX_SPLIT_LOWER(KIND, BITS, SIZE, HALF, BITPREFIX, REGISTERBITS) \
   GREX_SPLIT_WRAP(KIND, BITS, SIZE, HALF, \
                   GREX_CAT(BITPREFIX##_cast, GREX_REGISTER_SUFFIX(KIND, BITS, REGISTERBITS), _, \
-                           GREX_REGISTER_SUFFIX(KIND, BITS, GREX_HALF(REGISTERBITS)))(v.r))
+                           GREX_REGISTER_SUFFIX(KIND, BITS, GREX_HALVE(REGISTERBITS)))(v.r))
 
 // 128 bit: No splitting
 #define GREX_SPLIT_128_0(...)
@@ -71,9 +73,9 @@ GREX_FOREACH_X86_64_LEVEL(GREX_SPLIT_ALL)
 #define GREX_SPLIT_i16x2_0(KIND, BITS, SIZE) v.registr()
 #define GREX_SPLIT_i16x2_1(KIND, BITS, SIZE) _mm_shufflelo_epi16(v.registr(), 1)
 #define GREX_SPLIT_SUB(KIND, BITS, SIZE, HALF, IMPL) \
-  inline VectorFor<KIND##BITS, GREX_HALF(SIZE)> split(VectorFor<KIND##BITS, SIZE> v, \
+  inline VectorFor<KIND##BITS, GREX_HALVE(SIZE)> split(VectorFor<KIND##BITS, SIZE> v, \
                                                       IndexTag<HALF>) { \
-    return VectorFor<KIND##BITS, GREX_HALF(SIZE)>{IMPL##_##HALF(KIND, BITS, SIZE)}; \
+    return VectorFor<KIND##BITS, GREX_HALVE(SIZE)>{IMPL##_##HALF(KIND, BITS, SIZE)}; \
   }
 #define GREX_SPLIT_SUB_ALL(KIND, BITS, SIZE, IMPL) \
   GREX_SPLIT_SUB(KIND, BITS, SIZE, 0, IMPL) \

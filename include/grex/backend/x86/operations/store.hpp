@@ -13,9 +13,11 @@
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/helpers.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/macros/math.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
@@ -165,9 +167,9 @@ namespace grex::backend {
     store(dst, src); \
     return; \
   } \
-  if (size >= GREX_HALF(SIZE)) { \
+  if (size >= GREX_HALVE(SIZE)) { \
     store(dst, split(src, index_tag<0>)); \
-    store_part(dst + GREX_HALF(SIZE), split(src, index_tag<1>), size - GREX_HALF(SIZE)); \
+    store_part(dst + GREX_HALVE(SIZE), split(src, index_tag<1>), size - GREX_HALVE(SIZE)); \
   } else { \
     store_part(dst, split(src, index_tag<0>), size); \
   } \
