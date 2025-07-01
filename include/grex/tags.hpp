@@ -7,27 +7,28 @@
 #ifndef INCLUDE_GREX_TAGS_HPP
 #define INCLUDE_GREX_TAGS_HPP
 
+#include <concepts>
 #include <cstddef>
 
 #include "grex/base/defs.hpp"
 #include "grex/types.hpp"
 
-namespace grex::tag {
+namespace grex {
 /////////////////
 // scalar tags //
 /////////////////
 
 template<Vectorizable T>
-struct TypedScalar;
+struct TypedScalarTag;
 
-struct Scalar {
-  using Whole = Scalar;
+struct ScalarTag {
+  using Full = ScalarTag;
   static constexpr std::size_t size = 1;
 
   template<Vectorizable T>
-  [[nodiscard]] TypedScalar<T> instantiate(TypeTag<T> /*tag*/) const;
+  [[nodiscard]] TypedScalarTag<T> instantiate(TypeTag<T> /*tag*/) const;
   template<Vectorizable T>
-  [[nodiscard]] TypedScalar<T> cast(TypeTag<T> /*tag*/) const;
+  [[nodiscard]] TypedScalarTag<T> cast(TypeTag<T> /*tag*/) const;
 
   template<typename T>
   [[nodiscard]] constexpr T mask(T x) const {
@@ -36,16 +37,16 @@ struct Scalar {
 };
 
 template<Vectorizable T>
-struct TypedScalar : public Scalar {
+struct TypedScalarTag : public ScalarTag {
   using Value = T;
 };
 
 template<Vectorizable T>
-[[nodiscard]] TypedScalar<T> Scalar::instantiate(TypeTag<T> /*tag*/) const {
+[[nodiscard]] TypedScalarTag<T> ScalarTag::instantiate(TypeTag<T> /*tag*/) const {
   return {};
 }
 template<Vectorizable T>
-[[nodiscard]] TypedScalar<T> Scalar::cast(TypeTag<T> /*tag*/) const {
+[[nodiscard]] TypedScalarTag<T> ScalarTag::cast(TypeTag<T> /*tag*/) const {
   return {};
 }
 
@@ -54,17 +55,17 @@ template<Vectorizable T>
 ///////////////
 
 template<Vectorizable T, std::size_t tSize>
-struct TypedFull;
+struct TypedFullTag;
 
 template<std::size_t tSize>
-struct Full {
-  using Whole = Full;
+struct FullTag {
+  using Full = FullTag;
   static constexpr std::size_t size = tSize;
 
   template<Vectorizable T>
-  [[nodiscard]] TypedFull<T, tSize> instantiate(TypeTag<T> /*tag*/) const;
+  [[nodiscard]] TypedFullTag<T, tSize> instantiate(TypeTag<T> /*tag*/) const;
   template<Vectorizable T>
-  [[nodiscard]] TypedFull<T, tSize> cast(TypeTag<T> /*tag*/) const;
+  [[nodiscard]] TypedFullTag<T, tSize> cast(TypeTag<T> /*tag*/) const;
 
   template<SizedVector<size> TVec>
   [[nodiscard]] TVec mask(TVec v) const {
@@ -81,18 +82,18 @@ struct Full {
 };
 
 template<Vectorizable T, std::size_t tSize>
-struct TypedFull : public Full<tSize> {
+struct TypedFullTag : public FullTag<tSize> {
   using Value = T;
 };
 
 template<std::size_t tSize>
 template<Vectorizable T>
-[[nodiscard]] TypedFull<T, tSize> Full<tSize>::instantiate(TypeTag<T> /*tag*/) const {
+[[nodiscard]] TypedFullTag<T, tSize> FullTag<tSize>::instantiate(TypeTag<T> /*tag*/) const {
   return {};
 }
 template<std::size_t tSize>
 template<Vectorizable T>
-[[nodiscard]] TypedFull<T, tSize> Full<tSize>::cast(TypeTag<T> /*tag*/) const {
+[[nodiscard]] TypedFullTag<T, tSize> FullTag<tSize>::cast(TypeTag<T> /*tag*/) const {
   return {};
 }
 
@@ -101,15 +102,15 @@ template<Vectorizable T>
 ////////////////////////////////////
 
 template<Vectorizable T, std::size_t tSize>
-struct TypedMasked {
+struct TypedMaskedTag {
+  using Full = TypedFullTag<T, tSize>;
   using Value = T;
-  using Whole = TypedFull<T, tSize>;
   static constexpr std::size_t size = tSize;
 
-  explicit TypedMasked(Mask<Value, tSize> mask) : mask_(mask) {}
+  explicit TypedMaskedTag(Mask<Value, tSize> mask) : mask_(mask) {}
 
   template<Vectorizable TOther>
-  [[nodiscard]] TypedMasked<TOther, tSize> cast(TypeTag<TOther> /*tag*/) const {
+  [[nodiscard]] TypedMaskedTag<TOther, tSize> cast(TypeTag<TOther> /*tag*/) const {
     return {mask_};
   }
 
@@ -120,7 +121,7 @@ struct TypedMasked {
     return mask_ && m;
   }
 
-  [[nodiscard]] Mask<Value, tSize> mask() const {
+  [[nodiscard]] Mask<Value, tSize> mask(TypeTag<T> /*tag*/ = {}) const {
     return mask_;
   }
 
@@ -129,24 +130,28 @@ private:
 };
 
 template<std::size_t tSize>
-struct Part {
-  using Whole = Full<tSize>;
+struct PartTag {
+  using Full = FullTag<tSize>;
   static constexpr std::size_t size = tSize;
 
-  explicit constexpr Part(std::size_t part) : part_(part) {}
+  explicit constexpr PartTag(std::size_t part) : part_(part) {}
 
   template<typename T>
-  [[nodiscard]] TypedMasked<T, size> instantiate(TypeTag<T> /*tag*/) const {
-    return TypedMasked<T, size>{make_mask<Mask<T, size>>()};
+  [[nodiscard]] TypedMaskedTag<T, size> instantiate(TypeTag<T> /*tag*/ = {}) const {
+    return TypedMaskedTag<T, size>{mask<T>()};
   }
 
   template<SizedMask<size> TMask>
   [[nodiscard]] TMask mask(TMask m) const {
-    return m && make_mask<TMask>();
+    return m && mask<typename TMask::VecValue>();
   }
   template<SizedVector<size> TVec>
   [[nodiscard]] TVec mask(TVec v) const {
     return v.cutoff(part_);
+  }
+  template<Vectorizable T>
+  auto mask(TypeTag<T> /*tag*/ = {}) const {
+    return Mask<T, tSize>::cutoff_mask(part_);
   }
 
   [[nodiscard]] std::size_t part() const {
@@ -154,13 +159,147 @@ struct Part {
   }
 
 private:
-  template<typename TMask>
-  auto make_mask(TypeTag<TMask> /*tag*/ = {}) const {
-    return TMask::cutoff_mask(part_);
-  }
-
   std::size_t part_;
 };
-} // namespace grex::tag
+
+template<typename TTag>
+struct TagTraits {
+  static constexpr bool is_tag = false;
+  static constexpr bool is_vector_tag = false;
+  static constexpr bool is_full_tag = false;
+  static constexpr bool is_part_tag = false;
+};
+template<>
+struct TagTraits<ScalarTag> {
+  static constexpr bool is_tag = true;
+  static constexpr bool is_vector_tag = false;
+  static constexpr bool is_full_tag = true;
+  static constexpr bool is_part_tag = false;
+
+  using Value = void;
+  using Type = void;
+  template<typename T>
+  using AugmentedType = T;
+};
+template<typename T>
+struct TagTraits<TypedScalarTag<T>> {
+  static constexpr bool is_tag = true;
+  static constexpr bool is_vector_tag = false;
+  static constexpr bool is_full_tag = true;
+  static constexpr bool is_part_tag = false;
+
+  using Value = T;
+  using Type = T;
+  template<std::same_as<T>>
+  using AugmentedType = T;
+};
+template<std::size_t tSize>
+struct TagTraits<FullTag<tSize>> {
+  static constexpr bool is_tag = true;
+  static constexpr bool is_vector_tag = true;
+  static constexpr bool is_full_tag = true;
+  static constexpr bool is_part_tag = false;
+
+  using Value = void;
+  using Type = void;
+  template<typename T>
+  using AugmentedType = Vector<T, tSize>;
+};
+template<typename T, std::size_t tSize>
+struct TagTraits<TypedFullTag<T, tSize>> {
+  static constexpr bool is_tag = true;
+  static constexpr bool is_vector_tag = true;
+  static constexpr bool is_full_tag = true;
+  static constexpr bool is_part_tag = false;
+
+  using Value = T;
+  using Type = Vector<T, tSize>;
+  template<std::same_as<T>>
+  using AugmentedType = Vector<T, tSize>;
+};
+template<std::size_t tSize>
+struct TagTraits<PartTag<tSize>> {
+  static constexpr bool is_tag = true;
+  static constexpr bool is_vector_tag = true;
+  static constexpr bool is_full_tag = false;
+  static constexpr bool is_part_tag = true;
+
+  using Value = void;
+  using Type = void;
+  template<typename T>
+  using AugmentedType = Vector<T, tSize>;
+};
+template<typename T, std::size_t tSize>
+struct TagTraits<TypedMaskedTag<T, tSize>> {
+  static constexpr bool is_tag = true;
+  static constexpr bool is_vector_tag = true;
+  static constexpr bool is_full_tag = false;
+  static constexpr bool is_part_tag = false;
+
+  using Value = T;
+  using Type = Vector<T, tSize>;
+  template<std::same_as<T>>
+  using AugmentedType = Vector<T, tSize>;
+};
+
+template<typename TTag>
+concept AnyTag = TagTraits<TTag>::is_tag;
+
+template<typename TTag>
+concept AnyVectorTag = TagTraits<TTag>::is_vector_tag;
+template<typename TTag>
+concept AnyScalarTag = AnyTag<TTag> && !AnyVectorTag<TTag>;
+
+template<typename TTag>
+concept AnyFullTag = TagTraits<TTag>::is_full_tag;
+template<typename TTag>
+concept FullVectorTag = AnyVectorTag<TTag> && AnyFullTag<TTag>;
+template<typename TTag>
+concept PartialVectorTag = AnyVectorTag<TTag> && !AnyFullTag<TTag>;
+template<typename TTag>
+concept PartVectorTag = AnyVectorTag<TTag> && TagTraits<TTag>::is_part_tag;
+
+template<typename TTag, typename T>
+concept OptValuedTag = AnyTag<TTag> && (std::is_void_v<typename TagTraits<TTag>::Value> ||
+                                        std::same_as<T, typename TagTraits<TTag>::Value>);
+template<typename TTag, typename T>
+concept OptValuedScalarTag = AnyScalarTag<TTag> && OptValuedTag<TTag, T>;
+template<typename TTag, typename T>
+concept OptValuedVectorTag = AnyVectorTag<TTag> && OptValuedTag<TTag, T>;
+template<typename TTag, typename T>
+concept OptValuedFullVectorTag = FullVectorTag<TTag> && OptValuedTag<TTag, T>;
+template<typename TTag, typename T>
+concept OptValuedPartialVectorTag = PartialVectorTag<TTag> && OptValuedTag<TTag, T>;
+template<typename TTag, typename T>
+concept OptValuedPartVectorTag = PartVectorTag<TTag> && OptValuedTag<TTag, T>;
+
+template<typename TTag, typename T>
+concept OptTypedTag = AnyTag<TTag> && (std::is_void_v<typename TagTraits<TTag>::Type> ||
+                                       std::same_as<T, typename TagTraits<TTag>::Type>);
+template<typename TTag, typename T>
+concept OptTypedVectorTag = AnyVectorTag<TTag> && OptTypedTag<TTag, T>;
+template<typename TTag, typename T>
+concept OptTypedFullVectorTag = FullVectorTag<TTag> && OptTypedTag<TTag, T>;
+template<typename TTag, typename T>
+concept OptTypedPartialVectorTag = PartialVectorTag<TTag> && OptTypedTag<TTag, T>;
+template<typename TTag, typename T>
+concept OptTypedPartVectorTag = PartVectorTag<TTag> && OptTypedTag<TTag, T>;
+
+template<AnyTag TTag, Vectorizable TValue>
+using TagType = TagTraits<TTag>::template AugmentedType<TValue>;
+
+template<Vectorizable TValue, typename TTag>
+struct TagValueTrait;
+template<Vectorizable TValue, AnyScalarTag TTag>
+struct TagValueTrait<TValue, TTag> {
+  using Type = TValue;
+};
+template<Vectorizable TVector, AnyVectorTag TTag>
+struct TagValueTrait<TVector, TTag> {
+  using Type = TVector::Value;
+};
+template<Vectorizable TValue, AnyTag TTag>
+using TagValue = TagValueTrait<TValue, TTag>::Type;
+} // namespace grex
 
 #endif // INCLUDE_GREX_TAGS_HPP

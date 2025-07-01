@@ -87,24 +87,7 @@ struct VectorChecker {
   requires(has_parent)
       : vec{v}, ref{a}, parent{p} {}
 
-  static VectorChecker indices() {
-    return VectorChecker{
-      grex::Vector<T, tSize>::indices(),
-      static_apply<tSize>([]<std::size_t... tIdxs>() { return std::array{T(tIdxs)...}; }),
-    };
-  }
-
-  template<Vectorizable TDst>
-  VectorChecker<TDst, tSize, VectorChecker> convert(TypeTag<TDst> tag = {}) const {
-    return VectorChecker<TDst, tSize, VectorChecker>{
-      vec.convert(tag),
-      static_apply<tSize>(
-        [&]<std::size_t... tIdxs>() { return std::array{TDst(std::get<tIdxs>(ref))...}; }),
-      *this,
-    };
-  }
-
-  void print(fmt::text_style ts) const {
+  void print(fmt::text_style ts = {}) const {
     fmt::print(ts, "[{}, {}]", vec, ref);
   }
 
@@ -140,32 +123,6 @@ struct VectorChecker {
 };
 
 template<Vectorizable T, std::size_t tSize>
-VectorChecker<T, tSize> v2v_cw(auto op, VectorChecker<T, tSize> a) {
-  return VectorChecker<T, tSize>{
-    op(a.vec),
-    static_apply<tSize>([&]<std::size_t... tIdxs>() { return std::array{T(op(a.ref[tIdxs]))...}; }),
-  };
-}
-template<Vectorizable T, std::size_t tSize>
-VectorChecker<T, tSize> vv2v_cw(auto op, VectorChecker<T, tSize> a, VectorChecker<T, tSize> b) {
-  return VectorChecker<T, tSize>{
-    op(a.vec, b.vec),
-    static_apply<tSize>(
-      [&]<std::size_t... tIdxs>() { return std::array{T(op(a.ref[tIdxs], b.ref[tIdxs]))...}; }),
-  };
-}
-template<Vectorizable T, std::size_t tSize>
-VectorChecker<T, tSize> vvv2v_cw(auto op, VectorChecker<T, tSize> a, VectorChecker<T, tSize> b,
-                                 VectorChecker<T, tSize> c) {
-  return VectorChecker<T, tSize>{
-    op(a.vec, b.vec, c.vec),
-    static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      return std::array{T(op(a.ref[tIdxs], b.ref[tIdxs], c.ref[tIdxs]))...};
-    }),
-  };
-}
-
-template<Vectorizable T, std::size_t tSize>
 struct MaskChecker {
   grex::Mask<T, tSize> mask{};
   std::array<bool, tSize> ref{};
@@ -180,19 +137,6 @@ struct MaskChecker {
   explicit MaskChecker(Ts... values) : mask{values...}, ref{values...} {}
   MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
 
-  static MaskChecker ones() {
-    auto f = [](std::size_t /*dummy*/) { return true; };
-    return MaskChecker{
-      grex::Mask<T, tSize>::ones(),
-      static_apply<tSize>([&]<std::size_t... tIdxs>() { return std::array{f(tIdxs)...}; }),
-    };
-  }
-
-  template<Vectorizable TDst>
-  MaskChecker<TDst, tSize> convert(TypeTag<TDst> tag = {}) const {
-    return MaskChecker<TDst, tSize>{mask.convert(tag), ref};
-  }
-
   void check(bool verbose = true) const {
     const bool same = static_apply<tSize>(
       [&]<std::size_t... tIdxs>() { return (... && (mask[tIdxs] == ref[tIdxs])); });
@@ -203,40 +147,6 @@ struct MaskChecker {
 template<typename T>
 inline void check(T a, T b, bool verbose = true) {
   check_msg(a == b, a, b, verbose);
-}
-
-template<Vectorizable T, std::size_t tSize>
-MaskChecker<T, tSize> m2m_cw(auto op, MaskChecker<T, tSize> a) {
-  return MaskChecker<T, tSize>{
-    op(a.mask),
-    static_apply<tSize>([&]<std::size_t... tIdxs>() { return std::array{op(a.ref[tIdxs])...}; }),
-  };
-}
-template<Vectorizable T, std::size_t tSize>
-MaskChecker<T, tSize> mm2m_cw(auto op, MaskChecker<T, tSize> a, MaskChecker<T, tSize> b) {
-  return MaskChecker<T, tSize>{
-    op(a.mask, b.mask),
-    static_apply<tSize>(
-      [&]<std::size_t... tIdxs>() { return std::array{op(a.ref[tIdxs], b.ref[tIdxs])...}; }),
-  };
-}
-template<Vectorizable T, std::size_t tSize>
-VectorChecker<T, tSize> masked_vv2v_cw(auto mop, auto op, MaskChecker<T, tSize> m,
-                                       VectorChecker<T, tSize> a, VectorChecker<T, tSize> b) {
-  return VectorChecker<T, tSize>{
-    mop(m.mask, a.vec, b.vec),
-    static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      return std::array{T(m.ref[tIdxs] ? op(a.ref[tIdxs], b.ref[tIdxs]) : a.ref[tIdxs])...};
-    }),
-  };
-}
-template<Vectorizable T, std::size_t tSize>
-MaskChecker<T, tSize> vv2m_cw(auto op, VectorChecker<T, tSize> a, VectorChecker<T, tSize> b) {
-  return MaskChecker<T, tSize>{
-    op(a.vec, b.vec),
-    static_apply<tSize>(
-      [&]<std::size_t... tIdxs>() { return std::array{op(a.ref[tIdxs], b.ref[tIdxs])...}; }),
-  };
 }
 
 template<typename T>

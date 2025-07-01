@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <type_traits>
 #include <utility>
 
 namespace grex {
@@ -79,43 +80,55 @@ template<std::size_t tBytes>
 using SignedInt = SizedIntegerTrait<tBytes>::Signed;
 
 template<typename T>
-concept Vectorizable =
+concept IntVectorizable =
   std::same_as<T, u8> || std::same_as<T, i8> || std::same_as<T, u16> || std::same_as<T, i16> ||
-  std::same_as<T, u32> || std::same_as<T, i32> || std::same_as<T, u64> || std::same_as<T, i64> ||
-  std::same_as<T, f32> || std::same_as<T, f64>;
+  std::same_as<T, u32> || std::same_as<T, i32> || std::same_as<T, u64> || std::same_as<T, i64>;
+template<typename T>
+concept FpVectorizable = std::same_as<T, f32> || std::same_as<T, f64>;
+template<typename T>
+concept Vectorizable = IntVectorizable<T> || FpVectorizable<T>;
 
 template<typename T>
 struct TypeTag {};
 template<typename T>
 inline constexpr TypeTag<T> type_tag{};
 
-template<std::size_t tVal>
-struct IndexTag {
-  static constexpr std::size_t value = tVal;
-  constexpr operator std::size_t() const {
+template<typename T, T tVal>
+struct ValueTag {
+  using Value = T;
+  static constexpr T value = tVal;
+  constexpr operator T() const {
     return value;
   }
 };
-template<std::size_t tVal>
-inline constexpr IndexTag<tVal> index_tag;
-template<typename T>
-concept AnyIndexTag = requires {
-  { T::value } -> std::convertible_to<std::size_t>;
-};
+template<auto tValue>
+using AutoTag = ValueTag<std::decay_t<decltype(tValue)>, tValue>;
+template<std::size_t tValue>
+using IndexTag = AutoTag<tValue>;
+template<bool tValue>
+using BoolTag = AutoTag<tValue>;
 
-template<bool tVal>
-struct BoolTag {
-  static constexpr bool value = tVal;
-  constexpr operator bool() const {
-    return value;
-  }
+template<typename T, T tValue>
+inline constexpr ValueTag<T, tValue> value_tag{};
+template<auto tValue>
+inline constexpr AutoTag<tValue> auto_tag{};
+template<std::size_t tValue>
+inline constexpr IndexTag<tValue> index_tag{};
+template<bool tValue>
+inline constexpr BoolTag<tValue> bool_tag{};
+inline constexpr BoolTag<true> true_tag{};
+inline constexpr BoolTag<false> false_tag{};
+
+template<typename T, typename TRef>
+concept SameAsDecayed = std::same_as<std::decay_t<T>, std::decay_t<TRef>>;
+template<typename TTag, typename TVal>
+concept AnyValueTag = requires {
+  { TTag::value } -> SameAsDecayed<TVal>;
 };
-template<bool tVal>
-inline constexpr BoolTag<tVal> bool_tag;
-template<typename T>
-concept AnyBoolTag = requires {
-  { T::value } -> std::convertible_to<bool>;
-};
+template<typename TTag>
+concept AnyIndexTag = AnyValueTag<TTag, std::size_t>;
+template<typename TTag>
+concept AnyBoolTag = AnyValueTag<TTag, bool>;
 
 template<std::size_t tSize>
 constexpr decltype(auto) static_apply(auto f) {

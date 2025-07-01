@@ -5,6 +5,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <concepts>
 #include <cstddef>
@@ -71,10 +72,21 @@ void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
 
       for (std::size_t i = 0; i < repetitions; ++i) {
         grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
-          test::VectorChecker<TSrc, tSize>{dval(tIdxs)...}
-            .convert(grex::type_tag<TDst>)
-            .check(false);
-          test::MaskChecker<TSrc, tSize>{bval(tIdxs)...}.convert(grex::type_tag<TDst>).check(false);
+          {
+            using SrcCheck = test::VectorChecker<TSrc, tSize>;
+            SrcCheck src{dval(tIdxs)...};
+            test::VectorChecker<TDst, tSize, SrcCheck> dst{
+              src.vec.convert(grex::type_tag<TDst>),
+              std::array{TDst(std::get<tIdxs>(src.ref))...},
+              src,
+            };
+            dst.check(false);
+          }
+          {
+            test::MaskChecker<TSrc, tSize> src{bval(tIdxs)...};
+            test::MaskChecker<TDst, tSize> dst{src.mask.convert(grex::type_tag<TDst>), src.ref};
+            dst.check(false);
+          }
         });
       }
     };

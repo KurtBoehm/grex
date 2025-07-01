@@ -89,11 +89,11 @@ inline VectorFor<T, tDstSize> expand(SubVector<T, tPart, tSize> v, IndexTag<tDst
 
 template<AnyVector TVec, std::size_t tSize>
 inline VectorFor<typename TVec::Value, tSize> expand_any(TVec v, IndexTag<tSize> size) {
-  return expand(v, size, bool_tag<false>);
+  return expand(v, size, false_tag);
 }
 template<AnyVector TVec, std::size_t tSize>
 inline VectorFor<typename TVec::Value, tSize> expand_zero(TVec v, IndexTag<tSize> size) {
-  return expand(v, size, bool_tag<true>);
+  return expand(v, size, true_tag);
 }
 } // namespace grex::backend
 

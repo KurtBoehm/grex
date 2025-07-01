@@ -30,7 +30,7 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
     auto v2v = [](auto op) {
       grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
         VC a{T(T(tSize) - 2 * T(tIdxs))...};
-        auto checker = test::v2v_cw(op, a);
+        test::VectorChecker<T, tSize> checker{op(a.vec), std::array{T(op(a.ref[tIdxs]))...}};
         checker.check();
       });
     };
@@ -38,7 +38,10 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
       grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
         VC a{T(T(tSize) - 2 * T(tIdxs))...};
         VC b{T(tIdxs % 5)...};
-        auto checker = test::vv2v_cw(op, a, b);
+        test::VectorChecker<T, tSize> checker{
+          op(a.vec, b.vec),
+          std::array{T(op(a.ref[tIdxs], b.ref[tIdxs]))...},
+        };
         checker.check();
       });
     };
@@ -47,7 +50,10 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
         VC a{T(T(tSize) - 2 * T(tIdxs))...};
         VC b{T(tIdxs % 5)...};
         VC c{T(T(tIdxs) - 2 * T(tIdxs % 3))...};
-        auto checker = test::vvv2v_cw(op, a, b, c);
+        test::VectorChecker<T, tSize> checker{
+          op(a.vec, b.vec, c.vec),
+          std::array{T(op(a.ref[tIdxs], b.ref[tIdxs], c.ref[tIdxs]))...},
+        };
         checker.check();
       });
     };
@@ -142,7 +148,10 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
         MC m{((tIdxs % 5) % 2 == 1)...};
         VC a{T(T(tSize) - 2 * T(tIdxs))...};
         VC b{T(tIdxs % 5)...};
-        auto checker = test::masked_vv2v_cw(mop, op, m, a, b);
+        test::VectorChecker<T, tSize> checker{
+          mop(m.mask, a.vec, b.vec),
+          std::array{T(m.ref[tIdxs] ? op(a.ref[tIdxs], b.ref[tIdxs]) : a.ref[tIdxs])...},
+        };
         checker.check();
       });
     };
@@ -186,7 +195,10 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
       grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
         VC a{T(T(32 * (tIdxs % 7)) - T(tSize))...};
         VC b{T(tIdxs % 5)...};
-        auto checker = test::vv2m_cw(op, a, b);
+        test::MaskChecker<T, tSize> checker{
+          op(a.vec, b.vec),
+          std::array{op(a.ref[tIdxs], b.ref[tIdxs])...},
+        };
         checker.check();
       });
     };
@@ -215,7 +227,7 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
     auto m2m = [](auto op) {
       grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
         MC a{((tIdxs % 5) % 2 == 1)...};
-        auto checker = test::m2m_cw(op, a);
+        test::MaskChecker<T, tSize> checker{op(a.mask), std::array{op(a.ref[tIdxs])...}};
         checker.check();
       });
     };
@@ -223,7 +235,10 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
       grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
         MC a{((tIdxs % 5) % 2 == 1)...};
         MC b{(tIdxs % 3 != 1)...};
-        auto checker = test::mm2m_cw(op, a, b);
+        test::MaskChecker<T, tSize> checker{
+          op(a.mask, b.mask),
+          std::array{op(a.ref[tIdxs], b.ref[tIdxs])...},
+        };
         checker.check();
       });
     };

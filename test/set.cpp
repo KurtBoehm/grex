@@ -29,7 +29,10 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
     checker.check();
   }
   {
-    auto checker = VC::indices();
+    VC checker{
+      grex::Vector<T, tSize>::indices(),
+      static_apply<tSize>([]<std::size_t... tIdxs>() { return std::array{T(tIdxs)...}; }),
+    };
     checker.check();
   }
   grex::static_apply<tSize>([]<std::size_t... tIdxs>() {
@@ -55,7 +58,11 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
     checker.check();
   }
   {
-    auto checker = MC::ones();
+    auto f = [](std::size_t /*dummy*/) { return true; };
+    test::MaskChecker checker{
+      grex::Mask<T, tSize>::ones(),
+      static_apply<tSize>([&]<std::size_t... tIdxs>() { return std::array{f(tIdxs)...}; }),
+    };
     checker.check();
   }
   {

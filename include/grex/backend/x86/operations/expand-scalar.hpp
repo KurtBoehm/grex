@@ -82,11 +82,11 @@ inline VectorFor<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<
 
 template<Vectorizable T, std::size_t tSize>
 inline VectorFor<T, tSize> expand_any(Scalar<T> x, IndexTag<tSize> size) {
-  return expand(x, size, bool_tag<false>);
+  return expand(x, size, false_tag);
 }
 template<Vectorizable T, std::size_t tSize>
 inline VectorFor<T, tSize> expand_zero(Scalar<T> x, IndexTag<tSize> size) {
-  return expand(x, size, bool_tag<true>);
+  return expand(x, size, true_tag);
 }
 } // namespace grex::backend
 

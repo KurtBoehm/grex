@@ -78,14 +78,6 @@ struct Mask {
 private:
   Backend mask_;
 };
-template<typename T>
-struct MaskTrait : public std::false_type {};
-template<Vectorizable T, std::size_t tSize>
-struct MaskTrait<Mask<T, tSize>> : public std::true_type {};
-template<typename T>
-concept AnyMask = MaskTrait<T>::value;
-template<typename T, std::size_t tSize>
-concept SizedMask = MaskTrait<T>::value && T::size == tSize;
 
 template<Vectorizable T, std::size_t tSize>
 struct Vector {
@@ -246,14 +238,42 @@ struct Vector {
 private:
   Backend vec_;
 };
+
+// traits
+template<typename T>
+struct MaskTrait : public std::false_type {};
+template<Vectorizable T, std::size_t tSize>
+struct MaskTrait<Mask<T, tSize>> : public std::true_type {
+  using VectorFor = Vector<T, tSize>;
+};
 template<typename T>
 struct VectorTrait : public std::false_type {};
 template<Vectorizable T, std::size_t tSize>
-struct VectorTrait<Vector<T, tSize>> : public std::true_type {};
+struct VectorTrait<Vector<T, tSize>> : public std::true_type {
+  using MaskFor = Mask<T, tSize>;
+};
+
+// mask concepts
 template<typename T>
-concept AnyVector = VectorTrait<T>::value;
+concept AnyMask = MaskTrait<T>::value;
 template<typename T, std::size_t tSize>
-concept SizedVector = VectorTrait<T>::value && T::size == tSize;
+concept SizedMask = MaskTrait<T>::value && T::size == tSize;
+
+// vector concepts
+template<typename TVec>
+concept AnyVector = VectorTrait<TVec>::value;
+template<typename TVec, std::size_t tSize>
+concept SizedVector = VectorTrait<TVec>::value && TVec::size == tSize;
+template<typename TVec>
+concept IntVector = AnyVector<TVec> && IntVectorizable<typename TVec::Value>;
+template<typename TVec>
+concept FpVector = AnyVector<TVec> && FpVectorizable<typename TVec::Value>;
+
+// type mappings
+template<AnyVector TVec>
+using MaskFor = VectorTrait<TVec>::MaskFor;
+template<AnyMask TVec>
+using VectorFor = MaskTrait<TVec>::VectorFor;
 
 template<Vectorizable T, std::size_t tSize>
 requires(std::floating_point<T> || std::signed_integral<T>)
