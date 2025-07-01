@@ -15,7 +15,7 @@ namespace grex {
 #define GREX_MATH_FMA(NAME) \
   template<FpVectorizable T> \
   inline T NAME(T a, T b, T c) { \
-    return backend::NAME(backend::Scalar{a}, backend::Scalar{b}, backend::Scalar{c}); \
+    return backend::NAME(backend::Scalar{a}, backend::Scalar{b}, backend::Scalar{c}).value; \
   }
 GREX_MATH_FMA(fmadd)
 GREX_MATH_FMA(fmsub)
@@ -25,7 +25,7 @@ GREX_MATH_FMA(fnmsub)
 
 template<FpVectorizable T>
 inline T sqrt(T a) {
-  return backend::sqrt(backend::Scalar{a});
+  return backend::sqrt(backend::Scalar{a}).value;
 }
 } // namespace grex
 

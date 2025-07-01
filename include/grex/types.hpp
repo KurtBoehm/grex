@@ -18,6 +18,7 @@
 namespace grex {
 using backend::native_sizes;
 using backend::register_bits;
+using backend::has_fma;
 
 template<Vectorizable T, std::size_t tSize>
 struct Mask {

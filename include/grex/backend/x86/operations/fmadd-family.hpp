@@ -34,6 +34,8 @@ namespace grex::backend {
   const auto vc = expand_any(c, index_tag<SIZE>).r; \
   const auto vout = GREX_CAT(_mm_##NAME##_s, GREX_FP_LETTER(BITS))(va, vb, vc); \
   return {.value = GREX_CAT(_mm_cvts, GREX_FP_LETTER(BITS), _f##BITS)(vout)};
+
+inline constexpr bool has_fma = true;
 #else
 #define GREX_FMADDF_CALL_fmadd add(multiply(a, b), c)
 #define GREX_FMADDF_CALL_fmsub subtract(multiply(a, b), c)
@@ -45,6 +47,8 @@ namespace grex::backend {
 #define GREX_FMADDS_CALL_fnmadd return {.value = c.value - (a.value * b.value)};
 #define GREX_FMADDS_CALL_fnmsub return {.value = -(a.value * b.value + c.value)};
 #define GREX_FMADDS_CALL(NAME, ...) GREX_FMADDS_CALL_##NAME
+
+inline constexpr bool has_fma = false;
 #endif
 
 #define GREX_FMADDF(KIND, BITS, SIZE, BITPREFIX, NAME) \

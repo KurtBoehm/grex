@@ -165,7 +165,7 @@ inline TagType<TTag, T> constant(T value, TTag /*tag*/) {
 // abs
 template<Vectorizable T>
 inline T abs(T value, OptValuedScalarTag<T> auto /*tag*/) {
-  return std::abs(value);
+  return T(std::abs(value));
 }
 template<AnyVector TVec>
 inline TVec abs(TVec value, OptTypedVectorTag<TVec> auto /*tag*/) {

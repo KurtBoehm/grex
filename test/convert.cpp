@@ -67,8 +67,8 @@ void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
       fmt::print(fmt::fg(fmt::terminal_color::magenta), "{}\n", tSize);
       auto dist = make_distribution<TSrc, TDst>();
       auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
-      auto bdst = std::uniform_int_distribution<grex::u8>(0, 1);
-      auto bval = [&](std::size_t /*dummy*/) { return bdst(rng) != 0; };
+      auto bdst = std::uniform_int_distribution<int>(0, 1);
+      auto bval = [&](std::size_t /*dummy*/) { return bool(bdst(rng)); };
 
       for (std::size_t i = 0; i < repetitions; ++i) {
         grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
