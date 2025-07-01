@@ -12,6 +12,11 @@
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
+template<Vectorizable T>
+struct Scalar {
+  T value;
+};
+
 template<Vectorizable T, std::size_t tSize>
 struct Vector;
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>

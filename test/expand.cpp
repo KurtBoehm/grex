@@ -32,7 +32,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
   for (std::size_t i = 0; i < repetitions; ++i) {
     const T value = dist(rng);
     const Vec vector = Vec::expanded_any(value);
-    test::check(value, vector[0], false);
+    test::check("expanded_any", value, vector[0], false);
   }
   grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
     for (std::size_t i = 0; i < repetitions; ++i) {
@@ -41,7 +41,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
         Vec::expanded_zero(value),
         std::array{((tIdxs == 0) ? value : T{})...},
       };
-      checker.check(false);
+      checker.check("expanded_zero", false);
     }
   });
 
@@ -56,14 +56,15 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
           VC checker{dval(tIdxs)...};
           {
             const auto v = checker.vec.expand_any(grex::index_tag<tDstSize>);
-            test::check_msg((... && (v[tIdxs] == checker.ref[tIdxs])), v, checker.ref, false);
+            test::check_msg("expand_any", (... && (v[tIdxs] == checker.ref[tIdxs])), v, checker.ref,
+                            false);
           }
           {
             VDC dchecker{
               checker.vec.expand_zero(grex::index_tag<tDstSize>),
               {((tDstIdxs < tSize) ? checker.ref[tDstIdxs] : T{})...},
             };
-            dchecker.check(false);
+            dchecker.check("expand_zero", false);
           }
         }
       });

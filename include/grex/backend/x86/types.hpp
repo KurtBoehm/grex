@@ -79,10 +79,6 @@ namespace grex::backend {
 
 GREX_FOREACH_X86_64_LEVEL(GREX_TYPES_ALL)
 
-template<typename T>
-struct Scalar {
-  T value;
-};
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_TYPES_HPP

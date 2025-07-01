@@ -34,7 +34,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
           base.vec.shingle_up(),
           {((tIdxs == 0) ? T{} : base.ref[tIdxs - 1])...},
         };
-        checker.check(false);
+        checker.check("shingle_up zero", false);
       }
       {
         const T front = dist(rng);
@@ -42,7 +42,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
           base.vec.shingle_up(front),
           {((tIdxs == 0) ? front : base.ref[tIdxs - 1])...},
         };
-        checker.check(false);
+        checker.check("shingle_up value", false);
       }
       // shingle down
       {
@@ -50,7 +50,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
           base.vec.shingle_down(),
           {((tIdxs + 1 == tSize) ? T{} : base.ref[tIdxs + 1])...},
         };
-        checker.check(false);
+        checker.check("shingle_down zero", false);
       }
       {
         const T back = dist(rng);
@@ -58,7 +58,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
           base.vec.shingle_down(back),
           {((tIdxs + 1 == tSize) ? back : base.ref[tIdxs + 1])...},
         };
-        checker.check(false);
+        checker.check("shingle_down value", false);
       }
     }
   });

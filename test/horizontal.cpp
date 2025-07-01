@@ -27,7 +27,7 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
       for (std::size_t i = 0; i < tSize; ++i) {
         v += checker.ref[i];
       }
-      test::check(grex::horizontal_add(checker.vec), v);
+      test::check("horizontal_add", grex::horizontal_add(checker.vec), v);
     }
     {
       fmt::print("horizontal_min({})\n", checker.vec);
@@ -35,7 +35,7 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
       for (std::size_t i = 1; i < tSize; ++i) {
         v = std::min(v, checker.ref[i]);
       }
-      test::check(grex::horizontal_min(checker.vec), v);
+      test::check("horizontal_min", grex::horizontal_min(checker.vec), v);
     }
     {
       fmt::print("horizontal_max({})\n", checker.vec);
@@ -43,7 +43,7 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
       for (std::size_t i = 1; i < tSize; ++i) {
         v = std::max(v, checker.ref[i]);
       }
-      test::check(grex::horizontal_max(checker.vec), v);
+      test::check("horizontal_max", grex::horizontal_max(checker.vec), v);
     }
   });
   grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
@@ -54,7 +54,7 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
       for (std::size_t i = 0; i < tSize; ++i) {
         b = b && checker.mask[i];
       }
-      test::check(grex::horizontal_and(checker.mask), b);
+      test::check("horizontal_and", grex::horizontal_and(checker.mask), b);
     }
     {
       MC checker{(tIdxs < tSize)...};
@@ -63,7 +63,7 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
       for (std::size_t i = 0; i < tSize; ++i) {
         b = b && checker.mask[i];
       }
-      test::check(grex::horizontal_and(checker.mask), b);
+      test::check("horizontal_and", grex::horizontal_and(checker.mask), b);
     }
   });
 }

@@ -22,18 +22,18 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
     {
       std::array buf{T(T(tSize) - 2 * T(tIdxs) + 1)...};
       VC checker{Vec::load(buf.data()), buf};
-      checker.check();
+      checker.check("load");
     }
     {
       alignas(64) std::array buf{T(T(tSize) - 2 * T(tIdxs) + 1)...};
       VC checker{Vec::load_aligned(buf.data()), buf};
-      checker.check();
+      checker.check("load_aligned");
     }
     {
       std::array buf{T(T(tSize) - 2 * T(tIdxs) + 1)...};
       for (std::size_t i = 0; i <= tSize; ++i) {
         VC checker{Vec::load_part(buf.data(), i), std::array{((tIdxs < i) ? buf[tIdxs] : T{})...}};
-        checker.check();
+        checker.check("load_part");
       }
     }
   });
@@ -43,18 +43,18 @@ void run(grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
     {
       std::array<T, tSize> buf{};
       checker.vec.store(buf.data());
-      test::check(buf, checker.ref);
+      test::check("store", buf, checker.ref);
     }
     {
       alignas(64) std::array<T, tSize> buf{};
       checker.vec.store_aligned(buf.data());
-      test::check(buf, checker.ref);
+      test::check("store_aligned", buf, checker.ref);
     }
     {
       for (std::size_t i = 0; i <= tSize; ++i) {
         std::array<T, tSize> buf{};
         checker.vec.store_part(buf.data(), i);
-        test::check(buf, std::array{((tIdxs < i) ? checker.ref[tIdxs] : T{})...});
+        test::check("store_part", buf, std::array{((tIdxs < i) ? checker.ref[tIdxs] : T{})...});
       }
     }
   });

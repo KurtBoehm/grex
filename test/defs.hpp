@@ -48,13 +48,13 @@ inline auto make_distribution() {
 struct Empty {};
 
 template<typename T1, typename T2>
-inline void check_msg(bool same, T1 a, T2 b, bool verbose = true) {
+inline void check_msg(const auto& label, bool same, T1 a, T2 b, bool verbose = true) {
   if (same) {
     if (verbose) {
-      fmt::print(fmt::fg(fmt::terminal_color::green), "{} == {}\n", a, b);
+      fmt::print(fmt::fg(fmt::terminal_color::green), "{}: {} == {}\n", label, a, b);
     }
   } else {
-    fmt::print(fmt::fg(fmt::terminal_color::red), "{} != {}\n", a, b);
+    fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", label, a, b);
     std::exit(EXIT_FAILURE);
   }
 }
@@ -91,7 +91,7 @@ struct VectorChecker {
     fmt::print(ts, "[{}, {}]", vec, ref);
   }
 
-  void check(bool verbose = true) const {
+  void check(const auto& label, bool verbose = true) const {
     const bool same = static_apply<tSize>([&]<std::size_t... tIdxs>() {
       auto f = [&](std::size_t i) {
         if constexpr (std::floating_point<T>) {
@@ -109,14 +109,14 @@ struct VectorChecker {
           parent.print(fmt::fg(fmt::terminal_color::green));
           fmt::print(" → ");
         }
-        fmt::print(fmt::fg(fmt::terminal_color::green), "{} == {}\n", vec, ref);
+        fmt::print(fmt::fg(fmt::terminal_color::green), "{}: {} == {}\n", label, vec, ref);
       }
     } else {
       if constexpr (has_parent) {
         parent.print(fmt::fg(fmt::terminal_color::red));
         fmt::print(" → ");
       }
-      fmt::print(fmt::fg(fmt::terminal_color::red), "{} != {}\n", vec, ref);
+      fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", label, vec, ref);
       std::exit(EXIT_FAILURE);
     }
   }
@@ -137,16 +137,16 @@ struct MaskChecker {
   explicit MaskChecker(Ts... values) : mask{values...}, ref{values...} {}
   MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
 
-  void check(bool verbose = true) const {
+  void check(const auto& label, bool verbose = true) const {
     const bool same = static_apply<tSize>(
       [&]<std::size_t... tIdxs>() { return (... && (mask[tIdxs] == ref[tIdxs])); });
-    check_msg(same, mask, ref, verbose);
+    check_msg(label, same, mask, ref, verbose);
   }
 };
 
 template<typename T>
-inline void check(T a, T b, bool verbose = true) {
-  check_msg(a == b, a, b, verbose);
+inline void check(const auto& label, T a, T b, bool verbose = true) {
+  check_msg(label, a == b, a, b, verbose);
 }
 
 template<typename T>

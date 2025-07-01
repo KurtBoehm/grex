@@ -80,12 +80,12 @@ void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
               std::array{TDst(std::get<tIdxs>(src.ref))...},
               src,
             };
-            dst.check(false);
+            dst.check("vector", false);
           }
           {
             test::MaskChecker<TSrc, tSize> src{bval(tIdxs)...};
             test::MaskChecker<TDst, tSize> dst{src.mask.convert(grex::type_tag<TDst>), src.ref};
-            dst.check(false);
+            dst.check("mask", false);
           }
         });
       }

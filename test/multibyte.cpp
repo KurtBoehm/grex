@@ -57,7 +57,7 @@ void run(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
                                                    grex::index_tag<src_bytes>),
           std::array{std::as_const(mbi)[i + tIdxs]...},
         };
-        checker.check(false);
+        checker.check("load_multibyte", false);
       }
     });
   };

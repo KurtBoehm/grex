@@ -63,7 +63,7 @@ void gather(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
               grex::gather(sdata, idxs.vec),
               {sdata[std::size_t(idxs.ref[tIdxs])]...},
             };
-            gathered.check(false);
+            gathered.check("gather", false);
           }
 
           // mask gather
@@ -73,7 +73,7 @@ void gather(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
               grex::mask_gather(sdata, m.mask, idxs.vec),
               {(m.ref[tIdxs] ? sdata[std::size_t(idxs.ref[tIdxs])] : TValue{})...},
             };
-            gathered.check(false);
+            gathered.check("mask_gather", false);
           }
         });
       }
