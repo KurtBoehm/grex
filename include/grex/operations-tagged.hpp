@@ -151,16 +151,6 @@ inline TagType<TTag, T> constant(T value, TTag /*tag*/) {
   return TagType<TTag, T>{value};
 }
 
-// max
-template<Vectorizable T>
-inline T max(T v1, T v2, OptValuedScalarTag<T> auto /*tag*/) {
-  return std::max(v1, v2);
-}
-template<AnyVector TVec>
-inline TVec max(TVec v1, TVec v2, OptTypedVectorTag<TVec> auto /*tag*/) {
-  return max(v1, v2);
-}
-
 // shingle_up
 template<Vectorizable T>
 inline T shingle_up(T /*base*/, OptValuedScalarTag<T> auto /*tag*/) {
@@ -218,7 +208,7 @@ template<AnyVector TVec, std::size_t tSize>
 inline TVec::Value horizontal_max(TVec value, OptTypedFullVectorTag<TVec> auto /*tag*/) {
   return horizontal_max(value);
 }
-// TODO Partial maxima are problematic if there mask is empty: What should the placeholder be?
+// TODO Partial min/max is problematic if the mask is empty: What should the placeholder be?
 
 // horizontal_and
 inline bool horizontal_and(bool mask, AnyScalarTag auto /*tag*/) {

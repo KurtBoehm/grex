@@ -47,16 +47,53 @@ inline auto make_distribution() {
 
 struct Empty {};
 
-template<typename T1, typename T2>
-inline void check_msg(const auto& label, bool same, T1 a, T2 b, bool verbose = true) {
+template<typename T1, typename T2, typename TLabel>
+inline void check_msg(const TLabel& label, bool same, T1 a, T2 b, bool verbose = true) {
   if (same) {
     if (verbose) {
-      fmt::print(fmt::fg(fmt::terminal_color::green), "{}: {} == {}\n", label, a, b);
+      if constexpr (std::invocable<TLabel>) {
+        fmt::print(fmt::fg(fmt::terminal_color::green), "{}: {} == {}\n", label(), a, b);
+      } else {
+        fmt::print(fmt::fg(fmt::terminal_color::green), "{}: {} == {}\n", label, a, b);
+      }
     }
   } else {
-    fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", label, a, b);
+    if constexpr (std::invocable<TLabel>) {
+      fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", label(), a, b);
+    } else {
+      fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", label, a, b);
+    }
     std::exit(EXIT_FAILURE);
   }
+}
+
+template<typename T>
+struct EquivVal {
+  bool result{};
+  T err{};
+
+  operator bool() const {
+    return result;
+  }
+};
+template<std::floating_point T>
+inline EquivVal<T> are_equivalent(T val, T ref, T f = T{}) {
+  if (std::isnan(val) && std::isnan(ref)) {
+    return {.result = true, .err = 0};
+  }
+  if (val == ref) {
+    return {.result = true, .err = 0};
+  }
+  if (f > 0) {
+    const T denom = (ref != 0 && std::isfinite(ref)) ? ref : T{1};
+    const T err = std::abs((val - ref) / denom);
+    return {.result = err <= f * std::numeric_limits<T>::epsilon(), .err = err};
+  }
+  return {};
+}
+template<std::integral T>
+inline bool are_equivalent(T val, T ref) {
+  return val == ref;
 }
 
 template<Vectorizable T, std::size_t tSize, typename TParent = void>
@@ -92,17 +129,8 @@ struct VectorChecker {
   }
 
   void check(const auto& label, bool verbose = true) const {
-    const bool same = static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      auto f = [&](std::size_t i) {
-        if constexpr (std::floating_point<T>) {
-          if (std::isnan(vec[i]) && std::isnan(ref[i])) {
-            return true;
-          }
-        }
-        return vec[i] == ref[i];
-      };
-      return (... && f(tIdxs));
-    });
+    const bool same = static_apply<tSize>(
+      [&]<std::size_t... tIdxs>() { return (... && are_equivalent(vec[tIdxs], ref[tIdxs])); });
     if (same) {
       if (verbose) {
         if constexpr (has_parent) {

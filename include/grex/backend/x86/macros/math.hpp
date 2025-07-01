@@ -65,7 +65,8 @@
 #define GREX_DIVIDE_512_16 32
 #define GREX_DIVIDE_512_32 16
 #define GREX_DIVIDE_512_64 8
-#define GREX_DIVIDE(A, B) GREX_DIVIDE_##A##_##B
+#define GREX_DIVIDE_I(A, B) GREX_DIVIDE_##A##_##B
+#define GREX_DIVIDE(A, B) GREX_DIVIDE_I(A, B)
 
 // Compute the maximum of the two arguments in the following cases:
 // · Maximum of sizes up to 16 and 4
