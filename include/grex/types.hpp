@@ -11,14 +11,15 @@
 #include <cstddef>
 #include <span>
 #include <type_traits>
+#include <utility>
 
 #include "grex/backend.hpp"
 #include "grex/base.hpp"
 
 namespace grex {
+using backend::has_fma;
 using backend::native_sizes;
 using backend::register_bits;
-using backend::has_fma;
 
 template<Vectorizable T, std::size_t tSize>
 struct Mask {
@@ -81,18 +82,39 @@ private:
 };
 
 template<Vectorizable T, std::size_t tSize>
-struct Vector {
+struct Vector;
+
+// This silly little base class allows the constructor arguments to be declared as all being
+// of type T, which leads to integer literals being interpreted as the correct type,
+// among other benefits
+template<Vectorizable T, typename TIdxs>
+struct VectorBase;
+template<Vectorizable T, std::size_t... tIdxs>
+struct VectorBase<T, std::index_sequence<tIdxs...>> {
+  static constexpr std::size_t size = sizeof...(tIdxs);
+  using Backend = backend::VectorFor<T, size>;
+  friend Vector<T, size>;
+
+  explicit VectorBase(IdxType<tIdxs, T>... values)
+      : vec_{backend::set(type_tag<Backend>, values...)} {}
+  explicit VectorBase(Backend v) : vec_(v) {}
+
+private:
+  Backend vec_;
+};
+
+template<Vectorizable T, std::size_t tSize>
+struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   using Value = T;
   using Mask = grex::Mask<T, tSize>;
   using Backend = backend::VectorFor<T, tSize>;
   static constexpr std::size_t size = tSize;
 
-  Vector() : vec_{backend::zeros(type_tag<Backend>)} {}
-  explicit Vector(T value) : vec_{backend::broadcast(value, type_tag<Backend>)} {}
-  template<typename... Ts>
-  requires(sizeof...(Ts) == tSize)
-  explicit Vector(Ts... values) : vec_{backend::set(type_tag<Backend>, T{values}...)} {}
-  explicit Vector(Backend v) : vec_(v) {}
+  using Base = VectorBase<T, std::make_index_sequence<tSize>>;
+  using Base::Base;
+
+  Vector() : Base{backend::zeros(type_tag<Backend>)} {}
+  explicit Vector(T value) : Base{backend::broadcast(value, type_tag<Backend>)} {}
 
   static Vector expanded_any(T x) {
     return Vector{backend::expand_any(backend::Scalar<T>{x}, index_tag<tSize>)};
@@ -117,6 +139,9 @@ struct Vector {
     return Vector{backend::load_multibyte(raw, src_bytes, type_tag<Backend>)};
   }
 
+  static Vector undefined() {
+    return Vector{backend::undefined(type_tag<Backend>)};
+  }
   static Vector indices() {
     return Vector{backend::indices(type_tag<Backend>)};
   }
@@ -237,7 +262,7 @@ struct Vector {
   }
 
 private:
-  Backend vec_;
+  using Base::vec_;
 };
 
 // traits

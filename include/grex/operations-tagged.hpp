@@ -151,43 +151,65 @@ inline TagType<TTag, T> constant(T value, TTag /*tag*/) {
   return TagType<TTag, T>{value};
 }
 
-// shingle_up
+// shingle_up with front=0
 template<Vectorizable T>
 inline T shingle_up(T /*base*/, OptValuedScalarTag<T> auto /*tag*/) {
   return T{};
 }
-template<AnyVector TVec>
+template<AnyVector TVec, typename TTag>
+requires(OptTypedFullVectorTag<TTag, TVec> || OptTypedPartVectorTag<TTag, TVec>)
 inline TVec shingle_up(TVec base, OptTypedVectorTag<TVec> auto /*tag*/) {
   return base.shingle_up();
 }
+// TODO I do not know what this would be for masked tags
+
+// shingle_up with a given front
 template<Vectorizable T>
 inline T shingle_up(T front, T /*base*/, OptValuedScalarTag<T> auto /*tag*/) {
   return front;
 }
-template<AnyVector TVec>
+template<AnyVector TVec, typename TTag>
+requires(OptTypedFullVectorTag<TTag, TVec> || OptTypedPartVectorTag<TTag, TVec>)
 inline TVec shingle_up(typename TVec::Value front, TVec base,
                        OptTypedVectorTag<TVec> auto /*tag*/) {
   return base.shingle_up(front);
 }
+// TODO I do not know what this would be for masked tags
 
-// shingle_down
+// shingle_down with back=0
 template<Vectorizable T>
 inline T shingle_down(T /*base*/, OptValuedScalarTag<T> auto /*tag*/) {
   return T{};
 }
 template<AnyVector TVec>
-inline TVec shingle_down(TVec base, OptTypedVectorTag<TVec> auto /*tag*/) {
+inline TVec shingle_down(TVec base, OptTypedFullVectorTag<TVec> auto /*tag*/) {
   return base.shingle_down();
 }
+template<AnyVector TVec>
+inline TVec shingle_down(TVec base, OptTypedPartVectorTag<TVec> auto tag) {
+  return tag.mask(base).shingle_down();
+}
+// TODO I do not know what this would be for masked tags
+
+// shingle_down with a given back
 template<Vectorizable T>
 inline T shingle_down(T /*base*/, T back, OptValuedScalarTag<T> auto /*tag*/) {
   return back;
 }
 template<AnyVector TVec>
 inline TVec shingle_down(TVec base, typename TVec::Value back,
-                         OptTypedVectorTag<TVec> auto /*tag*/) {
+                         OptTypedFullVectorTag<TVec> auto /*tag*/) {
   return base.shingle_down(back);
 }
+template<AnyVector TVec>
+inline TVec shingle_down(TVec base, typename TVec::Value back,
+                         OptTypedPartVectorTag<TVec> auto tag) {
+  if (tag.part() == 0) [[unlikely]] {
+    return TVec{};
+  }
+  return base.shingle_down(back).insert(tag.part() - 1, back);
+}
+// TODO I do not know what this would be for masked tags
 
 // horizontal_add
 template<Vectorizable T>
@@ -199,16 +221,20 @@ inline TVec::Value horizontal_add(TVec value, OptTypedVectorTag<TVec> auto tag) 
   return horizontal_add(tag.mask(value));
 }
 
-// horizontal_max
-template<Vectorizable T>
-inline T horizontal_max(T value, OptValuedScalarTag<T> auto /*tag*/) {
-  return value;
-}
-template<AnyVector TVec, std::size_t tSize>
-inline TVec::Value horizontal_max(TVec value, OptTypedFullVectorTag<TVec> auto /*tag*/) {
-  return horizontal_max(value);
-}
-// TODO Partial min/max is problematic if the mask is empty: What should the placeholder be?
+// horizontal_min/horizontal_max
+#define GREX_OPS_HMINMAX(OP) \
+  template<Vectorizable T> \
+  inline T OP(T value, OptValuedScalarTag<T> auto /*tag*/) { \
+    return value; \
+  } \
+  template<AnyVector TVec, std::size_t tSize> \
+  inline TVec::Value OP(TVec value, OptTypedFullVectorTag<TVec> auto /*tag*/) { \
+    return OP(value); \
+  } \
+/* TODO Partial min/max is problematic if the mask is empty: What should the placeholder be? */
+GREX_OPS_HMINMAX(horizontal_min)
+GREX_OPS_HMINMAX(horizontal_max)
+#undef GREX_OPS_HMINMAX
 
 // horizontal_and
 inline bool horizontal_and(bool mask, AnyScalarTag auto /*tag*/) {

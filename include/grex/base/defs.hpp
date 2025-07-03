@@ -88,6 +88,9 @@ concept FpVectorizable = std::same_as<T, f32> || std::same_as<T, f64>;
 template<typename T>
 concept Vectorizable = IntVectorizable<T> || FpVectorizable<T>;
 
+template<std::size_t tIdx, typename T>
+using IdxType = T;
+
 template<typename T>
 struct TypeTag {};
 template<typename T>
