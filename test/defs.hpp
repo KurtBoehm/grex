@@ -16,11 +16,12 @@
 #include <limits>
 #include <random>
 #include <string_view>
-#include <type_traits>
+#include <tuple>
 
 #include <fmt/base.h>
 #include <fmt/color.h>
 #include <fmt/ranges.h>
+#include <fmt/std.h>
 #include <pcg_random.hpp>
 
 #include "grex/base/defs.hpp"
@@ -47,26 +48,6 @@ inline auto make_distribution() {
 
 struct Empty {};
 
-template<typename T1, typename T2, typename TLabel>
-inline void check_msg(const TLabel& label, bool same, T1 a, T2 b, bool verbose = true) {
-  if (same) {
-    if (verbose) {
-      if constexpr (std::invocable<TLabel>) {
-        fmt::print(fmt::fg(fmt::terminal_color::green), "{}: {} == {}\n", label(), a, b);
-      } else {
-        fmt::print(fmt::fg(fmt::terminal_color::green), "{}: {} == {}\n", label, a, b);
-      }
-    }
-  } else {
-    if constexpr (std::invocable<TLabel>) {
-      fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", label(), a, b);
-    } else {
-      fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", label, a, b);
-    }
-    std::exit(EXIT_FAILURE);
-  }
-}
-
 template<typename T>
 struct EquivVal {
   bool result{};
@@ -84,7 +65,7 @@ inline EquivVal<T> are_equivalent(T val, T ref, T f = T{}) {
   if (val == ref) {
     return {.result = true, .err = 0};
   }
-  if (f > 0) {
+  if (f > T{}) {
     const T denom = (ref != 0 && std::isfinite(ref)) ? ref : T{1};
     const T err = std::abs((val - ref) / denom);
     return {.result = err <= f * std::numeric_limits<T>::epsilon(), .err = err};
@@ -96,59 +77,67 @@ inline bool are_equivalent(T val, T ref) {
   return val == ref;
 }
 
-template<Vectorizable T, std::size_t tSize, typename TParent = void>
-struct VectorChecker {
-  static constexpr bool has_parent = !std::is_void_v<TParent>;
-  using ParentStorage = std::conditional_t<has_parent, TParent, Empty>;
+template<typename T>
+inline decltype(auto) resolve_label(const T& label) {
+  if constexpr (std::invocable<T>) {
+    return label();
+  } else {
+    return label;
+  }
+}
 
+template<typename T1, typename T2, typename TLabel>
+inline void check_msg(const TLabel& label, bool same, T1 a, T2 b, bool verbose = true) {
+  if (same) {
+    if (verbose) {
+      fmt::print(fmt::fg(fmt::terminal_color::green), "{}: {} == {}\n", resolve_label(label), a, b);
+    }
+  } else {
+    fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", resolve_label(label), a, b);
+    std::exit(EXIT_FAILURE);
+  }
+}
+template<typename T>
+requires(requires(T a) {
+  { a == a } -> std::same_as<bool>;
+})
+inline void check(const auto& label, T a, T b, bool verbose = true) {
+  check_msg(label, a == b, a, b, verbose);
+}
+template<typename T1, typename T2>
+requires(std::tuple_size_v<T1> == std::tuple_size_v<T2>)
+inline void check(const auto& label, T1 a, T2 b, bool verbose = true) {
+  constexpr std::size_t size = std::tuple_size_v<T1>;
+  const bool same = static_apply<size>(
+    [&]<std::size_t... tIdxs>() { return (... && are_equivalent(a[tIdxs], b[tIdxs])); });
+  check_msg(label, same, a, b, verbose);
+}
+
+template<Vectorizable T, std::size_t tSize>
+struct VectorChecker {
   grex::Vector<T, tSize> vec{};
   std::array<T, tSize> ref{};
-  [[no_unique_address]] ParentStorage parent{};
 
   VectorChecker() = default;
 
-  explicit VectorChecker(T value)
-  requires(!has_parent)
-      : vec{value} {
+  explicit VectorChecker(T value) : vec{value} {
     std::ranges::fill(ref, value);
   }
   template<typename... Ts>
-  requires(sizeof...(Ts) == tSize && (... && std::convertible_to<Ts, T>))
-  explicit VectorChecker(Ts... values)
-  requires(!has_parent)
-      : vec{values...}, ref{values...} {}
-  VectorChecker(grex::Vector<T, tSize> v, std::array<T, tSize> a)
-  requires(!has_parent)
-      : vec{v}, ref{a} {}
-  VectorChecker(grex::Vector<T, tSize> v, std::array<T, tSize> a, ParentStorage p)
-  requires(has_parent)
-      : vec{v}, ref{a}, parent{p} {}
-
-  void print(fmt::text_style ts = {}) const {
-    fmt::print(ts, "[{}, {}]", vec, ref);
-  }
+  requires(sizeof...(Ts) == tSize && (... && std::same_as<Ts, T>))
+  explicit VectorChecker(Ts... values) : vec{values...}, ref{values...} {}
+  VectorChecker(grex::Vector<T, tSize> v, std::array<T, tSize> a) : vec{v}, ref{a} {}
 
   void check(const auto& label, bool verbose = true) const {
     const bool same = static_apply<tSize>(
       [&]<std::size_t... tIdxs>() { return (... && are_equivalent(vec[tIdxs], ref[tIdxs])); });
-    if (same) {
-      if (verbose) {
-        if constexpr (has_parent) {
-          parent.print(fmt::fg(fmt::terminal_color::green));
-          fmt::print(" → ");
-        }
-        fmt::print(fmt::fg(fmt::terminal_color::green), "{}: {} == {}\n", label, vec, ref);
-      }
-    } else {
-      if constexpr (has_parent) {
-        parent.print(fmt::fg(fmt::terminal_color::red));
-        fmt::print(" → ");
-      }
-      fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", label, vec, ref);
-      std::exit(EXIT_FAILURE);
-    }
+    check_msg(label, same, vec, ref, verbose);
   }
 };
+template<Vectorizable T, std::size_t tSize>
+auto format_as(const VectorChecker<T, tSize>& checker) {
+  return std::tie(checker.vec, checker.ref);
+}
 
 template<Vectorizable T, std::size_t tSize>
 struct MaskChecker {
@@ -171,10 +160,9 @@ struct MaskChecker {
     check_msg(label, same, mask, ref, verbose);
   }
 };
-
-template<typename T>
-inline void check(const auto& label, T a, T b, bool verbose = true) {
-  check_msg(label, a == b, a, b, verbose);
+template<Vectorizable T, std::size_t tSize>
+auto format_as(const MaskChecker<T, tSize>& checker) {
+  return std::tie(checker.mask, checker.ref);
 }
 
 template<typename T>

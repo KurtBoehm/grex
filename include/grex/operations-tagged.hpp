@@ -8,7 +8,6 @@
 #define INCLUDE_GREX_OPERATIONS_TAGGED_HPP
 
 #include <cstddef>
-#include <limits>
 #include <span>
 
 #include "grex/base/defs.hpp"
@@ -79,36 +78,6 @@ inline void store_ptr(T* dst, TagType<TTag, T> src, TTag tag) {
   src.store_part(dst, tag.part());
 }
 // TODO Support masked storing?
-
-template<typename TDst, typename TSrc>
-concept SafeConversion = std::numeric_limits<TDst>::digits >= std::numeric_limits<TSrc>::digits;
-
-// convert
-template<Vectorizable TDst, Vectorizable TSrc, bool tSafe>
-requires(!tSafe || SafeConversion<TDst, TSrc>)
-inline TDst convert(TSrc src, OptValuedScalarTag<TSrc> auto /*tag*/, BoolTag<tSafe> /*tag*/) {
-  return TDst(src);
-}
-template<Vectorizable TDst, AnyVector TSrc, bool tSafe>
-requires(!tSafe || SafeConversion<TDst, typename TSrc::Value>)
-inline Vector<TDst, TSrc::size> convert(TSrc src, OptTypedVectorTag<TSrc> auto /*tag*/,
-                                        BoolTag<tSafe> /*tag*/) {
-  return src.convert(type_tag<TDst>);
-}
-template<Vectorizable TDst, AnyMask TSrc, bool tSafe>
-requires(!tSafe || SafeConversion<TDst, typename TSrc::VecValue>)
-inline Mask<TDst, TSrc::size> convert(TSrc src, OptTypedVectorTag<TSrc> auto /*tag*/,
-                                      BoolTag<tSafe> /*tag*/) {
-  return src.convert(type_tag<TDst>);
-}
-template<Vectorizable TDst, typename TSrc>
-inline TDst convert_unsafe(TSrc src, AnyTag auto tag) {
-  return convert(src, tag, false_tag);
-}
-template<Vectorizable TDst, typename TSrc>
-inline TDst convert_safe(TSrc src, AnyTag auto tag) {
-  return convert(src, tag, true_tag);
-}
 
 // gather
 template<Vectorizable T, std::size_t tExtent>

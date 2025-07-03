@@ -7,9 +7,13 @@
 #ifndef INCLUDE_GREX_OPERATIONS_HPP
 #define INCLUDE_GREX_OPERATIONS_HPP
 
+#include <limits>
+
 #include "grex/backend/active/operations.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/base/defs.hpp"
+#include "grex/tags.hpp"
+#include "grex/types.hpp"
 
 namespace grex {
 #define GREX_MATH_FMA(NAME) \
@@ -64,6 +68,39 @@ inline T blend(bool selector, T v0, T v1) {
 template<Vectorizable T>
 inline bool is_finite(T a) {
   return backend::is_finite(backend::Scalar{a});
+}
+
+template<typename TDst, typename TSrc>
+concept SafeConversion = std::numeric_limits<TDst>::digits >= std::numeric_limits<TSrc>::digits;
+
+// convert
+template<Vectorizable TDst, Vectorizable TSrc, bool tSafe>
+requires(!tSafe || SafeConversion<TDst, TSrc>)
+inline TDst convert(TSrc src, BoolTag<tSafe> /*tag*/) {
+  return TDst(src);
+}
+template<Vectorizable TDst, AnyVector TSrc, bool tSafe>
+requires(!tSafe || SafeConversion<TDst, typename TSrc::Value>)
+inline Vector<TDst, TSrc::size> convert(TSrc src, BoolTag<tSafe> /*tag*/) {
+  return src.convert(type_tag<TDst>);
+}
+template<Vectorizable TDst, typename TSrc>
+inline auto convert_unsafe(TSrc src) {
+  return convert<TDst>(src, false_tag);
+}
+template<Vectorizable TDst, typename TSrc>
+inline auto convert_safe(TSrc src) {
+  return convert<TDst>(src, true_tag);
+}
+
+// mask conversions are always safe
+template<Vectorizable TDst>
+inline bool convert(bool src) {
+  return src;
+}
+template<Vectorizable TDst, AnyMask TSrc>
+inline Mask<TDst, TSrc::size> convert(TSrc src) {
+  return src.convert(type_tag<TDst>);
 }
 } // namespace grex
 

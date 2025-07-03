@@ -13,8 +13,8 @@
 #include <random>
 #include <type_traits>
 
-#include <fmt/base.h>
 #include <fmt/color.h>
+#include <fmt/format.h>
 #include <pcg_extras.hpp>
 #include <pcg_random.hpp>
 
@@ -31,30 +31,22 @@ using Distribution = std::conditional_t<std::floating_point<T>, std::uniform_rea
 
 template<typename TSrc, typename TDst>
 inline auto make_distribution() {
-  using Limits = std::numeric_limits<TSrc>;
   if constexpr (std::floating_point<TSrc>) {
-    return [](Rng& rng) {
-      auto gen = [&] {
-        const int sign = std::uniform_int_distribution<int>{0, 1}(rng) * 2 - 1;
-        const TSrc base = std::uniform_real_distribution<TSrc>{TSrc(0.5), TSrc(1)}(rng);
-        const int expo =
-          std::uniform_int_distribution<int>{Limits::min_exponent, Limits::max_exponent}(rng);
-        return TSrc(sign) * std::ldexp(base, expo);
-      };
-      TSrc f = gen();
+    return [gen = test::make_distribution<TSrc>()](Rng& rng) mutable {
+      TSrc f = gen(rng);
       if constexpr (std::integral<TDst>) {
         // The C++ standard only specifies behaviour if the floating-point value
         // is representable by the destination integer
-        // I adopt the same approach to keep the amount of work proportionate
-        while (f < TSrc(std::numeric_limits<TDst>::min()) ||
-               f > TSrc(std::numeric_limits<TDst>::max())) {
-          f = gen();
+        // I adopt the same approach to keep the amount of work reasonable
+        using Limits = std::numeric_limits<TDst>;
+        while (f < TSrc(Limits::min()) || f > TSrc(Limits::max())) {
+          f = gen(rng);
         }
       }
       return f;
     };
   } else {
-    return std::uniform_int_distribution<TSrc>{Limits::min(), Limits::max()};
+    return test::make_distribution<TSrc>();
   }
 }
 
@@ -73,19 +65,35 @@ void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
       for (std::size_t i = 0; i < repetitions; ++i) {
         grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
           {
-            using SrcCheck = test::VectorChecker<TSrc, tSize>;
-            SrcCheck src{dval(tIdxs)...};
-            test::VectorChecker<TDst, tSize, SrcCheck> dst{
+            test::VectorChecker<TSrc, tSize> src{dval(tIdxs)...};
+            test::VectorChecker<TDst, tSize> dst{
               src.vec.convert(grex::type_tag<TDst>),
-              std::array{TDst(std::get<tIdxs>(src.ref))...},
-              src,
+              std::array{TDst(src.ref[tIdxs])...},
             };
-            dst.check("vector", false);
+            dst.check([&] { return fmt::format("vector {}", src); }, false);
+
+            grex::Vector<TDst, tSize> dstvec = grex::convert_unsafe<TDst>(src.vec);
+            test::check([&] { return fmt::format("vec-vec {}", src); }, dst.vec, dstvec, false);
+
+            test::VectorChecker<TDst, tSize> dstsca{
+              src.vec.convert(grex::type_tag<TDst>),
+              std::array{grex::convert_unsafe<TDst>(src.ref[tIdxs])...},
+            };
+            dstsca.check([&] { return fmt::format("vec-sca {}", src); }, false);
           }
           {
             test::MaskChecker<TSrc, tSize> src{bval(tIdxs)...};
             test::MaskChecker<TDst, tSize> dst{src.mask.convert(grex::type_tag<TDst>), src.ref};
-            dst.check("mask", false);
+            dst.check([&] { return fmt::format("mask {}", src); }, false);
+
+            grex::Mask<TDst, tSize> dstmsk = grex::convert<TDst>(src.mask);
+            test::check([&] { return fmt::format("msk-msk {}", src); }, dst.mask, dstmsk, false);
+
+            test::MaskChecker<TDst, tSize> dstsca{
+              src.mask.convert(grex::type_tag<TDst>),
+              std::array{grex::convert<TDst>(src.ref[tIdxs])...},
+            };
+            dstsca.check([&] { return fmt::format("msk-sca {}", src); }, false);
           }
         });
       }

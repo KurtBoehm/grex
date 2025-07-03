@@ -66,8 +66,10 @@ struct Mask {
   bool operator[](std::size_t i) const {
     return backend::extract(mask_, i);
   }
-  bool get(AnyIndexTag auto i) const {
-    return backend::extract(mask_, i);
+  // this form of get is required for {fmt} to use its formatter for tuple-like types
+  template<std::size_t tIdx>
+  friend bool get(const Mask& m) {
+    return backend::extract(m.mask_, tIdx);
   }
   Mask insert(std::size_t i, bool value) const {
     return Mask{backend::insert(mask_, i, value)};
@@ -178,8 +180,10 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   T operator[](std::size_t i) const {
     return backend::extract(vec_, i);
   }
-  T get(AnyIndexTag auto i) const {
-    return backend::extract(vec_, i);
+  // this form of get is required for {fmt} to use its formatter for tuple-like types
+  template<std::size_t tIdx>
+  friend T get(const Vector& v) {
+    return backend::extract(v.vec_, tIdx);
   }
   Vector insert(std::size_t i, T value) const {
     return Vector{backend::insert(vec_, i, value)};
@@ -402,5 +406,21 @@ inline Vector<TValue, tSize> mask_gather(std::span<const TValue> data, Mask<TVal
   return Vector<TValue, tSize>{backend::mask_gather(data, mask.backend(), indices.backend())};
 }
 } // namespace grex
+
+// implement the tuple-like interface for structured bindings and automatic {fmt} formatting
+template<grex::Vectorizable T, std::size_t tSize>
+struct std::tuple_size<grex::Vector<T, tSize>> : public std::integral_constant<std::size_t, tSize> {
+};
+template<std::size_t tIdx, grex::Vectorizable T, std::size_t tSize>
+struct std::tuple_element<tIdx, grex::Vector<T, tSize>> {
+  using type = const T;
+};
+
+template<grex::Vectorizable T, std::size_t tSize>
+struct std::tuple_size<grex::Mask<T, tSize>> : public std::integral_constant<std::size_t, tSize> {};
+template<std::size_t tIdx, grex::Vectorizable T, std::size_t tSize>
+struct std::tuple_element<tIdx, grex::Mask<T, tSize>> {
+  using type = const bool;
+};
 
 #endif // INCLUDE_GREX_TYPES_HPP
