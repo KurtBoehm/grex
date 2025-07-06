@@ -8,8 +8,13 @@
 #define INCLUDE_GREX_BACKEND_OPERATIONS_HPP
 
 #include <algorithm>
+#include <bit>
+#include <climits>
 #include <cmath>
+#include <cstddef>
 #include <cstdlib>
+#include <cstring>
+#include <limits>
 
 #include "grex/backend/defs.hpp"
 #include "grex/base.hpp"
@@ -52,6 +57,26 @@ inline Scalar<T> blend(bool selector, Scalar<T> v0, Scalar<T> v1) {
 template<Vectorizable T>
 inline bool is_finite(Scalar<T> v) {
   return std::isfinite(v.value);
+}
+
+// load_multibyte
+template<std::size_t tSrcBytes>
+static UnsignedInt<std::bit_ceil(tSrcBytes)> load_multibyte(const std::byte* data,
+                                                            IndexTag<tSrcBytes> /*tag*/) {
+  static constexpr std::size_t dst_bytes = std::bit_ceil(tSrcBytes);
+  static constexpr std::size_t overhead_bits = (dst_bytes - tSrcBytes) * CHAR_BIT;
+  using Dst = UnsignedInt<dst_bytes>;
+  static constexpr Dst mask = std::numeric_limits<Dst>::max() >> overhead_bits;
+
+  Dst output;
+  std::memcpy(&output, data, tSrcBytes);
+  if constexpr (std::endian::native == std::endian::little) {
+    return output & mask;
+  }
+  if constexpr (std::endian::native == std::endian::big) {
+    return output >> overhead_bits;
+  }
+  return output;
 }
 } // namespace grex::backend
 

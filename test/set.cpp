@@ -20,6 +20,7 @@ inline constexpr std::size_t repetitions = 4096;
 template<grex::Vectorizable T, std::size_t tSize>
 void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
   using VC = test::VectorChecker<T, tSize>;
+  using Vec = grex::Vector<T, tSize>;
   using MC = test::MaskChecker<T, tSize>;
   using Mask = grex::Mask<T, tSize>;
 
@@ -30,23 +31,37 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
 
   grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
     for (std::size_t i = 0; i < repetitions; ++i) {
-      // vector
+      // SCALAR/VECTOR
+      // zeros
+      test::check("scalar zeros", grex::zeros<T>(grex::scalar_tag), T{}, false);
+      VC{}.check("vector zeros", false);
+      test::check("vector zeros tagged", grex::zeros<T>(grex::full_tag<tSize>), Vec{}, false);
+      // broadcast
       {
-        VC checker{};
-        checker.check("vector zeros", false);
+        const T value = dist(rng);
+        test::check("scalar broadcast", grex::broadcast(value, grex::scalar_tag), value, false);
+        VC{value}.check("vector broadcast", false);
+        test::check("vector broadcast tagged", grex::broadcast(value, grex::full_tag<tSize>),
+                    Vec{value}, false);
       }
+      // zero-based indices
+      test::check("scalar indices", grex::indices<T>(grex::scalar_tag), T{}, false);
+      VC{Vec::indices(), std::array{T(tIdxs)...}}.check("vector indices", false);
+      test::check("vector indices tagged", grex::indices<T>(grex::typed_full_tag<T, tSize>),
+                  Vec::indices(), false);
+      // value-based indices
       {
-        VC checker{dval(0)};
-        checker.check("vector broadcast", false);
+        const T base = dist(rng);
+        test::check("scalar value indices", grex::indices<T>(base, grex::scalar_tag), base, false);
+        VC{Vec::indices(base), std::array{T(base + T(tIdxs))...}}.check("vector value indices",
+                                                                        false);
+        test::check("vector value indices tagged",
+                    grex::indices<T>(base, grex::typed_full_tag<T, tSize>), Vec::indices(base),
+                    false);
       }
-      {
-        VC checker{grex::Vector<T, tSize>::indices(), std::array{T(tIdxs)...}};
-        checker.check("vector indices", false);
-      }
-      {
-        VC checker{dval(tIdxs)...};
-        checker.check("vector set", false);
-      }
+      // set
+      VC{dval(tIdxs)...}.check("vector set", false);
+      // insert
       {
         const VC base{dval(tIdxs)...};
         for (std::size_t j = 0; j < tSize; ++j) {
@@ -54,6 +69,10 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
           VC v{base.vec.insert(j, val), std::array{((tIdxs == j) ? val : base.ref[tIdxs])...}};
           v.check("vector insert", false);
         }
+      }
+      // cutoff
+      {
+        const VC base{dval(tIdxs)...};
         for (std::size_t j = 0; j <= tSize; ++j) {
           VC v{base.vec.cutoff(j), std::array{((tIdxs < j) ? base.ref[tIdxs] : T(0))...}};
           v.check("vector cutoff", false);
@@ -61,23 +80,11 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
       }
 
       // mask
-      {
-        MC checker{};
-        checker.check("mask zeros", false);
-      }
-      {
-        auto f = [](std::size_t /*dummy*/) { return true; };
-        test::MaskChecker checker{grex::Mask<T, tSize>::ones(), std::array{f(tIdxs)...}};
-        checker.check("mask ones", false);
-      }
-      {
-        MC checker{bval(0)};
-        checker.check("mask broadcast true", false);
-      }
-      {
-        MC checker{bval(tIdxs)...};
-        checker.check("mask set", false);
-      }
+      MC{}.check("mask zeros", false);
+      MC{Mask::ones(), std::array{(tIdxs < tSize)...}}.check("mask ones", false);
+      MC{false}.check("mask broadcast false", false);
+      MC{true}.check("mask broadcast true", false);
+      MC{bval(tIdxs)...}.check("mask set", false);
       {
         const MC base{bval(tIdxs)...};
         for (std::size_t j = 0; j < tSize; ++j) {

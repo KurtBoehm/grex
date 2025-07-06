@@ -27,44 +27,87 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
 
   for (std::size_t i = 0; i < repetitions; ++i) {
     grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+      // load scalar
+      {
+        std::array<T, 1> buf{dist(rng)};
+        test::check("load scalar", grex::load(buf.data(), grex::scalar_tag), buf[0], false);
+      }
+      // load full
       {
         std::array buf{dval(tIdxs)...};
         VC checker{Vec::load(buf.data()), buf};
         checker.check("load", false);
       }
       {
+        std::array buf{dval(tIdxs)...};
+        VC checker{grex::load(buf.data(), grex::full_tag<tSize>), buf};
+        checker.check("load tagged", false);
+      }
+
+      // load full aligned
+      {
         alignas(64) std::array buf{dval(tIdxs)...};
         VC checker{Vec::load_aligned(buf.data()), buf};
         checker.check("load_aligned", false);
       }
+      // there is no tagged version of aligned loading
+
+      // load part
       {
         std::array buf{dval(tIdxs)...};
         for (std::size_t i = 0; i <= tSize; ++i) {
           VC checker{Vec::load_part(buf.data(), i),
                      std::array{((tIdxs < i) ? buf[tIdxs] : T{})...}};
           checker.check("load_part", false);
+          // tagged
+          VC tchecker{grex::load(buf.data(), grex::part_tag<tSize>(i)),
+                      std::array{((tIdxs < i) ? buf[tIdxs] : T{})...}};
+          tchecker.check("load_part tagged", false);
         }
       }
     });
 
     grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
       VC checker{dval(tIdxs)...};
+      // store scalar
+      {
+        std::array<T, 1> buf{};
+        const T val = dist(rng);
+        grex::store(buf.data(), val, grex::scalar_tag);
+        test::check("store scalar", buf[0], val, false);
+      }
+
+      // store full
       {
         std::array<T, tSize> buf{};
         checker.vec.store(buf.data());
         test::check("store", buf, checker.ref, false);
       }
       {
+        std::array<T, tSize> buf{};
+        grex::store(buf.data(), checker.vec, grex::typed_full_tag<T, tSize>);
+        test::check("store tagged", buf, checker.ref, false);
+      }
+
+      // store full aligned
+      {
         alignas(64) std::array<T, tSize> buf{};
         checker.vec.store_aligned(buf.data());
         test::check("store_aligned", buf, checker.ref, false);
       }
+      // there is no tagged version of aligned storing
+
       {
         for (std::size_t i = 0; i <= tSize; ++i) {
           std::array<T, tSize> buf{};
           checker.vec.store_part(buf.data(), i);
           test::check("store_part", buf, std::array{((tIdxs < i) ? checker.ref[tIdxs] : T{})...},
                       false);
+          // tagged
+          std::array<T, tSize> tbuf{};
+          grex::store(tbuf.data(), checker.vec, grex::part_tag<tSize>(i));
+          test::check("store_part tagged", tbuf,
+                      std::array{((tIdxs < i) ? checker.ref[tIdxs] : T{})...}, false);
         }
       }
     });

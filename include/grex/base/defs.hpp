@@ -88,6 +88,13 @@ concept FpVectorizable = std::same_as<T, f32> || std::same_as<T, f64>;
 template<typename T>
 concept Vectorizable = IntVectorizable<T> || FpVectorizable<T>;
 
+template<typename TIt>
+concept MultiByteIterator = requires(TIt it) {
+  typename TIt::Container;
+  { TIt::Container::element_bytes } -> std::convertible_to<std::size_t>;
+  { it.raw() } -> std::convertible_to<const std::byte*>;
+};
+
 template<std::size_t tIdx, typename T>
 using IdxType = T;
 
@@ -100,7 +107,7 @@ template<typename T, T tVal>
 struct ValueTag {
   using Value = T;
   static constexpr T value = tVal;
-  constexpr operator T() const {
+  constexpr operator T() const { // NOLINT
     return value;
   }
 };

@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_OPERATIONS_TAGGED_HPP
 #define INCLUDE_GREX_OPERATIONS_TAGGED_HPP
 
+#include <bit>
+#include <concepts>
 #include <cstddef>
 #include <span>
 
@@ -15,38 +17,60 @@
 #include "grex/types.hpp"
 
 namespace grex {
+// zeros
+template<Vectorizable T, OptValuedTag<T> TTag>
+inline TagType<TTag, T> zeros(TTag /*tag*/) {
+  return TagType<TTag, T>{};
+}
+
+// broadcast
+template<Vectorizable T, OptValuedTag<T> TTag>
+inline TagType<TTag, T> broadcast(T value, TTag /*tag*/) {
+  return TagType<TTag, T>{value};
+}
+
 // indices
+template<Vectorizable T>
+inline T indices(OptValuedScalarTag<T> auto /*tag*/) {
+  return T{};
+}
 template<Vectorizable TIdx>
 inline TIdx indices(TIdx start, OptValuedScalarTag<TIdx> auto /*tag*/) {
   return start;
+}
+template<Vectorizable TIdx, OptValuedVectorTag<TIdx> TTag>
+inline TagType<TTag, TIdx> indices(TTag /*tag*/) {
+  return TagType<TTag, TIdx>::indices();
 }
 template<Vectorizable TIdx, OptValuedVectorTag<TIdx> TTag>
 inline TagType<TTag, TIdx> indices(TIdx start, TTag /*tag*/) {
   return TagType<TTag, TIdx>::indices(start);
 }
 
-// load_ptr
+// Adding initialization operations for masks seems unnecessary, as a constant mask is of little use
+
+// load
 template<Vectorizable T>
-inline T load_ptr(const T* src, OptValuedScalarTag<T> auto /*tag*/) {
+inline T load(const T* src, OptValuedScalarTag<T> auto /*tag*/) {
   return *src;
 }
 template<Vectorizable T, OptValuedFullVectorTag<T> TTag>
-inline TagType<TTag, T> load_ptr(const T* src, TTag /*tag*/) {
+inline TagType<TTag, T> load(const T* src, TTag /*tag*/) {
   return TagType<TTag, T>::load(src);
 }
 template<Vectorizable T, OptValuedPartVectorTag<T> TTag>
-inline TagType<TTag, T> load_ptr(const T* src, TTag tag) {
+inline TagType<TTag, T> load(const T* src, TTag tag) {
   return TagType<TTag, T>::load_part(src, tag.part());
 }
 // TODO Add masked loading?
 
-// load_ptr_extended
+// load_extended
 template<Vectorizable T>
-inline T load_ptr_extended(const T* src, OptValuedScalarTag<T> auto /*tag*/) {
+inline T load_extended(const T* src, OptValuedScalarTag<T> auto /*tag*/) {
   return *src;
 }
 template<Vectorizable T, OptValuedVectorTag<T> TTag>
-inline TagType<TTag, T> load_ptr_extended(const T* src, TTag /*tag*/) {
+inline TagType<TTag, T> load_extended(const T* src, TTag /*tag*/) {
   return TagType<TTag, T>::load(src);
 }
 
@@ -64,17 +88,17 @@ inline bool is_load_valid(std::size_t remaining, TTag tag) {
 }
 // TODO Support masked loading?
 
-// store_ptr
+// store
 template<Vectorizable T>
-inline void store_ptr(T* dst, T src, OptValuedScalarTag<T> auto /*tag*/) {
+inline void store(T* dst, T src, OptValuedScalarTag<T> auto /*tag*/) {
   *dst = src;
 }
 template<Vectorizable T, OptValuedFullVectorTag<T> TTag>
-inline void store_ptr(T* dst, TagType<TTag, T> src, TTag /*tag*/) {
+inline void store(T* dst, TagType<TTag, T> src, TTag /*tag*/) {
   src.store(dst);
 }
 template<Vectorizable T, OptValuedPartVectorTag<T> TTag>
-inline void store_ptr(T* dst, TagType<TTag, T> src, TTag tag) {
+inline void store(T* dst, TagType<TTag, T> src, TTag tag) {
   src.store_part(dst, tag.part());
 }
 // TODO Support masked storing?
@@ -85,15 +109,15 @@ inline T gather(std::span<const T, tExtent> data, IntVectorizable auto idx,
                 OptValuedScalarTag<T> auto /*tag*/) {
   return data[idx];
 }
-template<Vectorizable T, std::size_t tExtent, OptTypedFullVectorTag<T> TTag>
+template<Vectorizable T, std::size_t tExtent, OptValuedFullVectorTag<T> TTag>
 inline Vector<T, TTag::size> gather(std::span<const T, tExtent> data, IntVector auto idxs,
                                     TTag /*tag*/) {
   return gather(data, idxs);
 }
-template<Vectorizable T, std::size_t tExtent, std::size_t tSize>
-inline Vector<T, tSize> gather(std::span<const T, tExtent> data, IntVector auto idxs,
-                               OptValuedPartialVectorTag<T> auto tag) {
-  return mask_gather(data, tag.mask(), idxs);
+template<Vectorizable T, std::size_t tExtent, OptValuedPartialVectorTag<T> TTag>
+inline Vector<T, TTag::size> gather(std::span<const T, tExtent> data, IntVector auto idxs,
+                                    TTag tag) {
+  return mask_gather(data, tag.mask(type_tag<T>), idxs);
 }
 
 // mask_gather
@@ -108,16 +132,24 @@ inline Vector<T, TTag::size> mask_gather(std::span<const T, tExtent> data, AnyMa
   return mask_gather(data, tag.mask(mask), idxs);
 }
 
-// zero
-template<Vectorizable T, OptValuedTag<T> TTag>
-inline TagType<TTag, T> zero(TTag /*tag*/) {
-  return TagType<TTag, T>{};
+// expand scalar with anything
+template<Vectorizable T>
+inline T expand_any(T x, OptValuedScalarTag<T> auto /*tag*/) {
+  return x;
+}
+template<Vectorizable T, OptValuedVectorTag<T> TTag>
+inline TagType<TTag, T> expand_any(T x, TTag /*tag*/) {
+  return TagType<TTag, T>::expanded_any(x);
 }
 
-// constant
-template<Vectorizable T, OptValuedTag<T> TTag>
-inline TagType<TTag, T> constant(T value, TTag /*tag*/) {
-  return TagType<TTag, T>{value};
+// expand scalar with zero
+template<Vectorizable T>
+inline T expand_zero(T x, OptValuedScalarTag<T> auto /*tag*/) {
+  return x;
+}
+template<Vectorizable T, OptValuedVectorTag<T> TTag>
+inline TagType<TTag, T> expand_zero(T x, TTag /*tag*/) {
+  return TagType<TTag, T>::expanded_zero(x);
 }
 
 // shingle_up with front=0
@@ -127,7 +159,7 @@ inline T shingle_up(T /*base*/, OptValuedScalarTag<T> auto /*tag*/) {
 }
 template<AnyVector TVec, typename TTag>
 requires(OptTypedFullVectorTag<TTag, TVec> || OptTypedPartVectorTag<TTag, TVec>)
-inline TVec shingle_up(TVec base, OptTypedVectorTag<TVec> auto /*tag*/) {
+inline TVec shingle_up(TVec base, TTag /*tag*/) {
   return base.shingle_up();
 }
 // TODO I do not know what this would be for masked tags
@@ -139,8 +171,7 @@ inline T shingle_up(T front, T /*base*/, OptValuedScalarTag<T> auto /*tag*/) {
 }
 template<AnyVector TVec, typename TTag>
 requires(OptTypedFullVectorTag<TTag, TVec> || OptTypedPartVectorTag<TTag, TVec>)
-inline TVec shingle_up(typename TVec::Value front, TVec base,
-                       OptTypedVectorTag<TVec> auto /*tag*/) {
+inline TVec shingle_up(typename TVec::Value front, TVec base, TTag /*tag*/) {
   return base.shingle_up(front);
 }
 // TODO I do not know what this would be for masked tags
@@ -196,7 +227,7 @@ inline TVec::Value horizontal_add(TVec value, OptTypedVectorTag<TVec> auto tag) 
   inline T OP(T value, OptValuedScalarTag<T> auto /*tag*/) { \
     return value; \
   } \
-  template<AnyVector TVec, std::size_t tSize> \
+  template<AnyVector TVec> \
   inline TVec::Value OP(TVec value, OptTypedFullVectorTag<TVec> auto /*tag*/) { \
     return OP(value); \
   } \
@@ -215,8 +246,50 @@ inline bool horizontal_and(TMask mask, OptTypedFullVectorTag<VectorFor<TMask>> a
 }
 template<AnyMask TMask>
 inline bool horizontal_and(TMask mask, OptTypedPartialVectorTag<VectorFor<TMask>> auto tag) {
-  return horizontal_and(mask | ~tag.mask(type_tag<typename TMask::VecValue>));
+  return horizontal_and(mask || !tag.mask(type_tag<typename TMask::VectorValue>));
 }
+
+// load_multibyte
+template<std::size_t tSrcBytes, OptValuedScalarTag<UnsignedInt<std::bit_ceil(tSrcBytes)>> TTag>
+static UnsignedInt<std::bit_ceil(tSrcBytes)>
+load_multibyte(const std::byte* data, IndexTag<tSrcBytes> src_bytes, TTag /*tag*/) {
+  return backend::load_multibyte(data, src_bytes);
+}
+template<std::size_t tSrcBytes, OptValuedVectorTag<UnsignedInt<std::bit_ceil(tSrcBytes)>> TTag>
+static Vector<UnsignedInt<std::bit_ceil(tSrcBytes)>, TTag::size>
+load_multibyte(const std::byte* data, IndexTag<tSrcBytes> src_bytes, TTag /*tag*/) {
+  using Out = Vector<UnsignedInt<std::bit_ceil(tSrcBytes)>, TTag::size>;
+  return Out::load_multibyte(data, src_bytes);
+}
+template<MultiByteIterator TIt, AnyTag TTag>
+static auto load_multibyte(TIt it, TTag tag) {
+  return load_multibyte(it.raw(), index_tag<TIt::Container::element_bytes>, tag);
+}
+
+// transform
+template<typename TSize = std::size_t>
+GREX_ALWAYS_INLINE inline auto transform(auto op, AnyScalarTag auto /*tag*/) {
+  return op(value_tag<TSize, 0>);
+}
+template<typename TSize = std::size_t, FullVectorTag TTag>
+GREX_ALWAYS_INLINE inline auto transform(auto op, TTag /*tag*/) {
+  static constexpr std::size_t size = TTag::size;
+  using Val0 = decltype(op(value_tag<TSize, 0>));
+  return static_apply<size>([&]<std::size_t... tIdxs>() {
+    static_assert((... && std::same_as<Val0, decltype(op(value_tag<TSize, tIdxs>))>));
+    return Vector<Val0, size>{op(value_tag<TSize, tIdxs>)...};
+  });
+}
+template<typename TSize = std::size_t, PartVectorTag TTag>
+GREX_ALWAYS_INLINE inline auto transform(auto op, TTag tag) {
+  static constexpr std::size_t size = TTag::size;
+  using Val0 = decltype(op(value_tag<TSize, 0>));
+  return static_apply<size>([&]<std::size_t... tIdxs>() {
+    static_assert((... && std::same_as<Val0, decltype(op(value_tag<TSize, tIdxs>))>));
+    return Vector<Val0, size>{((tIdxs < tag.part()) ? op(value_tag<TSize, tIdxs>) : Val0{})...};
+  });
+}
+// TODO Support for masked transformations?
 } // namespace grex
 
 #endif // INCLUDE_GREX_OPERATIONS_TAGGED_HPP

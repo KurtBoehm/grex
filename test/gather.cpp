@@ -53,10 +53,11 @@ void gather(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
     auto mval = [&](std::size_t /*dummy*/) { return bool(mdist(rng)); };
 
     auto op = [&]<std::size_t tSize>(grex::IndexTag<tSize> /*tag*/) {
+      std::uniform_int_distribution<std::size_t> pdist{0, tSize};
+
       for (std::size_t i = 0; i < repetitions; ++i) {
         grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
           test::VectorChecker<TIndex, tSize> idxs{ival(tIdxs)...};
-
           // gather
           {
             test::VectorChecker<TValue, tSize> gathered{
@@ -65,8 +66,14 @@ void gather(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
             };
             gathered.check("gather", false);
           }
-
-          // mask gather
+          {
+            test::VectorChecker<TValue, tSize> gathered{
+              grex::gather(sdata, idxs.vec, grex::typed_full_tag<TValue, tSize>),
+              {sdata[std::size_t(idxs.ref[tIdxs])]...},
+            };
+            gathered.check("gather tagged", false);
+          }
+          // mask_gather
           {
             test::MaskChecker<TValue, tSize> m{mval(tIdxs)...};
             test::VectorChecker<TValue, tSize> gathered{
@@ -74,6 +81,22 @@ void gather(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
               {(m.ref[tIdxs] ? sdata[std::size_t(idxs.ref[tIdxs])] : TValue{})...},
             };
             gathered.check("mask_gather", false);
+          }
+          {
+            const std::size_t part = pdist(rng);
+            const test::VectorChecker<TValue, tSize> gathered{
+              grex::gather(sdata, idxs.vec, grex::part_tag<tSize>(part)),
+              {((tIdxs < part) ? sdata[std::size_t(idxs.ref[tIdxs])] : TValue{})...},
+            };
+            gathered.check("gather part tagged", false);
+          }
+          {
+            test::MaskChecker<TValue, tSize> m{mval(tIdxs)...};
+            test::VectorChecker<TValue, tSize> gathered{
+              grex::gather(sdata, idxs.vec, grex::typed_masked_tag(m.mask)),
+              {(m.ref[tIdxs] ? sdata[std::size_t(idxs.ref[tIdxs])] : TValue{})...},
+            };
+            gathered.check("gather masked tagged", false);
           }
         });
       }

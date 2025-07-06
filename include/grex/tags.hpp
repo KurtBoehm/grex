@@ -35,11 +35,14 @@ struct ScalarTag {
     return x;
   }
 };
+inline constexpr ScalarTag scalar_tag{};
 
 template<Vectorizable T>
 struct TypedScalarTag : public ScalarTag {
   using Value = T;
 };
+template<Vectorizable T>
+inline constexpr TypedScalarTag<T> typed_scalar_tag{};
 
 template<Vectorizable T>
 [[nodiscard]] TypedScalarTag<T> ScalarTag::instantiate(TypeTag<T> /*tag*/) const {
@@ -80,11 +83,15 @@ struct FullTag {
     return size;
   }
 };
+template<std::size_t tSize>
+inline constexpr FullTag<tSize> full_tag{};
 
 template<Vectorizable T, std::size_t tSize>
 struct TypedFullTag : public FullTag<tSize> {
   using Value = T;
 };
+template<Vectorizable T, std::size_t tSize>
+inline constexpr TypedFullTag<T, tSize> typed_full_tag{};
 
 template<std::size_t tSize>
 template<Vectorizable T>
@@ -128,6 +135,10 @@ struct TypedMaskedTag {
 private:
   Mask<Value, tSize> mask_;
 };
+template<Vectorizable T, std::size_t tSize>
+inline TypedMaskedTag<T, tSize> typed_masked_tag(Mask<T, tSize> mask) {
+  return TypedMaskedTag<T, tSize>{mask};
+}
 
 template<std::size_t tSize>
 struct PartTag {
@@ -161,6 +172,10 @@ struct PartTag {
 private:
   std::size_t part_;
 };
+template<std::size_t tSize>
+inline PartTag<tSize> part_tag(std::size_t part) {
+  return PartTag<tSize>{part};
+}
 
 template<typename TTag>
 struct TagTraits {

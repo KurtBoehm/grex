@@ -7,12 +7,12 @@
 #ifndef INCLUDE_GREX_OPERATIONS_HPP
 #define INCLUDE_GREX_OPERATIONS_HPP
 
+#include <concepts>
 #include <limits>
 
 #include "grex/backend/active/operations.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/base/defs.hpp"
-#include "grex/tags.hpp"
 #include "grex/types.hpp"
 
 namespace grex {
@@ -70,8 +70,16 @@ inline bool is_finite(T a) {
   return backend::is_finite(backend::Scalar{a});
 }
 
+// To determine whether a conversion is safe, i.e. guaranteed not to change finite values,
+// there are two cases to consider:
+// - floating-point → integer: Always unsafe, since max(f32) ≈ 2^128
+// - otherwise: digits(TDst) >= digits(TSrc), signed(Dst) || unsigned(Src)
+// One of the underlying assumptions is that the number of bits for the mantissa and the exponent
+// grow/shrink together, which is true for f32/f64 (there is no support for f16/bf16)
 template<typename TDst, typename TSrc>
-concept SafeConversion = std::numeric_limits<TDst>::digits >= std::numeric_limits<TSrc>::digits;
+concept SafeConversion = (!std::floating_point<TSrc> || std::floating_point<TDst>) &&
+                         (std::is_signed_v<TDst> || std::is_unsigned_v<TSrc>) &&
+                         std::numeric_limits<TDst>::digits >= std::numeric_limits<TSrc>::digits;
 
 // convert
 template<Vectorizable TDst, Vectorizable TSrc, bool tSafe>

@@ -27,6 +27,8 @@
 // assuming N = std::bitceil(M).
 // We call M the `src_bytes` and N the `dst_bytes`, while `size` denotes the number of values
 // being converted.
+// One basic assumption is that the underlying memory is padded at the beginning and end
+// by the numnber of bytes in the largest supported SIMD register
 
 namespace grex::backend {
 namespace mb {

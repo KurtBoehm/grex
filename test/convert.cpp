@@ -70,30 +70,32 @@ void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
               src.vec.convert(grex::type_tag<TDst>),
               std::array{TDst(src.ref[tIdxs])...},
             };
-            dst.check([&] { return fmt::format("vector {}", src); }, false);
+            dst.check([&] { return fmt::format("vector/scalar {}", src); }, false);
 
             grex::Vector<TDst, tSize> dstvec = grex::convert_unsafe<TDst>(src.vec);
-            test::check([&] { return fmt::format("vec-vec {}", src); }, dst.vec, dstvec, false);
+            test::check([&] { return fmt::format("vector/tagged vector {}", src); }, dst.vec,
+                        dstvec, false);
 
             test::VectorChecker<TDst, tSize> dstsca{
               src.vec.convert(grex::type_tag<TDst>),
               std::array{grex::convert_unsafe<TDst>(src.ref[tIdxs])...},
             };
-            dstsca.check([&] { return fmt::format("vec-sca {}", src); }, false);
+            dstsca.check([&] { return fmt::format("vector/tagged scalar {}", src); }, false);
           }
           {
             test::MaskChecker<TSrc, tSize> src{bval(tIdxs)...};
             test::MaskChecker<TDst, tSize> dst{src.mask.convert(grex::type_tag<TDst>), src.ref};
-            dst.check([&] { return fmt::format("mask {}", src); }, false);
+            dst.check([&] { return fmt::format("mask/copy {}", src); }, false);
 
             grex::Mask<TDst, tSize> dstmsk = grex::convert<TDst>(src.mask);
-            test::check([&] { return fmt::format("msk-msk {}", src); }, dst.mask, dstmsk, false);
+            test::check([&] { return fmt::format("mask/tagged mask {}", src); }, dst.mask, dstmsk,
+                        false);
 
             test::MaskChecker<TDst, tSize> dstsca{
               src.mask.convert(grex::type_tag<TDst>),
               std::array{grex::convert<TDst>(src.ref[tIdxs])...},
             };
-            dstsca.check([&] { return fmt::format("msk-sca {}", src); }, false);
+            dstsca.check([&] { return fmt::format("mask/tagged scalar {}", src); }, false);
           }
         });
       }

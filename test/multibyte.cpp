@@ -52,12 +52,29 @@ void run(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
     grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
       for (std::size_t r = 0; r < repetitions; ++r) {
         const std::size_t i = idist(rng);
-        test::VectorChecker<Dst, tSize> checker{
-          grex::Vector<Dst, tSize>::load_multibyte((mbi.begin() + i).raw(),
-                                                   grex::index_tag<src_bytes>),
-          std::array{std::as_const(mbi)[i + tIdxs]...},
-        };
-        checker.check("load_multibyte", false);
+        const auto it = std::as_const(mbi).begin() + i;
+
+        {
+          test::VectorChecker<Dst, tSize> checker{
+            grex::Vector<Dst, tSize>::load_multibyte(it),
+            std::array{it[tIdxs]...},
+          };
+          checker.check("load_multibyte vector/thesauros", false);
+        }
+        {
+          test::VectorChecker<Dst, tSize> checker{
+            grex::Vector<Dst, tSize>::load_multibyte(it),
+            std::array{grex::load_multibyte(it + tIdxs, grex::scalar_tag)...},
+          };
+          checker.check("load_multibyte vector/tagged scalar", false);
+        }
+        {
+          test::VectorChecker<Dst, tSize> checker{
+            grex::load_multibyte(it, grex::full_tag<tSize>),
+            std::array{grex::load_multibyte(it + tIdxs, grex::scalar_tag)...},
+          };
+          checker.check("load_multibyte tagged vector/tagged scalar", false);
+        }
       }
     });
   };

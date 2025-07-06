@@ -31,17 +31,33 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
   // expand values
   for (std::size_t i = 0; i < repetitions; ++i) {
     const T value = dist(rng);
-    const Vec vector = Vec::expanded_any(value);
-    test::check("expanded_any", value, vector[0], false);
+    test::check("expanded_any", value, Vec::expanded_any(value)[0], false);
+    test::check("expand_any vector tagged", value, expand_any(value, grex::full_tag<tSize>)[0],
+                false);
+    test::check("expand_any both tagged", expand_any(value, grex::scalar_tag),
+                expand_any(value, grex::full_tag<tSize>)[0], false);
   }
   grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
     for (std::size_t i = 0; i < repetitions; ++i) {
       const T value = dist(rng);
+
       const test::VectorChecker<T, tSize> checker{
         Vec::expanded_zero(value),
         std::array{((tIdxs == 0) ? value : T{})...},
       };
       checker.check("expanded_zero", false);
+
+      const test::VectorChecker<T, tSize> checker_tagged_vec{
+        grex::expand_zero(value, grex::full_tag<tSize>),
+        std::array{((tIdxs == 0) ? value : T{})...},
+      };
+      checker_tagged_vec.check("expanded_zero vector tagged", false);
+
+      const test::VectorChecker<T, tSize> checker_tagged_both{
+        grex::expand_zero(value, grex::full_tag<tSize>),
+        std::array{((tIdxs == 0) ? grex::expand_zero(value, grex::scalar_tag) : T{})...},
+      };
+      checker_tagged_both.check("expanded_zero both tagged", false);
     }
   });
 

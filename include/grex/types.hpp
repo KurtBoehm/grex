@@ -24,6 +24,7 @@ using backend::register_bits;
 template<Vectorizable T, std::size_t tSize>
 struct Mask {
   using Value = bool;
+  using VectorValue = T;
   using Backend = backend::MaskFor<T, tSize>;
   static constexpr std::size_t size = tSize;
 
@@ -139,6 +140,10 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   static Vector load_multibyte(const std::byte* data, IndexTag<tSrcBytes> src_bytes) {
     const auto* raw = reinterpret_cast<const u8*>(data);
     return Vector{backend::load_multibyte(raw, src_bytes, type_tag<Backend>)};
+  }
+  template<MultiByteIterator TIt>
+  static Vector load_multibyte(TIt it) {
+    return load_multibyte(it.raw(), index_tag<TIt::Container::element_bytes>);
   }
 
   static Vector undefined() {

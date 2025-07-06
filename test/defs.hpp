@@ -105,7 +105,11 @@ inline void check(const auto& label, T a, T b, bool verbose = true) {
   check_msg(label, a == b, a, b, verbose);
 }
 template<typename T1, typename T2>
-requires(std::tuple_size_v<T1> == std::tuple_size_v<T2>)
+requires(requires {
+  std::tuple_size<T1>::value;
+  std::tuple_size<T2>::value;
+  requires std::tuple_size_v<T1> == std::tuple_size_v<T2>;
+})
 inline void check(const auto& label, T1 a, T2 b, bool verbose = true) {
   constexpr std::size_t size = std::tuple_size_v<T1>;
   const bool same = static_apply<size>(
@@ -129,9 +133,7 @@ struct VectorChecker {
   VectorChecker(grex::Vector<T, tSize> v, std::array<T, tSize> a) : vec{v}, ref{a} {}
 
   void check(const auto& label, bool verbose = true) const {
-    const bool same = static_apply<tSize>(
-      [&]<std::size_t... tIdxs>() { return (... && are_equivalent(vec[tIdxs], ref[tIdxs])); });
-    check_msg(label, same, vec, ref, verbose);
+    test::check(label, vec, ref, verbose);
   }
 };
 template<Vectorizable T, std::size_t tSize>
@@ -155,9 +157,7 @@ struct MaskChecker {
   MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
 
   void check(const auto& label, bool verbose = true) const {
-    const bool same = static_apply<tSize>(
-      [&]<std::size_t... tIdxs>() { return (... && (mask[tIdxs] == ref[tIdxs])); });
-    check_msg(label, same, mask, ref, verbose);
+    test::check(label, mask, ref, verbose);
   }
 };
 template<Vectorizable T, std::size_t tSize>
