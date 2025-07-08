@@ -299,7 +299,7 @@ inline void for_each(auto op, AnyValueTag<IterDirection> auto /*tag*/,
 template<typename TSize = std::size_t, OptValuedFullVectorTag<TSize> TTag>
 inline void for_each(auto op, AnyValueTag<IterDirection> auto dir, TTag /*tag*/) {
   static constexpr std::size_t size = TTag::size;
-  if constexpr (dir.value == IterDirection::FORWARD) {
+  if constexpr (dir.value == IterDirection::forward) {
     for (TSize i = 0; i < size; ++i) {
       op(i);
     }
@@ -312,7 +312,7 @@ inline void for_each(auto op, AnyValueTag<IterDirection> auto dir, TTag /*tag*/)
 template<typename TSize = std::size_t, OptValuedPartVectorTag<TSize> TTag>
 inline auto for_each(auto op, AnyValueTag<IterDirection> auto dir, TTag tag) {
   const auto part = TSize(tag.part());
-  if constexpr (dir.value == IterDirection::FORWARD) {
+  if constexpr (dir.value == IterDirection::forward) {
     for (TSize i = 0; i < part; ++i) {
       op(i);
     }
@@ -324,7 +324,7 @@ inline auto for_each(auto op, AnyValueTag<IterDirection> auto dir, TTag tag) {
 }
 template<typename TSize = std::size_t>
 inline void for_each(auto op, AnyTag auto tag) {
-  for_each(std::move(op), auto_tag<IterDirection::FORWARD>, tag);
+  for_each(std::move(op), auto_tag<IterDirection::forward>, tag);
 }
 // TODO Support for masked for_each?
 } // namespace grex

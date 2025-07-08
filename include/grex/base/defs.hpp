@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -145,7 +146,13 @@ concept AnyIndexTag = AnyValueTag<TTag, std::size_t>;
 template<typename TTag>
 concept AnyBoolTag = AnyValueTag<TTag, bool>;
 
-enum struct IterDirection : bool { FORWARD, BACKWARD };
+enum struct IterDirection : bool { forward, backward };
+inline std::string_view format_as(IterDirection dir) {
+  switch (dir) {
+  case IterDirection::forward: return "forward";
+  case IterDirection::backward: return "backward";
+  }
+}
 
 #if defined(__GNUC__)
 #define GREX_ALWAYS_INLINE __attribute__((always_inline))
