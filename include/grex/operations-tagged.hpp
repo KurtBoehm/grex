@@ -268,28 +268,65 @@ static auto load_multibyte(TIt it, TTag tag) {
 
 // transform
 template<typename TSize = std::size_t>
-GREX_ALWAYS_INLINE inline auto transform(auto op, AnyScalarTag auto /*tag*/) {
+GREX_ALWAYS_INLINE inline auto transform(auto op, OptValuedScalarTag<TSize> auto /*tag*/) {
   return op(value_tag<TSize, 0>);
 }
-template<typename TSize = std::size_t, FullVectorTag TTag>
+template<typename TSize = std::size_t, OptValuedFullVectorTag<TSize> TTag>
 GREX_ALWAYS_INLINE inline auto transform(auto op, TTag /*tag*/) {
   static constexpr std::size_t size = TTag::size;
-  using Val0 = decltype(op(value_tag<TSize, 0>));
+  using Value = decltype(op(value_tag<TSize, 0>));
   return static_apply<size>([&]<std::size_t... tIdxs>() {
-    static_assert((... && std::same_as<Val0, decltype(op(value_tag<TSize, tIdxs>))>));
-    return Vector<Val0, size>{op(value_tag<TSize, tIdxs>)...};
+    static_assert((... && std::same_as<Value, decltype(op(value_tag<TSize, tIdxs>))>));
+    return Vector<Value, size>{op(value_tag<TSize, tIdxs>)...};
   });
 }
-template<typename TSize = std::size_t, PartVectorTag TTag>
+template<typename TSize = std::size_t, OptValuedPartVectorTag<TSize> TTag>
 GREX_ALWAYS_INLINE inline auto transform(auto op, TTag tag) {
   static constexpr std::size_t size = TTag::size;
-  using Val0 = decltype(op(value_tag<TSize, 0>));
+  using Value = decltype(op(value_tag<TSize, 0>));
   return static_apply<size>([&]<std::size_t... tIdxs>() {
-    static_assert((... && std::same_as<Val0, decltype(op(value_tag<TSize, tIdxs>))>));
-    return Vector<Val0, size>{((tIdxs < tag.part()) ? op(value_tag<TSize, tIdxs>) : Val0{})...};
+    static_assert((... && std::same_as<Value, decltype(op(value_tag<TSize, tIdxs>))>));
+    return Vector<Value, size>{((tIdxs < tag.part()) ? op(value_tag<TSize, tIdxs>) : Value{})...};
   });
 }
-// TODO Support for masked transformations?
+// TODO Support for masked transform?
+
+template<typename TSize = std::size_t>
+inline void for_each(auto op, AnyValueTag<IterDirection> auto /*tag*/,
+                     OptValuedScalarTag<TSize> auto /*tag*/) {
+  op(value_tag<TSize, 0>);
+}
+template<typename TSize = std::size_t, OptValuedFullVectorTag<TSize> TTag>
+inline void for_each(auto op, AnyValueTag<IterDirection> auto dir, TTag /*tag*/) {
+  static constexpr std::size_t size = TTag::size;
+  if constexpr (dir.value == IterDirection::FORWARD) {
+    for (TSize i = 0; i < size; ++i) {
+      op(i);
+    }
+  } else {
+    for (TSize i = size; i > 0; --i) {
+      op(i - 1);
+    }
+  }
+}
+template<typename TSize = std::size_t, OptValuedPartVectorTag<TSize> TTag>
+inline auto for_each(auto op, AnyValueTag<IterDirection> auto dir, TTag tag) {
+  const auto part = TSize(tag.part());
+  if constexpr (dir.value == IterDirection::FORWARD) {
+    for (TSize i = 0; i < part; ++i) {
+      op(i);
+    }
+  } else {
+    for (TSize i = part; i > 0; --i) {
+      op(i - 1);
+    }
+  }
+}
+template<typename TSize = std::size_t>
+inline void for_each(auto op, AnyTag auto tag) {
+  for_each(std::move(op), auto_tag<IterDirection::FORWARD>, tag);
+}
+// TODO Support for masked for_each?
 } // namespace grex
 
 #endif // INCLUDE_GREX_OPERATIONS_TAGGED_HPP

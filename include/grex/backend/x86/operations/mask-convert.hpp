@@ -11,7 +11,6 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 
 #if GREX_X86_64_LEVEL < 4
-#include <concepts>
 #include <cstddef>
 
 #include <immintrin.h>
@@ -37,19 +36,19 @@ mask2vector(SuperMask<THalf> m) {
 }
 
 // Convert (signed) integers to a mask
-template<Vectorizable T, std::size_t tSize, Vectorizable TDst>
-requires(std::signed_integral<T> && sizeof(T) == sizeof(TDst))
+template<SignedIntVectorizable T, std::size_t tSize, Vectorizable TDst>
+requires(sizeof(T) == sizeof(TDst))
 inline Mask<TDst, tSize> vector2mask(Vector<T, tSize> m, TypeTag<TDst> /*tag*/) {
   return {.r = m.r};
 }
-template<Vectorizable T, std::size_t tPart, std::size_t tSize, Vectorizable TDst>
-requires(std::signed_integral<T> && sizeof(T) == sizeof(TDst))
+template<SignedIntVectorizable T, std::size_t tPart, std::size_t tSize, Vectorizable TDst>
+requires(sizeof(T) == sizeof(TDst))
 inline SubMask<TDst, tPart, tSize> vector2mask(SubVector<T, tPart, tSize> m,
                                                TypeTag<TDst> /*tag*/) {
   return SubMask<TDst, tPart, tSize>{m.registr()};
 }
 template<typename THalf, Vectorizable TDst>
-requires(std::signed_integral<typename THalf::Value> &&
+requires(SignedIntVectorizable<typename THalf::Value> &&
          sizeof(typename THalf::Value) == sizeof(TDst))
 inline MaskFor<TDst, 2 * THalf::size> vector2mask(SuperVector<THalf> m, TypeTag<TDst> tag) {
   return {.lower = vector2mask(m.lower, tag), .upper = vector2mask(m.upper, tag)};

@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <bit>
-#include <concepts>
 #include <cstddef>
 #include <limits>
 #include <memory>
@@ -25,8 +24,9 @@
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 template<typename T>
-using Distribution = std::conditional_t<std::floating_point<T>, std::uniform_real_distribution<T>,
-                                        std::uniform_int_distribution<T>>;
+using Distribution =
+  std::conditional_t<grex::FloatVectorizable<T>, std::uniform_real_distribution<T>,
+                     std::uniform_int_distribution<T>>;
 
 template<grex::Vectorizable TValue>
 void gather(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {

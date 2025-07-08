@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <array>
 #include <bit>
-#include <concepts>
 #include <cstddef>
 #include <limits>
 #include <random>
@@ -26,15 +25,15 @@ namespace test = grex::test;
 using Rng = pcg64;
 inline constexpr std::size_t repetitions = 4096;
 template<typename T>
-using Distribution = std::conditional_t<std::floating_point<T>, std::uniform_real_distribution<T>,
+using Distribution = std::conditional_t<grex::FloatVectorizable<T>, std::uniform_real_distribution<T>,
                                         std::uniform_int_distribution<T>>;
 
 template<typename TSrc, typename TDst>
 inline auto make_distribution() {
-  if constexpr (std::floating_point<TSrc>) {
+  if constexpr (grex::FloatVectorizable<TSrc>) {
     return [gen = test::make_distribution<TSrc>()](Rng& rng) mutable {
       TSrc f = gen(rng);
-      if constexpr (std::integral<TDst>) {
+      if constexpr (grex::IntVectorizable<TDst>) {
         // The C++ standard only specifies behaviour if the floating-point value
         // is representable by the destination integer
         // I adopt the same approach to keep the amount of work reasonable

@@ -7,7 +7,6 @@
 #ifndef INCLUDE_GREX_OPERATIONS_HPP
 #define INCLUDE_GREX_OPERATIONS_HPP
 
-#include <concepts>
 #include <limits>
 
 #include "grex/backend/active/operations.hpp"
@@ -17,7 +16,7 @@
 
 namespace grex {
 #define GREX_MATH_FMA(NAME) \
-  template<FpVectorizable T> \
+  template<FloatVectorizable T> \
   inline T NAME(T a, T b, T c) { \
     return backend::NAME(backend::Scalar{a}, backend::Scalar{b}, backend::Scalar{c}).value; \
   }
@@ -27,7 +26,7 @@ GREX_MATH_FMA(fnmadd)
 GREX_MATH_FMA(fnmsub)
 #undef GREX_MATH_FMA
 
-template<FpVectorizable T>
+template<FloatVectorizable T>
 inline T sqrt(T a) {
   return backend::sqrt(backend::Scalar{a}).value;
 }
@@ -77,8 +76,8 @@ inline bool is_finite(T a) {
 // One of the underlying assumptions is that the number of bits for the mantissa and the exponent
 // grow/shrink together, which is true for f32/f64 (there is no support for f16/bf16)
 template<typename TDst, typename TSrc>
-concept SafeConversion = (!std::floating_point<TSrc> || std::floating_point<TDst>) &&
-                         (std::is_signed_v<TDst> || std::is_unsigned_v<TSrc>) &&
+concept SafeConversion = (!FloatVectorizable<TSrc> || FloatVectorizable<TDst>) &&
+                         (SignedVectorizable<TDst> || UnsignedVectorizable<TSrc>) &&
                          std::numeric_limits<TDst>::digits >= std::numeric_limits<TSrc>::digits;
 
 // convert

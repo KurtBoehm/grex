@@ -54,12 +54,12 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
         vv2v("plus", std::plus{});
         vv2v("minus", std::minus{});
         vv2v("multiplies", std::multiplies{});
-        if constexpr (std::floating_point<T>) {
+        if constexpr (grex::FloatVectorizable<T>) {
           vv2v("divides", std::divides{});
         }
 
         // bit operations
-        if constexpr (std::integral<T>) {
+        if constexpr (grex::IntVectorizable<T>) {
           v2v("bit_not", std::bit_not{});
           vv2v("bit_and", std::bit_and{});
           vv2v("bit_or", std::bit_or{});
@@ -67,11 +67,11 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
         }
 
         // abs/sqrt
-        if constexpr (std::floating_point<T> || std::signed_integral<T>) {
+        if constexpr (grex::SignedVectorizable<T>) {
           v2vx("abs", [](auto a) { return grex::abs(a); }, [](auto a) { return std::abs(a); });
           v2v("abs", [](auto a) { return grex::abs(a); });
         }
-        if constexpr (std::floating_point<T>) {
+        if constexpr (grex::FloatVectorizable<T>) {
           v2vx("sqrt", [](auto a) { return grex::sqrt(a); }, [](auto a) { return std::sqrt(a); });
           v2v("sqrt", [](auto a) { return grex::sqrt(a); });
         }
@@ -87,7 +87,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
         vv2v("max", [](auto a, auto b) { return grex::max(a, b); });
 
         // fma family
-        if constexpr (std::floating_point<T>) {
+        if constexpr (grex::FloatVectorizable<T>) {
           auto vvv2v = [&](auto label, auto grex_op, auto fused_op, auto fb_op) {
             VC a{dval(tIdxs)...};
             VC b{dval(tIdxs)...};
@@ -162,7 +162,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
         mvv2v(
           "mask_multiply", [](auto m, auto a, auto b) { return grex::mask_multiply(m, a, b); },
           std::multiplies{});
-        if constexpr (std::floating_point<T>) {
+        if constexpr (grex::FloatVectorizable<T>) {
           mvv2v(
             "mask_divide", [](auto m, auto a, auto b) { return grex::mask_divide(m, a, b); },
             std::divides{});
@@ -217,7 +217,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
       }
 
       // vector-to-mask operations
-      if constexpr (std::floating_point<T>) {
+      if constexpr (grex::FloatVectorizable<T>) {
         VC a{((tIdxs % 3 == 0)
                 ? std::numeric_limits<T>::quiet_NaN()
                 : ((tIdxs % 3 == 2) ? std::numeric_limits<T>::infinity() : T(tIdxs)))...};

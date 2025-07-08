@@ -7,7 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_EXPAND_SCALAR_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_EXPAND_SCALAR_HPP
 
-#include <concepts>
 #include <cstddef>
 
 #include <immintrin.h>
@@ -50,8 +49,8 @@ inline f64x2 expand(Scalar<f64> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) 
   return {.r = _mm_set_sd(x.value)};
 }
 // Integers with at most 32 bits: Cast to i32
-template<Vectorizable T, bool tZero>
-requires(std::integral<T> && sizeof(T) <= 4)
+template<IntVectorizable T, bool tZero>
+requires(sizeof(T) <= 4)
 inline Vector<T, native_sizes<T>.front()>
 expand(Scalar<T> x, IndexTag<native_sizes<T>.front()> /*tag*/, BoolTag<tZero> /*tag*/) {
   // force zero extension
@@ -59,8 +58,8 @@ expand(Scalar<T> x, IndexTag<native_sizes<T>.front()> /*tag*/, BoolTag<tZero> /*
   return {.r = _mm_cvtsi32_si128(i32(Unsigned(x.value)))};
 }
 // Integers with 64 bits: Cast to i64
-template<Vectorizable T, bool tZero>
-requires(std::integral<T> && sizeof(T) == 8)
+template<IntVectorizable T, bool tZero>
+requires(sizeof(T) == 8)
 inline Vector<T, 2> expand(Scalar<T> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
   return {.r = _mm_cvtsi64_si128(i64(x.value))};
 }

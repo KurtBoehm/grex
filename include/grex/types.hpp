@@ -169,7 +169,7 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
     return Vector{backend::multiply(a.vec_, b.vec_)};
   }
   friend Vector operator/(Vector a, Vector b)
-  requires(std::floating_point<T>)
+  requires(FloatVectorizable<T>)
   {
     return Vector{backend::divide(a.vec_, b.vec_)};
   }
@@ -205,22 +205,22 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   }
 
   Vector operator~() const
-  requires(std::integral<T>)
+  requires(IntVectorizable<T>)
   {
     return Vector{backend::bitwise_not(vec_)};
   }
   friend Vector operator&(Vector a, Vector b)
-  requires(std::integral<T>)
+  requires(IntVectorizable<T>)
   {
     return Vector{backend::bitwise_and(a.vec_, b.vec_)};
   }
   friend Vector operator|(Vector a, Vector b)
-  requires(std::integral<T>)
+  requires(IntVectorizable<T>)
   {
     return Vector{backend::bitwise_or(a.vec_, b.vec_)};
   }
   friend Vector operator^(Vector a, Vector b)
-  requires(std::integral<T>)
+  requires(IntVectorizable<T>)
   {
     return Vector{backend::bitwise_xor(a.vec_, b.vec_)};
   }
@@ -297,12 +297,14 @@ concept SizedMask = MaskTrait<T>::value && T::size == tSize;
 // vector concepts
 template<typename TVec>
 concept AnyVector = VectorTrait<TVec>::value;
+template<typename TVec, typename TVal>
+concept ValuedVector = VectorTrait<TVec>::value && std::same_as<typename TVec::Value, TVal>;
 template<typename TVec, std::size_t tSize>
 concept SizedVector = VectorTrait<TVec>::value && TVec::size == tSize;
 template<typename TVec>
 concept IntVector = AnyVector<TVec> && IntVectorizable<typename TVec::Value>;
 template<typename TVec>
-concept FpVector = AnyVector<TVec> && FpVectorizable<typename TVec::Value>;
+concept FpVector = AnyVector<TVec> && FloatVectorizable<typename TVec::Value>;
 
 // type mappings
 template<AnyVector TVec>
@@ -310,13 +312,11 @@ using MaskFor = VectorTrait<TVec>::MaskFor;
 template<AnyMask TVec>
 using VectorFor = MaskTrait<TVec>::VectorFor;
 
-template<Vectorizable T, std::size_t tSize>
-requires(std::floating_point<T> || std::signed_integral<T>)
+template<SignedVectorizable T, std::size_t tSize>
 inline Vector<T, tSize> abs(Vector<T, tSize> v) {
   return Vector<T, tSize>{backend::abs(v.backend())};
 }
-template<Vectorizable T, std::size_t tSize>
-requires(std::floating_point<T>)
+template<FloatVectorizable T, std::size_t tSize>
 inline Vector<T, tSize> sqrt(Vector<T, tSize> v) {
   return Vector<T, tSize>{backend::sqrt(v.backend())};
 }
@@ -330,8 +330,7 @@ inline Vector<T, tSize> max(Vector<T, tSize> a, Vector<T, tSize> b) {
   return Vector<T, tSize>{backend::max(a.backend(), b.backend())};
 }
 
-template<Vectorizable T, std::size_t tSize>
-requires(std::floating_point<T>)
+template<FloatVectorizable T, std::size_t tSize>
 inline Mask<T, tSize> is_finite(Vector<T, tSize> v) {
   return Mask<T, tSize>{backend::is_finite(v.backend())};
 }
@@ -353,23 +352,19 @@ inline bool horizontal_and(Mask<T, tSize> m) {
   return backend::horizontal_and(m.backend());
 }
 
-template<Vectorizable T, std::size_t tSize>
-requires(std::floating_point<T>)
+template<FloatVectorizable T, std::size_t tSize>
 inline Vector<T, tSize> fmadd(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
   return Vector<T, tSize>{backend::fmadd(a.backend(), b.backend(), c.backend())};
 }
-template<Vectorizable T, std::size_t tSize>
-requires(std::floating_point<T>)
+template<FloatVectorizable T, std::size_t tSize>
 inline Vector<T, tSize> fmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
   return Vector<T, tSize>{backend::fmsub(a.backend(), b.backend(), c.backend())};
 }
-template<Vectorizable T, std::size_t tSize>
-requires(std::floating_point<T>)
+template<FloatVectorizable T, std::size_t tSize>
 inline Vector<T, tSize> fnmadd(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
   return Vector<T, tSize>{backend::fnmadd(a.backend(), b.backend(), c.backend())};
 }
-template<Vectorizable T, std::size_t tSize>
-requires(std::floating_point<T>)
+template<FloatVectorizable T, std::size_t tSize>
 inline Vector<T, tSize> fnmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
   return Vector<T, tSize>{backend::fnmsub(a.backend(), b.backend(), c.backend())};
 }
@@ -395,8 +390,7 @@ template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> mask_multiply(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b) {
   return Vector<T, tSize>{backend::mask_multiply(mask.backend(), a.backend(), b.backend())};
 }
-template<Vectorizable T, std::size_t tSize>
-requires(std::floating_point<T>)
+template<FloatVectorizable T, std::size_t tSize>
 inline Vector<T, tSize> mask_divide(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b) {
   return Vector<T, tSize>{backend::mask_divide(mask.backend(), a.backend(), b.backend())};
 }

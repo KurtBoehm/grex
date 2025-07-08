@@ -33,7 +33,7 @@ using Rng = pcg64;
 template<typename T>
 inline auto make_distribution() {
   using Limits = std::numeric_limits<T>;
-  if constexpr (std::floating_point<T>) {
+  if constexpr (grex::FloatVectorizable<T>) {
     return [](Rng& rng) {
       const int sign = std::uniform_int_distribution<int>{0, 1}(rng) * 2 - 1;
       const T base = std::uniform_real_distribution<T>{T(0.5), T(1)}(rng);
@@ -57,7 +57,7 @@ struct EquivVal {
     return result;
   }
 };
-template<std::floating_point T>
+template<FloatVectorizable T>
 inline EquivVal<T> are_equivalent(T val, T ref, T f = T{}) {
   if (std::isnan(val) && std::isnan(ref)) {
     return {.result = true, .err = 0};

@@ -32,11 +32,23 @@ static_assert(std::numeric_limits<f64>::is_iec559 && sizeof(f64) == 8);
 } // namespace primitives
 using namespace primitives;
 
-#if defined(__GNUC__)
-#define GREX_ALWAYS_INLINE __attribute__((always_inline))
-#else
-#define GREX_ALWAYS_INLINE
-#endif
+template<typename T>
+concept UnsignedIntVectorizable =
+  std::same_as<T, u8> || std::same_as<T, u16> || std::same_as<T, u32> || std::same_as<T, u64>;
+template<typename T>
+concept SignedIntVectorizable =
+  std::same_as<T, i8> || std::same_as<T, i16> || std::same_as<T, i32> || std::same_as<T, i64>;
+template<typename T>
+concept FloatVectorizable = std::same_as<T, f32> || std::same_as<T, f64>;
+
+template<typename T>
+concept IntVectorizable = UnsignedIntVectorizable<T> || SignedIntVectorizable<T>;
+template<typename T>
+concept SignedVectorizable = SignedIntVectorizable<T> || FloatVectorizable<T>;
+template<typename T>
+concept UnsignedVectorizable = UnsignedIntVectorizable<T>;
+template<typename T>
+concept Vectorizable = IntVectorizable<T> || FloatVectorizable<T>;
 
 template<typename T>
 struct SignednessTrait;
@@ -78,15 +90,8 @@ template<std::size_t tBytes>
 using UnsignedInt = SizedIntegerTrait<tBytes>::Unsigned;
 template<std::size_t tBytes>
 using SignedInt = SizedIntegerTrait<tBytes>::Signed;
-
-template<typename T>
-concept IntVectorizable =
-  std::same_as<T, u8> || std::same_as<T, i8> || std::same_as<T, u16> || std::same_as<T, i16> ||
-  std::same_as<T, u32> || std::same_as<T, i32> || std::same_as<T, u64> || std::same_as<T, i64>;
-template<typename T>
-concept FpVectorizable = std::same_as<T, f32> || std::same_as<T, f64>;
-template<typename T>
-concept Vectorizable = IntVectorizable<T> || FpVectorizable<T>;
+template<FloatVectorizable T>
+using FloatSize = UnsignedInt<sizeof(T)>;
 
 template<typename TIt>
 concept MultiByteIterator = requires(TIt it) {
@@ -139,6 +144,14 @@ template<typename TTag>
 concept AnyIndexTag = AnyValueTag<TTag, std::size_t>;
 template<typename TTag>
 concept AnyBoolTag = AnyValueTag<TTag, bool>;
+
+enum struct IterDirection : bool { FORWARD, BACKWARD };
+
+#if defined(__GNUC__)
+#define GREX_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define GREX_ALWAYS_INLINE
+#endif
 
 template<std::size_t tSize>
 constexpr decltype(auto) static_apply(auto f) {

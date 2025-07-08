@@ -5,7 +5,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <algorithm>
-#include <concepts>
 #include <cstddef>
 #include <functional>
 #include <limits>
@@ -35,7 +34,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
     grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
       {
         auto hsum_dist = [&] {
-          if constexpr (std::floating_point<T>) {
+          if constexpr (grex::FloatVectorizable<T>) {
             // to avoid nasty cancellation issues, we only consider values between 0.5 and 1
             return std::uniform_real_distribution<T>(T(0.5), T(1));
           } else {
@@ -45,7 +44,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
         auto hsum_val = [&](std::size_t /*dummy*/) { return hsum_dist(rng); };
         VC checker{hsum_val(tIdxs)...};
         auto cmp = [&](auto val, auto ref) {
-          if constexpr (std::floating_point<T>) {
+          if constexpr (grex::FloatVectorizable<T>) {
             // A tolerance factor is required due to the changed order of additions
             const T ftol = tSize;
             const auto [same, err] = test::are_equivalent(val, ref, ftol);

@@ -15,6 +15,7 @@ foreach name, parallel : {
   'convert': true,
   'expand': true,
   'gather': false,
+  'general': false,
   'horizontal': true,
   'mem': true,
   'multibyte': true,
