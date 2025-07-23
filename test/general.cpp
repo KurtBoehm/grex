@@ -1,3 +1,9 @@
+// This file is part of https://github.com/KurtBoehm/grex.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 #include <array>
 #include <cstddef>
 
@@ -48,7 +54,7 @@ int main() {
   {
     // scalar
     {
-      auto op = [](grex::AnyValueTag<grex::IterDirection> auto dir) {
+      auto op = [](grex::TypedValueTag<grex::IterDirection> auto dir) {
         std::array<int, 1> dst{0};
         grex::for_each([&](auto i) { dst.at(i) = int(i + 1); }, dir,
                        grex::typed_scalar_tag<std::size_t>);
@@ -57,7 +63,7 @@ int main() {
       op(grex::auto_tag<forward>);
       op(grex::auto_tag<backward>);
     } // vectorized
-    auto opo = [](grex::AnyIndexTag auto size, grex::AnyValueTag<grex::IterDirection> auto dir) {
+    auto opo = [](grex::AnyIndexTag auto size, grex::TypedValueTag<grex::IterDirection> auto dir) {
       // full
       {
         std::array<int, size> dst{};

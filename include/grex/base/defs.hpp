@@ -94,6 +94,11 @@ using SignedInt = SizedIntegerTrait<tBytes>::Signed;
 template<FloatVectorizable T>
 using FloatSize = UnsignedInt<sizeof(T)>;
 
+enum struct BlendZero : u8 { zero = 0, keep = 1, any = 2 };
+inline constexpr BlendZero zero_bz = BlendZero::zero;
+inline constexpr BlendZero keep_bz = BlendZero::keep;
+inline constexpr BlendZero any_bz = BlendZero::any;
+
 template<typename TIt>
 concept MultiByteIterator = requires(TIt it) {
   typename TIt::Container;
@@ -108,6 +113,12 @@ template<typename T>
 struct TypeTag {};
 template<typename T>
 inline constexpr TypeTag<T> type_tag{};
+
+template<typename... T>
+struct TypeSeq {
+  template<typename... TOther>
+  using Prepended = TypeSeq<TOther..., T...>;
+};
 
 template<typename T, T tVal>
 struct ValueTag {
@@ -137,14 +148,18 @@ inline constexpr BoolTag<false> false_tag{};
 
 template<typename T, typename TRef>
 concept SameAsDecayed = std::same_as<std::decay_t<T>, std::decay_t<TRef>>;
-template<typename TTag, typename TVal>
+template<typename TTag>
 concept AnyValueTag = requires {
+  { auto_tag<TTag::value> };
+};
+template<typename TTag, typename TVal>
+concept TypedValueTag = requires {
   { TTag::value } -> SameAsDecayed<TVal>;
 };
 template<typename TTag>
-concept AnyIndexTag = AnyValueTag<TTag, std::size_t>;
+concept AnyIndexTag = TypedValueTag<TTag, std::size_t>;
 template<typename TTag>
-concept AnyBoolTag = AnyValueTag<TTag, bool>;
+concept AnyBoolTag = TypedValueTag<TTag, bool>;
 
 enum struct IterDirection : bool { forward, backward };
 inline std::string_view format_as(IterDirection dir) {

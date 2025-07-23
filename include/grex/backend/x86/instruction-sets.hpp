@@ -42,6 +42,10 @@ inline constexpr std::array<std::size_t, 2> register_bits{128, 256};
 #else
 inline constexpr std::array<std::size_t, 1> register_bits{128};
 #endif
+inline constexpr std::array<std::size_t, register_bits.size()> register_bytes =
+  static_apply<register_bits.size()>(
+    []<std::size_t... tIdxs> { return std::array{register_bits[tIdxs] / CHAR_BIT...}; });
+
 template<Vectorizable T>
 inline constexpr std::array native_sizes =
   static_apply<register_bits.size()>([]<std::size_t... tIdxs>() {

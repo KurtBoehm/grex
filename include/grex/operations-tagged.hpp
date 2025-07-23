@@ -78,7 +78,7 @@ inline TagType<TTag, T> load_extended(const T* src, TTag /*tag*/) {
 inline bool is_load_valid(std::size_t remaining, AnyScalarTag auto /*tag*/) {
   return remaining > 0;
 }
-template<AnyFullTag TTag>
+template<FullVectorTag TTag>
 inline bool is_load_valid(std::size_t remaining, TTag /*tag*/) {
   return remaining >= TTag::size;
 }
@@ -292,12 +292,12 @@ GREX_ALWAYS_INLINE inline auto transform(auto op, TTag tag) {
 // TODO Support for masked transform?
 
 template<typename TSize = std::size_t>
-inline void for_each(auto op, AnyValueTag<IterDirection> auto /*tag*/,
+inline void for_each(auto op, TypedValueTag<IterDirection> auto /*tag*/,
                      OptValuedScalarTag<TSize> auto /*tag*/) {
   op(value_tag<TSize, 0>);
 }
 template<typename TSize = std::size_t, OptValuedFullVectorTag<TSize> TTag>
-inline void for_each(auto op, AnyValueTag<IterDirection> auto dir, TTag /*tag*/) {
+inline void for_each(auto op, TypedValueTag<IterDirection> auto dir, TTag /*tag*/) {
   static constexpr std::size_t size = TTag::size;
   if constexpr (dir.value == IterDirection::forward) {
     for (TSize i = 0; i < size; ++i) {
@@ -310,7 +310,7 @@ inline void for_each(auto op, AnyValueTag<IterDirection> auto dir, TTag /*tag*/)
   }
 }
 template<typename TSize = std::size_t, OptValuedPartVectorTag<TSize> TTag>
-inline auto for_each(auto op, AnyValueTag<IterDirection> auto dir, TTag tag) {
+inline auto for_each(auto op, TypedValueTag<IterDirection> auto dir, TTag tag) {
   const auto part = TSize(tag.part());
   if constexpr (dir.value == IterDirection::forward) {
     for (TSize i = 0; i < part; ++i) {

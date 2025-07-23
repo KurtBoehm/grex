@@ -20,6 +20,7 @@ namespace grex {
 using backend::has_fma;
 using backend::native_sizes;
 using backend::register_bits;
+using backend::register_bytes;
 
 template<Vectorizable T, std::size_t tSize>
 struct Mask {
@@ -372,6 +373,10 @@ inline Vector<T, tSize> fnmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T,
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend_zero(Mask<T, tSize> mask, Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend_zero(mask.backend(), v1.backend())};
+}
+template<BlendZero... tBzs, Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> blend_zero(Vector<T, tSize> v1) {
+  return Vector<T, tSize>{backend::blend_zero<tBzs...>(v1.backend())};
 }
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend(Mask<T, tSize> mask, Vector<T, tSize> v0, Vector<T, tSize> v1) {

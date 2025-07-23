@@ -10,7 +10,6 @@
 #include <cstddef> // IWYU pragma: keep
 
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/macros/base.hpp"
 #include "grex/backend/x86/macros/math.hpp"
 
 #define GREX_FOREACH_FP_TYPE(MACRO, REGISTERBITS, ...) \
@@ -34,6 +33,17 @@
 #define GREX_FOREACH_TYPE(MACRO, REGISTERBITS, ...) \
   GREX_FOREACH_FP_TYPE(MACRO, REGISTERBITS __VA_OPT__(, ) __VA_ARGS__) \
   GREX_FOREACH_INT_TYPE(MACRO, REGISTERBITS __VA_OPT__(, ) __VA_ARGS__)
+#define GREX_FOREACH_TYPE_R(MACRO, REGISTERBITS, ...) \
+  MACRO(f, 32, GREX_DIVIDE(REGISTERBITS, 32) __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(f, 64, GREX_DIVIDE(REGISTERBITS, 64) __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 64, GREX_DIVIDE(REGISTERBITS, 64) __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 32, GREX_DIVIDE(REGISTERBITS, 32) __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 16, GREX_DIVIDE(REGISTERBITS, 16) __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(i, 8, GREX_DIVIDE(REGISTERBITS, 8) __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 64, GREX_DIVIDE(REGISTERBITS, 64) __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 32, GREX_DIVIDE(REGISTERBITS, 32) __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 16, GREX_DIVIDE(REGISTERBITS, 16) __VA_OPT__(, ) __VA_ARGS__) \
+  MACRO(u, 8, GREX_DIVIDE(REGISTERBITS, 8) __VA_OPT__(, ) __VA_ARGS__)
 
 #define GREX_FOREACH_SUB(MACRO, ...) \
   MACRO(f, 32, 2, 4 __VA_OPT__(, ) __VA_ARGS__) \
