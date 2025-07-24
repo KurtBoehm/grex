@@ -383,6 +383,11 @@ inline Vector<T, tSize> blend(Mask<T, tSize> mask, Vector<T, tSize> v0, Vector<T
   return Vector<T, tSize>{backend::blend(mask.backend(), v0.backend(), v1.backend())};
 }
 
+template<ShuffleIndex... tIdxs, Vectorizable T, std::size_t tSize>
+inline Vector<T, tSize> shuffle(Vector<T, tSize> v) {
+  return Vector<T, tSize>{backend::shuffle<tIdxs...>(v.backend())};
+}
+
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> mask_add(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b) {
   return Vector<T, tSize>{backend::mask_add(mask.backend(), a.backend(), b.backend())};

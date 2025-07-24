@@ -26,15 +26,15 @@
 
 namespace grex::backend {
 struct ZeroBlenderNoop : public BaseExpensiveOp {
-  template<std::size_t tValueBytes, std::size_t tSize>
-  static constexpr bool is_applicable(BlendZeros<tValueBytes, tSize> bzs) {
-    return static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      return (... && (bzs[tIdxs] == keep_bz || bzs[tIdxs] == any_bz));
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+    return static_apply<tBzs.size>([&]<std::size_t... tIdxs>() {
+      return (... && (tBzs[tIdxs] == keep_bz || tBzs[tIdxs] == any_bz));
     });
   }
-  template<AnyVector TVec, TypedValueTag<BlendZerosFor<TVec>> TTag>
-  static TVec apply(TVec vec, TTag /*tag*/) {
-    static_assert(is_applicable(TTag::value));
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
+    static_assert(is_applicable(auto_tag<tBzs>));
     return vec;
   }
   static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
@@ -42,15 +42,15 @@ struct ZeroBlenderNoop : public BaseExpensiveOp {
   }
 };
 struct ZeroBlenderZero : public BaseExpensiveOp {
-  template<std::size_t tValueBytes, std::size_t tSize>
-  static constexpr bool is_applicable(BlendZeros<tValueBytes, tSize> bzs) {
-    return static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      return (... && (bzs[tIdxs] == zero_bz || bzs[tIdxs] == any_bz));
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+    return static_apply<tBzs.size>([&]<std::size_t... tIdxs>() {
+      return (... && (tBzs[tIdxs] == zero_bz || tBzs[tIdxs] == any_bz));
     });
   }
-  template<AnyVector TVec, TypedValueTag<BlendZerosFor<TVec>> TTag>
-  static TVec apply(TVec /*vec*/, TTag /*tag*/) {
-    static_assert(is_applicable(TTag::value));
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec /*vec*/, AutoTag<tBzs> /*tag*/) {
+    static_assert(is_applicable(auto_tag<tBzs>));
     return zeros(type_tag<TVec>);
   }
   static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
@@ -59,18 +59,18 @@ struct ZeroBlenderZero : public BaseExpensiveOp {
 };
 
 struct ZeroBlenderMovq : public BaseExpensiveOp {
-  template<std::size_t tValueBytes, std::size_t tSize>
-  static constexpr bool is_applicable(BlendZeros<tValueBytes, tSize> bzs) {
-    const std::optional<BlendZeros<8, 2>> obz64 = convert<8>(bzs);
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+    constexpr std::optional<BlendZeros<8, 2>> obz64 = convert<8>(tBzs);
     if (!obz64.has_value()) {
       return false;
     }
     const BlendZeros<8, 2> bz64 = obz64.value();
     return (bz64[0] == keep_bz || bz64[0] == any_bz) && (bz64[1] == zero_bz || bz64[1] == any_bz);
   }
-  template<AnyVector TVec, TypedValueTag<BlendZerosFor<TVec>> TTag>
-  static TVec apply(TVec vec, TTag /*tag*/) {
-    static_assert(is_applicable(TTag::value));
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
+    static_assert(is_applicable(auto_tag<tBzs>));
     return reinterpret(i64x2{_mm_move_epi64(reinterpret(vec, type_tag<i64>).r)},
                        type_tag<typename TVec::Value>);
   }
@@ -82,18 +82,18 @@ struct ZeroBlenderMovq : public BaseExpensiveOp {
 // TODO insertps is slightly more efficient than blendps on AMD,
 //      but slightly less efficient on Intel
 struct ZeroBlenderInsert32 : public BaseExpensiveOp {
-  template<std::size_t tValueBytes, std::size_t tSize>
-  static constexpr bool is_applicable([[maybe_unused]] BlendZeros<tValueBytes, tSize> bzs) {
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
 #if GREX_X86_64_LEVEL >= 2
-    return convert<4>(bzs).has_value();
+    return convert<4>(tBzs).has_value();
 #else
     return false;
 #endif
   }
-  template<AnyVector TVec, TypedValueTag<BlendZerosFor<TVec>> TTag>
-  static TVec apply(TVec vec, TTag /*tag*/) {
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr auto bzs = convert<4>(TTag::value).value();
+    static constexpr auto bzs = convert<4>(tBzs).value();
 
     const f32x4 fvec = reinterpret(vec, type_tag<f32>);
     static constexpr int imm8 = static_apply<4>([]<std::size_t... tIdxs>() {
@@ -107,18 +107,18 @@ struct ZeroBlenderInsert32 : public BaseExpensiveOp {
 };
 
 struct ZeroBlenderBlend32 : public BaseExpensiveOp {
-  template<std::size_t tValueBytes, std::size_t tSize>
-  static constexpr bool is_applicable([[maybe_unused]] BlendZeros<tValueBytes, tSize> bzs) {
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
 #if GREX_X86_64_LEVEL >= 2
-    return convert<4>(bzs).has_value();
+    return convert<4>(tBzs).has_value();
 #else
     return false;
 #endif
   }
-  template<AnyVector TVec, TypedValueTag<BlendZerosFor<TVec>> TTag>
-  static TVec apply(TVec vec, TTag /*tag*/) {
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr auto bzs = convert<4>(TTag::value).value();
+    static constexpr auto bzs = convert<4>(tBzs).value();
 
     const f32x4 fvec = reinterpret(vec, type_tag<f32>);
     static constexpr int imm8 = static_apply<4>([]<std::size_t... tIdxs>() {
@@ -132,18 +132,18 @@ struct ZeroBlenderBlend32 : public BaseExpensiveOp {
 };
 
 struct ZeroBlenderBlend16 : public BaseExpensiveOp {
-  template<std::size_t tValueBytes, std::size_t tSize>
-  static constexpr bool is_applicable([[maybe_unused]] BlendZeros<tValueBytes, tSize> bzs) {
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
 #if GREX_X86_64_LEVEL >= 2
-    return convert<2>(bzs).has_value();
+    return convert<2>(tBzs).has_value();
 #else
     return false;
 #endif
   }
-  template<AnyVector TVec, TypedValueTag<BlendZerosFor<TVec>> TTag>
-  static TVec apply(TVec vec, TTag /*tag*/) {
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr auto bzs = convert<2>(TTag::value).value();
+    static constexpr auto bzs = convert<2>(tBzs).value();
 
     const i16x8 fvec = reinterpret(vec, type_tag<i16>);
     static constexpr int imm8 = static_apply<8>([]<std::size_t... tIdxs>() {
@@ -157,21 +157,20 @@ struct ZeroBlenderBlend16 : public BaseExpensiveOp {
 };
 
 struct ZeroBlenderAnd : public BaseExpensiveOp {
-  template<std::size_t tValueBytes, std::size_t tSize>
-  static constexpr bool is_applicable(BlendZeros<tValueBytes, tSize> /*bzs*/) {
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, TypedValueTag<BlendZerosFor<TVec>> TTag>
-  static TVec apply(TVec vec, TTag /*tag*/) {
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr BlendZerosFor<TVec> bzs = TTag::value;
     static constexpr std::size_t size = TVec::size;
     using Int = SignedInt<sizeof(Value)>;
     using IVec = Vector<Int, size>;
 
     const IVec ivec = reinterpret(vec, type_tag<Int>);
     const IVec mask = static_apply<size>([]<std::size_t... tIdxs>() {
-      return set(type_tag<IVec>, ((bzs[tIdxs] == BlendZero::keep) ? Int(-1) : Int(0))...);
+      return set(type_tag<IVec>, ((tBzs[tIdxs] == BlendZero::keep) ? Int(-1) : Int(0))...);
     });
     return reinterpret(bitwise_and(ivec, mask), type_tag<Value>);
   }
@@ -180,15 +179,13 @@ struct ZeroBlenderAnd : public BaseExpensiveOp {
   }
 };
 
-template<BlendZero... tBzs, AnyVector TVec>
-requires(TVec::size == sizeof...(tBzs))
-inline TVec blend_zero(TVec vec) {
-  static constexpr auto bzs = BlendZeros<sizeof(typename TVec::Value), TVec::size>{tBzs...};
-  using ZeroBlender =
-    CheapestType<bzs, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderMovq, ZeroBlenderInsert32,
+template<AnyBlendZeros auto tBzs>
+requires((tBzs.value_size * tBzs.size == 16))
+struct ZeroBlenderTrait<tBzs> {
+  using Type =
+    CheapestType<tBzs, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderMovq, ZeroBlenderInsert32,
                  ZeroBlenderAnd, ZeroBlenderBlend32, ZeroBlenderBlend16>;
-  return ZeroBlender::apply(vec, auto_tag<bzs>);
-}
+};
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_ZERO_STATIC_128_HPP

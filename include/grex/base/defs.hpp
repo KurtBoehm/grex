@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <stdexcept>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -94,10 +95,26 @@ using SignedInt = SizedIntegerTrait<tBytes>::Signed;
 template<FloatVectorizable T>
 using FloatSize = UnsignedInt<sizeof(T)>;
 
+enum struct ShuffleIndex : u8 { any = 254, zero = 255 };
+inline constexpr ShuffleIndex any_sh = ShuffleIndex::any;
+inline constexpr ShuffleIndex zero_sh = ShuffleIndex::zero;
+constexpr bool is_index(ShuffleIndex sh) {
+  return u8(sh) < u8(any_sh);
+}
+
 enum struct BlendZero : u8 { zero = 0, keep = 1, any = 2 };
 inline constexpr BlendZero zero_bz = BlendZero::zero;
 inline constexpr BlendZero keep_bz = BlendZero::keep;
 inline constexpr BlendZero any_bz = BlendZero::any;
+
+namespace literals {
+consteval ShuffleIndex operator""_sh(unsigned long long int v) {
+  if (v < 254) {
+    return ShuffleIndex(v);
+  }
+  throw std::invalid_argument{"Unsupported value!"};
+}
+} // namespace literals
 
 template<typename TIt>
 concept MultiByteIterator = requires(TIt it) {

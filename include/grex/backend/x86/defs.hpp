@@ -26,7 +26,7 @@ struct ApplicableTypesTrait<tValue> {
 template<auto tValue, AnyExpensiveOp THead, AnyExpensiveOp... TTail>
 struct ApplicableTypesTrait<tValue, THead, TTail...> {
   using Selected = std::conditional_t<
-    THead::is_applicable(tValue),
+    THead::is_applicable(auto_tag<tValue>),
     typename ApplicableTypesTrait<tValue, TTail...>::Selected::template Prepended<THead>,
     typename ApplicableTypesTrait<tValue, TTail...>::Selected>;
 };
@@ -44,7 +44,8 @@ requires(sizeof...(TTail) > 0)
 struct CheapestTypeTrait<tValue, TypeSeq<THead, TTail...>> {
   using CheapestTail = CheapestTypeTrait<tValue, TypeSeq<TTail...>>::Cheapest;
   using Cheapest =
-    std::conditional_t<THead::cost(tValue) <= CheapestTail::cost(tValue), THead, CheapestTail>;
+    std::conditional_t<THead::cost(auto_tag<tValue>) <= CheapestTail::cost(auto_tag<tValue>), THead,
+                       CheapestTail>;
 };
 template<auto tValue, typename... TRemaining>
 using CheapestType = CheapestTypeTrait<tValue, ApplicableTypes<tValue, TRemaining...>>::Cheapest;

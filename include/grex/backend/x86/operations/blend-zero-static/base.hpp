@@ -78,6 +78,9 @@ struct BlendZeros {
     }
   }
 };
+template<AnyVector TVec>
+using BlendZerosFor = BlendZeros<sizeof(typename TVec::Value), TVec::size>;
+
 template<typename T>
 struct AnyBlendZerosTrait : public std::false_type {};
 template<std::size_t tValueBytes, std::size_t tSize>
@@ -85,8 +88,17 @@ struct AnyBlendZerosTrait<BlendZeros<tValueBytes, tSize>> : public std::true_typ
 template<typename T>
 concept AnyBlendZeros = AnyBlendZerosTrait<T>::value;
 
-template<AnyVector TVec>
-using BlendZerosFor = BlendZeros<sizeof(typename TVec::Value), TVec::size>;
+template<AnyBlendZeros auto tBzs>
+struct ZeroBlenderTrait;
+template<AnyBlendZeros auto tBzs>
+using ZeroBlender = ZeroBlenderTrait<tBzs>::Type;
+
+template<BlendZero... tBzs, AnyVector TVec>
+requires(TVec::size == sizeof...(tBzs))
+inline TVec blend_zero(TVec vec) {
+  static constexpr auto bzs = BlendZeros<sizeof(typename TVec::Value), TVec::size>{tBzs...};
+  return ZeroBlender<bzs>::apply(vec, auto_tag<bzs>);
+}
 
 inline void blend_zero_static_test() {
   static constexpr BlendZeros<4, 4> bzs0{.ctrl = {zero_bz, zero_bz, keep_bz, any_bz}};
