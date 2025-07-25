@@ -21,12 +21,51 @@ template<std::size_t tValueBytes, std::size_t tSize>
 struct BlendZeros {
   static constexpr std::size_t value_size = tValueBytes;
   static constexpr std::size_t size = tSize;
+  static_assert(value_size * size >= 16, "At least one lane needs to be populated!");
   using Ctrl = std::array<BlendZero, size>;
 
   Ctrl ctrl;
 
   constexpr BlendZero operator[](std::size_t i) const {
     return ctrl[i];
+  }
+
+  constexpr bool operator==(const BlendZeros&) const = default;
+
+  [[nodiscard]] constexpr std::optional<BlendZeros<value_size, 16 / value_size>>
+  single_lane() const {
+    constexpr std::size_t out_size = 16 / value_size;
+    if constexpr (out_size == size) {
+      return *this;
+    } else {
+      std::array<BlendZero, out_size> data = static_apply<out_size>(
+        [&]<std::size_t... tIdxs>() { return std::array<BlendZero, out_size>{ctrl[tIdxs]...}; });
+      for (std::size_t i = out_size; i < size; ++i) {
+        const BlendZero bz = ctrl[i];
+        switch (data[i % out_size]) {
+        case BlendZero::zero: {
+          if (bz != BlendZero::any && bz != BlendZero::zero) {
+            return std::nullopt;
+          }
+          break;
+        }
+        case BlendZero::keep: {
+          if (bz != BlendZero::any && bz != BlendZero::keep) {
+            return std::nullopt;
+          }
+          break;
+        }
+        case BlendZero::any: {
+          data[i % out_size] = bz;
+          break;
+        }
+        default: {
+          return std::nullopt;
+        }
+        }
+      }
+      return BlendZeros<value_size, out_size>{data};
+    }
   }
 
   template<std::size_t tDstValueBytes>
@@ -103,6 +142,8 @@ inline TVec blend_zero(TVec vec) {
 inline void blend_zero_static_test() {
   static constexpr BlendZeros<4, 4> bzs0{.ctrl = {zero_bz, zero_bz, keep_bz, any_bz}};
   static constexpr BlendZeros<4, 4> bzs1{.ctrl = {zero_bz, keep_bz, keep_bz, any_bz}};
+  static constexpr BlendZeros<8, 4> bzs2{.ctrl = {zero_bz, zero_bz, keep_bz, any_bz}};
+  static constexpr BlendZeros<8, 4> bzs3{.ctrl = {zero_bz, any_bz, any_bz, keep_bz}};
 
   static constexpr auto ext0 = convert<2>(bzs0);
   static_assert(ext0->ctrl ==
@@ -112,6 +153,11 @@ inline void blend_zero_static_test() {
   static_assert(sub0->ctrl == std::array{zero_bz, keep_bz});
   static constexpr auto sub1 = convert<8>(bzs1);
   static_assert(!sub1.has_value());
+
+  static_assert(bzs0.single_lane() == bzs0);
+  static_assert(bzs1.single_lane() == bzs1);
+  static_assert(!bzs2.single_lane().has_value());
+  static_assert(bzs3.single_lane()->ctrl == std::array{zero_bz, keep_bz});
 }
 } // namespace grex::backend
 
