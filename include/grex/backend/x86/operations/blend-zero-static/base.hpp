@@ -32,6 +32,14 @@ struct BlendZeros {
 
   constexpr bool operator==(const BlendZeros&) const = default;
 
+  [[nodiscard]] constexpr int imm8() const
+  requires(size <= 8)
+  {
+    return static_apply<size>([&]<std::size_t... tIdxs>() {
+      return (0 + ... + (int(ctrl[tIdxs] == BlendZero::keep) << tIdxs));
+    });
+  }
+
   [[nodiscard]] constexpr std::optional<BlendZeros<value_size, 16 / value_size>>
   single_lane() const {
     constexpr std::size_t out_size = 16 / value_size;
@@ -43,25 +51,25 @@ struct BlendZeros {
       for (std::size_t i = out_size; i < size; ++i) {
         const BlendZero bz = ctrl[i];
         switch (data[i % out_size]) {
-        case BlendZero::zero: {
-          if (bz != BlendZero::any && bz != BlendZero::zero) {
+          case BlendZero::zero: {
+            if (bz != BlendZero::any && bz != BlendZero::zero) {
+              return std::nullopt;
+            }
+            break;
+          }
+          case BlendZero::keep: {
+            if (bz != BlendZero::any && bz != BlendZero::keep) {
+              return std::nullopt;
+            }
+            break;
+          }
+          case BlendZero::any: {
+            data[i % out_size] = bz;
+            break;
+          }
+          default: {
             return std::nullopt;
           }
-          break;
-        }
-        case BlendZero::keep: {
-          if (bz != BlendZero::any && bz != BlendZero::keep) {
-            return std::nullopt;
-          }
-          break;
-        }
-        case BlendZero::any: {
-          data[i % out_size] = bz;
-          break;
-        }
-        default: {
-          return std::nullopt;
-        }
         }
       }
       return BlendZeros<value_size, out_size>{data};
@@ -91,24 +99,24 @@ struct BlendZeros {
         for (std::size_t j = 0; j < factor; ++j) {
           const std::size_t k = i * factor + j;
           switch (self.ctrl[k]) {
-          case BlendZero::zero: {
-            if (entry == BlendZero::keep) {
-              return std::nullopt;
+            case BlendZero::zero: {
+              if (entry == BlendZero::keep) {
+                return std::nullopt;
+              }
+              entry = BlendZero::zero;
+              break;
             }
-            entry = BlendZero::zero;
-            break;
-          }
-          case BlendZero::keep: {
-            if (entry == BlendZero::zero) {
-              return std::nullopt;
+            case BlendZero::keep: {
+              if (entry == BlendZero::zero) {
+                return std::nullopt;
+              }
+              entry = BlendZero::keep;
+              break;
             }
-            entry = BlendZero::keep;
-            break;
-          }
-          case BlendZero::any: break;
-          default: {
-            throw std::invalid_argument{"Invalid BlendZero!"};
-          }
+            case BlendZero::any: break;
+            default: {
+              throw std::invalid_argument{"Invalid BlendZero!"};
+            }
           }
         }
         entries[i] = entry;

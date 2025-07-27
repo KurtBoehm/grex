@@ -7,7 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_ZERO_STATIC_512_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_ZERO_STATIC_512_HPP
 
-// #define GREX_X86_64_LEVEL 4
 #include "grex/backend/x86/instruction-sets.hpp"
 
 // TODO This only includes the basic operations and could be extended using the vinserti family,

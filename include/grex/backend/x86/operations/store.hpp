@@ -65,30 +65,30 @@ namespace grex::backend {
 #else
 #define GREX_PARTSTORE_128_64(KIND) \
   switch (size) { \
-  [[unlikely]] case 0: \
-    return; \
-  [[likely]] case 1: \
-    _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 64, 128, src.r)); \
-    return; \
-  [[unlikely]] default: \
-    _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), GREX_KINDCAST(KIND, i, 64, 128, src.r)); \
-    return; \
+    [[unlikely]] case 0: \
+      return; \
+    [[likely]] case 1: \
+      _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 64, 128, src.r)); \
+      return; \
+    [[unlikely]] default: \
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), GREX_KINDCAST(KIND, i, 64, 128, src.r)); \
+      return; \
   }
 #define GREX_PARTSTORE_128_32(KIND) \
   switch (size) { \
-  [[unlikely]] case 0: \
-    return; \
-  case 1: _mm_storeu_si32(dst, GREX_KINDCAST(KIND, i, 32, 128, src.r)); return; \
-  case 2: _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.r)); return; \
-  case 3: \
-    _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.r)); \
-    _mm_storeu_si32(dst + 2, \
-                    _mm_castps_si128(_mm_movehl_ps(GREX_KINDCAST(KIND, f, 32, 128, src.r), \
-                                                   GREX_KINDCAST(KIND, f, 32, 128, src.r)))); \
-    return; \
-  [[unlikely]] default: \
-    _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), GREX_KINDCAST(KIND, i, 32, 128, src.r)); \
-    return; \
+    [[unlikely]] case 0: \
+      return; \
+    case 1: _mm_storeu_si32(dst, GREX_KINDCAST(KIND, i, 32, 128, src.r)); return; \
+    case 2: _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.r)); return; \
+    case 3: \
+      _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.r)); \
+      _mm_storeu_si32(dst + 2, \
+                      _mm_castps_si128(_mm_movehl_ps(GREX_KINDCAST(KIND, f, 32, 128, src.r), \
+                                                     GREX_KINDCAST(KIND, f, 32, 128, src.r)))); \
+      return; \
+    [[unlikely]] default: \
+      _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), GREX_KINDCAST(KIND, i, 32, 128, src.r)); \
+      return; \
   }
 #endif
 #if GREX_X86_64_LEVEL >= 2
@@ -124,11 +124,11 @@ namespace grex::backend {
   store_part(reinterpret_cast<KIND##32 *>(dst), Vector<KIND##32, 4>{.r = src.r}, size2); \
   if ((size & 1U) != 0) { \
     switch (size2) { \
-    case 0: _mm_storeu_si16(dst, src.r); return; \
-    case 1: dst[2] = KIND##16(_mm_extract_epi16(src.r, 2)); return; \
-    case 2: dst[4] = KIND##16(_mm_extract_epi16(src.r, 4)); return; \
-    case 3: dst[6] = KIND##16(_mm_extract_epi16(src.r, 6)); return; \
-    default: break; \
+      case 0: _mm_storeu_si16(dst, src.r); return; \
+      case 1: dst[2] = KIND##16(_mm_extract_epi16(src.r, 2)); return; \
+      case 2: dst[4] = KIND##16(_mm_extract_epi16(src.r, 4)); return; \
+      case 3: dst[6] = KIND##16(_mm_extract_epi16(src.r, 6)); return; \
+      default: break; \
     } \
   }
 #define GREX_PARTSTORE_128_8(KIND) \
@@ -214,39 +214,39 @@ GREX_FOREACH_SUB(GREX_STORE_SUB)
 
 #define GREX_PARTSTORE_SUB_32_2(KIND) \
   switch (size) { \
-  [[unlikely]] case 0: \
-    return; \
-  [[likely]] case 1: \
-    _mm_storeu_si32(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)); \
-    return; \
-  [[unlikely]] default: \
-    _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)); \
-    return; \
+    [[unlikely]] case 0: \
+      return; \
+    [[likely]] case 1: \
+      _mm_storeu_si32(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)); \
+      return; \
+    [[unlikely]] default: \
+      _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)); \
+      return; \
   }
 #define GREX_PARTSTORE_SUB_16_4(KIND) \
   switch (size) { \
-  [[unlikely]] case 0: \
-    return; \
-  case 1: _mm_storeu_si16(dst, src.full.r); return; \
-  case 2: _mm_storeu_si32(dst, src.full.r); return; \
-  case 3: \
-    _mm_storeu_si32(dst, src.full.r); \
-    _mm_storeu_si16(dst + 2, _mm_srli_epi64(src.full.r, 32)); \
-    return; \
-  [[unlikely]] default: \
-    _mm_storeu_si64(dst, src.full.r); \
-    return; \
+    [[unlikely]] case 0: \
+      return; \
+    case 1: _mm_storeu_si16(dst, src.full.r); return; \
+    case 2: _mm_storeu_si32(dst, src.full.r); return; \
+    case 3: \
+      _mm_storeu_si32(dst, src.full.r); \
+      _mm_storeu_si16(dst + 2, _mm_srli_epi64(src.full.r, 32)); \
+      return; \
+    [[unlikely]] default: \
+      _mm_storeu_si64(dst, src.full.r); \
+      return; \
   }
 #define GREX_PARTSTORE_SUB_16_2(KIND) \
   switch (size) { \
-  [[unlikely]] case 0: \
-    return; \
-  [[likely]] case 1: \
-    _mm_storeu_si16(dst, src.full.r); \
-    return; \
-  [[unlikely]] default: \
-    _mm_storeu_si32(dst, src.full.r); \
-    return; \
+    [[unlikely]] case 0: \
+      return; \
+    [[likely]] case 1: \
+      _mm_storeu_si16(dst, src.full.r); \
+      return; \
+    [[unlikely]] default: \
+      _mm_storeu_si32(dst, src.full.r); \
+      return; \
   }
 #define GREX_PARTSTORE_STORE8(KIND) \
   std::array<KIND##8, 16> arr{}; \
@@ -257,45 +257,45 @@ GREX_FOREACH_SUB(GREX_STORE_SUB)
   if ((size & 1U) != 0) { \
     GREX_PARTSTORE_STORE8(KIND); \
     switch (size2) { \
-    case 0: dst[0] = arr[0]; return; \
-    case 1: dst[2] = arr[2]; return; \
-    case 2: dst[4] = arr[4]; return; \
-    case 3: dst[6] = arr[6]; return; \
-    default: break; \
+      case 0: dst[0] = arr[0]; return; \
+      case 1: dst[2] = arr[2]; return; \
+      case 2: dst[4] = arr[4]; return; \
+      case 3: dst[6] = arr[6]; return; \
+      default: break; \
     } \
   }
 #define GREX_PARTSTORE_SUB_8_4(KIND) \
   switch (size) { \
-  [[unlikely]] case 0: \
-    return; \
-  case 1: { \
-    GREX_PARTSTORE_STORE8(KIND); \
-    dst[0] = arr[0]; \
-    return; \
-  } \
-  case 2: _mm_storeu_si16(dst, src.full.r); return; \
-  case 3: { \
-    _mm_storeu_si16(dst, src.full.r); \
-    GREX_PARTSTORE_STORE8(KIND); \
-    dst[2] = arr[2]; \
-    return; \
-  } \
-  [[unlikely]] default: \
-    _mm_storeu_si32(dst, src.full.r); \
-    return; \
+    [[unlikely]] case 0: \
+      return; \
+    case 1: { \
+      GREX_PARTSTORE_STORE8(KIND); \
+      dst[0] = arr[0]; \
+      return; \
+    } \
+    case 2: _mm_storeu_si16(dst, src.full.r); return; \
+    case 3: { \
+      _mm_storeu_si16(dst, src.full.r); \
+      GREX_PARTSTORE_STORE8(KIND); \
+      dst[2] = arr[2]; \
+      return; \
+    } \
+    [[unlikely]] default: \
+      _mm_storeu_si32(dst, src.full.r); \
+      return; \
   }
 #define GREX_PARTSTORE_SUB_8_2(KIND) \
   switch (size) { \
-  [[unlikely]] case 0: \
-    return; \
-  [[likely]] case 1: { \
-    GREX_PARTSTORE_STORE8(KIND); \
-    dst[0] = arr[0]; \
-    return; \
-  } \
-  [[unlikely]] default: \
-    _mm_storeu_si16(dst, src.full.r); \
-    return; \
+    [[unlikely]] case 0: \
+      return; \
+    [[likely]] case 1: { \
+      GREX_PARTSTORE_STORE8(KIND); \
+      dst[0] = arr[0]; \
+      return; \
+    } \
+    [[unlikely]] default: \
+      _mm_storeu_si16(dst, src.full.r); \
+      return; \
   }
 #define GREX_PARTSTORE_SUB(KIND, BITS, PART, SIZE) \
   inline void store_part(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src, \

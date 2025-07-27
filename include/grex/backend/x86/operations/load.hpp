@@ -96,11 +96,11 @@ namespace grex::backend {
     load_part(reinterpret_cast<const KIND##32 *>(ptr), size2, type_tag<Vector<KIND##32, 4>>).r; \
   if ((size & 1U) != 0) { \
     switch (size2) { \
-    case 0: out = _mm_loadu_si16(ptr); break; \
-    case 1: out = _mm_insert_epi16(out, ptr[2], 2); break; \
-    case 2: out = _mm_insert_epi16(out, ptr[4], 4); break; \
-    case 3: out = _mm_insert_epi16(out, ptr[6], 6); break; \
-    default: break; \
+      case 0: out = _mm_loadu_si16(ptr); break; \
+      case 1: out = _mm_insert_epi16(out, ptr[2], 2); break; \
+      case 2: out = _mm_insert_epi16(out, ptr[4], 4); break; \
+      case 3: out = _mm_insert_epi16(out, ptr[6], 6); break; \
+      default: break; \
     } \
   } \
   return {.r = out};

@@ -181,8 +181,8 @@ concept AnyBoolTag = TypedValueTag<TTag, bool>;
 enum struct IterDirection : bool { forward, backward };
 inline std::string_view format_as(IterDirection dir) {
   switch (dir) {
-  case IterDirection::forward: return "forward";
-  case IterDirection::backward: return "backward";
+    case IterDirection::forward: return "forward";
+    case IterDirection::backward: return "backward";
   }
 }
 
