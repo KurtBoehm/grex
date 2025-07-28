@@ -12,6 +12,7 @@
 
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/defs.hpp"
+#include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/bitwise.hpp"
 #include "grex/backend/x86/operations/blend-zero-static/base.hpp"
 #include "grex/backend/x86/operations/reinterpret.hpp"
@@ -73,6 +74,55 @@ struct ZeroBlenderAnd : public BaseExpensiveOp {
   static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
     return {0.5, 4};
   }
+};
+
+struct SubZeroBlender : public BaseExpensiveOp {
+  template<AnyBlendZeros auto tBzs>
+  using Base = ZeroBlender<tBzs.sub_extended()>;
+
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+    return Base<tBzs>::is_applicable(auto_tag<tBzs.sub_extended()>);
+  }
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
+    return TVec{Base<tBzs>::apply(vec.full, auto_tag<tBzs.sub_extended()>)};
+  }
+  template<AnyBlendZeros auto tBzs>
+  static constexpr std::pair<f64, f64> cost(AutoTag<tBzs> /*tag*/) {
+    return Base<tBzs>::cost(auto_tag<tBzs.sub_extended()>);
+  }
+};
+struct SuperZeroBlender : public BaseExpensiveOp {
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+    return ZeroBlender<tBzs.lower()>::is_applicable(auto_tag<tBzs.lower()>) &&
+           ZeroBlender<tBzs.upper()>::is_applicable(auto_tag<tBzs.upper()>);
+  }
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
+    return TVec{
+      .lower = ZeroBlender<tBzs.lower()>::apply(vec.lower, auto_tag<tBzs.lower()>),
+      .upper = ZeroBlender<tBzs.upper()>::apply(vec.upper, auto_tag<tBzs.upper()>),
+    };
+  }
+  template<AnyBlendZeros auto tBzs>
+  static constexpr std::pair<f64, f64> cost(AutoTag<tBzs> /*tag*/) {
+    const auto [c0a, c1a] = ZeroBlender<tBzs.lower()>::cost(auto_tag<tBzs.lower()>);
+    const auto [c0b, c1b] = ZeroBlender<tBzs.upper()>::cost(auto_tag<tBzs.upper()>);
+    return {c0a + c0b, c1a + c1b};
+  }
+};
+
+template<AnyBlendZeros auto tBzs>
+requires((tBzs.value_size * tBzs.size < register_bytes.front()))
+struct ZeroBlenderTrait<tBzs> {
+  using Type = SubZeroBlender;
+};
+template<AnyBlendZeros auto tBzs>
+requires((tBzs.value_size * tBzs.size > register_bytes.back()))
+struct ZeroBlenderTrait<tBzs> {
+  using Type = SuperZeroBlender;
 };
 } // namespace grex::backend
 

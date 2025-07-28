@@ -111,8 +111,8 @@ struct ShuffleIndices {
         continue;
       }
       const auto idx = u8(sh);
-      const auto lane = i / tSegment;
-      if (idx < lane * tSegment || (lane + 1) * tSegment <= idx) {
+      const auto lane_off = i / tSegment * tSegment;
+      if (idx < lane_off || lane_off + tSegment <= idx) {
         return false;
       }
     }
@@ -121,9 +121,47 @@ struct ShuffleIndices {
   [[nodiscard]] constexpr bool is_lane_local() const {
     return is_segment_local<lane_size>();
   }
+  [[nodiscard]] constexpr bool is_half_local() const {
+    return is_segment_local<size / 2>();
+  }
+
+  [[nodiscard]] constexpr ShuffleIndices<value_size, lane_size> sub_extended() const
+  requires(size < lane_size)
+  {
+    return static_apply<lane_size>([&]<std::size_t... tIdxs>() {
+      return ShuffleIndices<value_size, lane_size>{
+        .indices = std::array{((tIdxs < size) ? indices[tIdxs] : any_sh)...},
+        .subzero = subzero,
+      };
+    });
+  }
+
+  [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, size / 2>> lower() const {
+    std::array<ShuffleIndex, size / 2> arr{};
+    for (std::size_t i = 0; i < size / 2; ++i) {
+      const auto sh = indices[i];
+      if (is_index(sh) && u8(sh) >= size / 2) {
+        return std::nullopt;
+      }
+      arr[i] = sh;
+    }
+    return ShuffleIndices<value_size, size / 2>{.indices = arr, .subzero = subzero};
+  }
+  [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, size / 2>> upper() const {
+    std::array<ShuffleIndex, size / 2> arr{};
+    for (std::size_t i = 0; i < size / 2; ++i) {
+      const auto sh = indices[i + size / 2];
+      if (is_index(sh) && u8(sh) < size / 2) {
+        return std::nullopt;
+      }
+      arr[i] = is_index(sh) ? ShuffleIndex(u8(sh) - size / 2) : sh;
+    }
+    return ShuffleIndices<value_size, size / 2>{.indices = arr, .subzero = subzero};
+  }
 
   template<std::size_t tSegment>
   [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, tSegment>> repeated() const {
+    static_assert(size >= tSegment);
     if constexpr (size == tSegment) {
       return *this;
     } else {
