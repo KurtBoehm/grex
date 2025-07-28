@@ -12,8 +12,10 @@
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 #include "grex/backend/defs.hpp"
+#include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
@@ -21,7 +23,7 @@ template<std::size_t tValueBytes, std::size_t tSize>
 struct BlendZeros {
   static constexpr std::size_t value_size = tValueBytes;
   static constexpr std::size_t size = tSize;
-  static_assert(value_size * size >= 16, "At least one lane needs to be populated!");
+  static constexpr std::size_t lane_size = 16 / value_size;
   using Ctrl = std::array<BlendZero, size>;
 
   Ctrl ctrl;
@@ -40,17 +42,34 @@ struct BlendZeros {
     });
   }
 
-  [[nodiscard]] constexpr std::optional<BlendZeros<value_size, 16 / value_size>>
-  single_lane() const {
-    constexpr std::size_t out_size = 16 / value_size;
-    if constexpr (out_size == size) {
+  [[nodiscard]] constexpr BlendZeros<value_size, lane_size> sub_extended() const
+  requires(size < lane_size)
+  {
+    return static_apply<lane_size>([&]<std::size_t... tIdxs>() {
+      return BlendZeros<value_size, lane_size>{((tIdxs < size) ? ctrl[tIdxs] : any_bz)...};
+    });
+  }
+
+  [[nodiscard]] constexpr BlendZeros<value_size, size / 2> lower() const {
+    return static_apply<size / 2>(
+      [&]<std::size_t... tIdxs>() { return BlendZeros<value_size, size / 2>{ctrl[tIdxs]...}; });
+  }
+  [[nodiscard]] constexpr BlendZeros<value_size, size / 2> upper() const {
+    return static_apply<size / 2>([&]<std::size_t... tIdxs>() {
+      return BlendZeros<value_size, size / 2>{ctrl[tIdxs + size / 2]...};
+    });
+  }
+
+  [[nodiscard]] constexpr std::optional<BlendZeros<value_size, lane_size>> single_lane() const {
+    static_assert(size >= lane_size, "At least one lane needs to be populated!");
+    if constexpr (size == lane_size) {
       return *this;
     } else {
-      std::array<BlendZero, out_size> data = static_apply<out_size>(
-        [&]<std::size_t... tIdxs>() { return std::array<BlendZero, out_size>{ctrl[tIdxs]...}; });
-      for (std::size_t i = out_size; i < size; ++i) {
+      std::array<BlendZero, lane_size> data = static_apply<lane_size>(
+        [&]<std::size_t... tIdxs>() { return std::array<BlendZero, lane_size>{ctrl[tIdxs]...}; });
+      for (std::size_t i = lane_size; i < size; ++i) {
         const BlendZero bz = ctrl[i];
-        switch (data[i % out_size]) {
+        switch (data[i % lane_size]) {
           case BlendZero::zero: {
             if (bz != BlendZero::any && bz != BlendZero::zero) {
               return std::nullopt;
@@ -64,7 +83,7 @@ struct BlendZeros {
             break;
           }
           case BlendZero::any: {
-            data[i % out_size] = bz;
+            data[i % lane_size] = bz;
             break;
           }
           default: {
@@ -72,13 +91,15 @@ struct BlendZeros {
           }
         }
       }
-      return BlendZeros<value_size, out_size>{data};
+      return BlendZeros<value_size, lane_size>{data};
     }
   }
 
   template<std::size_t tDstValueBytes>
   friend constexpr std::optional<BlendZeros<tDstValueBytes, tSize * tValueBytes / tDstValueBytes>>
   convert(const BlendZeros& self) {
+    static_assert(size >= lane_size, "At least one lane needs to be populated!");
+
     constexpr auto dst_size = tSize * tValueBytes / tDstValueBytes;
     using Dst = BlendZeros<tDstValueBytes, dst_size>;
 
@@ -139,6 +160,55 @@ template<AnyBlendZeros auto tBzs>
 struct ZeroBlenderTrait;
 template<AnyBlendZeros auto tBzs>
 using ZeroBlender = ZeroBlenderTrait<tBzs>::Type;
+
+struct SubZeroBlender {
+  template<AnyBlendZeros auto tBzs>
+  using Base = ZeroBlender<tBzs.sub_extended()>;
+
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+    return Base<tBzs>::is_applicable(auto_tag<tBzs.sub_extended()>);
+  }
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
+    return TVec{Base<tBzs>::apply(vec.full, auto_tag<tBzs.sub_extended()>)};
+  }
+  template<AnyBlendZeros auto tBzs>
+  static constexpr std::pair<f64, f64> cost(AutoTag<tBzs> /*tag*/) {
+    return Base<tBzs>::cost(auto_tag<tBzs.sub_extended()>);
+  }
+};
+struct SuperZeroBlender {
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+    return ZeroBlender<tBzs.lower()>::is_applicable(auto_tag<tBzs.lower()>) &&
+           ZeroBlender<tBzs.upper()>::is_applicable(auto_tag<tBzs.upper()>);
+  }
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
+    return TVec{
+      .lower = ZeroBlender<tBzs.lower()>::apply(vec.lower, auto_tag<tBzs.lower()>),
+      .upper = ZeroBlender<tBzs.upper()>::apply(vec.upper, auto_tag<tBzs.upper()>),
+    };
+  }
+  template<AnyBlendZeros auto tBzs>
+  static constexpr std::pair<f64, f64> cost(AutoTag<tBzs> /*tag*/) {
+    const auto [c0a, c1a] = ZeroBlender<tBzs.lower()>::cost(auto_tag<tBzs.lower()>);
+    const auto [c0b, c1b] = ZeroBlender<tBzs.upper()>::cost(auto_tag<tBzs.upper()>);
+    return {c0a + c0b, c1a + c1b};
+  }
+};
+
+template<AnyBlendZeros auto tBzs>
+requires((tBzs.value_size * tBzs.size < register_bytes.front()))
+struct ZeroBlenderTrait<tBzs> {
+  using Type = SubZeroBlender;
+};
+template<AnyBlendZeros auto tBzs>
+requires((tBzs.value_size * tBzs.size > register_bytes.back()))
+struct ZeroBlenderTrait<tBzs> {
+  using Type = SuperZeroBlender;
+};
 
 template<BlendZero... tBzs, AnyVector TVec>
 requires(TVec::size == sizeof...(tBzs))
