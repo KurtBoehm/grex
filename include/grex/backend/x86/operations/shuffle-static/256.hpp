@@ -71,7 +71,7 @@ struct ShufflerShuffle32x8 : public BaseExpensiveOp {
   }
 };
 
-struct ShufflerShuffle64x4 : public BaseExpensiveOp {
+struct ShufflerPermute64x4 : public BaseExpensiveOp {
   template<AnyShuffleIndices auto tSh>
   static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
     return convert<8>(tSh).has_value();
@@ -121,7 +121,7 @@ template<AnyShuffleIndices auto tIdxs>
 requires((tIdxs.value_size * tIdxs.size == 32))
 struct ShufflerTrait<tIdxs> {
   using Shuffler = CheapestType<tIdxs, ShufflerBlendZero, ShufflerShuffle8x32, ShufflerShuffle32x8,
-                                ShufflerShuffle64x4, ShufflerShuffle8x32Ext, ShufflerExtractSet>;
+                                ShufflerPermute64x4, ShufflerShuffle8x32Ext, ShufflerExtractSet>;
 };
 } // namespace grex::backend
 #endif

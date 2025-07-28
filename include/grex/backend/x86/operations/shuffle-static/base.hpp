@@ -23,9 +23,6 @@ struct ShuffleIndices {
   static constexpr std::size_t size = tSize;
   static constexpr std::size_t lane_size = 16 / value_size;
   using Indices = std::array<ShuffleIndex, size>;
-  using SignedVal = SignedInt<value_size>;
-  using SignedArr = std::array<SignedVal, size>;
-  using SignedVec = Vector<SignedVal, size>;
 
   Indices indices;
   // whether partial entries need to be zeroed
@@ -43,6 +40,12 @@ struct ShuffleIndices {
     return indices[i];
   }
 
+  [[nodiscard]] constexpr bool requires_zeroing() const {
+    return subzero || static_apply<size>([&]<std::size_t... tIdxs>() {
+             return (... || (indices[tIdxs] == zero_sh));
+           });
+  }
+
   [[nodiscard]] constexpr int imm8() const
   requires(size == 4)
   {
@@ -52,72 +55,88 @@ struct ShuffleIndices {
     });
   }
 
-  [[nodiscard]] SignedVec vector() const {
-    return static_apply<size>([&]<std::size_t... tIdxs>() {
-      auto f = [](ShuffleIndex sh) { return is_index(sh) ? SignedVal{u8(sh)} : SignedVal{-1}; };
-      return set(type_tag<SignedVec>, f(indices[tIdxs])...);
+  [[nodiscard]] GREX_ALWAYS_INLINE auto vector() const {
+    return static_apply<size>([&]<std::size_t... tIdxs>() GREX_ALWAYS_INLINE {
+      using Val = SignedInt<value_size>;
+      auto f = [](ShuffleIndex sh) { return is_index(sh) ? Val(sh) : Val{-1}; };
+      return set(type_tag<Vector<Val, size>>, f(indices[tIdxs])...);
     });
   }
 
-  [[nodiscard]] constexpr std::optional<SignedArr> laned_indices() const {
+  [[nodiscard]] GREX_ALWAYS_INLINE auto mask() const {
+    return static_apply<size>([&]<std::size_t... tIdxs>() GREX_ALWAYS_INLINE {
+      return set(type_tag<Mask<SignedInt<value_size>, size>>, is_index(indices[tIdxs])...);
+    });
+  }
+
+  [[nodiscard]] constexpr auto laned_indices() const {
+    using Val = SignedInt<value_size>;
+    using Opt = std::optional<std::array<Val, size>>;
+
     if (!is_lane_local()) {
-      return std::nullopt;
+      return Opt{};
     }
     return static_apply<size>([&]<std::size_t... tIdxs>() {
-      auto f = [](ShuffleIndex sh) { return is_index(sh) ? SignedVal(sh) : SignedVal{-1}; };
-      return std::array{f(indices[tIdxs])...};
+      auto f = [](ShuffleIndex sh) { return is_index(sh) ? Val(sh) : Val{-1}; };
+      return Opt{std::array{f(indices[tIdxs])...}};
     });
   }
 
-  [[nodiscard]] constexpr SignedArr intralane_indices() const {
+  [[nodiscard]] constexpr auto intralane_indices() const {
     return static_apply<size>([&]<std::size_t... tIdxs>() {
       auto f = [](std::size_t i, ShuffleIndex sh) {
-        return (is_index(sh) && is_in_lane(i, u8(sh)) ? SignedVal(u8(sh)) : SignedVal{-1});
+        using Val = SignedInt<value_size>;
+        return (is_index(sh) && is_in_lane(i, u8(sh)) ? Val(u8(sh)) : Val{-1});
       };
       return std::array{f(tIdxs, indices[tIdxs])...};
     });
   }
-  [[nodiscard]] constexpr SignedArr extralane_indices() const {
+  [[nodiscard]] constexpr auto extralane_indices() const {
     static_assert(size == 2 * lane_size,
                   "This function is designed for 256-bit, i.e. two-laned, vectors!");
+    using Val = SignedInt<value_size>;
     return static_apply<size>([&]<std::size_t... tIdxs>() {
       auto f = [](std::size_t i, ShuffleIndex sh) {
-        return (is_index(sh) && !is_in_lane(i, u8(sh)) ? SignedVal(u8(sh)) : SignedVal{-1});
+        return (is_index(sh) && !is_in_lane(i, u8(sh)) ? Val(u8(sh)) : Val{-1});
       };
       return std::array{f(tIdxs, indices[tIdxs])...};
     });
   }
 
-  [[nodiscard]] constexpr bool is_lane_local() const {
+  template<std::size_t tSegment>
+  [[nodiscard]] constexpr bool is_segment_local() const {
     for (std::size_t i = 0; i < size; ++i) {
       const auto sh = indices[i];
       if (!is_index(sh)) {
         continue;
       }
       const auto idx = u8(sh);
-      const auto lane = i / lane_size;
-      if (idx < lane * lane_size || (lane + 1) * lane_size <= idx) {
+      const auto lane = i / tSegment;
+      if (idx < lane * tSegment || (lane + 1) * tSegment <= idx) {
         return false;
       }
     }
     return true;
   }
+  [[nodiscard]] constexpr bool is_lane_local() const {
+    return is_segment_local<lane_size>();
+  }
 
-  [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, lane_size>> single_lane() const {
-    if constexpr (size == lane_size) {
+  template<std::size_t tSegment>
+  [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, tSegment>> repeated() const {
+    if constexpr (size == tSegment) {
       return *this;
     } else {
-      if (!is_lane_local()) {
+      if (!is_segment_local<tSegment>()) {
         return std::nullopt;
       }
-      std::array<ShuffleIndex, lane_size> idxs =
-        static_apply<lane_size>([&]<std::size_t... tIdxs>() {
-          return std::array<ShuffleIndex, lane_size>{indices[tIdxs]...};
-        });
+      std::array<ShuffleIndex, tSegment> idxs = static_apply<tSegment>([&]<std::size_t... tIdxs>() {
+        return std::array<ShuffleIndex, tSegment>{indices[tIdxs]...};
+      });
       bool subz = subzero;
-      for (std::size_t i = lane_size; i < size; ++i) {
+      for (std::size_t i = tSegment; i < size; ++i) {
         const ShuffleIndex sh = indices[i];
-        ShuffleIndex& dst = idxs[i % lane_size];
+        ShuffleIndex& dst = idxs[i % tSegment];
         switch (sh) {
           case any_sh: break;
           case zero_sh: {
@@ -137,7 +156,7 @@ struct ShuffleIndices {
             break;
           }
           default: {
-            const auto idx = ShuffleIndex{u8(u8(sh) - (i / lane_size * lane_size))};
+            const auto idx = ShuffleIndex{u8(u8(sh) - (i / tSegment * tSegment))};
             switch (dst) {
               case any_sh: {
                 dst = idx;
@@ -158,8 +177,15 @@ struct ShuffleIndices {
           }
         }
       }
-      return ShuffleIndices<value_size, lane_size>{.indices = idxs, .subzero = subz};
+      return ShuffleIndices<value_size, tSegment>{.indices = idxs, .subzero = subz};
     }
+  }
+  [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, lane_size>> single_lane() const {
+    return repeated<lane_size>();
+  }
+  [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, 2 * lane_size>>
+  double_lane() const {
+    return repeated<2 * lane_size>();
   }
 
   template<std::size_t tDstValueBytes>

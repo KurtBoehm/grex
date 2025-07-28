@@ -193,16 +193,18 @@ inline std::string_view format_as(IterDirection dir) {
 #endif
 
 template<std::size_t tSize>
-constexpr decltype(auto) static_apply(auto f) {
-  return [&]<std::size_t... tIdxs>(std::index_sequence<tIdxs...> /*seq*/) -> decltype(auto) {
-    return f.template operator()<tIdxs...>();
-  }(std::make_index_sequence<tSize>{});
+GREX_ALWAYS_INLINE constexpr decltype(auto) static_apply(auto f) {
+  return [&]<std::size_t... tIdxs>(std::index_sequence<tIdxs...> /*seq*/)
+           GREX_ALWAYS_INLINE -> decltype(auto) {
+             return f.template operator()<tIdxs...>();
+           }(std::make_index_sequence<tSize>{});
 }
 template<std::size_t tBegin, std::size_t tEnd>
-constexpr decltype(auto) static_apply(auto f) {
-  return [&]<std::size_t... tIdxs>(std::index_sequence<tIdxs...> /*seq*/) -> decltype(auto) {
-    return f.template operator()<tBegin + tIdxs...>();
-  }(std::make_index_sequence<tEnd - tBegin>{});
+GREX_ALWAYS_INLINE constexpr decltype(auto) static_apply(auto f) {
+  return [&]<std::size_t... tIdxs>(std::index_sequence<tIdxs...> /*seq*/)
+           GREX_ALWAYS_INLINE -> decltype(auto) {
+             return f.template operator()<tBegin + tIdxs...>();
+           }(std::make_index_sequence<tEnd - tBegin>{});
 }
 } // namespace grex
 

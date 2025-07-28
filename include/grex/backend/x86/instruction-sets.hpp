@@ -29,6 +29,11 @@ namespace grex::backend {
 #endif
 #endif
 
+#if __AVX512VBMI__
+#define GREX_HAS_AVX512VBMI true
+#else
+#define GREX_HAS_AVX512VBMI false
+#endif
 #if __AVX512VBMI2__
 #define GREX_HAS_AVX512VBMI2 true
 #else
