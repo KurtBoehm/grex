@@ -109,6 +109,8 @@ struct ShufflerTrait<tSh> {
 template<AnyShuffleIndices auto tSh>
 requires((tSh.value_size * tSh.size > register_bytes.back()))
 struct ShufflerTrait<tSh> {
+  // TODO There are cases in which more efficient cross-half permutations should be possible
+  //      (or, at least, two shuffles per half with additional blending)
   using Shuffler = CheapestType<tSh, SuperShuffler, ShufflerExtractSet>;
 };
 } // namespace grex::backend

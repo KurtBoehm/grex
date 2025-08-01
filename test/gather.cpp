@@ -40,7 +40,7 @@ void gather(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
   for (std::size_t i = 0; i < data_size; ++i) {
     data[i] = vdist(rng);
   }
-  const std::span<const TValue> sdata{data.get(), data_size};
+  const std::span<const TValue, data_size> sdata{data.get(), data_size};
 
   auto outer = [&]<grex::Vectorizable TIndex>(grex::TypeTag<TIndex> /*tag*/) {
     fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::text_style(fmt::emphasis::bold),

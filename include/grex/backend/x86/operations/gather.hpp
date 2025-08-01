@@ -30,43 +30,47 @@
 #endif
 
 namespace grex::backend {
-template<Vectorizable TValue, Vectorizable TIndex, std::size_t tSize>
-inline VectorFor<TValue, tSize> gather(std::span<const TValue> data, Vector<TIndex, tSize> idxs) {
+template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
+inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
+                                       Vector<TIndex, tSize> idxs) {
   return static_apply<tSize>([&]<std::size_t... tIdxs> {
     return set(type_tag<VectorFor<TValue, tSize>>, data[std::size_t(extract(idxs, tIdxs))]...);
   });
 }
-template<Vectorizable TValue, Vectorizable TIndex, std::size_t tPart, std::size_t tSize>
-inline VectorFor<TValue, tPart> gather(std::span<const TValue> data,
+template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tPart,
+         std::size_t tSize>
+inline VectorFor<TValue, tPart> gather(std::span<const TValue, tExtent> data,
                                        SubVector<TIndex, tPart, tSize> idxs) {
   return static_apply<tPart>([&]<std::size_t... tIdxs> {
     return set(type_tag<VectorFor<TValue, tPart>>, data[std::size_t(extract(idxs, tIdxs))]...);
   });
 }
-template<Vectorizable TValue, typename THalf>
-inline VectorFor<TValue, 2 * THalf::size> gather(std::span<const TValue> data,
+template<Vectorizable TValue, std::size_t tExtent, typename THalf>
+inline VectorFor<TValue, 2 * THalf::size> gather(std::span<const TValue, tExtent> data,
                                                  SuperVector<THalf> idxs) {
   return merge(gather(data, idxs.lower), gather(data, idxs.upper));
 }
 
-template<Vectorizable TValue, Vectorizable TIndex, std::size_t tSize>
-inline VectorFor<TValue, tSize> mask_gather(std::span<const TValue> data, MaskFor<TValue, tSize> m,
-                                            Vector<TIndex, tSize> idxs) {
+template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
+inline VectorFor<TValue, tSize> mask_gather(std::span<const TValue, tExtent> data,
+                                            MaskFor<TValue, tSize> m, Vector<TIndex, tSize> idxs) {
   return static_apply<tSize>([&]<std::size_t... tIdxs> {
     return set(type_tag<VectorFor<TValue, tSize>>,
                (extract(m, tIdxs) ? data[std::size_t(extract(idxs, tIdxs))] : TValue{})...);
   });
 }
-template<Vectorizable TValue, Vectorizable TIndex, std::size_t tPart, std::size_t tSize>
-inline VectorFor<TValue, tPart> mask_gather(std::span<const TValue> data, MaskFor<TValue, tPart> m,
+template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tPart,
+         std::size_t tSize>
+inline VectorFor<TValue, tPart> mask_gather(std::span<const TValue, tExtent> data,
+                                            MaskFor<TValue, tPart> m,
                                             SubVector<TIndex, tPart, tSize> idxs) {
   return static_apply<tPart>([&]<std::size_t... tIdxs> {
     return set(type_tag<VectorFor<TValue, tPart>>,
                (extract(m, tIdxs) ? data[std::size_t(extract(idxs, tIdxs))] : TValue{})...);
   });
 }
-template<Vectorizable TValue, typename TVecHalf>
-inline VectorFor<TValue, 2 * TVecHalf::size> mask_gather(std::span<const TValue> data,
+template<Vectorizable TValue, std::size_t tExtent, typename TVecHalf>
+inline VectorFor<TValue, 2 * TVecHalf::size> mask_gather(std::span<const TValue, tExtent> data,
                                                          MaskFor<TValue, 2 * TVecHalf::size> m,
                                                          SuperVector<TVecHalf> idxs) {
   return merge(mask_gather(data, split(m, index_tag<0>), idxs.lower),
@@ -83,7 +87,9 @@ inline VectorFor<TValue, 2 * TVecHalf::size> mask_gather(std::span<const TValue>
 #define GREX_GATHER_CAST(KIND, BITS) GREX_GATHER_CAST_##KIND(BITS)
 
 #define GREX_GATHER_PREFIX(VALUE, INDEX, SIZE) \
-  inline VectorFor<VALUE, SIZE> gather(std::span<const VALUE> data, VectorFor<INDEX, SIZE> idxs)
+  template<std::size_t tExtent> \
+  inline VectorFor<VALUE, SIZE> gather(std::span<const VALUE, tExtent> data, \
+                                       VectorFor<INDEX, SIZE> idxs)
 #define GREX_GATHER_INSTRINSIC_AVX(VALKIND, VALBITS, IDXBITS, REGISTERBITS) \
   GREX_CAT(GREX_BITPREFIX(REGISTERBITS), _i##IDXBITS##gather_, GREX_EPI_SUFFIX(VALKIND, VALBITS))( \
     GREX_GATHER_CAST(VALKIND, VALBITS), idxs.registr(), GREX_DIVIDE(VALBITS, 8))
@@ -97,8 +103,9 @@ inline VectorFor<TValue, 2 * TVecHalf::size> mask_gather(std::span<const TValue>
   GREX_GATHER_INSTRINSIC_##REGISTERBITS(VALKIND, VALBITS, IDXBITS, REGISTERBITS)
 
 #define GREX_MGATHER_PREFIX(VALUE, INDEX, SIZE) \
-  inline VectorFor<VALUE, SIZE> mask_gather(std::span<const VALUE> data, MaskFor<VALUE, SIZE> m, \
-                                            VectorFor<INDEX, SIZE> idxs)
+  template<std::size_t tExtent> \
+  inline VectorFor<VALUE, SIZE> mask_gather(std::span<const VALUE, tExtent> data, \
+                                            MaskFor<VALUE, SIZE> m, VectorFor<INDEX, SIZE> idxs)
 #define GREX_MGATHER_MMASK_128 mmask
 #define GREX_MGATHER_MMASK_256 mmask
 #define GREX_MGATHER_MMASK_512 mask
@@ -208,14 +215,16 @@ GREX_GATHER_DEFINE(u, 32, u, 64, 8, 512)
 #endif
 
 // 8- and 16-bit indices: convert to i32
-template<Vectorizable TValue, Vectorizable TIndex, std::size_t tSize>
+template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
 requires(sizeof(TValue) >= 4 && sizeof(TIndex) <= 2)
-inline VectorFor<TValue, tSize> gather(std::span<const TValue> data, Vector<TIndex, tSize> idxs) {
+inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
+                                       Vector<TIndex, tSize> idxs) {
   return gather(data, convert(idxs, type_tag<i32>));
 }
-template<Vectorizable TValue, Vectorizable TIndex, std::size_t tPart, std::size_t tSize>
+template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tPart,
+         std::size_t tSize>
 requires(sizeof(TValue) >= 4 && sizeof(TIndex) <= 2)
-inline VectorFor<TValue, tPart> gather(std::span<const TValue> data,
+inline VectorFor<TValue, tPart> gather(std::span<const TValue, tExtent> data,
                                        SubVector<TIndex, tPart, tSize> idxs) {
   return gather(data, convert(idxs, type_tag<i32>));
 }
@@ -226,9 +235,10 @@ inline VectorFor<TValue, tPart> gather(std::span<const TValue> data,
 //   which is equivalent to idxs ^ 2^31, which transforms the value range of u32 to i32.
 // sadly, the latter cannot be done in general in standard C++ because pointer arithmetic
 // past the array leads to undefined behaviour
-template<Vectorizable TValue, std::size_t tSize>
+template<Vectorizable TValue, std::size_t tExtent, std::size_t tSize>
 requires(sizeof(TValue) >= 4)
-inline VectorFor<TValue, tSize> gather(std::span<const TValue> data, Vector<u32, tSize> idxs) {
+inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
+                                       Vector<u32, tSize> idxs) {
   constexpr u32 limit = std::size_t{1} << 31;
   if (data.size() >= limit) {
     return gather(

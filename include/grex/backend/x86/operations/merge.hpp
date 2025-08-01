@@ -23,6 +23,8 @@
 
 #if GREX_X86_64_LEVEL >= 4
 #include <climits>
+#else
+#include "grex/backend/x86/operations/mask-convert.hpp"
 #endif
 
 namespace grex::backend {
@@ -103,12 +105,12 @@ inline SuperVector<SuperVector<THalf>> merge(SuperVector<THalf> a, SuperVector<T
 #if GREX_X86_64_LEVEL >= 4
 // Merge compact masks to native/sub-native: Bit shift and logical or
 template<typename TMask>
-requires(!is_supernative<typename TMask::VecValue, TMask::size * 2>)
-inline MaskFor<typename TMask::VecValue, TMask::size * 2> merge(TMask a, TMask b) {
+requires(!is_supernative<typename TMask::VectorValue, TMask::size * 2>)
+inline MaskFor<typename TMask::VectorValue, TMask::size * 2> merge(TMask a, TMask b) {
   using Register = TMask::Register;
   static constexpr std::size_t size = TMask::size;
   static constexpr std::size_t rdigits = sizeof(Register) * CHAR_BIT;
-  using Out = MaskFor<typename TMask::VecValue, size * 2>;
+  using Out = MaskFor<typename TMask::VectorValue, size * 2>;
   using OutRegister = Out::Register;
   if constexpr (size < rdigits) {
     // Mask out the upper bits before merging
@@ -120,13 +122,13 @@ inline MaskFor<typename TMask::VecValue, TMask::size * 2> merge(TMask a, TMask b
 }
 // Merge compact masks to super-native
 template<AnyMask TMask>
-requires(is_supernative<typename TMask::VecValue, TMask::size * 2>)
+requires(is_supernative<typename TMask::VectorValue, TMask::size * 2>)
 inline SuperMask<TMask> merge(TMask a, TMask b) {
   return {.lower = a, .upper = b};
 }
 #else
 template<AnyMask TMask>
-inline MaskFor<typename TMask::VecValue, TMask::size * 2> merge(TMask a, TMask b) {
+inline MaskFor<typename TMask::VectorValue, TMask::size * 2> merge(TMask a, TMask b) {
   return vector2mask(merge(mask2vector(a), mask2vector(b)));
 }
 #endif

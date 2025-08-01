@@ -11,6 +11,7 @@
 #include <cstddef>
 
 #include "grex/base/defs.hpp"
+#include "grex/operations.hpp"
 #include "grex/types.hpp"
 
 namespace grex {
@@ -30,9 +31,15 @@ struct ScalarTag {
   template<Vectorizable T>
   [[nodiscard]] TypedScalarTag<T> cast(TypeTag<T> /*tag*/) const;
 
-  template<typename T>
+  template<Vectorizable T>
   [[nodiscard]] constexpr T mask(T x) const {
     return x;
+  }
+  [[nodiscard]] constexpr bool mask(bool b) const {
+    return b;
+  }
+  [[nodiscard]] constexpr bool mask() const {
+    return true;
   }
 };
 inline constexpr ScalarTag scalar_tag{};
@@ -78,6 +85,10 @@ struct FullTag {
   [[nodiscard]] TMask mask(TMask m) const {
     return m;
   }
+  template<Vectorizable T>
+  auto mask(TypeTag<T> /*tag*/ = {}) const {
+    return Mask<T, tSize>::ones();
+  }
 
   [[nodiscard]] std::size_t part() const {
     return size;
@@ -89,6 +100,11 @@ inline constexpr FullTag<tSize> full_tag{};
 template<Vectorizable T, std::size_t tSize>
 struct TypedFullTag : public FullTag<tSize> {
   using Value = T;
+
+  using FullTag<tSize>::mask;
+  auto mask() const {
+    return Mask<T, tSize>::ones();
+  }
 };
 template<Vectorizable T, std::size_t tSize>
 inline constexpr TypedFullTag<T, tSize> typed_full_tag{};
@@ -118,7 +134,7 @@ struct TypedMaskedTag {
 
   template<Vectorizable TOther>
   [[nodiscard]] TypedMaskedTag<TOther, tSize> cast(TypeTag<TOther> /*tag*/) const {
-    return {mask_};
+    return TypedMaskedTag<TOther, tSize>{convert_unsafe<TOther>(mask_)};
   }
 
   [[nodiscard]] Vector<T, tSize> mask(Vector<T, tSize> v) const {
@@ -154,7 +170,7 @@ struct PartTag {
 
   template<SizedMask<size> TMask>
   [[nodiscard]] TMask mask(TMask m) const {
-    return m && mask<typename TMask::VecValue>();
+    return m && mask<typename TMask::VectorValue>();
   }
   template<SizedVector<size> TVec>
   [[nodiscard]] TVec mask(TVec v) const {

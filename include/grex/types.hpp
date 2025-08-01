@@ -36,6 +36,9 @@ struct Mask {
   explicit Mask(Ts... values) : mask_{backend::set(type_tag<Backend>, values...)} {}
   explicit Mask(Backend v) : mask_(v) {}
 
+  static Mask zeros() {
+    return Mask{backend::zeros(type_tag<Backend>)};
+  }
   static Mask ones() {
     return Mask{backend::ones(type_tag<Backend>)};
   }
@@ -150,6 +153,9 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   static Vector undefined() {
     return Vector{backend::undefined(type_tag<Backend>)};
   }
+  static Vector zeros() {
+    return Vector{backend::zeros(type_tag<Backend>)};
+  }
   static Vector indices() {
     return Vector{backend::indices(type_tag<Backend>)};
   }
@@ -160,20 +166,37 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   Vector operator-() const {
     return Vector{backend::negate(vec_)};
   }
-  friend Vector operator+(Vector a, Vector b) {
-    return Vector{backend::add(a.vec_, b.vec_)};
-  }
-  friend Vector operator-(Vector a, Vector b) {
-    return Vector{backend::subtract(a.vec_, b.vec_)};
-  }
-  friend Vector operator*(Vector a, Vector b) {
-    return Vector{backend::multiply(a.vec_, b.vec_)};
-  }
-  friend Vector operator/(Vector a, Vector b)
-  requires(FloatVectorizable<T>)
+  Vector operator~() const
+  requires(IntVectorizable<T>)
   {
-    return Vector{backend::divide(a.vec_, b.vec_)};
+    return Vector{backend::bitwise_not(vec_)};
   }
+
+#define GREX_VECTOR_BINOP(OP, REQ, NAME) \
+  friend Vector operator OP(Vector a, Vector b) REQ { \
+    return Vector{backend::NAME(a.vec_, b.vec_)}; \
+  } \
+  friend Vector operator OP(Vector a, Value b) REQ { \
+    return a OP Vector{b}; \
+  } \
+  friend Vector operator OP(Value a, Vector b) REQ { \
+    return Vector{a} OP b; \
+  } \
+  Vector& operator OP##=(Vector b) REQ { \
+    return *this = *this OP b; \
+  } \
+  Vector& operator OP##=(Value b) REQ { \
+    return *this = *this OP b; \
+  }
+
+  GREX_VECTOR_BINOP(+, , add)
+  GREX_VECTOR_BINOP(-, , subtract)
+  GREX_VECTOR_BINOP(*, , multiply)
+  GREX_VECTOR_BINOP(/, requires(FloatVectorizable<T>), divide)
+  GREX_VECTOR_BINOP(&, requires(IntVectorizable<T>), bitwise_and)
+  GREX_VECTOR_BINOP(|, requires(IntVectorizable<T>), bitwise_or)
+  GREX_VECTOR_BINOP(^, requires(IntVectorizable<T>), bitwise_xor)
+#undef GREX_VECTOR_BINOP
 
   Vector cutoff(std::size_t i) const {
     return Vector{backend::cutoff(i, vec_)};
@@ -205,45 +228,24 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
     backend::store_part(value, vec_, num);
   }
 
-  Vector operator~() const
-  requires(IntVectorizable<T>)
-  {
-    return Vector{backend::bitwise_not(vec_)};
-  }
-  friend Vector operator&(Vector a, Vector b)
-  requires(IntVectorizable<T>)
-  {
-    return Vector{backend::bitwise_and(a.vec_, b.vec_)};
-  }
-  friend Vector operator|(Vector a, Vector b)
-  requires(IntVectorizable<T>)
-  {
-    return Vector{backend::bitwise_or(a.vec_, b.vec_)};
-  }
-  friend Vector operator^(Vector a, Vector b)
-  requires(IntVectorizable<T>)
-  {
-    return Vector{backend::bitwise_xor(a.vec_, b.vec_)};
+#define GREX_VECTOR_CMP_BINOP(OP, REQ, BACKEND) \
+  friend Mask operator OP(Vector a, Vector b) REQ { \
+    return Mask{BACKEND}; \
+  } \
+  friend Mask operator OP(Vector a, Value b) REQ { \
+    return a OP Vector{b}; \
+  } \
+  friend Mask operator OP(Value a, Vector b) REQ { \
+    return Vector{a} OP b; \
   }
 
-  friend Mask operator==(Vector a, Vector b) {
-    return Mask{backend::compare_eq(a.vec_, b.vec_)};
-  }
-  friend Mask operator!=(Vector a, Vector b) {
-    return Mask{backend::compare_neq(a.vec_, b.vec_)};
-  }
-  friend Mask operator<(Vector a, Vector b) {
-    return Mask{backend::compare_lt(a.vec_, b.vec_)};
-  }
-  friend Mask operator>(Vector a, Vector b) {
-    return Mask{backend::compare_lt(b.vec_, a.vec_)};
-  }
-  friend Mask operator>=(Vector a, Vector b) {
-    return Mask{backend::compare_ge(a.vec_, b.vec_)};
-  }
-  friend Mask operator<=(Vector a, Vector b) {
-    return Mask{backend::compare_ge(b.vec_, a.vec_)};
-  }
+  GREX_VECTOR_CMP_BINOP(==, , backend::compare_eq(a.vec_, b.vec_))
+  GREX_VECTOR_CMP_BINOP(!=, , backend::compare_neq(a.vec_, b.vec_))
+  GREX_VECTOR_CMP_BINOP(<, , backend::compare_lt(a.vec_, b.vec_))
+  GREX_VECTOR_CMP_BINOP(>, , backend::compare_lt(b.vec_, a.vec_))
+  GREX_VECTOR_CMP_BINOP(>=, , backend::compare_ge(a.vec_, b.vec_))
+  GREX_VECTOR_CMP_BINOP(<=, , backend::compare_ge(b.vec_, a.vec_))
+#undef GREX_VECTOR_CMP_BINOP
 
   template<std::size_t tDstSize>
   Vector<T, tDstSize> expand_any(IndexTag<tDstSize> /*size*/) const {
@@ -405,13 +407,14 @@ inline Vector<T, tSize> mask_divide(Mask<T, tSize> mask, Vector<T, tSize> a, Vec
   return Vector<T, tSize>{backend::mask_divide(mask.backend(), a.backend(), b.backend())};
 }
 
-template<Vectorizable TValue, Vectorizable TIndex, std::size_t tSize>
-inline Vector<TValue, tSize> gather(std::span<const TValue> data, Vector<TIndex, tSize> indices) {
+template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
+inline Vector<TValue, tSize> gather(std::span<const TValue, tExtent> data,
+                                    Vector<TIndex, tSize> indices) {
   return Vector<TValue, tSize>{backend::gather(data, indices.backend())};
 }
-template<Vectorizable TValue, Vectorizable TIndex, std::size_t tSize>
-inline Vector<TValue, tSize> mask_gather(std::span<const TValue> data, Mask<TValue, tSize> mask,
-                                         Vector<TIndex, tSize> indices) {
+template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
+inline Vector<TValue, tSize> mask_gather(std::span<const TValue, tExtent> data,
+                                         Mask<TValue, tSize> mask, Vector<TIndex, tSize> indices) {
   return Vector<TValue, tSize>{backend::mask_gather(data, mask.backend(), indices.backend())};
 }
 } // namespace grex

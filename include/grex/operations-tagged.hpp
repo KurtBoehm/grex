@@ -51,6 +51,10 @@ inline TagType<TTag, TIdx> indices(TIdx start, TTag /*tag*/) {
 
 // load
 template<Vectorizable T>
+inline T& load(T* src, OptValuedScalarTag<T> auto /*tag*/) {
+  return *src;
+}
+template<Vectorizable T>
 inline T load(const T* src, OptValuedScalarTag<T> auto /*tag*/) {
   return *src;
 }
@@ -65,6 +69,10 @@ inline TagType<TTag, T> load(const T* src, TTag tag) {
 // TODO Add masked loading?
 
 // load_extended
+template<Vectorizable T>
+inline T& load_extended(T* src, OptValuedScalarTag<T> auto /*tag*/) {
+  return *src;
+}
 template<Vectorizable T>
 inline T load_extended(const T* src, OptValuedScalarTag<T> auto /*tag*/) {
   return *src;

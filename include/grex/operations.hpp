@@ -11,6 +11,7 @@
 
 #include "grex/backend/active/operations.hpp"
 #include "grex/backend/defs.hpp"
+#include "grex/backend/operations.hpp"
 #include "grex/base/defs.hpp"
 #include "grex/types.hpp"
 
@@ -91,6 +92,13 @@ requires(!tSafe || SafeConversion<TDst, typename TSrc::Value>)
 inline Vector<TDst, TSrc::size> convert(TSrc src, BoolTag<tSafe> /*tag*/) {
   return src.convert(type_tag<TDst>);
 }
+// Mask conversions are always safe if each entry is filled with 0 or 1
+// (which the provided operations ensure)
+template<Vectorizable TDst, AnyMask TSrc>
+inline Mask<TDst, TSrc::size> convert(TSrc src, AnyBoolTag auto /*tag*/) {
+  return src.convert(type_tag<TDst>);
+}
+
 template<Vectorizable TDst, typename TSrc>
 inline auto convert_unsafe(TSrc src) {
   return convert<TDst>(src, false_tag);

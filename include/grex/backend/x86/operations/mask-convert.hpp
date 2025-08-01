@@ -30,7 +30,7 @@ inline SubVector<SignedInt<sizeof(T)>, tPart, tSize> mask2vector(SubMask<T, tPar
   return SubVector<SignedInt<sizeof(T)>, tPart, tSize>{m.registr()};
 }
 template<typename THalf>
-inline VectorFor<SignedInt<sizeof(typename THalf::VecValue)>, 2 * THalf::size>
+inline VectorFor<SignedInt<sizeof(typename THalf::VectorValue)>, 2 * THalf::size>
 mask2vector(SuperMask<THalf> m) {
   return {.lower = mask2vector(m.lower), .upper = mask2vector(m.upper)};
 }

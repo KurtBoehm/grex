@@ -86,7 +86,7 @@ template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 struct SubMask {
   using Full = Mask<T, tSize>;
   using Register = Full::Register;
-  using VecValue = T;
+  using VectorValue = T;
   static constexpr std::size_t size = tPart;
 
   Full full;
@@ -100,7 +100,7 @@ struct SubMask {
 };
 template<typename THalf>
 struct SuperMask {
-  using VecValue = THalf::VecValue;
+  using VectorValue = THalf::VectorValue;
   static constexpr std::size_t size = 2 * THalf::size;
 
   THalf lower;
