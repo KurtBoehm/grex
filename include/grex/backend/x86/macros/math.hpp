@@ -78,10 +78,14 @@
 #define GREX_MAX_4_8 8
 #define GREX_MAX_8_4 8
 #define GREX_MAX_8_8 8
+#define GREX_MAX_8_32 32
 #define GREX_MAX_16_4 16
 #define GREX_MAX_16_8 16
+#define GREX_MAX_16_32 32
 #define GREX_MAX_32_8 32
+#define GREX_MAX_32_32 32
 #define GREX_MAX_64_8 64
+#define GREX_MAX_64_32 64
 #define GREX_MAX_64_128 128
 #define GREX_MAX_128_128 128
 #define GREX_MAX_256_128 256

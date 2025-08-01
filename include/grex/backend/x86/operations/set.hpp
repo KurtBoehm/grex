@@ -37,14 +37,9 @@ namespace grex::backend {
 #define GREX_SET_SUFFIX_i(BITS, REGISTERBITS) GREX_SET_EPI(BITS, REGISTERBITS)
 #define GREX_SET_SUFFIX_u(BITS, REGISTERBITS) GREX_SET_EPI(BITS, REGISTERBITS)
 #define GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS) GREX_SET_SUFFIX_##KIND(BITS, REGISTERBITS)
-// Define the casts to the argument type of the intrinsics
-#define GREX_SET_CAST_f(BITS, X) X
-#define GREX_SET_CAST_i(BITS, X) X
-#define GREX_SET_CAST_u(BITS, X) i##BITS(X)
-#define GREX_SET_CAST(KIND, BITS, X) GREX_SET_CAST_##KIND(BITS, X)
 // Helpers to define function arguments for the set-based operations
 #define GREX_SET_ARG(CNT, IDX, TYPE) GREX_COMMA_IF(IDX) TYPE v##IDX
-#define GREX_SET_VAL(CNT, IDX, KIND, BITS) GREX_SET_CAST(KIND, BITS, v##IDX) GREX_COMMA_IF(IDX)
+#define GREX_SET_VAL(CNT, IDX, KIND, BITS) GREX_SIGNED_CAST(KIND, BITS, v##IDX) GREX_COMMA_IF(IDX)
 #define GREX_SET_NEGVAL(CNT, IDX, BITS) -i##BITS(v##IDX) GREX_COMMA_IF(IDX)
 // Define the messy undefined macros
 #define GREX_UNDEF_BASE(KIND, BITS, BITPREFIX, REGISTERBITS) \
@@ -114,7 +109,7 @@ namespace grex::backend {
   } \
   inline Vector<KIND##BITS, SIZE> broadcast(KIND##BITS value, TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))( \
-              GREX_SET_CAST(KIND, BITS, value))}; \
+              GREX_SIGNED_CAST(KIND, BITS, value))}; \
   } \
   inline Vector<KIND##BITS, SIZE> set(TypeTag<Vector<KIND##BITS, SIZE>>, \
                                       GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \

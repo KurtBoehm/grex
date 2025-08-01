@@ -79,6 +79,9 @@ struct Mask {
   Mask insert(std::size_t i, bool value) const {
     return Mask{backend::insert(mask_, i, value)};
   }
+  Mask insert(AnyIndexTag auto i, bool value) const {
+    return Mask{backend::insert(mask_, i, value)};
+  }
 
   Backend backend() const {
     return mask_;
@@ -215,6 +218,9 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
     return backend::extract(v.vec_, tIdx);
   }
   Vector insert(std::size_t i, T value) const {
+    return Vector{backend::insert(vec_, i, value)};
+  }
+  Vector insert(AnyIndexTag auto i, T value) const {
     return Vector{backend::insert(vec_, i, value)};
   }
 

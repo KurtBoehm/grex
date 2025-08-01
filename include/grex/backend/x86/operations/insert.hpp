@@ -70,7 +70,7 @@ namespace grex::backend {
 #define GREX_MASK_INSERT_AVX512(KIND, BITS, SIZE, BITPREFIX) \
   inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> m, std::size_t index, bool value) { \
     using Idx = GREX_CAT(u, GREX_MAX(SIZE, 8)); \
-    return {.r = GREX_MMASK(SIZE)((m.r & ~(Idx{1} << index)) + (Idx{value} << index))}; \
+    return {.r = GREX_MMASK(SIZE)((m.r & ~(Idx{1} << index)) | (Idx{value} << index))}; \
   }
 #define GREX_MASK_INSERT_FALLBACK(KIND, BITS, SIZE, BITPREFIX) \
   inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> m, std::size_t index, bool value) { \

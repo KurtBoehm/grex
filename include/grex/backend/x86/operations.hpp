@@ -19,6 +19,7 @@
 #include "operations/horizontal-add.hpp"
 #include "operations/horizontal-and.hpp"
 #include "operations/horizontal-minmax.hpp"
+#include "operations/insert-static.hpp"
 #include "operations/insert.hpp"
 #include "operations/load.hpp"
 #include "operations/mask-convert.hpp"

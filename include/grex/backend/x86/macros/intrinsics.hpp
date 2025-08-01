@@ -82,4 +82,16 @@
 
 #define GREX_MMASK(SIZE) GREX_CAT(__mmask, GREX_MAX(SIZE, 8))
 
+// Map a kind to its signed counterpart
+#define GREX_SIGNED_KIND_f f
+#define GREX_SIGNED_KIND_i i
+#define GREX_SIGNED_KIND_u i
+#define GREX_SIGNED_KIND(KIND) GREX_SIGNED_KIND_##KIND
+
+// Casts to the argument type of the argument of various set-like intrinsics
+#define GREX_SIGNED_CAST_f(BITS, X) X
+#define GREX_SIGNED_CAST_i(BITS, X) X
+#define GREX_SIGNED_CAST_u(BITS, X) i##BITS(X)
+#define GREX_SIGNED_CAST(KIND, BITS, X) GREX_SIGNED_CAST_##KIND(BITS, X)
+
 #endif // INCLUDE_GREX_BACKEND_X86_MACROS_INTRINSICS_HPP
