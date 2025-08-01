@@ -242,6 +242,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
         };
         m2m("logical_not", std::logical_not{});
         mm2m("logical_and", std::logical_and{});
+        mm2m("logical_andnot", [](auto a, auto b) { return grex::andnot(a, b); });
         mm2m("logical_or", std::logical_or{});
         mm2m("equal_to", std::equal_to{});
         mm2m("not_equal_to", std::not_equal_to{});

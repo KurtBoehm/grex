@@ -16,6 +16,10 @@
 #include "grex/types.hpp"
 
 namespace grex {
+inline bool andnot(bool a, bool b) {
+  return backend::logical_andnot(a, b);
+}
+
 #define GREX_MATH_FMA(NAME) \
   template<FloatVectorizable T> \
   inline T NAME(T a, T b, T c) { \

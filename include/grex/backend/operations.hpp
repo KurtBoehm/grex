@@ -34,6 +34,10 @@ inline Scalar<T> max(Scalar<T> a, Scalar<T> b) {
   return {.value = std::max(a.value, b.value)};
 }
 
+inline bool logical_andnot(bool a, bool b) {
+  return !a && b;
+}
+
 #define GREX_OPS_MASKARITH(NAME, OP) \
   template<Vectorizable T> \
   inline Scalar<T> NAME(bool mask, Scalar<T> a, Scalar<T> b) { \

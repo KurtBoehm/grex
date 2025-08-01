@@ -277,6 +277,11 @@ private:
   using Base::vec_;
 };
 
+template<Vectorizable T, std::size_t tSize>
+inline Mask<T, tSize> andnot(Mask<T, tSize> a, Mask<T, tSize> b) {
+  return Mask<T, tSize>{backend::logical_andnot(a.backend(), b.backend())};
+}
+
 // traits
 template<typename T>
 struct MaskTrait : public std::false_type {};
