@@ -58,9 +58,9 @@ struct ZeroBlenderInsert32 : public BaseExpensiveOp {
   template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
   static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr BlendZeros<4, 4> bzs = convert<4>(tBzs).value();
+    static constexpr int imm8 = convert<4>(tBzs).value().imm8();
     const f32x4 fvec = reinterpret(vec, type_tag<f32>);
-    return reinterpret(f32x4{_mm_insert_ps(fvec.r, fvec.r, ~bzs.imm8() & 0xF)}, type_tag<Value>);
+    return reinterpret(f32x4{_mm_insert_ps(fvec.r, fvec.r, ~imm8 & 0xF)}, type_tag<Value>);
   }
   static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
     return {0.5, 1};
@@ -79,9 +79,9 @@ struct ZeroBlenderBlend32x4 : public BaseExpensiveOp {
   template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
   static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr BlendZeros<4, 4> bzs = convert<4>(tBzs).value();
+    static constexpr int imm8 = convert<4>(tBzs).value().imm8();
     const f32x4 fvec = reinterpret(vec, type_tag<f32>);
-    return reinterpret(f32x4{_mm_blend_ps(_mm_setzero_ps(), fvec.r, bzs.imm8())}, type_tag<Value>);
+    return reinterpret(f32x4{_mm_blend_ps(_mm_setzero_ps(), fvec.r, imm8)}, type_tag<Value>);
   }
   static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
     return {0.5, 2};
@@ -100,10 +100,9 @@ struct ZeroBlenderBlend16x8 : public BaseExpensiveOp {
   template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
   static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr BlendZeros<2, 8> bzs = convert<2>(tBzs).value();
+    static constexpr int imm8 = convert<2>(tBzs).value().imm8();
     const i16x8 ivec = reinterpret(vec, type_tag<i16>);
-    return reinterpret(i16x8{_mm_blend_epi16(_mm_setzero_si128(), ivec.r, bzs.imm8())},
-                       type_tag<Value>);
+    return reinterpret(i16x8{_mm_blend_epi16(_mm_setzero_si128(), ivec.r, imm8)}, type_tag<Value>);
   }
   static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
     return {0.5, 2};

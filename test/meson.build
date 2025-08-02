@@ -21,6 +21,7 @@ foreach name, parallel : {
   'multibyte': true,
   'set': true,
   'shingle': true,
+  'shuffle': true,
 }
   deps = [fmt_dep, grex_dep, pcg_dep, thesauros_dep]
   if not parallel

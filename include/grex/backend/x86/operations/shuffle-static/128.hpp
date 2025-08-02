@@ -53,11 +53,10 @@ struct ShufflerShuffle32x4 : public BaseExpensiveOp {
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr auto idxs = convert<4>(tSh).value();
+    static constexpr int imm8 = convert<4>(tSh).value().imm8();
 
     const i32x4 ivec = reinterpret(vec, type_tag<i32>);
-    const TVec shuffled =
-      reinterpret(i32x4{_mm_shuffle_epi32(ivec.r, idxs.imm8())}, type_tag<Value>);
+    const TVec shuffled = reinterpret(i32x4{_mm_shuffle_epi32(ivec.r, imm8)}, type_tag<Value>);
     return ZeroBlender<tSh.blend_zeros()>::apply(shuffled, auto_tag<tSh.blend_zeros()>);
   }
   template<AnyShuffleIndices auto tSh>

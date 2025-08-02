@@ -286,15 +286,16 @@ namespace grex::backend {
 #else
 #define GREX_VDSHINGLE_f64_2(...) \
   return {.r = _mm_shuffle_pd(v.r, expand_any(back, index_tag<2>).r, 0b0'1)};
-#define GREX_VDSHINGLE_i64_2(...) \
+#define GREX_VDSHINGLE_i64_2(KIND, ...) \
   const __m128i sh = _mm_shuffle_epi32(v.r, 0b11'10'11'10); \
-  return {.r = _mm_insert_epi64(sh, back.value, 1)};
+  return {.r = _mm_insert_epi64(sh, GREX_SIGNED_CAST(KIND, 64, back.value), 1)};
 #define GREX_VDSHINGLE_u64_2 GREX_VDSHINGLE_i64_2
 #define GREX_VDSHINGLE_64_2(KIND, ...) GREX_VDSHINGLE_##KIND##64_2(KIND, __VA_ARGS__)
 #define GREX_VDSHINGLE_i32_4(KIND, ...) \
   const __m128i ivec = GREX_KINDCAST(KIND, i, 32, 128, v.r); \
   const __m128i sh = _mm_shuffle_epi32(ivec, 0b11'11'10'01); \
-  return {.r = GREX_KINDCAST(i, KIND, 32, 128, _mm_insert_epi32(sh, back.value, 3))};
+  return {.r = GREX_KINDCAST(i, KIND, 32, 128, \
+                             _mm_insert_epi32(sh, GREX_SIGNED_CAST(KIND, 32, back.value), 3))};
 #define GREX_VDSHINGLE_u32_4 GREX_VDSHINGLE_i32_4
 #define GREX_VDSHINGLE_f32_4 GREX_VDSHINGLE_32_4_BASE
 #define GREX_VDSHINGLE_32_4(KIND, ...) GREX_VDSHINGLE_##KIND##32_4(KIND, __VA_ARGS__)

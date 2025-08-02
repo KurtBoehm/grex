@@ -38,16 +38,16 @@ struct ShufflerShuffle128x4 : public BaseExpensiveOp {
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr ShuffleIndices<16, 4> idxs128 = convert<16>(tSh).value();
+    static constexpr int imm8 = convert<16>(tSh).value().imm8();
     static constexpr ShuffleIndices<4, 16> idxs32 = convert<4>(tSh).value();
     static_assert(!idxs32.subzero);
 
     const i32x16 ivec = reinterpret(vec, type_tag<i32>);
     if constexpr (idxs32.requires_zeroing()) {
-      const auto shuf = _mm512_maskz_shuffle_i32x4(idxs32.mask().r, ivec.r, ivec.r, idxs128.imm8());
+      const auto shuf = _mm512_maskz_shuffle_i32x4(idxs32.mask().r, ivec.r, ivec.r, imm8);
       return reinterpret(i32x16{shuf}, type_tag<Value>);
     } else {
-      const auto shuf = _mm512_shuffle_i32x4(ivec.r, ivec.r, idxs128.imm8());
+      const auto shuf = _mm512_shuffle_i32x4(ivec.r, ivec.r, imm8);
       return reinterpret(i32x16{shuf}, type_tag<Value>);
     }
   }
@@ -88,10 +88,10 @@ struct ShufflerShuffle32x16 : public BaseExpensiveOp {
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
     using Value = TVec::Value;
     static constexpr ShuffleIndices<4, 16> bidxs = convert<4>(tSh).value();
-    static constexpr ShuffleIndices<4, 4> lidxs = bidxs.single_lane().value();
+    static constexpr int imm8 = bidxs.single_lane().value().imm8();
 
     const i32x16 ivec = reinterpret(vec, type_tag<i32>);
-    const auto shuf = _mm512_shuffle_epi32(ivec.r, _MM_PERM_ENUM(lidxs.imm8()));
+    const auto shuf = _mm512_shuffle_epi32(ivec.r, _MM_PERM_ENUM(imm8));
     const TVec shufr = reinterpret(i32x16{shuf}, type_tag<Value>);
     return ZeroBlender<tSh.blend_zeros()>::apply(shufr, auto_tag<tSh.blend_zeros()>);
   }
@@ -112,11 +112,10 @@ struct ShufflerPermutex64x8 : public BaseExpensiveOp {
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
     using Value = TVec::Value;
     static constexpr ShuffleIndices<8, 8> bidxs = convert<8>(tSh).value();
-    static constexpr ShuffleIndices<8, 4> lidxs = bidxs.double_lane().value();
+    static constexpr int imm8 = bidxs.double_lane().value().imm8();
 
     const i64x8 ivec = reinterpret(vec, type_tag<i64>);
-    const TVec shuffled =
-      reinterpret(i64x8{_mm512_permutex_epi64(ivec.r, lidxs.imm8())}, type_tag<Value>);
+    const TVec shuffled = reinterpret(i64x8{_mm512_permutex_epi64(ivec.r, imm8)}, type_tag<Value>);
     return ZeroBlender<tSh.blend_zeros()>::apply(shuffled, auto_tag<tSh.blend_zeros()>);
   }
   template<AnyShuffleIndices auto tSh>
@@ -141,7 +140,7 @@ struct ShufflerPermutexVar64x8 : public BaseExpensiveOp {
 
     const i64x8 ivec = reinterpret(vec, type_tag<i64>);
     if constexpr (idxs.requires_zeroing()) {
-      const i64x8 shuf{_mm512_permutex2var_epi64(idxs.vector().r, ivec.r, _mm512_setzero_si512())};
+      const i64x8 shuf{_mm512_permutex2var_epi64(ivec.r, idxs.vector().r, _mm512_setzero_si512())};
       return reinterpret(shuf, type_tag<Value>);
     } else {
       return reinterpret(i64x8{_mm512_permutexvar_epi64(idxs.vector().r, ivec.r)}, type_tag<Value>);
@@ -166,7 +165,7 @@ struct ShufflerPermutexVar32x16 : public BaseExpensiveOp {
 
     const i32x16 ivec = reinterpret(vec, type_tag<i32>);
     if constexpr (idxs.requires_zeroing()) {
-      const i32x16 shuf{_mm512_permutex2var_epi32(idxs.vector().r, ivec.r, _mm512_setzero_si512())};
+      const i32x16 shuf{_mm512_permutex2var_epi32(ivec.r, idxs.vector().r, _mm512_setzero_si512())};
       return reinterpret(shuf, type_tag<Value>);
     } else {
       return reinterpret(i32x16{_mm512_permutexvar_epi32(idxs.vector().r, ivec.r)},
@@ -192,7 +191,7 @@ struct ShufflerPermutexVar16x32 : public BaseExpensiveOp {
 
     const i16x32 ivec = reinterpret(vec, type_tag<i16>);
     if constexpr (idxs.requires_zeroing()) {
-      const i16x32 shuf{_mm512_permutex2var_epi16(idxs.vector().r, ivec.r, _mm512_setzero_si512())};
+      const i16x32 shuf{_mm512_permutex2var_epi16(ivec.r, idxs.vector().r, _mm512_setzero_si512())};
       return reinterpret(shuf, type_tag<Value>);
     } else {
       return reinterpret(i16x32{_mm512_permutexvar_epi16(idxs.vector().r, ivec.r)},
@@ -219,7 +218,7 @@ struct ShufflerPermutexVar8x64 : public BaseExpensiveOp {
 
     const i8x64 ivec = reinterpret(vec, type_tag<i8>);
     if constexpr (idxs.requires_zeroing()) {
-      const i8x64 shuf{_mm512_permutex2var_epi8(idxs.vector().r, ivec.r, _mm512_setzero_si512())};
+      const i8x64 shuf{_mm512_permutex2var_epi8(ivec.r, idxs.vector().r, _mm512_setzero_si512())};
       return reinterpret(shuf, type_tag<Value>);
     } else {
       return reinterpret(i8x64{_mm512_permutexvar_epi8(idxs.vector().r, ivec.r)}, type_tag<Value>);
@@ -257,10 +256,9 @@ struct ShufflerPermutexVar8x64 : public BaseExpensiveOp {
       [&]<std::size_t... tIdxs>() { return std::array{f16(tIdxs, tSh[2 * tIdxs + 1])...}; });
 
     // per-lane 8-bit shuffling
-    // even indices
     auto f8 = [&](std::size_t i, bool even) {
       const auto sh = tSh[i];
-      return ((i % 2 == 0) == even && is_index(sh)) ? i8(i + u8(sh) % 2) : i8(-1);
+      return ((i % 2 == 0) == even && is_index(sh)) ? i8(i / 2 * 2 + u8(sh) % 2) : i8(-1);
     };
     // even indices
     constexpr auto idxs8a =
@@ -288,10 +286,10 @@ struct ShufflerPermutexVar8x64 : public BaseExpensiveOp {
 template<AnyShuffleIndices auto tIdxs>
 requires((tIdxs.value_size * tIdxs.size == 64))
 struct ShufflerTrait<tIdxs> {
-  using Shuffler = CheapestType<tIdxs, ShufflerBlendZero, ShufflerShuffle128x4, ShufflerShuffle8x64,
-                                ShufflerShuffle32x16, ShufflerPermutex64x8, ShufflerPermutexVar64x8,
-                                ShufflerPermutexVar32x16, ShufflerPermutexVar16x32,
-                                ShufflerPermutexVar8x64, ShufflerExtractSet>;
+  using Shuffler =
+    CheapestType<tIdxs, ShufflerBlendZero, ShufflerShuffle128x4, ShufflerShuffle8x64,
+                 ShufflerShuffle32x16, ShufflerPermutex64x8, ShufflerPermutexVar64x8,
+                 ShufflerPermutexVar32x16, ShufflerPermutexVar16x32, ShufflerPermutexVar8x64>;
 };
 } // namespace grex::backend
 #endif

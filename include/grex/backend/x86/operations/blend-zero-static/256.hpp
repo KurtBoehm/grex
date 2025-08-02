@@ -31,10 +31,9 @@ struct ZeroBlenderBlend32x8 : public BaseExpensiveOp {
   template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
   static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr auto bzs = convert<4>(tBzs).value();
+    static constexpr int imm8 = convert<4>(tBzs).value().imm8();
     const f32x8 fvec = reinterpret(vec, type_tag<f32>);
-    return reinterpret(f32x8{_mm256_blend_ps(_mm256_setzero_ps(), fvec.r, bzs.imm8())},
-                       type_tag<Value>);
+    return reinterpret(f32x8{_mm256_blend_ps(_mm256_setzero_ps(), fvec.r, imm8)}, type_tag<Value>);
   }
   static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
     return {0.5, 2};
@@ -53,9 +52,9 @@ struct ZeroBlenderBlend16x16 : public BaseExpensiveOp {
   template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
   static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr auto bzs = convert<2>(tBzs).value().single_lane().value();
+    static constexpr int imm8 = convert<2>(tBzs).value().single_lane().value().imm8();
     const i16x16 ivec = reinterpret(vec, type_tag<i16>);
-    return reinterpret(i16x16{_mm256_blend_epi16(_mm256_setzero_si256(), ivec.r, bzs.imm8())},
+    return reinterpret(i16x16{_mm256_blend_epi16(_mm256_setzero_si256(), ivec.r, imm8)},
                        type_tag<Value>);
   }
   static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {

@@ -56,12 +56,10 @@ struct ShufflerShuffle32x8 : public BaseExpensiveOp {
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr ShuffleIndices<4, 8> bidxs = convert<4>(tSh).value();
-    static constexpr ShuffleIndices<4, 4> lidxs = bidxs.single_lane().value();
+    static constexpr int imm8 = convert<4>(tSh).value().single_lane().value().imm8();
 
     const i32x8 ivec = reinterpret(vec, type_tag<i32>);
-    const TVec shuffled =
-      reinterpret(i32x8{_mm256_shuffle_epi32(ivec.r, lidxs.imm8())}, type_tag<Value>);
+    const TVec shuffled = reinterpret(i32x8{_mm256_shuffle_epi32(ivec.r, imm8)}, type_tag<Value>);
     return ZeroBlender<tSh.blend_zeros()>::apply(shuffled, auto_tag<tSh.blend_zeros()>);
   }
   template<AnyShuffleIndices auto tSh>
@@ -79,11 +77,11 @@ struct ShufflerPermute64x4 : public BaseExpensiveOp {
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
     using Value = TVec::Value;
-    static constexpr ShuffleIndices<8, 4> shi = convert<8>(tSh).value();
+    static constexpr int imm8 = convert<8>(tSh).value().imm8();
 
     const i64x4 ivec = reinterpret(vec, type_tag<i64>);
     const TVec shuffled =
-      reinterpret(i64x4{_mm256_permute4x64_epi64(ivec.r, shi.imm8())}, type_tag<Value>);
+      reinterpret(i64x4{_mm256_permute4x64_epi64(ivec.r, imm8)}, type_tag<Value>);
     return ZeroBlender<tSh.blend_zeros()>::apply(shuffled, auto_tag<tSh.blend_zeros()>);
   }
   template<AnyShuffleIndices auto tSh>
@@ -121,7 +119,7 @@ template<AnyShuffleIndices auto tIdxs>
 requires((tIdxs.value_size * tIdxs.size == 32))
 struct ShufflerTrait<tIdxs> {
   using Shuffler = CheapestType<tIdxs, ShufflerBlendZero, ShufflerShuffle8x32, ShufflerShuffle32x8,
-                                ShufflerPermute64x4, ShufflerShuffle8x32Ext, ShufflerExtractSet>;
+                                ShufflerPermute64x4, ShufflerShuffle8x32Ext>;
 };
 } // namespace grex::backend
 #endif
