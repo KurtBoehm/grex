@@ -70,6 +70,15 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
           v.check("vector insert", false);
         }
       }
+      {
+        const VC base{dval(tIdxs)...};
+        auto f = [&](grex::AnyIndexTag auto j) {
+          const auto val = dval(j);
+          VC v{base.vec.insert(j, val), std::array{((tIdxs == j) ? val : base.ref[tIdxs])...}};
+          v.check("vector sinsert", false);
+        };
+        (..., f(grex::index_tag<tIdxs>));
+      }
       // cutoff
       {
         const VC base{dval(tIdxs)...};

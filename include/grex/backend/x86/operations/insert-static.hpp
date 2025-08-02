@@ -40,19 +40,31 @@ namespace grex::backend {
   } else { \
     return {.r = _mm_unpacklo_pd(v.r, expand_any(Scalar{value}, index_tag<2>).r)}; \
   }
+#if GREX_X86_64_LEVEL >= 2
+#define GREX_VEC_SINSERT_i64x2 GREX_VEC_SINSERT_INTRINSIC
 #define GREX_VEC_SINSERT_f32x4(KIND, BITS, SIZE, BITPREFIX) \
   if constexpr (index == 0) { \
     return {.r = _mm_move_ss(v.r, expand_any(Scalar{value}, index_tag<4>).r)}; \
   } else { \
     return {.r = _mm_insert_ps(v.r, expand_any(Scalar{value}, index_tag<4>).r, index.value << 4)}; \
   }
-#if GREX_X86_64_LEVEL >= 2
-#define GREX_VEC_SINSERT_i64x2 GREX_VEC_SINSERT_INTRINSIC
 #define GREX_VEC_SINSERT_i32x4 GREX_VEC_SINSERT_INTRINSIC
 #define GREX_VEC_SINSERT_i16x8 GREX_VEC_SINSERT_INTRINSIC
 #define GREX_VEC_SINSERT_i8x16 GREX_VEC_SINSERT_INTRINSIC
 #else
 #define GREX_VEC_SINSERT_i64x2 GREX_VEC_SINSERT_FALLBACK
+#define GREX_VEC_SINSERT_f32x4(KIND, BITS, SIZE, BITPREFIX) \
+  const __m128 vec = expand_any(Scalar{value}, index_tag<4>).r; \
+  if constexpr (index == 0) { \
+    return {.r = _mm_move_ss(v.r, vec)}; \
+  } else if (index == 1) { \
+    return {.r = _mm_shuffle_ps(_mm_movelh_ps(vec, v.r), v.r, 0b11'10'00'10)}; \
+  } else { \
+    /* [value, value, v[2], v[3]] */ \
+    const auto a = _mm_shuffle_ps(vec, v.r, 0b11'10'00'00); \
+    constexpr int imm8 = 0b11'10'01'00 & (0xFF - (0b11 << (2 * index))); \
+    return {.r = _mm_shuffle_ps(v.r, a, imm8)}; \
+  }
 #define GREX_VEC_SINSERT_i32x4 GREX_VEC_SINSERT_FALLBACK
 #define GREX_VEC_SINSERT_i16x8 GREX_VEC_SINSERT_INTRINSIC
 #define GREX_VEC_SINSERT_i8x16 GREX_VEC_SINSERT_FALLBACK

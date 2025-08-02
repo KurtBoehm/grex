@@ -5,7 +5,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <array>
-#include <concepts>
 #include <cstddef>
 #include <functional>
 #include <limits>
@@ -31,9 +30,9 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
   std::uniform_int_distribution<int> bdist{0, 1};
   auto bval = [&](std::size_t /*dummy*/) { return bool(bdist(rng)); };
 
-  // vector-only operations
   grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
     for (std::size_t i = 0; i < repetitions; ++i) {
+      // vector-only operations
       {
         auto v2vx = [&](auto label, auto vop, auto sop) {
           VC a{dval(tIdxs)...};
