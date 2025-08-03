@@ -107,6 +107,11 @@ inline constexpr BlendZero zero_bz = BlendZero::zero;
 inline constexpr BlendZero keep_bz = BlendZero::keep;
 inline constexpr BlendZero any_bz = BlendZero::any;
 
+enum struct BlendSelector : u8 { lhs, rhs, any };
+inline constexpr BlendSelector lhs_bl = BlendSelector::lhs;
+inline constexpr BlendSelector rhs_bl = BlendSelector::rhs;
+inline constexpr BlendSelector any_bl = BlendSelector::any;
+
 namespace literals {
 consteval ShuffleIndex operator""_sh(unsigned long long int v) {
   if (v < 254) {

@@ -67,7 +67,7 @@ struct ZeroBlenderAnd : public BaseExpensiveOp {
 
     const IVec ivec = reinterpret(vec, type_tag<Int>);
     const IVec mask = static_apply<size>([]<std::size_t... tIdxs>() {
-      return set(type_tag<IVec>, ((tBzs[tIdxs] == BlendZero::keep) ? Int(-1) : Int(0))...);
+      return set(type_tag<IVec>, ((tBzs[tIdxs] == keep_bz) ? Int(-1) : Int(0))...);
     });
     return reinterpret(bitwise_and(ivec, mask), type_tag<Value>);
   }

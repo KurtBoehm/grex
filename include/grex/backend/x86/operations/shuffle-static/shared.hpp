@@ -13,6 +13,7 @@
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/defs.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/operations/blend-static.hpp"
 #include "grex/backend/x86/operations/blend-zero-static/base.hpp"
 #include "grex/backend/x86/operations/extract.hpp"
 #include "grex/backend/x86/operations/set.hpp"
@@ -79,24 +80,60 @@ struct SubShuffler : public BaseExpensiveOp {
 struct SuperShuffler : public BaseExpensiveOp {
   template<AnyShuffleIndices auto tSh>
   static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
-    if constexpr (!tSh.is_half_local()) {
-      return false;
-    } else {
-      return Shuffler<tSh.lower().value()>::is_applicable(auto_tag<tSh.lower().value()>) &&
-             Shuffler<tSh.upper().value()>::is_applicable(auto_tag<tSh.upper().value()>);
-    }
+    return true;
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    return TVec{
-      .lower = Shuffler<tSh.lower().value()>::apply(vec.lower, auto_tag<tSh.lower().value()>),
-      .upper = Shuffler<tSh.upper().value()>::apply(vec.upper, auto_tag<tSh.upper().value()>),
-    };
+    static constexpr auto lower_sh = tSh.lower();
+    static constexpr auto upper_sh = tSh.upper();
+
+    const auto lower = [&] {
+      if constexpr (lower_sh.has_value()) {
+        return Shuffler<lower_sh.value()>::apply(vec.lower, auto_tag<lower_sh.value()>);
+      } else {
+        return Blender<tSh.lower_blend()>::apply(
+          Shuffler<tSh.lower(true)>::apply(vec.lower, auto_tag<tSh.lower(true)>),
+          Shuffler<tSh.lower(false)>::apply(vec.upper, auto_tag<tSh.lower(false)>),
+          auto_tag<tSh.lower_blend()>);
+      }
+    }();
+    const auto upper = [&] {
+      if constexpr (upper_sh.has_value()) {
+        return Shuffler<upper_sh.value()>::apply(vec.upper, auto_tag<upper_sh.value()>);
+      } else {
+        return Blender<tSh.upper_blend()>::apply(
+          Shuffler<tSh.upper(true)>::apply(vec.upper, auto_tag<tSh.upper(true)>),
+          Shuffler<tSh.upper(false)>::apply(vec.lower, auto_tag<tSh.upper(false)>),
+          auto_tag<tSh.upper_blend()>);
+      }
+    }();
+    return TVec{.lower = lower, .upper = upper};
   }
   template<AnyShuffleIndices auto tSh>
   static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*tag*/) {
-    const auto [c0a, c1a] = Shuffler<tSh.lower().value()>::cost(auto_tag<tSh.lower().value()>);
-    const auto [c0b, c1b] = Shuffler<tSh.upper().value()>::cost(auto_tag<tSh.upper().value()>);
+    constexpr auto lower_sh = tSh.lower();
+    constexpr auto upper_sh = tSh.upper();
+
+    const auto [c0a, c1a] = [&] {
+      if constexpr (lower_sh.has_value()) {
+        return Shuffler<lower_sh.value()>::cost(auto_tag<lower_sh.value()>);
+      } else {
+        const auto [c00, c01] = Shuffler<tSh.lower(true)>::cost(auto_tag<tSh.lower(true)>);
+        const auto [c10, c11] = Shuffler<tSh.lower(false)>::cost(auto_tag<tSh.lower(false)>);
+        const auto [c20, c21] = Blender<tSh.lower_blend()>::cost(auto_tag<tSh.lower_blend()>);
+        return std::make_pair(c00 + c10 + c20, c01 + c11 + c21);
+      }
+    }();
+    const auto [c0b, c1b] = [&] {
+      if constexpr (upper_sh.has_value()) {
+        return Shuffler<upper_sh.value()>::cost(auto_tag<upper_sh.value()>);
+      } else {
+        const auto [c00, c01] = Shuffler<tSh.upper(true)>::cost(auto_tag<tSh.upper(true)>);
+        const auto [c10, c11] = Shuffler<tSh.upper(false)>::cost(auto_tag<tSh.upper(false)>);
+        const auto [c20, c21] = Blender<tSh.upper_blend()>::cost(auto_tag<tSh.upper_blend()>);
+        return std::make_pair(c00 + c10 + c20, c01 + c11 + c21);
+      }
+    }();
     return {c0a + c0b, c1a + c1b};
   }
 };
@@ -109,9 +146,8 @@ struct ShufflerTrait<tSh> {
 template<AnyShuffleIndices auto tSh>
 requires((tSh.value_size * tSh.size > register_bytes.back()))
 struct ShufflerTrait<tSh> {
-  // TODO There are cases in which more efficient cross-half permutations should be possible
-  //      (or, at least, two shuffles per half with additional blending)
-  using Shuffler = CheapestType<tSh, SuperShuffler, ShufflerExtractSet>;
+  // TODO With AVX-512, the vpermi2 family can be used to merge two permutations
+  using Shuffler = SuperShuffler;
 };
 } // namespace grex::backend
 

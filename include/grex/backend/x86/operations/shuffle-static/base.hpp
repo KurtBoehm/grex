@@ -13,6 +13,7 @@
 #include <type_traits>
 
 #include "grex/backend/defs.hpp"
+#include "grex/backend/x86/operations/blend-static.hpp"
 #include "grex/backend/x86/operations/blend-zero-static.hpp"
 #include "grex/base/defs.hpp"
 
@@ -22,6 +23,8 @@ struct ShuffleIndices {
   static constexpr std::size_t value_size = tValueBytes;
   static constexpr std::size_t size = tSize;
   static constexpr std::size_t lane_size = 16 / value_size;
+  using Half = ShuffleIndices<value_size, size / 2>;
+  using BlendHalf = BlendSelectors<value_size, size / 2>;
   using Indices = std::array<ShuffleIndex, size>;
 
   Indices indices;
@@ -136,18 +139,40 @@ struct ShuffleIndices {
     });
   }
 
-  [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, size / 2>> lower() const {
+  [[nodiscard]] constexpr std::optional<Half> lower() const {
     std::array<ShuffleIndex, size / 2> arr{};
     for (std::size_t i = 0; i < size / 2; ++i) {
-      const auto sh = indices[i];
+      const ShuffleIndex sh = indices[i];
       if (is_index(sh) && u8(sh) >= size / 2) {
         return std::nullopt;
       }
       arr[i] = sh;
     }
-    return ShuffleIndices<value_size, size / 2>{.indices = arr, .subzero = subzero};
+    return Half{.indices = arr, .subzero = subzero};
   }
-  [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, size / 2>> upper() const {
+  [[nodiscard]] constexpr Half lower(bool in_lane) const {
+    std::array<ShuffleIndex, size / 2> arr{};
+    for (std::size_t i = 0; i < size / 2; ++i) {
+      ShuffleIndex sh = indices[i];
+      if (in_lane) {
+        sh = (is_index(sh) && u8(sh) >= size / 2) ? any_sh : sh;
+      } else {
+        sh = (is_index(sh) && u8(sh) >= size / 2) ? ShuffleIndex(u8(sh) - size / 2) : any_sh;
+      }
+      arr[i] = sh;
+    }
+    return Half{.indices = arr, .subzero = subzero};
+  }
+  [[nodiscard]] constexpr BlendSelectors<value_size, size / 2> lower_blend() const {
+    auto f = [&](ShuffleIndex sh) {
+      return (is_index(sh) && u8(sh) >= size / 2) ? rhs_bl : lhs_bl;
+    };
+    const auto arr = static_apply<size / 2>(
+      [&]<std::size_t... tIdxs>() { return std::array{f(indices[tIdxs])...}; });
+    return BlendHalf{.ctrl = arr};
+  }
+
+  [[nodiscard]] constexpr std::optional<Half> upper() const {
     std::array<ShuffleIndex, size / 2> arr{};
     for (std::size_t i = 0; i < size / 2; ++i) {
       const auto sh = indices[i + size / 2];
@@ -156,7 +181,28 @@ struct ShuffleIndices {
       }
       arr[i] = is_index(sh) ? ShuffleIndex(u8(sh) - size / 2) : sh;
     }
-    return ShuffleIndices<value_size, size / 2>{.indices = arr, .subzero = subzero};
+    return Half{.indices = arr, .subzero = subzero};
+  }
+  [[nodiscard]] constexpr Half upper(bool in_lane) const {
+    std::array<ShuffleIndex, size / 2> arr{};
+    for (std::size_t i = 0; i < size / 2; ++i) {
+      ShuffleIndex sh = indices[i + size / 2];
+      if (in_lane) {
+        if (is_index(sh)) {
+          sh = (u8(sh) >= size / 2) ? ShuffleIndex(u8(sh) - size / 2) : any_sh;
+        }
+      } else {
+        sh = (is_index(sh) && u8(sh) < size / 2) ? sh : any_sh;
+      }
+      arr[i] = sh;
+    }
+    return Half{.indices = arr, .subzero = subzero};
+  }
+  [[nodiscard]] constexpr BlendSelectors<value_size, size / 2> upper_blend() const {
+    auto f = [&](ShuffleIndex sh) { return (is_index(sh) && u8(sh) < size / 2) ? rhs_bl : lhs_bl; };
+    const auto arr = static_apply<size / 2>(
+      [&]<std::size_t... tIdxs>() { return std::array{f(indices[tIdxs + size / 2])...}; });
+    return BlendHalf{.ctrl = arr};
   }
 
   template<std::size_t tSegment>
@@ -262,8 +308,8 @@ struct ShuffleIndices {
           const std::size_t k = i * factor + j;
           const ShuffleIndex shi = self.indices[k];
           switch (shi) {
-            case ShuffleIndex::any: break;
-            case ShuffleIndex::zero: {
+            case any_sh: break;
+            case zero_sh: {
               haszero = true;
               break;
             }
@@ -288,7 +334,7 @@ struct ShuffleIndices {
             subz = true;
           }
         } else {
-          idxs[i] = haszero ? ShuffleIndex::zero : ShuffleIndex::any;
+          idxs[i] = haszero ? zero_sh : any_sh;
         }
       }
 
@@ -299,8 +345,8 @@ struct ShuffleIndices {
   [[nodiscard]] constexpr BlendZeros<tValueBytes, tSize> blend_zeros() const {
     auto f = [](ShuffleIndex sh) {
       switch (sh) {
-        case ShuffleIndex::any: return any_bz;
-        case ShuffleIndex::zero: return zero_bz;
+        case any_sh: return any_bz;
+        case zero_sh: return zero_bz;
         default: return keep_bz;
       }
     };
