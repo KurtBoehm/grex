@@ -107,7 +107,7 @@ inline constexpr BlendZero zero_bz = BlendZero::zero;
 inline constexpr BlendZero keep_bz = BlendZero::keep;
 inline constexpr BlendZero any_bz = BlendZero::any;
 
-enum struct BlendSelector : u8 { lhs, rhs, any };
+enum struct BlendSelector : u8 { lhs = 0, rhs = 1, any = 2 };
 inline constexpr BlendSelector lhs_bl = BlendSelector::lhs;
 inline constexpr BlendSelector rhs_bl = BlendSelector::rhs;
 inline constexpr BlendSelector any_bl = BlendSelector::any;

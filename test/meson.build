@@ -11,11 +11,12 @@ pcg_dep = dependency('pcg-cpp')
 thesauros_dep = dependency('thesauros')
 
 foreach name, parallel : {
+  'blend': true,
   'componentwise': true,
   'convert': true,
   'expand': true,
   'gather': false,
-  'general': false,
+  'general': true,
   'horizontal': true,
   'mem': true,
   'multibyte': true,
