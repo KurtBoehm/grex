@@ -77,6 +77,72 @@ struct SubShuffler : public BaseExpensiveOp {
     return Base<tSh>::cost(auto_tag<tSh.sub_extended()>);
   }
 };
+template<AnyShuffleIndices auto tSh>
+requires((tSh.value_size * tSh.size < register_bytes.front()))
+struct ShufflerTrait<tSh> {
+  using Shuffler = SubShuffler;
+};
+
+// A pair shuffler that just shuffles one of the vectors
+struct PairShufflerSingle : public BaseExpensiveOp {
+  template<AnyShuffleIndices auto tSh>
+  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
+    return tSh.indices_in_vector(0).has_value() || tSh.indices_in_vector(1).has_value();
+  }
+  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
+  static TVec apply(TVec a, TVec b, AutoTag<tSh> /*tag*/) {
+    static constexpr auto a_sh = tSh.indices_in_vector(0);
+    static constexpr auto b_sh = tSh.indices_in_vector(1);
+
+    if constexpr (a_sh.has_value()) {
+      return Shuffler<a_sh.value()>::apply(a, auto_tag<a_sh.value()>);
+    } else {
+      return Shuffler<b_sh.value()>::apply(b, auto_tag<b_sh.value()>);
+    }
+  }
+  template<AnyShuffleIndices auto tSh>
+  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*tag*/) {
+    constexpr auto a_sh = tSh.indices_in_vector(0);
+    constexpr auto b_sh = tSh.indices_in_vector(1);
+
+    if constexpr (a_sh.has_value()) {
+      return Shuffler<a_sh.value()>::cost(auto_tag<a_sh.value()>);
+    } else {
+      return Shuffler<b_sh.value()>::cost(auto_tag<b_sh.value()>);
+    }
+  }
+};
+// A pair shuffler that performs two shuffles and then blends
+struct PairShufflerBlend : public BaseExpensiveOp {
+  template<AnyShuffleIndices auto tSh>
+  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
+    return true;
+  }
+  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
+  static TVec apply(TVec a, TVec b, AutoTag<tSh> /*tag*/) {
+    static constexpr auto a_sh = tSh.indices_in_vector_fallback(0, any_sh);
+    static constexpr auto b_sh = tSh.indices_in_vector_fallback(1, any_sh);
+
+    return Blender<tSh.blend_vectors()>::apply(Shuffler<a_sh>::apply(a, auto_tag<a_sh>),
+                                               Shuffler<b_sh>::apply(b, auto_tag<b_sh>),
+                                               auto_tag<tSh.blend_vectors()>);
+  }
+  template<AnyShuffleIndices auto tSh>
+  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*tag*/) {
+    constexpr auto a_sh = tSh.indices_in_vector_fallback(0, any_sh);
+    constexpr auto b_sh = tSh.indices_in_vector_fallback(1, any_sh);
+
+    const auto [c00, c01] = Shuffler<a_sh>::cost(auto_tag<a_sh>);
+    const auto [c10, c11] = Shuffler<b_sh>::cost(auto_tag<b_sh>);
+    const auto [c20, c21] = Blender<tSh.blend_vectors()>::cost(auto_tag<tSh.blend_vectors()>);
+    return std::make_pair(c00 + c10 + c20, c01 + c11 + c21);
+  }
+};
+template<AnyShuffleIndices auto tSh>
+struct PairShufflerTrait {
+  using Shuffler = CheapestType<tSh, PairShufflerSingle, PairShufflerBlend>;
+};
+
 struct SuperShuffler : public BaseExpensiveOp {
   template<AnyShuffleIndices auto tSh>
   static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
@@ -84,69 +150,26 @@ struct SuperShuffler : public BaseExpensiveOp {
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    static constexpr auto lower_sh = tSh.lower();
-    static constexpr auto upper_sh = tSh.upper();
+    static constexpr auto lower_sh = tSh.half_raw(0);
+    static constexpr auto upper_sh = tSh.half_raw(1);
 
-    const auto lower = [&] {
-      if constexpr (lower_sh.has_value()) {
-        return Shuffler<lower_sh.value()>::apply(vec.lower, auto_tag<lower_sh.value()>);
-      } else {
-        return Blender<tSh.lower_blend()>::apply(
-          Shuffler<tSh.lower(true)>::apply(vec.lower, auto_tag<tSh.lower(true)>),
-          Shuffler<tSh.lower(false)>::apply(vec.upper, auto_tag<tSh.lower(false)>),
-          auto_tag<tSh.lower_blend()>);
-      }
-    }();
-    const auto upper = [&] {
-      if constexpr (upper_sh.has_value()) {
-        return Shuffler<upper_sh.value()>::apply(vec.upper, auto_tag<upper_sh.value()>);
-      } else {
-        return Blender<tSh.upper_blend()>::apply(
-          Shuffler<tSh.upper(true)>::apply(vec.upper, auto_tag<tSh.upper(true)>),
-          Shuffler<tSh.upper(false)>::apply(vec.lower, auto_tag<tSh.upper(false)>),
-          auto_tag<tSh.upper_blend()>);
-      }
-    }();
+    const auto lower = PairShuffler<lower_sh>::apply(vec.lower, vec.upper, auto_tag<lower_sh>);
+    const auto upper = PairShuffler<upper_sh>::apply(vec.lower, vec.upper, auto_tag<upper_sh>);
     return TVec{.lower = lower, .upper = upper};
   }
   template<AnyShuffleIndices auto tSh>
   static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*tag*/) {
-    constexpr auto lower_sh = tSh.lower();
-    constexpr auto upper_sh = tSh.upper();
-
-    const auto [c0a, c1a] = [&] {
-      if constexpr (lower_sh.has_value()) {
-        return Shuffler<lower_sh.value()>::cost(auto_tag<lower_sh.value()>);
-      } else {
-        const auto [c00, c01] = Shuffler<tSh.lower(true)>::cost(auto_tag<tSh.lower(true)>);
-        const auto [c10, c11] = Shuffler<tSh.lower(false)>::cost(auto_tag<tSh.lower(false)>);
-        const auto [c20, c21] = Blender<tSh.lower_blend()>::cost(auto_tag<tSh.lower_blend()>);
-        return std::make_pair(c00 + c10 + c20, c01 + c11 + c21);
-      }
-    }();
-    const auto [c0b, c1b] = [&] {
-      if constexpr (upper_sh.has_value()) {
-        return Shuffler<upper_sh.value()>::cost(auto_tag<upper_sh.value()>);
-      } else {
-        const auto [c00, c01] = Shuffler<tSh.upper(true)>::cost(auto_tag<tSh.upper(true)>);
-        const auto [c10, c11] = Shuffler<tSh.upper(false)>::cost(auto_tag<tSh.upper(false)>);
-        const auto [c20, c21] = Blender<tSh.upper_blend()>::cost(auto_tag<tSh.upper_blend()>);
-        return std::make_pair(c00 + c10 + c20, c01 + c11 + c21);
-      }
-    }();
+    constexpr auto lower_sh = tSh.half_raw(0);
+    constexpr auto upper_sh = tSh.half_raw(1);
+    const auto [c0a, c1a] = PairShuffler<lower_sh>::cost(auto_tag<lower_sh>);
+    const auto [c0b, c1b] = PairShuffler<upper_sh>::cost(auto_tag<upper_sh>);
     return {c0a + c0b, c1a + c1b};
   }
 };
 
 template<AnyShuffleIndices auto tSh>
-requires((tSh.value_size * tSh.size < register_bytes.front()))
-struct ShufflerTrait<tSh> {
-  using Shuffler = SubShuffler;
-};
-template<AnyShuffleIndices auto tSh>
 requires((tSh.value_size * tSh.size > register_bytes.back()))
 struct ShufflerTrait<tSh> {
-  // TODO With AVX-512, the vpermi2 family can be used to merge two permutations
   using Shuffler = SuperShuffler;
 };
 } // namespace grex::backend

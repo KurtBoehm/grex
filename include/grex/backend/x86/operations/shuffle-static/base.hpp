@@ -24,6 +24,7 @@ struct ShuffleIndices {
   static constexpr std::size_t size = tSize;
   static constexpr std::size_t lane_size = 16 / value_size;
   using Half = ShuffleIndices<value_size, size / 2>;
+  using Blend = BlendSelectors<value_size, size>;
   using BlendHalf = BlendSelectors<value_size, size / 2>;
   using Indices = std::array<ShuffleIndex, size>;
 
@@ -139,70 +140,61 @@ struct ShuffleIndices {
     });
   }
 
-  [[nodiscard]] constexpr std::optional<Half> lower() const {
+  [[nodiscard]] constexpr Half half_raw(std::size_t half) const {
+    return Half{
+      .indices = static_apply<size / 2>(
+        [&]<std::size_t... tIdxs>() { return std::array{indices[tIdxs + half * size / 2]...}; }),
+      .subzero = subzero,
+    };
+  }
+  [[nodiscard]] constexpr Half half(std::size_t half) const {
     std::array<ShuffleIndex, size / 2> arr{};
     for (std::size_t i = 0; i < size / 2; ++i) {
       const ShuffleIndex sh = indices[i];
-      if (is_index(sh) && u8(sh) >= size / 2) {
+      if (is_index(sh) && (u8(sh) < half * size / 2 || (half + 1) * size / 2 <= u8(sh))) {
         return std::nullopt;
       }
       arr[i] = sh;
     }
     return Half{.indices = arr, .subzero = subzero};
-  }
-  [[nodiscard]] constexpr Half lower(bool in_lane) const {
-    std::array<ShuffleIndex, size / 2> arr{};
-    for (std::size_t i = 0; i < size / 2; ++i) {
-      ShuffleIndex sh = indices[i];
-      if (in_lane) {
-        sh = (is_index(sh) && u8(sh) >= size / 2) ? any_sh : sh;
-      } else {
-        sh = (is_index(sh) && u8(sh) >= size / 2) ? ShuffleIndex(u8(sh) - size / 2) : any_sh;
-      }
-      arr[i] = sh;
-    }
-    return Half{.indices = arr, .subzero = subzero};
-  }
-  [[nodiscard]] constexpr BlendSelectors<value_size, size / 2> lower_blend() const {
-    auto f = [&](ShuffleIndex sh) {
-      return (is_index(sh) && u8(sh) >= size / 2) ? rhs_bl : lhs_bl;
-    };
-    const auto arr = static_apply<size / 2>(
-      [&]<std::size_t... tIdxs>() { return std::array{f(indices[tIdxs])...}; });
-    return BlendHalf{.ctrl = arr};
   }
 
-  [[nodiscard]] constexpr std::optional<Half> upper() const {
-    std::array<ShuffleIndex, size / 2> arr{};
-    for (std::size_t i = 0; i < size / 2; ++i) {
-      const auto sh = indices[i + size / 2];
-      if (is_index(sh) && u8(sh) < size / 2) {
-        return std::nullopt;
-      }
-      arr[i] = is_index(sh) ? ShuffleIndex(u8(sh) - size / 2) : sh;
-    }
-    return Half{.indices = arr, .subzero = subzero};
-  }
-  [[nodiscard]] constexpr Half upper(bool in_lane) const {
-    std::array<ShuffleIndex, size / 2> arr{};
-    for (std::size_t i = 0; i < size / 2; ++i) {
-      ShuffleIndex sh = indices[i + size / 2];
-      if (in_lane) {
-        if (is_index(sh)) {
-          sh = (u8(sh) >= size / 2) ? ShuffleIndex(u8(sh) - size / 2) : any_sh;
+  // Returns the indices if all fall within [index * size, (index + 1) * size)
+  [[nodiscard]] constexpr std::optional<ShuffleIndices> indices_in_vector(std::size_t index) const {
+    Indices arr{};
+    for (std::size_t i = 0; i < size; ++i) {
+      ShuffleIndex sh = indices[i];
+      if (is_index(sh)) {
+        if (u8(sh) < index * size || (index + 1) * size <= u8(sh)) {
+          return std::nullopt;
         }
-      } else {
-        sh = (is_index(sh) && u8(sh) < size / 2) ? sh : any_sh;
+        sh = ShuffleIndex(u8(sh) - index * size);
       }
       arr[i] = sh;
     }
-    return Half{.indices = arr, .subzero = subzero};
+    return ShuffleIndices{.indices = arr, .subzero = subzero};
   }
-  [[nodiscard]] constexpr BlendSelectors<value_size, size / 2> upper_blend() const {
-    auto f = [&](ShuffleIndex sh) { return (is_index(sh) && u8(sh) < size / 2) ? rhs_bl : lhs_bl; };
-    const auto arr = static_apply<size / 2>(
-      [&]<std::size_t... tIdxs>() { return std::array{f(indices[tIdxs + size / 2])...}; });
-    return BlendHalf{.ctrl = arr};
+  // Returns indices that fall within [index * size, (index + 1) * size) and replaces others
+  // with “any”
+  [[nodiscard]] constexpr ShuffleIndices indices_in_vector_fallback(std::size_t index,
+                                                                    ShuffleIndex fallback) const {
+    Indices arr{};
+    for (std::size_t i = 0; i < size; ++i) {
+      ShuffleIndex sh = indices[i];
+      if (is_index(sh)) {
+        sh = (index * size <= u8(sh) && u8(sh) < (index + 1) * size)
+               ? ShuffleIndex(u8(sh) - index * size)
+               : fallback;
+      }
+      arr[i] = sh;
+    }
+    return ShuffleIndices{.indices = arr, .subzero = subzero};
+  }
+  [[nodiscard]] constexpr Blend blend_vectors() const {
+    auto f = [&](ShuffleIndex sh) { return (is_index(sh) && u8(sh) >= size) ? rhs_bl : lhs_bl; };
+    const auto arr =
+      static_apply<size>([&]<std::size_t... tIdxs>() { return std::array{f(indices[tIdxs])...}; });
+    return Blend{.ctrl = arr};
   }
 
   template<std::size_t tSegment>
@@ -369,11 +361,22 @@ struct ShufflerTrait;
 template<AnyShuffleIndices auto tIdxs>
 using Shuffler = ShufflerTrait<tIdxs>::Shuffler;
 
+template<AnyShuffleIndices auto tIdxs>
+struct PairShufflerTrait;
+template<AnyShuffleIndices auto tIdxs>
+using PairShuffler = PairShufflerTrait<tIdxs>::Shuffler;
+
 template<ShuffleIndex... tIdxs, AnyVector TVec>
 requires(TVec::size == sizeof...(tIdxs))
 inline TVec shuffle(TVec vec) {
   static constexpr auto idxs = ShuffleIndicesFor<TVec>{.indices = {tIdxs...}};
   return Shuffler<idxs>::apply(vec, auto_tag<idxs>);
+}
+template<ShuffleIndex... tIdxs, AnyVector TVec>
+requires(TVec::size == sizeof...(tIdxs))
+inline TVec pair_shuffle(TVec a, TVec b) {
+  static constexpr auto idxs = ShuffleIndicesFor<TVec>{.indices = {tIdxs...}};
+  return PairShuffler<idxs>::apply(a, b, auto_tag<idxs>);
 }
 
 inline void shuffle_test() {
