@@ -19,14 +19,15 @@
 #include "fmt.hpp" // IWYU pragma: keep
 #include "rng.hpp"
 
-namespace test = grex::test;
+using Value = grex::GREX_TEST_TYPE;
 inline constexpr std::size_t repetitions = 256;
+namespace test = grex::test;
 
-template<grex::Vectorizable T, std::size_t tSize>
-void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
-  using VC = test::VectorChecker<T, tSize>;
+template<std::size_t tSize>
+void run(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
+  using VC = test::VectorChecker<Value, tSize>;
 
-  auto dist = test::make_distribution<T>();
+  auto dist = test::make_distribution<Value>();
   auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
 
   grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
@@ -60,11 +61,13 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
           }
         }
         if (!same) {
-          auto f = [&](std::size_t i) { return (bzs[rep][i] == grex::keep_bz) ? vca.ref[i] : T{}; };
+          auto f = [&](std::size_t i) {
+            return (bzs[rep][i] == grex::keep_bz) ? vca.ref[i] : Value{};
+          };
           const std::array ref{f(tIdxs)...};
 
           fmt::print("grex::blend_zero<{}>({}) == {}, ref={};\n", fmt::join(bzs[rep], ", "),
-                     test::type_name<T>(), tSize, vca.vec, blended, ref);
+                     test::type_name<Value>(), tSize, vca.vec, blended, ref);
           std::exit(EXIT_FAILURE);
         }
       }
@@ -87,7 +90,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
           const std::array ref{f(tIdxs)...};
 
           fmt::print("grex::blend<{}>({}, {}) == {}, ref={};\n", fmt::join(bls[rep], ", "),
-                     test::type_name<T>(), tSize, vca.vec, vcb.vec, blended, ref);
+                     test::type_name<Value>(), tSize, vca.vec, vcb.vec, blended, ref);
           std::exit(EXIT_FAILURE);
         }
       }
@@ -100,5 +103,5 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
-  test::run_types_sizes([&](auto vtag, auto stag) { run(rng, vtag, stag); });
+  test::for_each_size<Value>([&](auto /*vtag*/, auto stag) { run(rng, stag); });
 }

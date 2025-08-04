@@ -204,16 +204,18 @@ void for_each_type(auto op) {
   for_each_integral(op);
 };
 
+template<Vectorizable T>
+inline void for_each_size(auto op) {
+  static_apply<1, std::bit_width(native_sizes<T>.back()) + 1>(
+    [&]<std::size_t... tIdxs>() { (..., op(type_tag<T>, index_tag<1U << tIdxs>)); });
+};
+
 inline void run_types_sizes(auto f) {
   auto inner = [&]<typename T, std::size_t tSize>(TypeTag<T> t, IndexTag<tSize> s) {
     fmt::print(fmt::fg(fmt::terminal_color::blue), "{}×{}\n", type_name<T>(), tSize);
     f(t, s);
   };
-  auto outer = [&]<typename T>(TypeTag<T> t) {
-    static_apply<1, std::bit_width(native_sizes<T>.back()) + 1>(
-      [&]<std::size_t... tIdxs>() { (..., inner(t, index_tag<1U << tIdxs>)); });
-  };
-  for_each_type(outer);
+  for_each_type([&]<typename T>(TypeTag<T> /*tag*/) { for_each_size<T>(inner); });
 }
 } // namespace grex::test
 

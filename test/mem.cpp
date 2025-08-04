@@ -55,13 +55,13 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
       // load part
       {
         std::array buf{dval(tIdxs)...};
-        for (std::size_t i = 0; i <= tSize; ++i) {
-          VC checker{Vec::load_part(buf.data(), i),
-                     std::array{((tIdxs < i) ? buf[tIdxs] : T{})...}};
+        for (std::size_t j = 0; j <= tSize; ++j) {
+          VC checker{Vec::load_part(buf.data(), j),
+                     std::array{((tIdxs < j) ? buf[tIdxs] : T{})...}};
           checker.check("load_part", false);
           // tagged
-          VC tchecker{grex::load(buf.data(), grex::part_tag<tSize>(i)),
-                      std::array{((tIdxs < i) ? buf[tIdxs] : T{})...}};
+          VC tchecker{grex::load(buf.data(), grex::part_tag<tSize>(j)),
+                      std::array{((tIdxs < j) ? buf[tIdxs] : T{})...}};
           tchecker.check("load_part tagged", false);
         }
       }
@@ -98,16 +98,16 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
       // there is no tagged version of aligned storing
 
       {
-        for (std::size_t i = 0; i <= tSize; ++i) {
+        for (std::size_t j = 0; j <= tSize; ++j) {
           std::array<T, tSize> buf{};
-          checker.vec.store_part(buf.data(), i);
-          test::check("store_part", buf, std::array{((tIdxs < i) ? checker.ref[tIdxs] : T{})...},
+          checker.vec.store_part(buf.data(), j);
+          test::check("store_part", buf, std::array{((tIdxs < j) ? checker.ref[tIdxs] : T{})...},
                       false);
           // tagged
           std::array<T, tSize> tbuf{};
-          grex::store(tbuf.data(), checker.vec, grex::part_tag<tSize>(i));
+          grex::store(tbuf.data(), checker.vec, grex::part_tag<tSize>(j));
           test::check("store_part tagged", tbuf,
-                      std::array{((tIdxs < i) ? checker.ref[tIdxs] : T{})...}, false);
+                      std::array{((tIdxs < j) ? checker.ref[tIdxs] : T{})...}, false);
         }
       }
     });

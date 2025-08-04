@@ -19,14 +19,15 @@
 #include "fmt.hpp" // IWYU pragma: keep
 #include "rng.hpp"
 
-namespace test = grex::test;
+using Value = grex::GREX_TEST_TYPE;
 inline constexpr std::size_t repetitions = 256;
+namespace test = grex::test;
 
-template<grex::Vectorizable T, std::size_t tSize>
-void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
-  using VC = test::VectorChecker<T, tSize>;
+template<std::size_t tSize>
+void run(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
+  using VC = test::VectorChecker<Value, tSize>;
 
-  auto dist = test::make_distribution<T>();
+  auto dist = test::make_distribution<Value>();
   auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
 
   grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
@@ -48,7 +49,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
 
     auto fix = [&](grex::AnyIndexTag auto rep) {
       fmt::print("grex::shuffle<{}>({}x{}{{{}}});\n", fmt::join(idxs[rep], ", "),
-                 test::type_name<T>(), tSize, fmt::join(base.vec, ", "));
+                 test::type_name<Value>(), tSize, fmt::join(base.vec, ", "));
       const auto shuf = grex::shuffle<idxs[rep][tIdxs]...>(base.vec);
       bool same = true;
       for (std::size_t i = 0; i < tSize; ++i) {
@@ -62,7 +63,7 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
       if (!same) {
         auto f = [&](std::size_t i) {
           const auto sh = idxs[rep][i];
-          return grex::is_index(sh) ? base.ref[grex::u8(sh)] : T{};
+          return grex::is_index(sh) ? base.ref[grex::u8(sh)] : Value{};
         };
         const std::array ref{f(tIdxs)...};
 
@@ -79,5 +80,5 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
-  test::run_types_sizes([&](auto vtag, auto stag) { run(rng, vtag, stag); });
+  test::for_each_size<Value>([&](auto /*vtag*/, auto stag) { run(rng, stag); });
 }

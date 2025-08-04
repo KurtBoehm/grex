@@ -130,7 +130,7 @@ inline Vector<TDst, tSize> load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/,
   const auto idxs = static_apply<dst_bytes * tSize>([&]<std::size_t... tIdxs>() {
     return _mm256_setr_epi8(
       ((tIdxs % dst_bytes < src_bytes)
-         ? (tIdxs % dst_bytes + (tIdxs / dst_bytes) * src_bytes + (tSize / 2) * offset)
+         ? i8(tIdxs % dst_bytes + (tIdxs / dst_bytes) * src_bytes + (tSize / 2) * offset)
          : i8(-1))...);
   });
   return {.r = _mm256_shuffle_epi8(raw, idxs)};

@@ -12,6 +12,36 @@ thesauros_dep = dependency('thesauros')
 
 foreach name, parallel : {
   'blend': true,
+  'shuffle': true,
+}
+  deps = [fmt_dep, grex_dep, pcg_dep, thesauros_dep]
+  if not parallel
+    deps += [omp_dep]
+  endif
+  foreach type : ['f64', 'f32', 'i64', 'i32', 'i16', 'i8', 'u64', 'u32', 'u16', 'u8']
+    foreach arch : arches
+      space_name = name.replace('-', ' ')
+      exe = executable(
+        f'test-@name@-@type@-@arch@',
+        [f'@name@.cpp'],
+        cpp_args: args
+        + [
+          f'-march=@arch@',
+          f'-DGREX_TEST_TYPE=@type@',
+        ],
+        dependencies: [grex_dep] + deps,
+      )
+      test(
+        f'test @space_name@ @type@ @arch@',
+        exe,
+        is_parallel: parallel,
+        timeout: -1,
+      )
+    endforeach
+  endforeach
+endforeach
+
+foreach name, parallel : {
   'componentwise': true,
   'convert': true,
   'expand': true,
@@ -22,7 +52,6 @@ foreach name, parallel : {
   'multibyte': true,
   'set': true,
   'shingle': true,
-  'shuffle': true,
 }
   deps = [fmt_dep, grex_dep, pcg_dep, thesauros_dep]
   if not parallel
