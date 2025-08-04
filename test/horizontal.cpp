@@ -96,11 +96,11 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
     grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
       {
         const MC checker{bval(tIdxs)...};
-        const bool ref = (... && checker.mask[tIdxs]);
+        const bool mref = (... && checker.mask[tIdxs]);
         const auto label = [&] { return fmt::format("horizontal_and({})", checker.mask); };
         auto cmp = [&](bool val, bool ref) { test::check(label, val, ref, false); };
-        cmp(grex::horizontal_and(checker.mask), ref);
-        cmp(grex::horizontal_and(checker.mask, grex::full_tag<tSize>), ref);
+        cmp(grex::horizontal_and(checker.mask), mref);
+        cmp(grex::horizontal_and(checker.mask, grex::full_tag<tSize>), mref);
         // scalar
         cmp(grex::horizontal_and(checker.ref[0], grex::scalar_tag), checker.ref[0]);
         // part
