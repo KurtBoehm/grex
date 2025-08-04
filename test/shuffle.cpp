@@ -19,9 +19,9 @@
 #include "fmt.hpp" // IWYU pragma: keep
 #include "rng.hpp"
 
+namespace test = grex::test;
 using Value = grex::GREX_TEST_TYPE;
 inline constexpr std::size_t repetitions = 256;
-namespace test = grex::test;
 
 template<std::size_t tSize>
 void run(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {

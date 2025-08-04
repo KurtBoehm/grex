@@ -23,14 +23,14 @@ int main() {
   {
     // scalar
     test::check("transform scalar",
-                grex::transform([](auto i) { return int{i}; }, grex::scalar_tag), 0);
+                grex::transform([](auto j) { return int{j}; }, grex::scalar_tag), 0);
     // vectorized
     auto op = [](grex::AnyIndexTag auto size) {
       fmt::print("{}\n", size.value);
       // full
       {
         test::VectorChecker<int, size> checker{
-          grex::transform([](auto i) { return int{i}; }, grex::full_tag<size>),
+          grex::transform([](auto j) { return int{j}; }, grex::full_tag<size>),
           grex::static_apply<size>(
             []<std::size_t... tIdxs>() { return std::array{int{tIdxs}...}; }),
         };
@@ -39,7 +39,7 @@ int main() {
       // part
       for (std::size_t i = 0; i <= size; ++i) {
         test::VectorChecker<int, size> checker{
-          grex::transform([](auto i) { return int{i + 1}; }, grex::part_tag<size>(i)),
+          grex::transform([](auto j) { return int{j + 1}; }, grex::part_tag<size>(i)),
           grex::static_apply<size>([&]<std::size_t... tIdxs>() {
             return std::array{((tIdxs < i) ? int{tIdxs + 1} : 0)...};
           }),
@@ -56,7 +56,7 @@ int main() {
     {
       auto op = [](grex::TypedValueTag<grex::IterDirection> auto dir) {
         std::array<int, 1> dst{0};
-        grex::for_each([&](auto i) { dst.at(i) = int(i + 1); }, dir,
+        grex::for_each([&](auto j) { dst.at(j) = int(j + 1); }, dir,
                        grex::typed_scalar_tag<std::size_t>);
         test::check(fmt::format("for_each scalar {}", dir.value), dst, std::array{1});
       };

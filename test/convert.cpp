@@ -22,11 +22,13 @@
 #include "defs.hpp"
 
 namespace test = grex::test;
+using Src = grex::GREX_TEST_TYPE;
 using Rng = pcg64;
 inline constexpr std::size_t repetitions = 4096;
 template<typename T>
-using Distribution = std::conditional_t<grex::FloatVectorizable<T>, std::uniform_real_distribution<T>,
-                                        std::uniform_int_distribution<T>>;
+using Distribution =
+  std::conditional_t<grex::FloatVectorizable<T>, std::uniform_real_distribution<T>,
+                     std::uniform_int_distribution<T>>;
 
 template<typename TSrc, typename TDst>
 inline auto make_distribution() {
@@ -49,14 +51,13 @@ inline auto make_distribution() {
   }
 }
 
-template<grex::Vectorizable TSrc>
-void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
+void convert_from(Rng& rng) {
   auto cvt = [&]<typename TDst>(grex::TypeTag<TDst> /*tag*/) {
     fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::text_style(fmt::emphasis::bold),
-               "{} → {}\n", test::type_name<TSrc>(), test::type_name<TDst>());
+               "{} → {}\n", test::type_name<Src>(), test::type_name<TDst>());
     auto op = [&]<std::size_t tSize>(grex::IndexTag<tSize> /*tag*/) {
       fmt::print(fmt::fg(fmt::terminal_color::magenta), "{}\n", tSize);
-      auto dist = make_distribution<TSrc, TDst>();
+      auto dist = make_distribution<Src, TDst>();
       auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
       auto bdst = std::uniform_int_distribution<int>(0, 1);
       auto bval = [&](std::size_t /*dummy*/) { return bool(bdst(rng)); };
@@ -64,7 +65,7 @@ void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
       for (std::size_t i = 0; i < repetitions; ++i) {
         grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
           {
-            test::VectorChecker<TSrc, tSize> src{dval(tIdxs)...};
+            test::VectorChecker<Src, tSize> src{dval(tIdxs)...};
             test::VectorChecker<TDst, tSize> dst{
               src.vec.convert(grex::type_tag<TDst>),
               std::array{TDst(src.ref[tIdxs])...},
@@ -82,7 +83,7 @@ void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
             dstsca.check([&] { return fmt::format("vector/tagged scalar {}", src); }, false);
           }
           {
-            test::MaskChecker<TSrc, tSize> src{bval(tIdxs)...};
+            test::MaskChecker<Src, tSize> src{bval(tIdxs)...};
             test::MaskChecker<TDst, tSize> dst{src.mask.convert(grex::type_tag<TDst>), src.ref};
             dst.check([&] { return fmt::format("mask/copy {}", src); }, false);
 
@@ -101,7 +102,7 @@ void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
     };
 
     constexpr std::size_t size =
-      std::min(grex::native_sizes<TSrc>.back(), grex::native_sizes<TDst>.back());
+      std::min(grex::native_sizes<Src>.back(), grex::native_sizes<TDst>.back());
     grex::static_apply<1, std::bit_width(size) + 2>(
       [&]<std::size_t... tSizes> { (..., op(grex::index_tag<1ULL << tSizes>)); });
   };
@@ -111,5 +112,5 @@ void convert_from(Rng& rng, grex::TypeTag<TSrc> /*tag*/ = {}) {
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   Rng rng{seed_source};
-  test::for_each_type([&](auto tag) { convert_from(rng, tag); });
+  convert_from(rng);
 }

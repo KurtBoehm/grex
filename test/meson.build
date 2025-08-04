@@ -12,6 +12,7 @@ thesauros_dep = dependency('thesauros')
 
 foreach name, parallel : {
   'blend': true,
+  'convert': true,
   'shuffle': true,
 }
   deps = [fmt_dep, grex_dep, pcg_dep, thesauros_dep]
@@ -43,7 +44,6 @@ endforeach
 
 foreach name, parallel : {
   'componentwise': true,
-  'convert': true,
   'expand': true,
   'gather': false,
   'general': true,
