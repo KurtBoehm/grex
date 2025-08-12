@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_BIT_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_BIT_HPP
 
+#include <bit>
+
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
@@ -21,17 +23,31 @@ inline TDst expand_any(TSrc src) {
   return dst;
 }
 
+#define GREX_BITTEST_COND \
+  (__builtin_constant_p(a) != 0 && __builtin_constant_p(b) != 0) || \
+    (__builtin_constant_p(a) != 0 && std::has_single_bit(a)) || \
+    (__builtin_constant_p(b) != 0 && b == 0)
+
 inline bool bit_test(u64 a, u64 b) {
+  if (GREX_BITTEST_COND) {
+    return ((a >> b) & 1) != 0;
+  }
   bool dst{};
   asm("bt{q %2, %1 | %1, %2}" : "=@ccc"(dst) : "r"(a), "ir"(b) : "cc");
   return dst;
 }
 inline bool bit_test(u32 a, u32 b) {
+  if (GREX_BITTEST_COND) {
+    return ((a >> b) & 1) != 0;
+  }
   bool dst{};
   asm("bt{l %2, %1 | %1, %2}" : "=@ccc"(dst) : "r"(a), "ir"(b) : "cc");
   return dst;
 }
 inline bool bit_test(u16 a, u16 b) {
+  if (GREX_BITTEST_COND) {
+    return ((a >> b) & 1) != 0;
+  }
   bool dst{};
   asm("bt{w %2, %1 | %1, %2}" : "=@ccc"(dst) : "r"(a), "ir"(b) : "cc");
   return dst;

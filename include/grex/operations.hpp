@@ -16,6 +16,15 @@
 #include "grex/types.hpp"
 
 namespace grex {
+template<IntVectorizable TDst>
+inline TDst expand_any(IntVectorizable auto value) {
+  return backend::expand_any<TDst>(value);
+}
+template<UnsignedIntVectorizable T>
+inline bool bit_test(T a, T b) {
+  return backend::bit_test(a, b);
+}
+
 inline bool andnot(bool a, bool b) {
   return backend::logical_andnot(a, b);
 }
