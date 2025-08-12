@@ -5,6 +5,7 @@
 #include "operations/abs.hpp"
 #include "operations/arithmetic-mask.hpp"
 #include "operations/arithmetic.hpp"
+#include "operations/bit.hpp"
 #include "operations/bitwise.hpp"
 #include "operations/blend-static.hpp"
 #include "operations/blend-zero-static.hpp"

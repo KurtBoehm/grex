@@ -74,17 +74,23 @@
 // · Maximum of a number of bits starting at 64 and 128
 #define GREX_MAX_2_4 4
 #define GREX_MAX_2_8 8
+#define GREX_MAX_2_16 16
 #define GREX_MAX_4_4 4
 #define GREX_MAX_4_8 8
+#define GREX_MAX_4_16 16
 #define GREX_MAX_8_4 8
 #define GREX_MAX_8_8 8
+#define GREX_MAX_8_16 16
 #define GREX_MAX_8_32 32
 #define GREX_MAX_16_4 16
 #define GREX_MAX_16_8 16
+#define GREX_MAX_16_16 16
 #define GREX_MAX_16_32 32
 #define GREX_MAX_32_8 32
+#define GREX_MAX_32_16 32
 #define GREX_MAX_32_32 32
 #define GREX_MAX_64_8 64
+#define GREX_MAX_64_16 64
 #define GREX_MAX_64_32 64
 #define GREX_MAX_64_128 128
 #define GREX_MAX_128_128 128

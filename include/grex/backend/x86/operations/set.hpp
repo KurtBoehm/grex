@@ -69,17 +69,17 @@ namespace grex::backend {
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline Mask<KIND##BITS, SIZE> zeros(TypeTag<Mask<KIND##BITS, SIZE>>) { \
-    return {.r = GREX_MMASK(SIZE){0}}; \
+    return {.r = 0}; \
   } \
   inline Mask<KIND##BITS, SIZE> ones(TypeTag<Mask<KIND##BITS, SIZE>>) { \
-    return {.r = GREX_MMASK(SIZE)(GREX_ONEMASK_##SIZE)}; \
+    return {.r = GREX_ONEMASK_##SIZE}; \
   } \
   inline Mask<KIND##BITS, SIZE> broadcast(bool value, TypeTag<Mask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_MMASK(SIZE)(-GREX_CAT(i, GREX_MAX(SIZE, 8))(value))}; \
   } \
   inline Mask<KIND##BITS, SIZE> set(TypeTag<Mask<KIND##BITS, SIZE>>, \
                                     GREX_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
-    return {.r = GREX_MMASK(SIZE)(GREX_CMASK_SET(SIZE, GREX_CAT(u, GREX_MAX(SIZE, 8))))}; \
+    return {.r = GREX_MMASK_CAST(SIZE, GREX_CMASK_SET(SIZE, GREX_CAT(u, GREX_MAX(SIZE, 8))))}; \
   }
 #else
 #define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \

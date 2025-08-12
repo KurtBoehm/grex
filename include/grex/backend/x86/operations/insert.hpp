@@ -44,7 +44,7 @@ namespace grex::backend {
     GREX_CAT(_mm_set_s, GREX_FP_LETTER(BITS))(value))
 #define GREX_VEC_INSERT_AVX512_INT(KIND, BITS, SIZE, BITPREFIX) \
   BITPREFIX##_mask_set1_epi##BITS( \
-    v.r, GREX_MMASK(SIZE)(GREX_CAT(u, GREX_MAX(SIZE, 8)){1} << index), \
+    v.r, GREX_MMASK_CAST(SIZE, GREX_CAT(u, GREX_MAX(SIZE, 8)){1} << index), \
     GREX_KINDCAST_SINGLE(KIND, i, BITS, value))
 #define GREX_VEC_INSERT_AVX512_f GREX_VEC_INSERT_AVX512_FP
 #define GREX_VEC_INSERT_AVX512_i GREX_VEC_INSERT_AVX512_INT
@@ -67,10 +67,11 @@ namespace grex::backend {
 //   (value & ~(u64{1} << bit_index)) + (T{bit_value} << bit_index)
 // - Otherwise: Delegate to the corresponding integer insert instruction
 // AVX-512
+// TODO Use the btr instruction explicitly
 #define GREX_MASK_INSERT_AVX512(KIND, BITS, SIZE, BITPREFIX) \
   inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> m, std::size_t index, bool value) { \
     using Idx = GREX_CAT(u, GREX_MAX(SIZE, 8)); \
-    return {.r = GREX_MMASK(SIZE)((m.r & ~(Idx{1} << index)) | (Idx{value} << index))}; \
+    return {.r = GREX_MMASK_CAST(SIZE, (m.r & ~(Idx{1} << index)) | (Idx{value} << index))}; \
   }
 #define GREX_MASK_INSERT_FALLBACK(KIND, BITS, SIZE, BITPREFIX) \
   inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> m, std::size_t index, bool value) { \

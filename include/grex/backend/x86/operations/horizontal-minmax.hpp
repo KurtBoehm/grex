@@ -12,6 +12,7 @@
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/minmax.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
@@ -137,7 +138,7 @@ namespace grex::backend {
   /* [v1, -, -, -] */ \
   const __m128i srli32 = _mm_srli_epi64(vf.r, 32); \
   /* [op(v0, v1), -, -, -][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si32(OP(vf, {.r = srli32}).r));
+  return GREX_KINDCAST_SINGLE(i, KIND, 32, _mm_cvtsi128_si32(OP(vf, {.r = srli32}).r));
 #define GREX_HMINMAX_i32x4(OP, KIND, BITS, ...) \
   /* [v2, v3, -, -] */ \
   const __m128i srli64 = _mm_srli_si128(v.r, 8); \
@@ -146,7 +147,7 @@ namespace grex::backend {
   /* [op(v1, v3), -, -, -] */ \
   const __m128i srli32 = _mm_srli_epi64(pairs.r, 32); \
   /* [op(v0, v2, v1, v3), -, -, -][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si32(OP(pairs, {.r = srli32}).r));
+  return GREX_KINDCAST_SINGLE(i, KIND, 32, _mm_cvtsi128_si32(OP(pairs, {.r = srli32}).r));
 #define GREX_HMINMAX_i32x8 GREX_HMINMAX_HALVES
 #define GREX_HMINMAX_i32x16 GREX_HMINMAX_HALVES
 // i64/u64
@@ -154,7 +155,7 @@ namespace grex::backend {
   /* [v1, v1] */ \
   const __m128i unpack = _mm_unpackhi_epi64(v.r, v.r); \
   /* [op(v0, v1), op(v1, v1)][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si64(OP(v, {.r = unpack}).r));
+  return GREX_KINDCAST_SINGLE(i, KIND, 64, _mm_cvtsi128_si64(OP(v, {.r = unpack}).r));
 #define GREX_HMINMAX_i64x4 GREX_HMINMAX_HALVES
 #define GREX_HMINMAX_i64x8 GREX_HMINMAX_HALVES
 // Conversion wrappers

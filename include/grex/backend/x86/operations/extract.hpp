@@ -21,6 +21,11 @@
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
+#if GREX_X86_64_LEVEL >= 4
+#include "grex/backend/x86/macros/math.hpp"
+#include "grex/backend/x86/operations/bit.hpp"
+#endif
+
 namespace grex::backend {
 #define GREX_EXTRACT_BASIC_FALLBACK(ELEMENT, SIZE, CALL, CONVERT) \
   std::array<ELEMENT, SIZE> x{}; \
@@ -66,7 +71,8 @@ namespace grex::backend {
 #endif
 #define GERX_EXTRACT_INT_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   GREX_EXTRACT_INT_BASIC(KIND##BITS, SIZE, GREX_MASKZ_CMPR(KIND, BITS, SIZE, BITPREFIX), \
-                         KIND##BITS(GREX_EXTRACT_VALUE_##REGISTERBITS(BITS)))
+                         GREX_KINDCAST_SINGLE_EXT(KIND, BITS, i, GREX_MAX(BITS, 32), \
+                                                  GREX_EXTRACT_VALUE_##REGISTERBITS(BITS)))
 
 // Merge vector implementations
 #define GREX_EXTRACT_VEC_f(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
@@ -85,7 +91,7 @@ namespace grex::backend {
 // With AVX-512, the mask can just be converted to an integer to get the requested bit
 #define GREX_EXTRACT_MASK_IMPL(KIND, BITS, SIZE, UMMASK) \
   inline bool extract(Mask<KIND##BITS, SIZE> v, std::size_t i) { \
-    return (UMMASK(UMMASK(v.r) >> i) & 1U) != 0; \
+    return bit_test(v.r, UMMASK(i)); \
   }
 #define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \
   GREX_EXTRACT_MASK_IMPL(KIND, BITS, SIZE, GREX_CAT(u, GREX_MAX(SIZE, 8)))
