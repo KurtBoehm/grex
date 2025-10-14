@@ -59,7 +59,7 @@ int main() {
       auto op = [](grex::TypedValueTag<grex::IterDirection> auto dir) {
         std::array<int, 1> dst{0};
         grex::for_each([&](auto j) { dst.at(j) = int(j + 1); }, dir,
-                       grex::typed_scalar_tag<std::size_t>);
+                       grex::scalar_tag);
         test::check(fmt::format("for_each scalar {}", dir.value), dst, std::array{1});
       };
       op(grex::auto_tag<forward>);
