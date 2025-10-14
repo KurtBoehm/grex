@@ -4,13 +4,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#if !GREX_BACKEND_SCALAR
 #include <array>
 #include <cstddef>
 #include <cstdlib>
 #include <random>
 
 #include <fmt/base.h>
-#include <fmt/color.h>
 #include <pcg_extras.hpp>
 
 #include "grex/grex.hpp"
@@ -24,7 +24,7 @@ using Value = grex::GREX_TEST_TYPE;
 inline constexpr std::size_t repetitions = 256;
 
 template<std::size_t tSize>
-void run(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
+void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
   using VC = test::VectorChecker<Value, tSize>;
 
   auto dist = test::make_distribution<Value>();
@@ -103,5 +103,6 @@ void run(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
-  test::for_each_size<Value>([&](auto /*vtag*/, auto stag) { run(rng, stag); });
+  test::for_each_size<Value>([&](auto /*vtag*/, auto stag) { run_simd(rng, stag); });
 }
+#endif

@@ -17,8 +17,9 @@
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
+#if !GREX_BACKEND_SCALAR
 template<grex::Vectorizable T, std::size_t tSize>
-void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
+void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
   using VC = test::VectorChecker<T, tSize>;
   using Vec = grex::Vector<T, tSize>;
   using MC = test::MaskChecker<T, tSize>;
@@ -31,7 +32,6 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
 
   grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
     for (std::size_t i = 0; i < repetitions; ++i) {
-      // SCALAR/VECTOR
       // zeros
       test::check("scalar zeros", grex::zeros<T>(grex::scalar_tag), T{}, false);
       VC{}.check("vector zeros", false);
@@ -111,9 +111,35 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
     }
   });
 }
+#endif
+template<grex::Vectorizable T>
+void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
+  auto dist = test::make_distribution<T>();
+  std::uniform_int_distribution<int> bdist{0, 1};
+
+  for (std::size_t i = 0; i < repetitions; ++i) {
+    // zeros
+    test::check("scalar zeros", grex::zeros<T>(grex::scalar_tag), T{}, false);
+    // broadcast
+    {
+      const T value = dist(rng);
+      test::check("scalar broadcast", grex::broadcast(value, grex::scalar_tag), value, false);
+    }
+    // zero-based indices
+    test::check("scalar indices", grex::indices<T>(grex::scalar_tag), T{}, false);
+    // value-based indices
+    {
+      const T base = dist(rng);
+      test::check("scalar value indices", grex::indices<T>(base, grex::scalar_tag), base, false);
+    }
+  }
+}
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
-  test::run_types_sizes([&](auto vtag, auto stag) { run(rng, vtag, stag); });
+#if !GREX_BACKEND_SCALAR
+  test::run_types_sizes([&](auto vtag, auto stag) { run_simd(rng, vtag, stag); });
+#endif
+  test::run_types([&](auto tag) { run_scalar(rng, tag); });
 }

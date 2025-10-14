@@ -51,7 +51,8 @@ inline auto make_distribution() {
   }
 }
 
-void convert_from(Rng& rng) {
+#if !GREX_BACKEND_SCALAR
+void run_simd(Rng& rng) {
   auto cvt = [&]<typename TDst>(grex::TypeTag<TDst> /*tag*/) {
     fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::text_style(fmt::emphasis::bold),
                "{} → {}\n", test::type_name<Src>(), test::type_name<TDst>());
@@ -108,9 +109,28 @@ void convert_from(Rng& rng) {
   };
   test::for_each_type(cvt);
 }
+#endif
+void run_scalar(Rng& rng) {
+  auto cvt = [&]<typename TDst>(grex::TypeTag<TDst> /*tag*/) {
+    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::text_style(fmt::emphasis::bold),
+               "{} → {}\n", test::type_name<Src>(), test::type_name<TDst>());
+    auto dist = make_distribution<Src, TDst>();
+    for (std::size_t i = 0; i < repetitions; ++i) {
+      const Src src = dist(rng);
+      const TDst dst_ref = TDst(src);
+      const TDst dst_cvt = grex::convert_unsafe<TDst>(src);
+      test::check([&] { return fmt::format("{}", src); }, dst_cvt, dst_ref, false);
+    }
+  };
+  test::for_each_type(cvt);
+}
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   Rng rng{seed_source};
-  convert_from(rng);
+
+#if !GREX_BACKEND_SCALAR
+  run_simd(rng);
+#endif
+  run_scalar(rng);
 }

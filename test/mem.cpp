@@ -17,8 +17,9 @@
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
+#if !GREX_BACKEND_SCALAR
 template<grex::Vectorizable T, std::size_t tSize>
-void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
+void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
   using VC = test::VectorChecker<T, tSize>;
   using Vec = grex::Vector<T, tSize>;
 
@@ -113,9 +114,33 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
     });
   }
 }
+#endif
+template<grex::Vectorizable T>
+void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
+  auto dist = test::make_distribution<T>();
+
+  for (std::size_t i = 0; i < repetitions; ++i) {
+    // load scalar
+    {
+      std::array<T, 1> buf{dist(rng)};
+      test::check("load scalar", grex::load(buf.data(), grex::scalar_tag), buf[0], false);
+    }
+
+    // store scalar
+    {
+      std::array<T, 1> buf{};
+      const T val = dist(rng);
+      grex::store(buf.data(), val, grex::scalar_tag);
+      test::check("store scalar", buf[0], val, false);
+    }
+  }
+}
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
-  test::run_types_sizes([&](auto vtag, auto stag) { run(rng, vtag, stag); });
+#if !GREX_BACKEND_SCALAR
+  test::run_types_sizes([&](auto vtag, auto stag) { run_simd(rng, vtag, stag); });
+#endif
+  test::run_types([&](auto tag) { run_scalar(rng, tag); });
 }

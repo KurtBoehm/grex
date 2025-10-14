@@ -60,6 +60,7 @@ template<Vectorizable T>
   return {};
 }
 
+#if !GREX_BACKEND_SCALAR
 ///////////////
 // full tags //
 ///////////////
@@ -192,6 +193,7 @@ template<std::size_t tSize>
 inline PartTag<tSize> part_tag(std::size_t part) {
   return PartTag<tSize>{part};
 }
+#endif
 
 template<typename TTag>
 struct TagTraits {
@@ -224,6 +226,7 @@ struct TagTraits<TypedScalarTag<T>> {
   template<std::same_as<T>>
   using AugmentedType = T;
 };
+#if !GREX_BACKEND_SCALAR
 template<std::size_t tSize>
 struct TagTraits<FullTag<tSize>> {
   static constexpr bool is_tag = true;
@@ -272,6 +275,7 @@ struct TagTraits<TypedMaskedTag<T, tSize>> {
   template<std::same_as<T>>
   using AugmentedType = Vector<T, tSize>;
 };
+#endif
 
 template<typename TTag>
 concept AnyTag = TagTraits<TTag>::is_tag;

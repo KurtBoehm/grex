@@ -4,13 +4,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#if !GREX_BACKEND_SCALAR
 #include <array>
 #include <bit>
 #include <cstddef>
 #include <random>
 
 #include <fmt/base.h>
-#include <fmt/color.h>
 #include <pcg_extras.hpp>
 
 #include "grex/grex.hpp"
@@ -21,7 +21,7 @@ namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
 template<grex::Vectorizable T, std::size_t tSize>
-void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
+void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
   using Vec = grex::Vector<T, tSize>;
   using VC = test::VectorChecker<T, tSize>;
 
@@ -93,5 +93,6 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
-  test::run_types_sizes([&](auto vtag, auto stag) { run(rng, vtag, stag); });
+  test::run_types_sizes([&](auto vtag, auto stag) { run_simd(rng, vtag, stag); });
 }
+#endif

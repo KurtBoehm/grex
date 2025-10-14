@@ -7,6 +7,7 @@
 #ifndef INCLUDE_GREX_BACKEND_CHOOSERS_HPP
 #define INCLUDE_GREX_BACKEND_CHOOSERS_HPP
 
+#if !GREX_BACKEND_SCALAR
 #include <cstddef>
 
 #include "grex/backend/active/instruction-sets.hpp"
@@ -54,5 +55,6 @@ struct MaskTrait<T, tSize, false, true> {
 template<Vectorizable T, std::size_t tSize>
 using MaskFor = MaskTrait<T, tSize>::Type;
 } // namespace grex::backend
+#endif
 
 #endif // INCLUDE_GREX_BACKEND_CHOOSERS_HPP

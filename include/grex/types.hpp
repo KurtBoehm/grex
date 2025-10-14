@@ -7,6 +7,7 @@
 #ifndef INCLUDE_GREX_TYPES_HPP
 #define INCLUDE_GREX_TYPES_HPP
 
+#if !GREX_BACKEND_SCALAR
 #include <concepts>
 #include <cstddef>
 #include <span>
@@ -449,5 +450,12 @@ template<std::size_t tIdx, grex::Vectorizable T, std::size_t tSize>
 struct std::tuple_element<tIdx, grex::Mask<T, tSize>> {
   using type = const bool;
 };
+#else
+#include "grex/backend.hpp"
+
+namespace grex {
+using backend::has_fma;
+}
+#endif
 
 #endif // INCLUDE_GREX_TYPES_HPP

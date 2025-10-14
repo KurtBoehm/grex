@@ -72,7 +72,8 @@ inline EquivVal<T> are_equivalent(T val, T ref, T f = T{}) {
   }
   return {};
 }
-template<std::integral T>
+template<typename T>
+requires(!FloatVectorizable<T>)
 inline bool are_equivalent(T val, T ref) {
   return val == ref;
 }
@@ -102,7 +103,7 @@ requires(requires(T a) {
   { a == a } -> std::same_as<bool>;
 })
 inline void check(const auto& label, T a, T b, bool verbose = true) {
-  check_msg(label, a == b, a, b, verbose);
+  check_msg(label, are_equivalent(a, b), a, b, verbose);
 }
 template<typename T1, typename T2>
 requires(requires {
@@ -117,6 +118,7 @@ inline void check(const auto& label, T1 a, T2 b, bool verbose = true) {
   check_msg(label, same, a, b, verbose);
 }
 
+#if !GREX_BACKEND_SCALAR
 template<Vectorizable T, std::size_t tSize>
 struct VectorChecker {
   grex::Vector<T, tSize> vec{};
@@ -164,6 +166,7 @@ template<Vectorizable T, std::size_t tSize>
 auto format_as(const MaskChecker<T, tSize>& checker) {
   return std::tie(checker.mask, checker.ref);
 }
+#endif
 
 template<typename T>
 struct TypeNameTrait;
@@ -204,6 +207,7 @@ void for_each_type(auto op) {
   for_each_integral(op);
 };
 
+#if !GREX_BACKEND_SCALAR
 template<Vectorizable T>
 inline void for_each_size(auto op) {
   static_apply<1, std::bit_width(native_sizes<T>.back()) + 1>(
@@ -216,6 +220,13 @@ inline void run_types_sizes(auto f) {
     f(t, s);
   };
   for_each_type([&]<typename T>(TypeTag<T> /*tag*/) { for_each_size<T>(inner); });
+}
+#endif
+inline void run_types(auto f) {
+  for_each_type([&]<typename T>(TypeTag<T> tag) {
+    fmt::print(fmt::fg(fmt::terminal_color::blue), "{}\n", type_name<T>());
+    f(tag);
+  });
 }
 } // namespace grex::test
 

@@ -5,6 +5,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from subprocess import PIPE, run
+from typing import Final
 
 
 def parse_line(line: str):
@@ -14,11 +15,11 @@ def parse_line(line: str):
     return lhs.strip(), rhs.strip()
 
 
-arch = run(["uname", "--machine"], stdout=PIPE).stdout.decode().strip()
+arch: Final = run(["uname", "--machine"], stdout=PIPE).stdout.decode().strip()
 assert arch == "x86_64"
 
 
-x86_64_levels = {
+x86_64_levels: Final = {
     "x86-64": ["cmov", "cx8", "fpu", "fxsr", "mmx", "syscall", "sse", "sse2"],
     "x86-64-v2": ["cx16", "lahf_lm", "popcnt", "sse4_1", "sse4_2", "ssse3"],
     "x86-64-v3": [
@@ -37,13 +38,13 @@ x86_64_levels = {
 
 
 with open("/proc/cpuinfo", "r") as f:
-    raw_info = f.read()
-info = {
+    raw_info: Final = f.read()
+info: Final = {
     k: v
     for k, v in (
         parse_line(line) for line in raw_info.splitlines() if len(line.strip()) != 0
     )
 }
-flags = {f.strip() for f in info["flags"].split()}
-supported = [k for k, v in x86_64_levels.items() if all(f in flags for f in v)]
+flags: Final = {f.strip() for f in info["flags"].split()}
+supported: Final = [k for k, v in x86_64_levels.items() if all(f in flags for f in v)]
 print(" ".join(supported))

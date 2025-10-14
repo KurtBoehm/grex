@@ -6,7 +6,6 @@
 #include "backend/choosers.hpp"
 #include "backend/defs.hpp"
 #include "backend/operations.hpp"
-#include "backend/x86.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_BACKEND_HPP

@@ -1,7 +1,25 @@
-project('grex', 'cpp', default_options: ['cpp_std=c++20', 'warning_level=3'])
+project('grex', 'cpp', default_options: ['cpp_std=c++23', 'warning_level=3'])
 
+backend = get_option('simd_backend')
+if backend == 'auto'
+  if target_machine.cpu_family() == 'x86_64'
+    backend = 'x86_64'
+  else
+    backend = 'scalar'
+  endif
+endif
+
+grex_args = []
+if backend == 'x86_64'
+  grex_args += ['-DGREX_BACKEND_X86_64=1']
+elif backend == 'scalar'
+  grex_args += ['-DGREX_BACKEND_SCALAR=1']
+else
+  error(f'Unsupported backend: @backend@')
+endif
 grex_dep = declare_dependency(
   include_directories: include_directories('include'),
+  compile_args: grex_args,
 )
 
 install_subdir(
@@ -16,11 +34,15 @@ pc.generate(
   description: 'Generic C++ SIMD',
 )
 
-x86_64_levels = run_command(
-  import('python').find_installation('python3'),
-  files('tools/x86_64_levels.py'),
-  check: true,
-).stdout().split()
+if backend == 'x86_64'
+  arches = run_command(
+    import('python').find_installation('python3'),
+    files('tools/x86_64_levels.py'),
+    check: true,
+  ).stdout().split()
+else
+  arches = []
+endif
 
 if get_option('test')
   subdir('test')

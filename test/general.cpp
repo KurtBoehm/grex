@@ -24,6 +24,7 @@ int main() {
     // scalar
     test::check("transform scalar",
                 grex::transform([](auto j) { return int{j}; }, grex::scalar_tag), 0);
+#if !GREX_BACKEND_SCALAR
     // vectorized
     auto op = [](grex::AnyIndexTag auto size) {
       fmt::print("{}\n", size.value);
@@ -49,6 +50,7 @@ int main() {
     };
     grex::static_apply<1, 8>(
       [&]<std::size_t... tIdxs>() { (..., op(grex::index_tag<std::size_t{1} << tIdxs>)); });
+#endif
   }
   // for_each
   {
@@ -62,7 +64,9 @@ int main() {
       };
       op(grex::auto_tag<forward>);
       op(grex::auto_tag<backward>);
-    } // vectorized
+    }
+#if !GREX_BACKEND_SCALAR
+    // vectorized
     auto opo = [](grex::AnyIndexTag auto size, grex::TypedValueTag<grex::IterDirection> auto dir) {
       // full
       {
@@ -94,5 +98,6 @@ int main() {
     };
     grex::static_apply<1, 8>(
       [&]<std::size_t... tIdxs>() { (..., op(grex::index_tag<std::size_t{1} << tIdxs>)); });
+#endif
   }
 }

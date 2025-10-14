@@ -1,1 +1,8 @@
 option('test', type: 'boolean', value: false)
+option(
+  'simd_backend',
+  type: 'combo',
+  choices: ['auto', 'x86_64', 'scalar'],
+  value: 'auto',
+  description: 'The SIMD back-end to use',
+)

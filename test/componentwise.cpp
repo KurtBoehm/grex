@@ -10,7 +10,6 @@
 #include <limits>
 #include <random>
 
-#include <fmt/base.h>
 #include <pcg_extras.hpp>
 
 #include "grex/grex.hpp"
@@ -20,8 +19,9 @@
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
+#if !GREX_BACKEND_SCALAR
 template<grex::Vectorizable T, std::size_t tSize>
-void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
+void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
   using VC = test::VectorChecker<T, tSize>;
   using MC = test::MaskChecker<T, tSize>;
 
@@ -249,9 +249,130 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
     }
   });
 }
+#endif
+template<grex::Vectorizable T>
+void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
+  auto dist = test::make_distribution<T>();
+  std::uniform_int_distribution<int> bdist{0, 1};
+
+  for (std::size_t i = 0; i < repetitions; ++i) {
+    // vector-only operations
+    {
+      auto v2v = [&](auto label, auto vop, auto sop) {
+        const T a = dist(rng);
+        test::check(label, vop(a), sop(a), false);
+      };
+      auto vv2v = [&](auto label, auto vop, auto sop) {
+        const T a = dist(rng);
+        const T b = dist(rng);
+        test::check(label, vop(a, b), sop(a, b), false);
+      };
+
+      // abs/sqrt
+      if constexpr (grex::SignedVectorizable<T>) {
+        v2v("abs", [](auto a) { return grex::abs(a); }, [](auto a) { return T(std::abs(a)); });
+      }
+      if constexpr (grex::FloatVectorizable<T>) {
+        v2v("sqrt", [](auto a) { return grex::sqrt(a); }, [](auto a) { return std::sqrt(a); });
+      }
+
+      // min/max
+      vv2v(
+        "min", [](auto a, auto b) { return grex::min(a, b); },
+        [](auto a, auto b) { return std::min(a, b); });
+      vv2v(
+        "max", [](auto a, auto b) { return grex::max(a, b); },
+        [](auto a, auto b) { return std::max(a, b); });
+
+      // fma family
+      if constexpr (grex::FloatVectorizable<T>) {
+        auto vvv2v = [&](auto label, auto grex_op, auto fused_op, auto fb_op) {
+          const T a = dist(rng);
+          const T b = dist(rng);
+          const T c = dist(rng);
+
+          auto ref_op = [&] {
+            if constexpr (grex::has_fma) {
+              return fused_op;
+            } else {
+              return fb_op;
+            }
+          }();
+          test::check(label, grex_op(a, b, c), ref_op(a, b, c), false);
+        };
+
+        vvv2v(
+          "fmadd", [](auto a, auto b, auto c) { return grex::fmadd(a, b, c); },
+          [](auto a, auto b, auto c) { return std::fma(a, b, c); },
+          [](auto a, auto b, auto c) { return a * b + c; });
+        vvv2v(
+          "fmsub", [](auto a, auto b, auto c) { return grex::fmsub(a, b, c); },
+          [](auto a, auto b, auto c) { return std::fma(a, b, -c); },
+          [](auto a, auto b, auto c) { return a * b - c; });
+        vvv2v(
+          "fnmadd", [](auto a, auto b, auto c) { return grex::fnmadd(a, b, c); },
+          [](auto a, auto b, auto c) { return std::fma(-a, b, c); },
+          [](auto a, auto b, auto c) { return c - a * b; });
+        vvv2v(
+          "fnmsub", [](auto a, auto b, auto c) { return grex::fnmsub(a, b, c); },
+          [](auto a, auto b, auto c) { return -std::fma(a, b, c); },
+          [](auto a, auto b, auto c) { return -(a * b + c); });
+      }
+    }
+
+    // masked component-wise operations
+    {
+      auto bvv2v = [&](auto label, auto grex_op, auto ref_op) {
+        const bool m = bool(bdist(rng));
+        const T a = dist(rng);
+        const T b = dist(rng);
+        test::check(label, grex_op(m, a, b), m ? T(ref_op(a, b)) : a, false);
+      };
+
+      // masked arithmetic
+      bvv2v(
+        "mask_add", [](auto m, auto a, auto b) { return grex::mask_add(m, a, b); }, std::plus{});
+      bvv2v(
+        "mask_subtract", [](auto m, auto a, auto b) { return grex::mask_subtract(m, a, b); },
+        std::minus{});
+      bvv2v(
+        "mask_multiply", [](auto m, auto a, auto b) { return grex::mask_multiply(m, a, b); },
+        std::multiplies{});
+      if constexpr (grex::FloatVectorizable<T>) {
+        bvv2v(
+          "mask_divide", [](auto m, auto a, auto b) { return grex::mask_divide(m, a, b); },
+          std::divides{});
+      }
+
+      // blend_zero
+      {
+        const bool m = bool(bdist(rng));
+        const T a = dist(rng);
+        test::check("blend_zero", grex::blend_zero(m, a), m ? a : T{}, false);
+      }
+      {
+        const bool m = bool(bdist(rng));
+        const T a = dist(rng);
+        const T b = dist(rng);
+        test::check("blend", grex::blend(m, a, b), m ? b : a, false);
+      }
+    }
+
+    // vector-to-mask operations
+    if constexpr (grex::FloatVectorizable<T>) {
+      const T a = bool(bdist(rng)) ? dist(rng)
+                                   : (bool(bdist(rng)) ? std::numeric_limits<T>::infinity()
+                                                       : std::numeric_limits<T>::quiet_NaN());
+      test::check("is_finite", grex::is_finite(a), std::isfinite(a), false);
+    }
+  }
+}
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
-  test::run_types_sizes([&](auto vtag, auto stag) { run(rng, vtag, stag); });
+#if !GREX_BACKEND_SCALAR
+  test::run_types_sizes([&](auto vtag, auto stag) { run_simd(rng, vtag, stag); });
+#endif
+  test::run_types([&](auto tag) { run_scalar(rng, tag); });
 }

@@ -7,8 +7,6 @@
 #include <cstddef>
 #include <random>
 
-#include <fmt/base.h>
-#include <fmt/color.h>
 #include <pcg_extras.hpp>
 
 #include "grex/grex.hpp"
@@ -18,8 +16,9 @@
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
+#if !GREX_BACKEND_SCALAR
 template<grex::Vectorizable T, std::size_t tSize>
-void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
+void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
   using VC = test::VectorChecker<T, tSize>;
 
   auto dist = test::make_distribution<T>();
@@ -106,9 +105,39 @@ void run(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/
     }
   });
 }
+#endif
+template<grex::Vectorizable T>
+void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
+  auto dist = test::make_distribution<T>();
+
+  for (std::size_t i = 0; i < repetitions; ++i) {
+    // zero-inserting upwards shingling
+    test::check("shingle_up zero", grex::shingle_up(dist(rng), grex::scalar_tag), T{}, false);
+
+    // value-inserting upwards shingling
+    {
+      const T front = dist(rng);
+      test::check("shingle_up value", grex::shingle_up(front, dist(rng), grex::scalar_tag), front,
+                  false);
+    }
+
+    // zero-inserting downwards shingling
+    test::check("shingle_down zero", grex::shingle_down(dist(rng), grex::scalar_tag), T{}, false);
+
+    // value-inserting downwards shingling
+    {
+      const T back = dist(rng);
+      test::check("shingle_down value", grex::shingle_down(dist(rng), back, grex::scalar_tag), back,
+                  false);
+    }
+  }
+}
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
-  test::run_types_sizes([&](auto vtag, auto stag) { run(rng, vtag, stag); });
+#if !GREX_BACKEND_SCALAR
+  test::run_types_sizes([&](auto vtag, auto stag) { run_simd(rng, vtag, stag); });
+#endif
+  test::run_types([&](auto tag) { run_scalar(rng, tag); });
 }

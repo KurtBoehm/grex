@@ -100,6 +100,7 @@ requires(!tSafe || SafeConversion<TDst, TSrc>)
 inline TDst convert(TSrc src, BoolTag<tSafe> /*tag*/) {
   return TDst(src);
 }
+#if !GREX_BACKEND_SCALAR
 template<Vectorizable TDst, AnyVector TSrc, bool tSafe>
 requires(!tSafe || SafeConversion<TDst, typename TSrc::Value>)
 inline Vector<TDst, TSrc::size> convert(TSrc src, BoolTag<tSafe> /*tag*/) {
@@ -111,6 +112,7 @@ template<Vectorizable TDst, AnyMask TSrc>
 inline Mask<TDst, TSrc::size> convert(TSrc src, AnyBoolTag auto /*tag*/) {
   return src.convert(type_tag<TDst>);
 }
+#endif
 
 template<Vectorizable TDst, typename TSrc>
 inline auto convert_unsafe(TSrc src) {
@@ -126,10 +128,12 @@ template<Vectorizable TDst>
 inline bool convert(bool src) {
   return src;
 }
+#if !GREX_BACKEND_SCALAR
 template<Vectorizable TDst, AnyMask TSrc>
 inline Mask<TDst, TSrc::size> convert(TSrc src) {
   return src.convert(type_tag<TDst>);
 }
+#endif
 } // namespace grex
 
 #endif // INCLUDE_GREX_OPERATIONS_HPP
