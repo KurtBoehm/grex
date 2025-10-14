@@ -15,6 +15,9 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/operations/blend.hpp"
+#include "grex/backend/x86/operations/expand-scalar.hpp"
+#include "grex/backend/x86/operations/extract-single.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
@@ -26,12 +29,12 @@
 
 namespace grex::backend {
 // based on VCL
-#define GREX_ISFIN_AVX512_f32x4 __mmask8(_mm_fpclass_ps_mask(v.r, 0x99) ^ 0xFU)
-#define GREX_ISFIN_AVX512_f32x8 __mmask8(~_mm256_fpclass_ps_mask(v.r, 0x99))
-#define GREX_ISFIN_AVX512_f32x16 __mmask16(~_mm512_fpclass_ps_mask(v.r, 0x99))
-#define GREX_ISFIN_AVX512_f64x2 __mmask8(_mm_fpclass_pd_mask(v.r, 0x99) ^ 0x3U)
-#define GREX_ISFIN_AVX512_f64x4 __mmask8(_mm256_fpclass_pd_mask(v.r, 0x99) ^ 0xFU)
-#define GREX_ISFIN_AVX512_f64x8 __mmask8(~_mm512_fpclass_pd_mask(v.r, 0x99))
+#define GREX_ISFIN_AVX512_f32x4 _knot_mask8(_mm_fpclass_ps_mask(v.r, 0x99))
+#define GREX_ISFIN_AVX512_f32x8 _knot_mask8(_mm256_fpclass_ps_mask(v.r, 0x99))
+#define GREX_ISFIN_AVX512_f32x16 _knot_mask16(_mm512_fpclass_ps_mask(v.r, 0x99))
+#define GREX_ISFIN_AVX512_f64x2 _knot_mask8(_mm_fpclass_pd_mask(v.r, 0x99))
+#define GREX_ISFIN_AVX512_f64x4 _knot_mask8(_mm256_fpclass_pd_mask(v.r, 0x99))
+#define GREX_ISFIN_AVX512_f64x8 _knot_mask8(_mm512_fpclass_pd_mask(v.r, 0x99))
 #define GREX_ISFIN_AVX512(KIND, BITS, SIZE, ...) \
   return {.r = GREX_ISFIN_AVX512_##KIND##BITS##x##SIZE};
 
@@ -42,10 +45,10 @@ namespace grex::backend {
 // assembly code which GCC generated
 #define GREX_ISFIN_FALLBACK(KIND, BITS, SIZE, REGISTERBITS) \
   /* mask out the sign bit to simplify the following comparisons */ \
-  const Vector<u##BITS, SIZE> vabs{GREX_KINDCAST(KIND, u, BITS, REGISTERBITS, abs(v).r)}; \
+  const Vector<i##BITS, SIZE> vabs{GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, abs(v).r)}; \
   /* broadcast positive infinity as an unsigned integer */ \
-  const auto infty = broadcast(GREX_ISFIN_INFTY_##BITS, type_tag<Vector<u##BITS, SIZE>>); \
-  /* if interpreted as an unsigned integer, positive infinity is the smalles non-finite value */ \
+  const auto infty = broadcast(GREX_ISFIN_INFTY_##BITS, type_tag<Vector<i##BITS, SIZE>>); \
+  /* if interpreted as an unsigned integer, positive infinity is the smallest non-finite value */ \
   return {.r = compare_lt(vabs, infty).r};
 
 #if GREX_X86_64_LEVEL >= 4
@@ -63,13 +66,23 @@ namespace grex::backend {
   GREX_FOREACH_FP_TYPE(GREX_ISFIN, REGISTERBITS, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_ISFIN_ALL)
 
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+template<FloatVectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubMask<T, tPart, tSize> is_finite(SubVector<T, tPart, tSize> v) {
   return SubMask<T, tPart, tSize>{is_finite(v.full)};
 }
 template<typename THalf>
 inline auto is_finite(SuperVector<THalf> v) {
   return SuperMask{.lower = is_finite(v.lower), .upper = is_finite(v.upper)};
+}
+
+template<AnyVector TVec>
+inline TVec make_finite(TVec v) {
+  return blend_zero(is_finite(v), v);
+}
+template<FloatVectorizable T>
+inline Scalar<T> make_finite(Scalar<T> v) {
+  const auto vec = expand_any(v, index_tag<16 / sizeof(T)>);
+  return extract_single(blend_zero(is_finite(vec), vec));
 }
 } // namespace grex::backend
 

@@ -349,6 +349,10 @@ template<FloatVectorizable T, std::size_t tSize>
 inline Mask<T, tSize> is_finite(Vector<T, tSize> v) {
   return Mask<T, tSize>{backend::is_finite(v.backend())};
 }
+template<FloatVectorizable T, std::size_t tSize>
+inline Vector<T, tSize> make_finite(Vector<T, tSize> v) {
+  return Vector<T, tSize>{backend::make_finite(v.backend())};
+}
 
 template<Vectorizable T, std::size_t tSize>
 inline T horizontal_add(Vector<T, tSize> v) {

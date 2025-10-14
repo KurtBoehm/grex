@@ -30,6 +30,20 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
   std::uniform_int_distribution<int> bdist{0, 1};
   auto bval = [&](std::size_t /*dummy*/) { return bool(bdist(rng)); };
 
+  auto nonfin = [&](std::size_t /*dummy*/) {
+    if constexpr (grex::FloatVectorizable<T>) {
+      if (bdist(rng)) {
+        return dist(rng);
+      }
+      if (bdist(rng)) {
+        const T inf = std::numeric_limits<T>::infinity();
+        return bdist(rng) ? inf : -inf;
+      }
+      return bdist(rng) ? std::numeric_limits<T>::quiet_NaN()
+                        : std::numeric_limits<T>::signaling_NaN();
+    }
+  };
+
   grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
     for (std::size_t i = 0; i < repetitions; ++i) {
       // vector-only operations
@@ -73,6 +87,16 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         if constexpr (grex::FloatVectorizable<T>) {
           v2vx("sqrt", [](auto a) { return grex::sqrt(a); }, [](auto a) { return std::sqrt(a); });
           v2v("sqrt", [](auto a) { return grex::sqrt(a); });
+        }
+
+        // make_finite
+        if constexpr (grex::FloatVectorizable<T>) {
+          VC a{nonfin(tIdxs)...};
+          VC checker{grex::make_finite(a.vec),
+                     std::array{(std::isfinite(a.ref[tIdxs]) ? a.ref[tIdxs] : T{})...}};
+          checker.check("make_finite", false);
+          VC gchecker{grex::make_finite(a.vec), std::array{grex::make_finite(a.ref[tIdxs])...}};
+          gchecker.check("make_finite", false);
         }
 
         // min/max
@@ -205,7 +229,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
           VC a{dval(tIdxs)...};
           VC b{dval(tIdxs)...};
           MC checker{op(a.vec, b.vec), std::array{op(a.ref[tIdxs], b.ref[tIdxs])...}};
-          checker.check(label, false);
+          checker.check([&] { return std::format("{}({}, {})", label, a.ref, b.ref); }, false);
         };
         vv2m("equal_to", std::equal_to{});
         vv2m("not_equal_to", std::not_equal_to{});
@@ -217,9 +241,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
 
       // vector-to-mask operations
       if constexpr (grex::FloatVectorizable<T>) {
-        VC a{((tIdxs % 3 == 0)
-                ? std::numeric_limits<T>::quiet_NaN()
-                : ((tIdxs % 3 == 2) ? std::numeric_limits<T>::infinity() : T(tIdxs)))...};
+        VC a{nonfin(tIdxs)...};
         MC checker{grex::is_finite(a.vec), std::array{std::isfinite(a.ref[tIdxs])...}};
         checker.check("is_finite", false);
         MC gchecker{grex::is_finite(a.vec), std::array{grex::is_finite(a.ref[tIdxs])...}};

@@ -78,9 +78,13 @@ inline T blend(bool selector, T v0, T v1) {
   return backend::blend(selector, backend::Scalar{v0}, backend::Scalar{v1}).value;
 }
 
-template<Vectorizable T>
+template<FloatVectorizable T>
 inline bool is_finite(T a) {
   return backend::is_finite(backend::Scalar{a});
+}
+template<FloatVectorizable T>
+inline T make_finite(T a) {
+  return backend::make_finite(backend::Scalar{a}).value;
 }
 
 // To determine whether a conversion is safe, i.e. guaranteed not to change finite values,

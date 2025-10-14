@@ -36,6 +36,7 @@ foreach name, conf : {
         test(
           f'test @space_name@ @type@ @arch@',
           exe,
+          suite: f'test @space_name@',
           is_parallel: parallel,
           timeout: -1,
         )
@@ -71,7 +72,13 @@ foreach name, conf : {
         cpp_args: args + [f'-march=@arch@'],
         dependencies: deps,
       )
-      test(f'test @space_name@ @arch@', exe, is_parallel: parallel, timeout: -1)
+      test(
+        f'test @space_name@ @arch@',
+        exe,
+        suite: f'test @space_name@',
+        is_parallel: parallel,
+        timeout: -1,
+      )
     endforeach
   endif
 endforeach

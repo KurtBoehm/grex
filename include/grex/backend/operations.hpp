@@ -58,7 +58,7 @@ inline Scalar<T> blend(bool selector, Scalar<T> v0, Scalar<T> v1) {
   return selector ? v1 : v0;
 }
 
-template<Vectorizable T>
+template<FloatVectorizable T>
 inline bool is_finite(Scalar<T> v) {
   return std::isfinite(v.value);
 }
@@ -84,6 +84,11 @@ static UnsignedInt<std::bit_ceil(tSrcBytes)> load_multibyte(const std::byte* dat
 }
 
 #if GREX_BACKEND_SCALAR
+template<FloatVectorizable T>
+inline Scalar<T> make_finite(Scalar<T> v) {
+  return is_finite(v) ? v : Scalar{T{}};
+}
+
 template<FloatVectorizable T>
 inline Scalar<T> sqrt(Scalar<T> v) {
   return {.value = std::sqrt(v.value)};

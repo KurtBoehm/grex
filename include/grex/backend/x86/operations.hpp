@@ -15,6 +15,7 @@
 #include "operations/convert.hpp"
 #include "operations/expand-scalar.hpp"
 #include "operations/expand-vector.hpp"
+#include "operations/extract-single.hpp"
 #include "operations/extract.hpp"
 #include "operations/fmadd-family.hpp"
 #include "operations/gather.hpp"
