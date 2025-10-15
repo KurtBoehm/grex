@@ -389,6 +389,10 @@ inline Vector<T, tSize> fnmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T,
 }
 
 template<Vectorizable T, std::size_t tSize>
+inline T extract_single(Vector<T, tSize> v) {
+  return backend::extract_single(v.backend()).value;
+}
+template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend_zero(Mask<T, tSize> mask, Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend_zero(mask.backend(), v1.backend())};
 }

@@ -70,6 +70,10 @@ GREX_MATH_MASKARITH(mask_divide)
 #undef GREX_MATH_MASKARITH
 
 template<Vectorizable T>
+inline T extract_single(T v) {
+  return backend::extract_single(backend::Scalar{v}).value;
+}
+template<Vectorizable T>
 inline T blend_zero(bool selector, T v1) {
   return backend::blend_zero(selector, backend::Scalar{v1}).value;
 }

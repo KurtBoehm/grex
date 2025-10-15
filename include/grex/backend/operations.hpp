@@ -50,6 +50,11 @@ GREX_OPS_MASKARITH(mask_divide, /)
 #undef GREX_OPS_MASKARITH
 
 template<Vectorizable T>
+inline Scalar<T> extract_single(Scalar<T> v) {
+  return v;
+}
+
+template<Vectorizable T>
 inline Scalar<T> blend_zero(bool selector, Scalar<T> v1) {
   return selector ? v1 : Scalar<T>{T{}};
 }
@@ -63,7 +68,6 @@ inline bool is_finite(Scalar<T> v) {
   return std::isfinite(v.value);
 }
 
-// load_multibyte
 template<std::size_t tSrcBytes>
 static UnsignedInt<std::bit_ceil(tSrcBytes)> load_multibyte(const std::byte* data,
                                                             IndexTag<tSrcBytes> /*tag*/) {
