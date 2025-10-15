@@ -49,6 +49,7 @@ endforeach
 foreach name, conf : {
   'componentwise': [false, true],
   'expand': [true, true],
+  'extract': [false, true],
   'gather': [false, false],
   'general': [false, true],
   'horizontal': [false, true],

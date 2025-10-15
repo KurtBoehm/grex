@@ -335,6 +335,18 @@ struct TagValueTrait<TVector, TTag> {
 };
 template<Vectorizable TValue, AnyTag TTag>
 using TagValue = TagValueTrait<TValue, TTag>::Type;
+
+#if !GREX_BACKEND_SCALAR
+template<Vectorizable T>
+using SingleTag = FullTag<std::get<0>(native_sizes<T>)>;
+template<Vectorizable T>
+inline constexpr SingleTag<T> single_tag{};
+#else
+template<Vectorizable T>
+using SingleTag = ScalarTag;
+template<Vectorizable T>
+inline constexpr SingleTag<T> single_tag{};
+#endif
 } // namespace grex
 
 #endif // INCLUDE_GREX_TAGS_HPP
