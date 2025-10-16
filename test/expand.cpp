@@ -86,7 +86,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       });
     });
   };
-  grex::static_apply<std::bit_width(tSize) - 1, std::bit_width(grex::native_sizes<T>.back()) + 1>(
+  grex::static_apply<std::bit_width(tSize) - 1, std::bit_width(grex::max_native_size<T>) + 1>(
     [&]<std::size_t... tLogs> { (..., expav(grex::index_tag<1ULL << tLogs>)); });
 }
 

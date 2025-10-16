@@ -11,9 +11,11 @@
 
 #include "grex/base/defs.hpp"
 
-namespace grex {
+namespace grex::backend {
+template<Vectorizable T>
+inline constexpr std::size_t min_native_size = 1;
 template<Vectorizable T>
 inline constexpr std::size_t max_native_size = 1;
-}
+} // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_SCALAR_SIZES_HPP

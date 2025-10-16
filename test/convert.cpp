@@ -102,8 +102,7 @@ void run_simd(Rng& rng) {
       }
     };
 
-    constexpr std::size_t size =
-      std::min(grex::native_sizes<Src>.back(), grex::native_sizes<TDst>.back());
+    constexpr std::size_t size = std::min(grex::max_native_size<Src>, grex::max_native_size<TDst>);
     grex::static_apply<1, std::bit_width(size) + 2>(
       [&]<std::size_t... tSizes> { (..., op(grex::index_tag<1ULL << tSizes>)); });
   };

@@ -56,8 +56,8 @@ inline constexpr std::array native_sizes =
   static_apply<register_bits.size()>([]<std::size_t... tIdxs>() {
     return std::array{(std::get<tIdxs>(register_bits) / (sizeof(T) * CHAR_BIT))...};
   });
-template<Vectorizable T, std::size_t tIdx>
-inline constexpr std::size_t native_size = std::get<tIdx>(native_sizes<T>);
+template<Vectorizable T>
+inline constexpr std::size_t min_native_size = native_sizes<T>.front();
 template<Vectorizable T>
 inline constexpr std::size_t max_native_size = native_sizes<T>.back();
 
@@ -66,9 +66,9 @@ inline constexpr bool is_native = static_apply<native_sizes<T>.size()>(
   []<std::size_t... tIdxs>() { return (... || (tSize == std::get<tIdxs>(native_sizes<T>))); });
 template<Vectorizable T, std::size_t tSize>
 inline constexpr bool is_subnative = tSize > 1 &&
-                                     std::has_single_bit(tSize) && tSize < native_sizes<T>.front();
+                                     std::has_single_bit(tSize) && tSize < min_native_size<T>;
 template<Vectorizable T, std::size_t tSize>
-inline constexpr bool is_supernative = std::has_single_bit(tSize) && tSize > native_sizes<T>.back();
+inline constexpr bool is_supernative = std::has_single_bit(tSize) && tSize > max_native_size<T>;
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_INSTRUCTION_SETS_HPP

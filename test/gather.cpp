@@ -104,7 +104,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
     };
 
     constexpr std::size_t size =
-      std::min(grex::native_sizes<TValue>.back(), grex::native_sizes<TIndex>.back());
+      std::min(grex::max_native_size<TValue>, grex::max_native_size<TIndex>);
     grex::static_apply<1, std::bit_width(size) + 2>(
       [&]<std::size_t... tSizes> { (..., op(grex::index_tag<1ULL << tSizes>)); });
   };
