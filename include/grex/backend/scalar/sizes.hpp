@@ -1,0 +1,19 @@
+// This file is part of https://github.com/KurtBoehm/grex.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+#ifndef INCLUDE_GREX_BACKEND_SCALAR_SIZES_HPP
+#define INCLUDE_GREX_BACKEND_SCALAR_SIZES_HPP
+
+#include <cstddef>
+
+#include "grex/base/defs.hpp"
+
+namespace grex {
+template<Vectorizable T>
+inline constexpr std::size_t max_native_size = 1;
+}
+
+#endif // INCLUDE_GREX_BACKEND_SCALAR_SIZES_HPP
