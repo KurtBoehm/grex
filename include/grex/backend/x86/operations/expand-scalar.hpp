@@ -51,8 +51,8 @@ inline f64x2 expand(Scalar<f64> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) 
 // Integers with at most 32 bits: Cast to i32
 template<IntVectorizable T, bool tZero>
 requires(sizeof(T) <= 4)
-inline Vector<T, native_sizes<T>.front()>
-expand(Scalar<T> x, IndexTag<native_sizes<T>.front()> /*tag*/, BoolTag<tZero> /*tag*/) {
+inline Vector<T, min_native_size<T>> expand(Scalar<T> x, IndexTag<min_native_size<T>> /*tag*/,
+                                            BoolTag<tZero> /*tag*/) {
   // force zero extension
   using Unsigned = UnsignedOf<T>;
   return {.r = _mm_cvtsi32_si128(i32(Unsigned(x.value)))};
@@ -66,14 +66,14 @@ inline Vector<T, 2> expand(Scalar<T> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*ta
 
 // Sub-native: Delegate to the native version
 template<Vectorizable T, std::size_t tSize, bool tZero>
-requires(tSize < native_sizes<T>.front())
+requires(tSize < min_native_size<T>)
 inline VectorFor<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
-  return VectorFor<T, tSize>{expand(x, index_tag<native_sizes<T>.front()>, zero)};
+  return VectorFor<T, tSize>{expand(x, index_tag<min_native_size<T>>, zero)};
 }
 
 // Larger than the smallest native size: Merge with zero/undefined
 template<Vectorizable T, std::size_t tSize, bool tZero>
-requires(tSize > native_sizes<T>.front())
+requires(tSize > min_native_size<T>)
 inline VectorFor<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
   constexpr std::size_t half = tSize / 2;
   return expand(expand(x, index_tag<half>, zero), index_tag<tSize>, zero);

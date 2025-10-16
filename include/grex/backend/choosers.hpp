@@ -15,9 +15,8 @@
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
-template<Vectorizable T, std::size_t tSize,
-         bool tIsSub = (tSize < backend::native_sizes<T>.front()),
-         bool tIsSuper = (tSize > backend::native_sizes<T>.back())>
+template<Vectorizable T, std::size_t tSize, bool tIsSub = (tSize < backend::min_native_size<T>),
+         bool tIsSuper = (tSize > backend::max_native_size<T>)>
 struct VectorTrait;
 template<Vectorizable T, std::size_t tSize>
 struct VectorTrait<T, tSize, false, false> {
@@ -25,7 +24,7 @@ struct VectorTrait<T, tSize, false, false> {
 };
 template<Vectorizable T, std::size_t tSize>
 struct VectorTrait<T, tSize, true, false> {
-  using Type = backend::SubVector<T, tSize, backend::native_sizes<T>.front()>;
+  using Type = backend::SubVector<T, tSize, backend::min_native_size<T>>;
 };
 template<Vectorizable T, std::size_t tSize>
 struct VectorTrait<T, tSize, false, true> {
@@ -35,9 +34,8 @@ struct VectorTrait<T, tSize, false, true> {
 template<Vectorizable T, std::size_t tSize>
 using VectorFor = VectorTrait<T, tSize>::Type;
 
-template<Vectorizable T, std::size_t tSize,
-         bool tIsSub = (tSize < backend::native_sizes<T>.front()),
-         bool tIsSuper = (tSize > backend::native_sizes<T>.back())>
+template<Vectorizable T, std::size_t tSize, bool tIsSub = (tSize < backend::min_native_size<T>),
+         bool tIsSuper = (tSize > backend::max_native_size<T>)>
 struct MaskTrait;
 template<Vectorizable T, std::size_t tSize>
 struct MaskTrait<T, tSize, false, false> {
@@ -45,7 +43,7 @@ struct MaskTrait<T, tSize, false, false> {
 };
 template<Vectorizable T, std::size_t tSize>
 struct MaskTrait<T, tSize, true, false> {
-  using Type = backend::SubMask<T, tSize, backend::native_sizes<T>.front()>;
+  using Type = backend::SubMask<T, tSize, backend::min_native_size<T>>;
 };
 template<Vectorizable T, std::size_t tSize>
 struct MaskTrait<T, tSize, false, true> {

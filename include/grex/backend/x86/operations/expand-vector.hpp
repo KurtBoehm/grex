@@ -73,7 +73,7 @@ inline VectorFor<typename TVec::Value, tDstSize> expand(TVec v, IndexTag<tDstSiz
 template<typename T, std::size_t tPart, std::size_t tSize, std::size_t tDstSize, bool tZero>
 inline VectorFor<T, tDstSize> expand(SubVector<T, tPart, tSize> v, IndexTag<tDstSize> size_tag,
                                      BoolTag<tZero> zero_tag) {
-  using Work = VectorFor<T, std::min(tDstSize, native_size<T, 0>)>;
+  using Work = VectorFor<T, std::min(tDstSize, min_native_size<T>)>;
   Work work = [&] {
     if constexpr (tZero) {
       return Work{full_cutoff(v).r};
@@ -81,7 +81,7 @@ inline VectorFor<T, tDstSize> expand(SubVector<T, tPart, tSize> v, IndexTag<tDst
       return Work{v.registr()};
     }
   }();
-  if constexpr (tDstSize <= native_size<T, 0>) {
+  if constexpr (tDstSize <= min_native_size<T>) {
     return work;
   } else {
     return expand(work, size_tag, zero_tag);
