@@ -4,6 +4,7 @@
 // IWYU pragma: begin_exports
 #include "active/instruction-sets.hpp"
 #include "active/operations.hpp"
+#include "active/sizes.hpp"
 #include "active/types.hpp"
 // IWYU pragma: end_exports
 

@@ -58,6 +58,8 @@ inline constexpr std::array native_sizes =
   });
 template<Vectorizable T, std::size_t tIdx>
 inline constexpr std::size_t native_size = std::get<tIdx>(native_sizes<T>);
+template<Vectorizable T>
+inline constexpr std::size_t max_native_size = native_sizes<T>.back();
 
 template<Vectorizable T, std::size_t tSize>
 inline constexpr bool is_native = static_apply<native_sizes<T>.size()>(
