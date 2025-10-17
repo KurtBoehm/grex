@@ -1,4 +1,9 @@
-project('grex', 'cpp', default_options: ['cpp_std=c++23', 'warning_level=3'])
+project(
+  'grex',
+  'cpp',
+  default_options: ['cpp_std=c++23', 'warning_level=3'],
+  meson_version: '>=1.5.0',
+)
 
 backend = get_option('simd_backend')
 if backend == 'auto'
@@ -35,11 +40,9 @@ pc.generate(
 )
 
 if backend == 'x86_64'
-  arches = run_command(
-    import('python').find_installation('python3'),
-    files('tools/x86_64_levels.py'),
-    check: true,
-  ).stdout().split()
+  cpp = meson.get_compiler('cpp')
+  cpuid = import('fs').read('tools/cpuid.cpp')
+  arches = cpp.run(cpuid, required: true).stdout().split()
 else
   arches = []
 endif
