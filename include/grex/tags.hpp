@@ -338,15 +338,20 @@ using TagValue = TagValueTrait<TValue, TTag>::Type;
 
 #if !GREX_BACKEND_SCALAR
 template<Vectorizable T>
-using SingleTag = FullTag<std::get<0>(native_sizes<T>)>;
+using MinNativeTag = FullTag<min_native_size<T>>;
 template<Vectorizable T>
-inline constexpr SingleTag<T> single_tag{};
+using MaxNativeTag = FullTag<max_native_size<T>>;
 #else
 template<Vectorizable T>
-using SingleTag = ScalarTag;
+using MinNativeTag = ScalarTag;
 template<Vectorizable T>
-inline constexpr SingleTag<T> single_tag{};
+using MaxNativeTag = ScalarTag;
 #endif
+
+template<Vectorizable T>
+inline constexpr MinNativeTag<T> min_native_tag{};
+template<Vectorizable T>
+inline constexpr MaxNativeTag<T> max_native_tag{};
 } // namespace grex
 
 #endif // INCLUDE_GREX_TAGS_HPP

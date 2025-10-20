@@ -20,6 +20,7 @@
 namespace grex {
 using backend::has_fma;
 using backend::max_native_size;
+using backend::min_native_size;
 using backend::native_sizes;
 using backend::register_bits;
 using backend::register_bytes;
@@ -465,6 +466,7 @@ struct std::tuple_element<tIdx, grex::Mask<T, tSize>> {
 namespace grex {
 using backend::has_fma;
 using backend::max_native_size;
+using backend::min_native_size;
 } // namespace grex
 #endif
 
