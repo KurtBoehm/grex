@@ -7,7 +7,7 @@
 # dependencies: boost-preprocessor, fmt, unordered_dense
 
 [wrap-git]
-url = git@github.com:KurtBoehm/thesauros.git
+url = https://github.com/KurtBoehm/thesauros.git
 revision = head
 clone-recursive = true
 

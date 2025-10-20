@@ -27,26 +27,28 @@ grex_dep = declare_dependency(
   compile_args: grex_args,
 )
 
-install_subdir(
-  'include',
-  install_dir: 'include',
-)
+if not meson.is_subproject()
+  install_subdir(
+    'include',
+    install_dir: 'include',
+  )
 
-pc = import('pkgconfig')
-pc.generate(
-  name: 'grex',
-  version: meson.project_version(),
-  description: 'Generic C++ SIMD',
-)
-
-if backend == 'x86_64'
-  cpp = meson.get_compiler('cpp')
-  cpuid = import('fs').read('tools/cpuid.cpp')
-  arches = cpp.run(cpuid, required: true).stdout().split()
-else
-  arches = []
+  pc = import('pkgconfig')
+  pc.generate(
+    name: 'grex',
+    version: meson.project_version(),
+    description: 'Generic C++ SIMD',
+  )
 endif
 
 if get_option('test')
+  if backend == 'x86_64'
+    cpp = meson.get_compiler('cpp')
+    cpuid = import('fs').read('tools/cpuid.cpp')
+    arches = cpp.run(cpuid, required: true).stdout().split()
+  else
+    arches = []
+  endif
+
   subdir('test')
 endif

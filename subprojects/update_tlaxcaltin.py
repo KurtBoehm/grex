@@ -56,7 +56,7 @@ def expand_selection(selection: set[str]) -> set[str]:
     return new_selection
 
 
-url = "git@github.com:KurtBoehm/tlaxcaltin.git"
+url = "https://github.com/KurtBoehm/tlaxcaltin.git"
 
 selection_path = project_path / "subprojects.txt"
 selection: set[str] | None
