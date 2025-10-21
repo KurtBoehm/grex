@@ -89,7 +89,7 @@ if(GREX_BUILD_TESTS)
       SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/tools/cpuid.cpp"
       RUN_OUTPUT_VARIABLE cpuid_output
     )
-    if(NOT cpuid_run_res)
+    if(NOT cpuid_compile_res)
       message(FATAL_ERROR "CPUID failed!")
     endif()
 
@@ -103,7 +103,9 @@ if(GREX_BUILD_TESTS)
     target_compile_features(${test_target} PRIVATE cxx_std_23)
     target_link_libraries(
       ${test_target}
-      PRIVATE ${PROJECT_NAME} fmt::fmt OpenMP::OpenMP_CXX thesauros::thesauros
+      PRIVATE ${PROJECT_NAME} OpenMP::OpenMP_CXX thesauros::thesauros
+      # fmt::fmt is part of thesauros::thesauros already, and linking it twice
+      # (which CMake does not optimize away) leads to warnings with Apple Clang.
     )
     target_include_directories(
       ${test_target}
