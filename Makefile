@@ -1,5 +1,5 @@
 simd_backend=auto
-SETUP_BASE=meson setup -Dtest=true -Dsimd_backend=$(simd_backend) --wrap-mode=forcefallback
+SETUP_BASE=meson setup -Dbuild_tests=true -Dsimd_backend=$(simd_backend) --wrap-mode=forcefallback
 
 clear:
 	rm -rf build

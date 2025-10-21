@@ -92,11 +92,10 @@ int main() {
         is_first = false;
         printf("%s", level);
       } else {
-        printf(" %s", level);
+        printf(";%s", level);
       }
     } else {
       break;
     }
   }
-  printf("\n");
 }

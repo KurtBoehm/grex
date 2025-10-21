@@ -1,3 +1,9 @@
+# This file is part of https://github.com/KurtBoehm/grex.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 project(
   'grex',
   'cpp',
@@ -41,11 +47,11 @@ if not meson.is_subproject()
   )
 endif
 
-if get_option('test')
+if get_option('build_tests')
   if backend == 'x86_64'
     cpp = meson.get_compiler('cpp')
     cpuid = import('fs').read('tools/cpuid.cpp')
-    arches = cpp.run(cpuid, required: true).stdout().split()
+    arches = cpp.run(cpuid, required: true).stdout().split(';')
   else
     arches = []
   endif

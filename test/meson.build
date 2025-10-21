@@ -1,13 +1,25 @@
-options_sub = subproject('options')
-args = options_sub.get_variable('all_args')
+# This file is part of https://github.com/KurtBoehm/grex.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-test_arches = arches + ['native']
-fmt_dep = dependency('fmt')
+options_sub = subproject('options')
+args = options_sub.get_variable('warning_args') + options_sub.get_variable('info_args')
+
+test_arches = {}
+foreach arch : arches
+  test_arches += {arch: [f'-march=@arch@']}
+endforeach
+test_arches += {'native': options_sub.get_variable('optimization_args')}
+
+fmt_sub = subproject('fmt', default_options: ['default_library=static'])
+fmt_dep = fmt_sub.get_variable('fmt_dep')
 omp_dep = dependency('openmp')
 pcg_dep = dependency('pcg-cpp')
 thesauros_dep = dependency('thesauros')
 
-# tests that are split based on the value type
+# tests that are separated based on the value type
 foreach name, conf : {
   'blend': [true, true],
   'convert': [false, true],
@@ -21,20 +33,16 @@ foreach name, conf : {
       deps += [omp_dep]
     endif
     foreach type : ['f64', 'f32', 'i64', 'i32', 'i16', 'i8', 'u64', 'u32', 'u16', 'u8']
-      foreach arch : test_arches
+      foreach arch_name, arch_args : test_arches
         space_name = name.replace('-', ' ')
         exe = executable(
-          f'test-@name@-@type@-@arch@',
+          f'test-@name@-@type@-@arch_name@',
           [f'@name@.cpp'],
-          cpp_args: args
-          + [
-            f'-march=@arch@',
-            f'-DGREX_TEST_TYPE=@type@',
-          ],
+          cpp_args: args + arch_args + [f'-DGREX_TEST_TYPE=@type@'],
           dependencies: [grex_dep] + deps,
         )
         test(
-          f'test @space_name@ @type@ @arch@',
+          f'test @space_name@ @type@ @arch_name@',
           exe,
           suite: f'test @space_name@',
           is_parallel: parallel,
@@ -65,16 +73,16 @@ foreach name, conf : {
     if not parallel
       deps += [omp_dep]
     endif
-    foreach arch : test_arches
+    foreach arch_name, arch_args : test_arches
       space_name = name.replace('-', ' ')
       exe = executable(
-        f'test-@name@-@arch@',
+        f'test-@name@-@arch_name@',
         [f'@name@.cpp'],
-        cpp_args: args + [f'-march=@arch@'],
+        cpp_args: args + arch_args,
         dependencies: deps,
       )
       test(
-        f'test @space_name@ @arch@',
+        f'test @space_name@ @arch_name@',
         exe,
         suite: f'test @space_name@',
         is_parallel: parallel,
