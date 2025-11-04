@@ -75,7 +75,8 @@ namespace grex::backend {
   }
 #define GREX_MASK_INSERT_FALLBACK(KIND, BITS, SIZE, BITPREFIX) \
   inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> m, std::size_t index, bool value) { \
-    return {.r = insert(Vector<i##BITS, SIZE>{.r = m.r}, index, -i##BITS(value)).r}; \
+    const i##BITS entry = GREX_OPCAST(i, BITS, -i##BITS(value)); \
+    return {.r = insert(Vector<i##BITS, SIZE>{.r = m.r}, index, entry).r}; \
   }
 
 #if GREX_X86_64_LEVEL >= 4

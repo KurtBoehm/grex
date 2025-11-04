@@ -153,7 +153,8 @@ namespace grex::backend {
 #define GREX_MASK_SINSERT(KIND, BITS, SIZE, BITPREFIX) \
   inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> m, AnyIndexTag auto index, \
                                        bool value) { \
-    return {.r = insert(Vector<i##BITS, SIZE>{.r = m.r}, index, -i##BITS(value)).r}; \
+    const i##BITS entry = GREX_OPCAST(i, BITS, -i##BITS(value)); \
+    return {.r = insert(Vector<i##BITS, SIZE>{.r = m.r}, index, entry).r}; \
   }
 #endif
 

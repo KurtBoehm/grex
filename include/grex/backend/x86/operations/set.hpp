@@ -40,7 +40,7 @@ namespace grex::backend {
 // Helpers to define function arguments for the set-based operations
 #define GREX_SET_ARG(CNT, IDX, TYPE) GREX_COMMA_IF(IDX) TYPE v##IDX
 #define GREX_SET_VAL(CNT, IDX, KIND, BITS) GREX_SIGNED_CAST(KIND, BITS, v##IDX) GREX_COMMA_IF(IDX)
-#define GREX_SET_NEGVAL(CNT, IDX, BITS) -i##BITS(v##IDX) GREX_COMMA_IF(IDX)
+#define GREX_SET_NEGVAL(CNT, IDX, BITS) GREX_OPCAST(i, BITS, -i##BITS(v##IDX)) GREX_COMMA_IF(IDX)
 // Define the messy undefined macros
 #define GREX_UNDEF_BASE(KIND, BITS, BITPREFIX, REGISTERBITS) \
   GREX_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))
@@ -90,7 +90,8 @@ namespace grex::backend {
     return {.r = BITPREFIX##_set1_epi32(-1)}; \
   } \
   inline Mask<KIND##BITS, SIZE> broadcast(bool value, TypeTag<Mask<KIND##BITS, SIZE>>) { \
-    return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_EPI(BITS, REGISTERBITS))(-i##BITS(value))}; \
+    const i##BITS entry = GREX_OPCAST(i, BITS, -i##BITS(value)); \
+    return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_EPI(BITS, REGISTERBITS))(entry)}; \
   } \
   inline Mask<KIND##BITS, SIZE> set(TypeTag<Mask<KIND##BITS, SIZE>>, \
                                     GREX_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
