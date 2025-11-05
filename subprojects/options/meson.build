@@ -140,13 +140,11 @@ if warning_level == '3'
   opt_warning_args += warning_args
 endif
 
-experimental_args = []
-# Add experimental flags if clang is used
-if compiler_id == 'clang'
-  major_version = compiler.version().split('.')[0].to_int()
-  if major_version > 14
-    experimental_args += ['-fexperimental-library']
-  endif
+# Add arguments that enable building at all (because defaults on Windows are rubbish)
+fix_args = []
+if target_machine.system() == 'windows'
+  # Debug builds on Windows may fail because there are too many sections in the object file
+  fix_args += ['-Wa,-mbig-obj']
 endif
 
 # Determine architecture-specific optimizations
@@ -162,4 +160,5 @@ if optimization == '3'
 endif
 
 # All arguments
-all_args = experimental_args + info_args + opt_warning_args + opt_optimization_args
+basic_args = info_args + opt_warning_args + fix_args
+all_args = info_args + opt_warning_args + fix_args + opt_optimization_args
