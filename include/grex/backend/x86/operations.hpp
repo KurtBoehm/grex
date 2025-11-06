@@ -24,6 +24,7 @@
 #include "operations/horizontal-minmax.hpp"
 #include "operations/insert-static.hpp"
 #include "operations/insert.hpp"
+#include "operations/intrinsics.hpp"
 #include "operations/load.hpp"
 #include "operations/mask-convert.hpp"
 #include "operations/mask-index.hpp"

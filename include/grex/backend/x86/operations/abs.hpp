@@ -20,11 +20,16 @@
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
+#if GREX_X86_64_LEVEL >= 4
+#include "grex/backend/x86/operations/intrinsics.hpp"
+#endif
+
 namespace grex::backend {
 // Floating-point
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_ABS_FP(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  return {.r = GREX_CAT(BITPREFIX##_range_, GREX_FP_SUFFIX(BITS))(v.r, v.r, 8)};
+  return { \
+    .r = GREX_BITNS(REGISTERBITS)::GREX_CAT(range_, GREX_FP_SUFFIX(BITS))(v.r, v.r, imm_tag<8>)};
 #else
 #define GREX_ABS_FP32(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   BITPREFIX##_castsi##REGISTERBITS##_ps(BITPREFIX##_set1_epi32(0x7FFFFFFF))

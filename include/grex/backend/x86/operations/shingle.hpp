@@ -19,6 +19,7 @@
 #include "grex/backend/x86/macros/math.hpp"
 #include "grex/backend/x86/operations/expand-scalar.hpp"
 #include "grex/backend/x86/operations/extract.hpp"
+#include "grex/backend/x86/operations/intrinsics.hpp"
 #include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
@@ -47,7 +48,7 @@ namespace grex::backend {
   const __m128i ivec = GREX_KINDCAST(KIND, i, BITS, 128, v.r); \
   const __m128i sh = _mm_bsrli_si128(ivec, GREX_DIVIDE(BITS, 8)); \
   return {.r = GREX_KINDCAST(i, KIND, BITS, 128, \
-                             _mm_insert_epi##BITS(sh, back.value, GREX_DECR(SIZE)))};
+                             mm::insert_epi##BITS(sh, back.value, imm_tag<GREX_DECR(SIZE)>))};
 
 // 256-bit with AVX: shuffle the lower into the upper 128 bits and use alignr
 #define GREX_ZUSHINGLE_ALIGNR_AVX(KIND, BITS, ...) \
@@ -246,16 +247,16 @@ namespace grex::backend {
   return SubVector<KIND##32, 2, 4>{GREX_KINDCAST(i, KIND, 32, 128, shif)};
 #define GREX_VDSHINGLE_16_SUB(KIND, BITS, PART, ...) \
   const __m128i shif = _mm_bsrli_si128(v.registr(), 2); \
-  return SubVector<KIND##16, PART, 8>{_mm_insert_epi16(shif, back.value, GREX_DECR(PART))};
+  return SubVector<KIND##16, PART, 8>{mm::insert_epi16(shif, back.value, imm_tag<GREX_DECR(PART)>)};
 #define GREX_VDSHINGLE_16_4 GREX_VDSHINGLE_16_SUB
 #define GREX_VDSHINGLE_16_2 GREX_VDSHINGLE_16_SUB
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_VDSHINGLE_8_SUB(KIND, BITS, PART, ...) \
   const __m128i shif = _mm_bsrli_si128(v.registr(), 1); \
-  return SubVector<KIND##8, PART, 16>{_mm_insert_epi8(shif, back.value, GREX_DECR(PART))};
+  return SubVector<KIND##8, PART, 16>{mm::insert_epi8(shif, back.value, imm_tag<GREX_DECR(PART)>)};
 #else
 #define GREX_VDSHINGLE_8_SUB(KIND, BITS, PART, ...) \
-  const __m128i ins = _mm_insert_epi16(v.registr(), back.value, PART / 2); \
+  const __m128i ins = mm::insert_epi16(v.registr(), back.value, imm_tag<GREX_DIVIDE(PART, 2)>); \
   return SubVector<KIND##8, PART, 16>{_mm_bsrli_si128(ins, 1)};
 #endif
 #define GREX_VDSHINGLE_8_2 GREX_VDSHINGLE_8_SUB

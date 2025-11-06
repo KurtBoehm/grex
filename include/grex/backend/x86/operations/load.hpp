@@ -18,6 +18,7 @@
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/macros/math.hpp"
 #include "grex/backend/x86/operations/insert.hpp"
+#include "grex/backend/x86/operations/intrinsics.hpp"
 #include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
@@ -97,9 +98,9 @@ namespace grex::backend {
   if ((size & 1U) != 0) { \
     switch (size2) { \
       case 0: out = _mm_loadu_si16(ptr); break; \
-      case 1: out = _mm_insert_epi16(out, ptr[2], 2); break; \
-      case 2: out = _mm_insert_epi16(out, ptr[4], 4); break; \
-      case 3: out = _mm_insert_epi16(out, ptr[6], 6); break; \
+      case 1: out = mm::insert_epi16(out, ptr[2], imm_tag<2>); break; \
+      case 2: out = mm::insert_epi16(out, ptr[4], imm_tag<4>); break; \
+      case 3: out = mm::insert_epi16(out, ptr[6], imm_tag<6>); break; \
       default: break; \
     } \
   } \

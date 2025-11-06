@@ -152,6 +152,8 @@ struct ValueTag {
 };
 template<auto tValue>
 using AutoTag = ValueTag<std::decay_t<decltype(tValue)>, tValue>;
+template<int tValue>
+using ImmTag = AutoTag<tValue>;
 template<std::size_t tValue>
 using IndexTag = AutoTag<tValue>;
 template<bool tValue>
@@ -161,6 +163,8 @@ template<typename T, T tValue>
 inline constexpr ValueTag<T, tValue> value_tag{};
 template<auto tValue>
 inline constexpr AutoTag<tValue> auto_tag{};
+template<int tValue>
+inline constexpr ImmTag<tValue> imm_tag{};
 template<std::size_t tValue>
 inline constexpr IndexTag<tValue> index_tag{};
 template<bool tValue>

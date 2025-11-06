@@ -44,6 +44,7 @@
 // · Halve various values
 // · Divide a number of bits by 8
 // · The minimum size for a given number of value bits
+#define GREX_DIVIDE_2_2 1
 #define GREX_DIVIDE_4_2 2
 #define GREX_DIVIDE_8_2 4
 #define GREX_DIVIDE_8_8 1
