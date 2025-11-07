@@ -5,7 +5,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 options_sub = subproject('options')
-args = options_sub.get_variable('warning_args') + options_sub.get_variable('info_args')
+args = options_sub.get_variable('basic_args')
 
 test_arches = {}
 foreach arch : arches
