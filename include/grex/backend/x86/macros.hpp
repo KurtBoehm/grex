@@ -8,7 +8,9 @@
 #include "macros/for-each.hpp"
 #include "macros/intrinsics.hpp"
 #include "macros/math.hpp"
+#include "macros/multiversion.hpp"
 #include "macros/repeat.hpp"
+#include "macros/transform.hpp"
 #include "macros/types.hpp"
 // IWYU pragma: end_exports
 

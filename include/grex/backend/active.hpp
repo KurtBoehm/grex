@@ -2,10 +2,11 @@
 #define INCLUDE_GREX_BACKEND_ACTIVE_HPP
 
 // IWYU pragma: begin_exports
-#include "active/instruction-sets.hpp"
-#include "active/operations.hpp"
-#include "active/sizes.hpp"
-#include "active/types.hpp"
+#if GREX_BACKEND_X86_64
+#include "grex/backend/x86.hpp"
+#elif GREX_BACKEND_SCALAR
+#include "grex/backend/scalar.hpp"
+#endif
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_BACKEND_ACTIVE_HPP

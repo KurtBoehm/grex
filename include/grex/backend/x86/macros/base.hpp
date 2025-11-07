@@ -10,10 +10,13 @@
 #define GREX_EMPTY()
 #define GREX_COMMA() ,
 
-#define GREX_VARIADIC_SIZE_I(D0, D1, D2, D3, D4, D5, D6, D7, SIZE, ...) SIZE
-// Supports sizes up to 8
+#define GREX_VARIADIC_SIZE_I(D0, D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12, D13, D14, D15, \
+                             SIZE, ...) \
+  SIZE
+// Supports sizes up to 16
 #define GREX_VARIADIC_SIZE(...) \
-  GREX_VARIADIC_SIZE_I(__VA_ARGS__ __VA_OPT__(, ) 8, 7, 6, 5, 4, 3, 2, 1, 0)
+  GREX_VARIADIC_SIZE_I(__VA_ARGS__ __VA_OPT__(, ) 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, \
+                       2, 1, 0)
 
 #define GREX_CAT1(X0) X0
 #define GREX_CAT2(X0, X1) X0##X1
