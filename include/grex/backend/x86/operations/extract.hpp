@@ -17,6 +17,7 @@
 #include "grex/backend/x86/macros/base.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/operations/mask-index.hpp"
 #include "grex/backend/x86/operations/store.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
@@ -36,7 +37,7 @@ namespace grex::backend {
   return CONVERT;
 #define GREX_MASKZ_CMPR(KIND, BITS, SIZE, BITPREFIX) \
   GREX_CAT(BITPREFIX##_maskz_compress_, GREX_EPI_SUFFIX(KIND, BITS)) \
-  (GREX_MMASK(SIZE)(u64{1} << i), v.r)
+  (single_mask(i, type_tag<Mask<KIND##BITS, SIZE>>).r, v.r)
 
 // Define for floating-point types
 #if GREX_X86_64_LEVEL >= 4

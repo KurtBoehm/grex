@@ -27,9 +27,16 @@ namespace grex::backend {
 #define GREX_CUTOFF_MASK_8 __mmask8(~(u16(-1) << i))
 #define GREX_CUTOFF_MASK_16 __mmask16(~(u32(-1) << i))
 #define GREX_CUTOFF_MASK_32 __mmask32(~(u64(-1) << i))
-#define GREX_CUTOFF_MASK_64 __mmask64((i < 64) ? ~(u64(-1) << i) : u64(-1))
+#define GREX_CUTOFF_MASK_64 (i < 64) ? ~(__mmask64(-1) << i) : __mmask64(-1)
 #define GREX_CUTOFF_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_CUTOFF_MASK_##SIZE
-#define GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_MMASK(SIZE)(u64{1} << i)
+
+#define GREX_SINGLE_MASK_2 __mmask8(u8{1} << i)
+#define GREX_SINGLE_MASK_4 __mmask8(u8{1} << i)
+#define GREX_SINGLE_MASK_8 __mmask8(u8{1} << i)
+#define GREX_SINGLE_MASK_16 __mmask16(u16{1} << i)
+#define GREX_SINGLE_MASK_32 __mmask32{1} << i
+#define GREX_SINGLE_MASK_64 __mmask64{1} << i
+#define GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_SINGLE_MASK_##SIZE
 #else
 #define GREX_INDEX_MASK_CMPGT(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMP) \
   BITPREFIX##_cmp##CMP##_epi##BITS(broadcast(i##BITS(i), type_tag<Vector<i##BITS, SIZE>>).r, \

@@ -126,7 +126,7 @@ namespace grex::backend {
   /* [v1, v1] */ \
   const __m128i unpack = _mm_unpackhi_epi64(v.r, v.r); \
   /* [v0 + v1, v1 + v1][0] */ \
-  return KIND##BITS(_mm_cvtsi128_si64(_mm_add_epi64(v.r, unpack)));
+  return GREX_KINDCAST_SINGLE(i, KIND, BITS, _mm_cvtsi128_si64(_mm_add_epi64(v.r, unpack)));
 #define GREX_HADD_i64x4 GREX_HADD_HALVES
 #define GREX_HADD_i64x8 GREX_HADD_HALVES
 // Conversion wrappers
