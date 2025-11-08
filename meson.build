@@ -51,7 +51,11 @@ if get_option('build_tests')
   if backend == 'x86_64'
     cpp = meson.get_compiler('cpp')
     cpuid = import('fs').read('tools/cpuid.cpp')
-    arches = cpp.run(cpuid, required: true).stdout().split(';')
+    arches = cpp.run(
+      cpuid,
+      include_directories: include_directories('include'),
+      required: true,
+    ).stdout().split(';')
   else
     arches = []
   endif
