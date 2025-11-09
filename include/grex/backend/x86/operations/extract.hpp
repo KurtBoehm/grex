@@ -24,7 +24,6 @@
 #include "grex/base/defs.hpp"
 
 #if GREX_X86_64_LEVEL >= 4
-#include "grex/backend/x86/math.hpp"
 #include "grex/backend/x86/operations/bit.hpp"
 #include "grex/backend/x86/operations/mask-index.hpp"
 #endif

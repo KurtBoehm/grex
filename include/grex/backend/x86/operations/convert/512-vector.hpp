@@ -12,8 +12,8 @@
 #if GREX_X86_64_LEVEL >= 4
 #include <immintrin.h>
 
-#include "grex/backend/x86/operations/convert/128-vector.hpp"
-#include "grex/backend/x86/operations/convert/256-vector.hpp"
+#include "grex/backend/x86/operations/convert/128-vector.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/operations/convert/256-vector.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/convert/base.hpp"
 #endif
 

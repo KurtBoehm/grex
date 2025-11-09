@@ -19,13 +19,15 @@
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/insert.hpp"
-#include "grex/backend/x86/operations/intrinsics.hpp"
 #include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
 #if GREX_X86_64_LEVEL > 2
 #include "grex/backend/x86/operations/mask-index.hpp"
+#endif
+#if GREX_X86_64_LEVEL < 4
+#include "grex/backend/x86/operations/intrinsics.hpp"
 #endif
 #if GREX_X86_64_LEVEL == 3
 #include "grex/backend/x86/operations/merge.hpp"

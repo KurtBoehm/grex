@@ -7,6 +7,7 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHUFFLE_STATIC_128_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHUFFLE_STATIC_128_HPP
 
+#include <algorithm>
 #include <utility>
 
 #include "grex/backend/defs.hpp"

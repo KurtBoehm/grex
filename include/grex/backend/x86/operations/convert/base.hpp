@@ -19,10 +19,13 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/macros/types.hpp"
-#include "grex/backend/x86/operations/mask-convert.hpp"
 #include "grex/backend/x86/operations/merge.hpp"
 #include "grex/backend/x86/operations/split.hpp"
 #include "grex/base/defs.hpp"
+
+#if GREX_X86_64_LEVEL < 4
+#include "grex/backend/x86/operations/mask-convert.hpp"
+#endif
 
 namespace grex::backend {
 // Conversion intrinsics

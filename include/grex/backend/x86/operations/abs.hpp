@@ -22,7 +22,7 @@
 #include "grex/base/defs.hpp" // IWYU pragma: keep
 
 #if GREX_X86_64_LEVEL >= 4
-#include "grex/backend/x86/operations/intrinsics.hpp"
+#include "grex/backend/x86/operations/intrinsics.hpp" // IWYU pragma: keep
 #endif
 
 namespace grex::backend {

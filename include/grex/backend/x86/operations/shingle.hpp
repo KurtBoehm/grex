@@ -21,9 +21,12 @@
 #include "grex/backend/x86/operations/expand-scalar.hpp"
 #include "grex/backend/x86/operations/extract.hpp"
 #include "grex/backend/x86/operations/intrinsics.hpp"
-#include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
+
+#if GREX_X86_64_LEVEL >= 3
+#include "grex/backend/x86/operations/set.hpp"
+#endif
 
 // “Z” means a “zero” is put into the empty spot, “V” means a value is put there
 // “U” means “upwards” shingling, “D” “downwards” shingling

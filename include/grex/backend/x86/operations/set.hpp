@@ -24,6 +24,10 @@
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 
+#if GREX_X86_64_LEVEL >= 4
+#include "grex/backend/macros/math.hpp"
+#endif
+
 namespace grex::backend {
 // Define the very messy suffixes used by the set intrinsics
 #define GREX_SET_EPI64_128 epi64x

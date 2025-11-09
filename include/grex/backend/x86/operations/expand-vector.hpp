@@ -23,6 +23,7 @@
 #include "grex/base/defs.hpp"
 
 #if GREX_X86_64_LEVEL >= 3
+#include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/x86/types.hpp"
 #endif
 
