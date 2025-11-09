@@ -10,7 +10,8 @@
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/base.hpp"
+#include "grex/backend/macros/base.hpp"
+#include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/macros/types.hpp"

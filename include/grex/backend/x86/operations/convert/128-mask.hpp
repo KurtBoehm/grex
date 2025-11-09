@@ -9,16 +9,16 @@
 
 #include <immintrin.h>
 
-#include "grex/backend/x86/base.hpp"
+#include "grex/backend/macros/base.hpp"
+#include "grex/backend/macros/math.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/types.hpp"
-#include "grex/backend/x86/math.hpp"
+#include "grex/backend/x86/types.hpp"
 
 #if GREX_X86_64_LEVEL == 1
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/x86/operations/convert/128-vector.hpp"
 #include "grex/backend/x86/operations/mask-convert.hpp"
-#include "grex/backend/x86/types.hpp"
 #endif
 #if GREX_X86_64_LEVEL < 4
 #include "grex/backend/defs.hpp"

@@ -14,9 +14,10 @@
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
+#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/conditional.hpp"
+#include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/repeat.hpp"
-#include "grex/backend/x86/base.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"

@@ -13,6 +13,7 @@
 
 #include "grex/backend/defs.hpp"
 #include "grex/backend/macros/base.hpp"
+#include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
@@ -67,8 +68,7 @@ namespace grex::backend {
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_MUL_INT8(KIND, BITS, SIZE, BITPREFIX) \
   GREX_MULLO_INT8_BASE(KIND, BITS, SIZE, BITPREFIX) \
-  return {.r = \
-            BITPREFIX##_mask_mov_epi8(mulodd, GREX_MMASK(SIZE)(0x5555555555555555), muleven)};
+  return {.r = BITPREFIX##_mask_mov_epi8(mulodd, GREX_MMASK(SIZE)(0x5555555555555555), muleven)};
 #else
 #define GREX_MUL_INT8(KIND, BITS, SIZE, BITPREFIX) \
   GREX_MULLO_INT8_BASE(KIND, BITS, SIZE, BITPREFIX) \

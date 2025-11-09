@@ -13,9 +13,9 @@
 #include "grex/backend/x86/operations/convert/base.hpp"
 
 #if GREX_X86_64_LEVEL == 1
-#include "grex/backend/x86/base.hpp"
+#include "grex/backend/macros/base.hpp"
+#include "grex/backend/macros/math.hpp"
 #include "grex/backend/x86/macros/types.hpp"
-#include "grex/backend/x86/math.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
 #endif

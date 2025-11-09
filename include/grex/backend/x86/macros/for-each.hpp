@@ -9,6 +9,7 @@
 
 #include <cstddef> // IWYU pragma: keep
 
+#include "grex/backend/macros/for-each.hpp"  // IWYU pragma: keep
 #include "grex/backend/x86/instruction-sets.hpp"
 
 #if GREX_X86_64_LEVEL >= 4
