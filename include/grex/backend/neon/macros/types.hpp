@@ -1,0 +1,25 @@
+// This file is part of https://github.com/KurtBoehm/grex.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+#ifndef INCLUDE_GREX_BACKEND_NEON_MACROS_TYPES_HPP
+#define INCLUDE_GREX_BACKEND_NEON_MACROS_TYPES_HPP
+
+#define GREX_KINDPREFIX_f float
+#define GREX_KINDPREFIX_i int
+#define GREX_KINDPREFIX_u uint
+#define GREX_KINDPREFIX(KIND) GREX_KINDPREFIX_##KIND
+#define GREX_REGISTER_II(KINDPREFIX, BITS, SIZE) KINDPREFIX##BITS##x##SIZE##_t
+#define GREX_REGISTER_I(KINDPREFIX, BITS, SIZE) GREX_REGISTER_II(KINDPREFIX, BITS, SIZE)
+#define GREX_REGISTER(KIND, BITS, SIZE) GREX_REGISTER_I(GREX_KINDPREFIX_##KIND, BITS, SIZE)
+
+#define GREX_ISUFFIX_LETTER_f f
+#define GREX_ISUFFIX_LETTER_i s
+#define GREX_ISUFFIX_LETTER_u u
+#define GREX_ISUFFIX_II(LETTER, BITS) LETTER##BITS
+#define GREX_ISUFFIX_I(LETTER, BITS) GREX_ISUFFIX_II(LETTER, BITS)
+#define GREX_ISUFFIX(KIND, BITS) GREX_ISUFFIX_I(GREX_ISUFFIX_LETTER_##KIND, BITS)
+
+#endif // INCLUDE_GREX_BACKEND_NEON_MACROS_TYPES_HPP

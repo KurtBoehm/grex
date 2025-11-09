@@ -7,8 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_MACROS_TYPES_HPP
 #define INCLUDE_GREX_BACKEND_X86_MACROS_TYPES_HPP
 
-#include "grex/backend/x86/macros/base.hpp"
-#include "grex/backend/x86/macros/math.hpp"
+#include "grex/backend/macros/base.hpp"
+#include "grex/backend/macros/math.hpp"
 
 #define GREX_SUPER_UNARY(TYPE, NAME) \
   template<typename THalf> \

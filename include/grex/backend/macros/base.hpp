@@ -4,8 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_MACROS_BASE_HPP
-#define INCLUDE_GREX_BACKEND_X86_MACROS_BASE_HPP
+#ifndef INCLUDE_GREX_BACKEND_MACROS_BASE_HPP
+#define INCLUDE_GREX_BACKEND_MACROS_BASE_HPP
 
 #define GREX_EMPTY()
 #define GREX_COMMA() ,
@@ -28,4 +28,4 @@
 #define GREX_CAT_I(SIZE, ...) GREX_CAT_II(SIZE __VA_OPT__(, ) __VA_ARGS__)
 #define GREX_CAT(...) GREX_CAT_I(GREX_VARIADIC_SIZE(__VA_ARGS__), __VA_ARGS__)
 
-#endif // INCLUDE_GREX_BACKEND_X86_MACROS_BASE_HPP
+#endif // INCLUDE_GREX_BACKEND_MACROS_BASE_HPP

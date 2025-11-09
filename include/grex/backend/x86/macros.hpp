@@ -2,15 +2,9 @@
 #define INCLUDE_GREX_BACKEND_X86_MACROS_HPP
 
 // IWYU pragma: begin_exports
-#include "macros/base.hpp"
-#include "macros/bool-conversion.hpp"
-#include "macros/conditional.hpp"
 #include "macros/for-each.hpp"
 #include "macros/intrinsics.hpp"
-#include "macros/math.hpp"
 #include "macros/multiversion.hpp"
-#include "macros/repeat.hpp"
-#include "macros/transform.hpp"
 #include "macros/types.hpp"
 // IWYU pragma: end_exports
 

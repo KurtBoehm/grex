@@ -4,8 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_MACROS_REPEAT_HPP
-#define INCLUDE_GREX_BACKEND_X86_MACROS_REPEAT_HPP
+#ifndef INCLUDE_GREX_BACKEND_MACROS_REPEAT_HPP
+#define INCLUDE_GREX_BACKEND_MACROS_REPEAT_HPP
 
 #define GREX_REPEAT_2(SIZE, MACRO, ...) \
   MACRO(SIZE, 0 __VA_OPT__(, ) __VA_ARGS__) \
@@ -161,4 +161,4 @@
   GREX_RREPEAT_32(SIZE, MACRO __VA_OPT__(, ) __VA_ARGS__)
 #define GREX_RREPEAT(SIZE, MACRO, ...) GREX_RREPEAT_##SIZE(SIZE, MACRO __VA_OPT__(, ) __VA_ARGS__)
 
-#endif // INCLUDE_GREX_BACKEND_X86_MACROS_REPEAT_HPP
+#endif // INCLUDE_GREX_BACKEND_MACROS_REPEAT_HPP

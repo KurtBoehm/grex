@@ -4,10 +4,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_MACROS_TRANSFORM_HPP
-#define INCLUDE_GREX_BACKEND_X86_MACROS_TRANSFORM_HPP
+#ifndef INCLUDE_GREX_BACKEND_MACROS_TRANSFORM_HPP
+#define INCLUDE_GREX_BACKEND_MACROS_TRANSFORM_HPP
 
-#include "grex/backend/x86/macros/base.hpp"
+#include "grex/backend/macros/base.hpp"
 
 // Transform each argument
 #define GREX_TRANSFORM_0(TRANS)
@@ -52,4 +52,4 @@
 #define GREX_TRANSFORM(TRANS, ...) \
   GREX_TRANSFORM_I(GREX_VARIADIC_SIZE(__VA_ARGS__), TRANS __VA_OPT__(, ) __VA_ARGS__)
 
-#endif // INCLUDE_GREX_BACKEND_X86_MACROS_TRANSFORM_HPP
+#endif // INCLUDE_GREX_BACKEND_MACROS_TRANSFORM_HPP

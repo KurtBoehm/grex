@@ -31,7 +31,7 @@ struct SubVector {
   explicit SubVector(Full v) : full{v} {}
   explicit SubVector(Register r) : full{.r = r} {}
 
-  Register registr() const {
+  [[nodiscard]] Register registr() const {
     return full.r;
   }
 };
@@ -94,7 +94,7 @@ struct SubMask {
   explicit SubMask(Full m) : full{m} {}
   explicit SubMask(Register r) : full{.r = r} {}
 
-  Register registr() const {
+  [[nodiscard]] Register registr() const {
     return full.r;
   }
 };

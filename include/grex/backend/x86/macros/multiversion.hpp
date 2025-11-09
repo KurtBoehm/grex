@@ -7,8 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_MACROS_MULTIVERSION_HPP
 #define INCLUDE_GREX_BACKEND_X86_MACROS_MULTIVERSION_HPP
 
+#include "grex/backend/macros/transform.hpp"
 #include "grex/backend/x86/cpuid.hpp" // IWYU pragma: keep
-#include "grex/backend/x86/macros/transform.hpp"
 
 #define GREX_MULTIVERS_PARAM_I(X) X
 #define GREX_MULTIVERS_PARAM(PARAM) GREX_MULTIVERS_PARAM_I PARAM

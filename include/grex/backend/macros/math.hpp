@@ -1,5 +1,5 @@
-#ifndef INCLUDE_GREX_BACKEND_X86_MACROS_MATH_HPP
-#define INCLUDE_GREX_BACKEND_X86_MACROS_MATH_HPP
+#ifndef INCLUDE_GREX_BACKEND_MACROS_MATH_HPP
+#define INCLUDE_GREX_BACKEND_MACROS_MATH_HPP
 
 // The only thing we need to decrement is the number of bits in an integer
 #define GREX_DECR_2 1
@@ -101,4 +101,4 @@
 #define GREX_MAX_I(A, B) GREX_MAX_##A##_##B
 #define GREX_MAX(A, B) GREX_MAX_I(A, B)
 
-#endif // INCLUDE_GREX_BACKEND_X86_MACROS_MATH_HPP
+#endif // INCLUDE_GREX_BACKEND_MACROS_MATH_HPP

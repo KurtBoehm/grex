@@ -12,8 +12,8 @@
 #include <immintrin.h>
 
 #include "grex/backend/defs.hpp"
+#include "grex/backend/macros/base.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/macros/base.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 
@@ -78,7 +78,6 @@ namespace grex::backend {
   GREX_FOREACH_TYPE(GREX_TYPES, REGISTERBITS, REGISTERBITS)
 
 GREX_FOREACH_X86_64_LEVEL(GREX_TYPES_ALL)
-
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_TYPES_HPP
