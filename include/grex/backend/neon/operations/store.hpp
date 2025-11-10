@@ -10,12 +10,8 @@
 #include <arm_neon.h>
 
 #include "grex/backend/macros/base.hpp"
-#include "grex/backend/macros/cast.hpp"
-#include "grex/backend/macros/conditional.hpp"
-#include "grex/backend/macros/repeat.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
-#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 #define GREX_STORE(KIND, BITS, SIZE) \

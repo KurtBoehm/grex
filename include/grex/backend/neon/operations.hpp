@@ -6,6 +6,8 @@
 #include "operations/arithmetic.hpp"
 #include "operations/bitwise.hpp"
 #include "operations/expand.hpp"
+#include "operations/extract-single.hpp"
+#include "operations/fmadd-family.hpp"
 #include "operations/insert-static.hpp"
 #include "operations/set.hpp"
 #include "operations/store.hpp"
