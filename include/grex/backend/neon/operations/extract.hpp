@@ -38,4 +38,6 @@ GREX_FOREACH_TYPE(GREX_EXTRACT_VEC, 128)
 GREX_FOREACH_TYPE(GREX_EXTRACT_MASK, 128)
 } // namespace grex::backend
 
+#include "grex/backend/shared/operations/extract.hpp"
+
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXTRACT_HPP

@@ -28,7 +28,8 @@ using Distribution =
   std::conditional_t<grex::FloatVectorizable<T>, std::uniform_real_distribution<T>,
                      std::uniform_int_distribution<T>>;
 
-#if !GREX_BACKEND_SCALAR
+// TODO Implement for ARM64 NEON
+#if GREX_BACKEND_X86_64
 template<grex::Vectorizable TValue>
 void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
   fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::text_style(fmt::emphasis::bold),

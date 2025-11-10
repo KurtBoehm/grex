@@ -110,32 +110,8 @@ namespace grex::backend {
 // Instantiate for each vector/mask type
 GREX_FOREACH_X86_64_LEVEL(GREX_EXTRACT_VEC_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_EXTRACT_MASK_ALL)
-
-// SubVector/SubMask
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline T extract(SubVector<T, tPart, tSize> v, std::size_t index) {
-  return extract(v.full, index);
-}
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline bool extract(SubMask<T, tPart, tSize> v, std::size_t index) {
-  return extract(v.full, index);
-}
-
-// SuperVector/SuperMask
-template<typename THalf>
-inline THalf::Value extract(SuperVector<THalf> v, std::size_t i) {
-  if (i < THalf::size) {
-    return extract(v.lower, i);
-  }
-  return extract(v.upper, i - THalf::size);
-}
-template<typename THalf>
-inline bool extract(SuperMask<THalf> m, std::size_t i) {
-  if (i < THalf::size) {
-    return extract(m.lower, i);
-  }
-  return extract(m.upper, i - THalf::size);
-}
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/extract.hpp"
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_EXTRACT_HPP
