@@ -41,7 +41,8 @@ namespace grex::backend {
   inline Vector<KIND##BITS, SIZE> bitwise_xor(Vector<KIND##BITS, SIZE> a, \
                                               Vector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_CAT(veorq_, GREX_ISUFFIX(KIND, BITS))(a.r, b.r)}; \
-  } \
+  }
+#define GREX_LOGICAL(KIND, BITS, SIZE) \
   inline Mask<KIND##BITS, SIZE> logical_not(Mask<KIND##BITS, SIZE> a) { \
     GREX_BITWISE_NOT_##BITS(u, BITS, SIZE) \
   } \
@@ -60,6 +61,7 @@ namespace grex::backend {
   }
 
 GREX_FOREACH_INT_TYPE(GREX_BITWISE, 128)
+GREX_FOREACH_TYPE(GREX_LOGICAL, 128)
 
 GREX_SUBVECTOR_UNARY(bitwise_not)
 GREX_SUBVECTOR_BINARY(bitwise_and)

@@ -7,8 +7,9 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_FMADD_FAMILY_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_FMADD_FAMILY_HPP
 
-#include <arm_neon.h>
 #include <cmath>
+
+#include <arm_neon.h>
 
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/neon/macros/types.hpp"
