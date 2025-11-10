@@ -4,7 +4,9 @@
 // IWYU pragma: begin_exports
 #include "operations/abs.hpp"
 #include "operations/arithmetic.hpp"
+#include "operations/bit.hpp"
 #include "operations/bitwise.hpp"
+#include "operations/blend.hpp"
 #include "operations/compare.hpp"
 #include "operations/expand.hpp"
 #include "operations/extract-single.hpp"

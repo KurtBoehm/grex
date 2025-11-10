@@ -11,6 +11,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/neon/operations/blend.hpp"
 #include "grex/backend/neon/operations/compare.hpp"
 #include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/neon/types.hpp"
@@ -22,8 +23,13 @@ namespace grex::backend {
     const auto ref = broadcast(u##BITS(i), type_tag<Vector<u##BITS, SIZE>>); \
     return {.r = compare_lt(idxs, ref).r}; \
   }
+#define GREX_CUTOFF(KIND, BITS, SIZE) \
+  inline Vector<KIND##BITS, SIZE> cutoff(std::size_t i, Vector<KIND##BITS, SIZE> v) { \
+    return blend_zero(cutoff_mask(i, type_tag<Mask<KIND##BITS, SIZE>>), v); \
+  }
 
 GREX_FOREACH_TYPE(GREX_INDEX_MASK, 128)
+GREX_FOREACH_TYPE(GREX_CUTOFF, 128)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_MASK_INDEX_HPP
