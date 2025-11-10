@@ -2,6 +2,7 @@
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_HPP
 
 // IWYU pragma: begin_exports
+#include "operations/arithmetic.hpp"
 #include "operations/set.hpp"
 // IWYU pragma: end_exports
 

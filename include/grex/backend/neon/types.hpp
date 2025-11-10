@@ -17,7 +17,7 @@ namespace grex::backend {
 #define GREX_TYPES_I(KIND, BITS, SIZE) \
   template<> \
   struct Mask<KIND##BITS, SIZE> { \
-    using Register = GREX_REGISTER(KIND, BITS, SIZE); \
+    using Register = GREX_REGISTER(u, BITS, SIZE); \
     using VectorValue = KIND##BITS; \
     static constexpr std::size_t size = SIZE; \
 \

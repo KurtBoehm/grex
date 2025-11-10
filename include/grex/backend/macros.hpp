@@ -4,11 +4,13 @@
 // IWYU pragma: begin_exports
 #include "macros/base.hpp"
 #include "macros/bool-conversion.hpp"
+#include "macros/cast.hpp"
 #include "macros/conditional.hpp"
 #include "macros/for-each.hpp"
 #include "macros/math.hpp"
 #include "macros/repeat.hpp"
 #include "macros/transform.hpp"
+#include "macros/types.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_BACKEND_MACROS_HPP
