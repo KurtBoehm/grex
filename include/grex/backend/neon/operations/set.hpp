@@ -36,8 +36,7 @@ inline T make_undefined() {
 #define GREX_SET_LANE(CNT, IDX, KIND, BITS) \
   out = GREX_CAT(vsetq_lane_, GREX_ISUFFIX(KIND, BITS))(v##IDX, out, IDX);
 #define GREX_SET_BOOLLANE(CNT, IDX, BITS) \
-  ext = \
-    GREX_CAT(vsetq_lane_, GREX_ISUFFIX(i, BITS))(GREX_OPCAST(i, BITS, i##BITS(v##IDX)), ext, IDX);
+  ext = GREX_CAT(vsetq_lane_, GREX_ISUFFIX(i, BITS))(i##BITS(v##IDX), ext, IDX);
 
 #define GREX_SET(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> zeros(TypeTag<Vector<KIND##BITS, SIZE>>) { \

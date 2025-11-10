@@ -54,7 +54,6 @@ GREX_FOREACH_TYPE(GREX_EXPANDV_INTRINSIC, 512, 128, 512)
 GREX_FOREACH_TYPE(GREX_EXPANDV_INTRINSIC, 512, 256, 512)
 #endif
 
-// expand with arbitrary values in the expanded area
 // native/super-native → super-native
 template<AnyVector TVec, std::size_t tDstSize, bool tZero>
 requires(tDstSize > TVec::size && is_supernative<typename TVec::Value, tDstSize> &&

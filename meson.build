@@ -15,6 +15,8 @@ backend = get_option('simd_backend')
 if backend == 'auto'
   if target_machine.cpu_family() == 'x86_64'
     backend = 'x86_64'
+  elif target_machine.cpu_family() == 'aarch64'
+    backend = 'neon'
   else
     backend = 'scalar'
   endif
@@ -23,6 +25,8 @@ endif
 grex_args = []
 if backend == 'x86_64'
   grex_args += ['-DGREX_BACKEND_X86_64=1']
+elif backend == 'neon'
+  grex_args += ['-DGREX_BACKEND_NEON=1']
 elif backend == 'scalar'
   grex_args += ['-DGREX_BACKEND_SCALAR=1']
 else

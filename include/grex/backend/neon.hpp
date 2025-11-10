@@ -4,6 +4,7 @@
 // IWYU pragma: begin_exports
 #include "neon/macros.hpp"
 #include "neon/operations.hpp"
+#include "neon/sizes.hpp"
 #include "neon/types.hpp"
 // IWYU pragma: end_exports
 

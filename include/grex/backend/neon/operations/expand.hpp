@@ -1,0 +1,100 @@
+// This file is part of https://github.com/KurtBoehm/grex.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+#ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXPAND_HPP
+#define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXPAND_HPP
+
+#include <arm_neon.h>
+
+#include "grex/backend/choosers.hpp"
+#include "grex/backend/neon/operations/insert-static.hpp"
+#include "grex/backend/neon/operations/set.hpp"
+#include "grex/backend/neon/operations/subnative.hpp"
+#include "grex/backend/neon/sizes.hpp"
+
+namespace grex::backend {
+template<Vectorizable T, std::size_t tSize, bool tZero>
+inline Vector<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> /*tag*/) {
+  if constexpr (tZero) {
+    return insert(zeros(type_tag<Vector<T, tSize>>), index_tag<0>, x.value);
+  } else {
+    return insert(undefined(type_tag<Vector<T, tSize>>), index_tag<0>, x.value);
+  }
+}
+
+// Sub-native: Delegate to the native version
+template<Vectorizable T, std::size_t tSize, bool tZero>
+requires(tSize < min_native_size<T>)
+inline VectorFor<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
+  return VectorFor<T, tSize>{expand(x, index_tag<min_native_size<T>>, zero)};
+}
+
+// Larger than the smallest native size: Merge with zero/undefined
+template<Vectorizable T, std::size_t tSize, bool tZero>
+requires(tSize > min_native_size<T>)
+inline VectorFor<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
+  constexpr std::size_t half = tSize / 2;
+  return expand(expand(x, index_tag<half>, zero), index_tag<tSize>, zero);
+}
+
+template<Vectorizable T, std::size_t tSize>
+inline VectorFor<T, tSize> expand_any(Scalar<T> x, IndexTag<tSize> size) {
+  return expand(x, size, false_tag);
+}
+template<Vectorizable T, std::size_t tSize>
+inline VectorFor<T, tSize> expand_zero(Scalar<T> x, IndexTag<tSize> size) {
+  return expand(x, size, true_tag);
+}
+
+// unchanged size: no-op
+template<AnyVector TVec, bool tZero>
+inline TVec expand(TVec v, IndexTag<TVec::size> /*size*/, BoolTag<tZero> /*zero*/) {
+  return v;
+}
+
+// native/super-native → super-native
+template<AnyVector TVec, std::size_t tDstSize, bool tZero>
+requires(tDstSize > TVec::size && is_supernative<typename TVec::Value, tDstSize> &&
+         (AnyNativeVector<TVec> || AnySuperNativeVector<TVec>))
+inline VectorFor<typename TVec::Value, tDstSize> expand(TVec v, IndexTag<tDstSize> /*size*/,
+                                                        BoolTag<tZero> zero_tag) {
+  using Value = TVec::Value;
+  using Half = VectorFor<Value, tDstSize / 2>;
+  using Out = SuperVector<Half>;
+  if constexpr (tZero) {
+    return Out{
+      .lower = expand(v, index_tag<Half::size>, zero_tag),
+      .upper = zeros(type_tag<Half>),
+    };
+  } else {
+    return Out{
+      .lower = expand(v, index_tag<Half::size>, zero_tag),
+      .upper = undefined(type_tag<Half>),
+    };
+  }
+}
+
+// sub-native → sub-native/native
+template<typename T, std::size_t tPart, std::size_t tSize, std::size_t tDstSize, bool tZero>
+inline VectorFor<T, tDstSize> expand(SubVector<T, tPart, tSize> v, IndexTag<tDstSize> size_tag,
+                                     BoolTag<tZero> zero_tag) {
+  using Work = VectorFor<T, std::min(tDstSize, min_native_size<T>)>;
+  Work work = [&] {
+    if constexpr (tZero) {
+      return Work{full_cutoff(v).r};
+    } else {
+      return Work{v.registr()};
+    }
+  }();
+  if constexpr (tDstSize <= min_native_size<T>) {
+    return work;
+  } else {
+    return expand(work, size_tag, zero_tag);
+  }
+}
+} // namespace grex::backend
+
+#endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXPAND_HPP

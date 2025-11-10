@@ -7,6 +7,7 @@
 #include "x86/instruction-sets.hpp"
 #include "x86/macros.hpp"
 #include "x86/operations.hpp"
+#include "x86/sizes.hpp"
 #include "x86/types.hpp"
 // IWYU pragma: end_exports
 

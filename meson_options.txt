@@ -2,7 +2,7 @@ option('build_tests', type: 'boolean', value: false)
 option(
   'simd_backend',
   type: 'combo',
-  choices: ['auto', 'x86_64', 'scalar'],
+  choices: ['auto', 'x86_64', 'neon', 'scalar'],
   value: 'auto',
   description: 'The SIMD back-end to use',
 )
