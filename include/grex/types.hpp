@@ -265,6 +265,8 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
     return Vector<T, tDstSize>{backend::expand_zero(vec_, index_tag<tDstSize>)};
   }
 
+// TODO Implement for ARM64 NEON
+#if GREX_BACKEND_X86_64
   Vector shingle_up() const {
     return Vector{backend::shingle_up(vec_)};
   }
@@ -277,6 +279,7 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   Vector shingle_down(Value back) const {
     return Vector{backend::shingle_down(vec_, backend::Scalar<T>{back})};
   }
+#endif
 
   Backend backend() const {
     return vec_;
@@ -394,6 +397,8 @@ template<Vectorizable T, std::size_t tSize>
 inline T extract_single(Vector<T, tSize> v) {
   return backend::extract_single(v.backend()).value;
 }
+// TODO Implement for ARM64 NEON
+#if GREX_BACKEND_X86_64
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend_zero(Mask<T, tSize> mask, Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend_zero(mask.backend(), v1.backend())};
@@ -415,6 +420,7 @@ template<ShuffleIndex... tIdxs, Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> shuffle(Vector<T, tSize> v) {
   return Vector<T, tSize>{backend::shuffle<tIdxs...>(v.backend())};
 }
+#endif
 
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> mask_add(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b) {

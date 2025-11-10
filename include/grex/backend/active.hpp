@@ -4,6 +4,8 @@
 // IWYU pragma: begin_exports
 #if GREX_BACKEND_X86_64
 #include "grex/backend/x86.hpp"
+#elif GREX_BACKEND_NEON
+#include "grex/backend/neon.hpp"
 #elif GREX_BACKEND_SCALAR
 #include "grex/backend/scalar.hpp"
 #endif

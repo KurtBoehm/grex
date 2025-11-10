@@ -4,7 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#if !GREX_BACKEND_SCALAR
+// TODO Implement for ARM64 NEON
+#if GREX_BACKEND_X86_64
 #include <array>
 #include <cstddef>
 #include <cstdlib>

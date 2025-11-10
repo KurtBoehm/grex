@@ -19,17 +19,23 @@
 
 namespace grex::backend {
 #define GREX_EXTRACT_SWITCH(SIZE, INDEX, INTRINSIC) \
-  case INDEX: return {.value = INTRINSIC(v.r, INDEX)};
+  case INDEX: return INTRINSIC(v.r, INDEX);
 
-#define GREX_EXTRACT(KIND, BITS, SIZE) \
-  inline Scalar<KIND##BITS> extract(Vector<KIND##BITS, SIZE> v, std::size_t i) { \
+#define GREX_EXTRACT_VEC(KIND, BITS, SIZE) \
+  inline KIND##BITS extract(Vector<KIND##BITS, SIZE> v, std::size_t i) { \
     switch (i) { \
       GREX_REPEAT(SIZE, GREX_EXTRACT_SWITCH, GREX_CAT(vgetq_lane_, GREX_ISUFFIX(KIND, BITS))) \
       default: std::unreachable(); \
     } \
   }
 
-GREX_FOREACH_TYPE(GREX_EXTRACT, 128)
+#define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \
+  inline bool extract(Mask<KIND##BITS, SIZE> m, std::size_t i) { \
+    return extract(Vector<u##BITS, SIZE>{m.r}, i) != 0; \
+  }
+
+GREX_FOREACH_TYPE(GREX_EXTRACT_VEC, 128)
+GREX_FOREACH_TYPE(GREX_EXTRACT_MASK, 128)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXTRACT_HPP
