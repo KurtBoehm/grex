@@ -125,8 +125,8 @@ namespace grex::backend {
 #define GREX_SET_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_SET, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_SET_ALL)
+} // namespace grex::backend
 
 #include "grex/backend/shared/operations/set.hpp"
-} // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SET_HPP
