@@ -1,6 +1,6 @@
-# Grex 🐦: Extremely Generic Header-Only SIMD Library for C++20
+# Grex 🐦: Extremely Generic Header-Only SIMD Library for C++23
 
-Grex (Latin “float, pack, swarm”) is a header-only C++20 library without external dependencies (the tests have some) developed by Kurt Böhm to implement generic SIMD vectorization.
+Grex (Latin “float, pack, swarm”) is a header-only C++23 library without external dependencies (the tests have some) developed by Kurt Böhm to implement generic SIMD vectorization.
 It has two main aims which complement each other:
 
 - Provide generic SIMD vector (and mask) types that make it easy to write a function that can be applied using SIMD vectors with an arbitrary (supported) value type and size, together with a large assortment of useful operations that are implemented with close to ideal efficiency (at least in most cases).
@@ -20,8 +20,8 @@ However, this goal is not fully realized yet.
 
 ## Future Work
 
-Currently, Grex only supports x86-64 processors (support for 32-bit x86 processors is not planned, as those are too old to be relevant in contemporaneous high-performance applications).
-While support for ARM NEON is a medium-term goal, the main short-term goal is to support using Grex on platforms for which no vectorized backend is present (i.e. everything but x86-64 at the moment) by avoiding the inclusion of the platform-specific headers.
+Currently, Grex fully supports vectorization on x86-64 processors (support for 32-bit x86 processors is not planned, as those are too old to be relevant in contemporaneous high-performance applications) and partially supports vectorization on ARM64 usign NEON (support for 32-bit ARM processors is not planned).
+On other platforms, the scalar backend can be used, which does not define any vector types but defines the generic operations (using `grex::ScalarTag`).
 
 ## Building
 
