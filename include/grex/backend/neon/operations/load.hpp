@@ -15,11 +15,11 @@
 
 namespace grex::backend {
 #define GREX_LOAD(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> load(KIND##BITS* src, TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline Vector<KIND##BITS, SIZE> load(const KIND##BITS* src, TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_ISUFFIXED(vld1q, KIND, BITS)(src)}; \
   } \
   /* This is not actually aligned, but who cares */ \
-  inline Vector<KIND##BITS, SIZE> load_aligned(KIND##BITS* src, \
+  inline Vector<KIND##BITS, SIZE> load_aligned(const KIND##BITS* src, \
                                                TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_ISUFFIXED(vld1q, KIND, BITS)(src)}; \
   }

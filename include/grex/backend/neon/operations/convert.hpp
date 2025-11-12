@@ -11,6 +11,7 @@
 
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/macros/base.hpp"
+#include "grex/backend/neon/operations/merge.hpp"
 #include "grex/backend/neon/operations/set.hpp"
 #include "grex/base/defs.hpp"
 
@@ -24,6 +25,11 @@ namespace grex::backend {
 #define GREX_CVT_INTx2(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
   const auto low = GREX_CAT(vget_low_, GREX_ISUFFIX(SRCKIND, SRCBITS))(v.registr()); \
   return {.r = GREX_CAT(vmovl_, GREX_ISUFFIX(SRCKIND, SRCBITS))(low)};
+#define GREX_CVT_NARROW(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
+  const auto lo = GREX_ISUFFIXED(vmovn, SRCKIND, SRCBITS)(v.r); \
+  const auto hi = make_undefined<GREX_REGISTER(DSTKIND, DSTBITS, SIZE)>(); \
+  const auto combined = GREX_ISUFFIXED(vcombine, DSTKIND, DSTBITS)(lo, hi); \
+  return VectorFor<DSTKIND##DSTBITS, SIZE>{combined};
 #define GREX_CVT_f32_f64(...) \
   return VectorFor<f32, 2>{vcombine_f32(vcvt_f32_f64(v.r), make_undefined<float32x2_t>())};
 
@@ -51,6 +57,16 @@ GREX_CVT(i, 64, i, 32, 2, GREX_CVT_INTx2)
 // u64
 GREX_CVT(u, 64, f, 64, 2, GREX_CVT_VCVTQ)
 GREX_CVT(u, 64, u, 32, 2, GREX_CVT_INTx2)
+// i32
+GREX_CVT(i, 32, i, 64, 2, GREX_CVT_NARROW)
+GREX_CVT(i, 32, f, 32, 4, GREX_CVT_VCVTQ)
+// i32
+GREX_CVT(u, 32, u, 64, 2, GREX_CVT_NARROW)
+GREX_CVT(u, 32, f, 32, 4, GREX_CVT_VCVTQ)
+// i16
+GREX_CVT(i, 16, i, 32, 4, GREX_CVT_NARROW)
+// i16
+GREX_CVT(u, 16, u, 32, 4, GREX_CVT_NARROW)
 
 // f32
 GREX_CVT(f, 32, i, 64, 2, GREX_CVT_f32_i64)
@@ -71,6 +87,34 @@ template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
 requires(sizeof(TDst) == sizeof(TSrc))
 inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
   return {.r = v.r};
+}
+
+// Conversion from super-native: Convert halves separately and merge
+template<typename TDst, typename THalf>
+requires(is_supernative<TDst, THalf::size * 2>)
+inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
+  return merge(convert(v.lower, type_tag<TDst>), convert(v.upper, type_tag<TDst>));
+}
+
+// Mask conversion: Convert as (signed) integers
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
+inline MaskFor<TDst, tSize> convert(Mask<TSrc, tSize> m, TypeTag<TDst> /*tag*/) {
+  using SrcMask = Mask<TSrc, tSize>;
+  using SrcI = SrcMask::SignedValue;
+  using SrcU = SrcMask::UnsignedValue;
+  using DstMask = Mask<TDst, tSize>;
+  using DstI = DstMask::SignedValue;
+  using DstU = DstMask::UnsignedValue;
+
+  // interpret as unsigned integer
+  const Vector<SrcU, tSize> usrc{m.r};
+  // unsigned → signed
+  const auto isrc = convert(usrc, type_tag<SrcI>);
+  // source signed → destination signed
+  const auto idst = convert(isrc, type_tag<DstI>);
+  // signed → unsigned
+  const auto udst = convert(idst, type_tag<DstU>);
+  return {.r = udst.r};
 }
 } // namespace grex::backend
 
