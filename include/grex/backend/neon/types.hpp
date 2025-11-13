@@ -19,8 +19,6 @@ namespace grex::backend {
   struct Mask<KIND##BITS, SIZE> { \
     using Register = GREX_REGISTER(u, BITS, SIZE); \
     using VectorValue = KIND##BITS; \
-    using SignedValue = i##BITS; \
-    using UnsignedValue = u##BITS; \
     static constexpr std::size_t size = SIZE; \
 \
     Register r; \

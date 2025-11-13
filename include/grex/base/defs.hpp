@@ -57,11 +57,13 @@ struct SignednessTrait;
 #define GREX_DEF_SIGNEDNESS(U, S) \
   template<> \
   struct SignednessTrait<U> { \
+    static constexpr bool is_signed = false; \
     using Unsigned = U; \
     using Signed = S; \
   }; \
   template<> \
   struct SignednessTrait<S> { \
+    static constexpr bool is_signed = true; \
     using Unsigned = U; \
     using Signed = S; \
   };
@@ -74,6 +76,8 @@ template<typename T>
 using UnsignedOf = SignednessTrait<T>::Unsigned;
 template<typename T>
 using SignedOf = SignednessTrait<T>::Signed;
+template<typename T>
+static constexpr bool is_signed = SignednessTrait<T>::is_signed;
 
 template<std::size_t tBytes>
 struct SizedIntegerTrait;
@@ -94,6 +98,21 @@ template<std::size_t tBytes>
 using SignedInt = SizedIntegerTrait<tBytes>::Signed;
 template<FloatVectorizable T>
 using FloatSize = UnsignedInt<sizeof(T)>;
+template<typename T, std::size_t tBytes>
+using CopySignInt = std::conditional_t<is_signed<T>, SignedInt<tBytes>, UnsignedInt<tBytes>>;
+
+template<std::size_t tBytes>
+struct FloatTrait;
+template<>
+struct FloatTrait<4> {
+  using Type = f32;
+};
+template<>
+struct FloatTrait<8> {
+  using Type = f64;
+};
+template<std::size_t tBytes>
+using Float = FloatTrait<tBytes>::Type;
 
 enum struct ShuffleIndex : u8 { any = 254, zero = 255 };
 inline constexpr ShuffleIndex any_sh = ShuffleIndex::any;

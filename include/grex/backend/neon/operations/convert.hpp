@@ -13,16 +13,14 @@
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/neon/operations/merge.hpp"
 #include "grex/backend/neon/operations/set.hpp"
+#include "grex/backend/neon/operations/split.hpp"
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
 #define GREX_CVT_VCVTQ(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
   return {.r = GREX_CAT(vcvtq_, GREX_ISUFFIX(DSTKIND, DSTBITS), _, \
                         GREX_ISUFFIX(SRCKIND, SRCBITS))(v.registr())};
-#define GREX_CVT_VCVTQ_LOW(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
-  return {.r = GREX_CAT(vcvt_, GREX_ISUFFIX(DSTKIND, DSTBITS), _, GREX_ISUFFIX(SRCKIND, SRCBITS))( \
-            GREX_CAT(vget_low_, GREX_ISUFFIX(SRCKIND, SRCBITS))(v.registr()))};
-#define GREX_CVT_INTx2(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
+#define GREX_CVT_WIDEN(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
   const auto low = GREX_CAT(vget_low_, GREX_ISUFFIX(SRCKIND, SRCBITS))(v.registr()); \
   return {.r = GREX_CAT(vmovl_, GREX_ISUFFIX(SRCKIND, SRCBITS))(low)};
 #define GREX_CVT_NARROW(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
@@ -30,12 +28,12 @@ namespace grex::backend {
   const auto hi = make_undefined<GREX_REGISTER(DSTKIND, DSTBITS, SIZE)>(); \
   const auto combined = GREX_ISUFFIXED(vcombine, DSTKIND, DSTBITS)(lo, hi); \
   return VectorFor<DSTKIND##DSTBITS, SIZE>{combined};
+#define GREX_CVT_REINTERPRET(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
+  return {.r = GREX_CAT(vreinterpretq_, GREX_ISUFFIX(DSTKIND, DSTBITS), _, \
+                        GREX_ISUFFIX(SRCKIND, SRCBITS))(v.r)};
+#define GREX_CVT_f64_f32(...) return {.r = vcvt_f64_f32(vget_low_f32(v.full.r))};
 #define GREX_CVT_f32_f64(...) \
   return VectorFor<f32, 2>{vcombine_f32(vcvt_f32_f64(v.r), make_undefined<float32x2_t>())};
-
-#define GREX_CVT_f32_i64(...) return convert(convert(v, type_tag<f64>), type_tag<f32>);
-#define GREX_CVT_x64_f32(DSTKIND, DSTBITS, ...) \
-  return {convert(convert(v, type_tag<f64>), type_tag<DSTKIND##DSTBITS>)};
 
 #define GREX_CVT(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, INTRINSIC, ...) \
   inline VectorFor<DSTKIND##DSTBITS, SIZE> convert(VectorFor<SRCKIND##SRCBITS, SIZE> v, \
@@ -46,75 +44,118 @@ namespace grex::backend {
 // f64
 GREX_CVT(f, 64, i, 64, 2, GREX_CVT_VCVTQ)
 GREX_CVT(f, 64, u, 64, 2, GREX_CVT_VCVTQ)
-GREX_CVT(f, 64, f, 32, 2, GREX_CVT_VCVTQ_LOW)
+GREX_CVT(f, 64, f, 32, 2, GREX_CVT_f64_f32)
 // f32
 GREX_CVT(f, 32, f, 64, 2, GREX_CVT_f32_f64)
 GREX_CVT(f, 32, i, 32, 4, GREX_CVT_VCVTQ)
 GREX_CVT(f, 32, u, 32, 4, GREX_CVT_VCVTQ)
 // i64
 GREX_CVT(i, 64, f, 64, 2, GREX_CVT_VCVTQ)
-GREX_CVT(i, 64, i, 32, 2, GREX_CVT_INTx2)
+GREX_CVT(i, 64, u, 64, 2, GREX_CVT_REINTERPRET)
+GREX_CVT(i, 64, i, 32, 2, GREX_CVT_WIDEN)
 // u64
 GREX_CVT(u, 64, f, 64, 2, GREX_CVT_VCVTQ)
-GREX_CVT(u, 64, u, 32, 2, GREX_CVT_INTx2)
+GREX_CVT(u, 64, i, 64, 2, GREX_CVT_REINTERPRET)
+GREX_CVT(u, 64, u, 32, 2, GREX_CVT_WIDEN)
 // i32
 GREX_CVT(i, 32, i, 64, 2, GREX_CVT_NARROW)
 GREX_CVT(i, 32, f, 32, 4, GREX_CVT_VCVTQ)
+GREX_CVT(i, 32, u, 32, 4, GREX_CVT_REINTERPRET)
+GREX_CVT(i, 32, i, 16, 4, GREX_CVT_WIDEN)
 // i32
 GREX_CVT(u, 32, u, 64, 2, GREX_CVT_NARROW)
 GREX_CVT(u, 32, f, 32, 4, GREX_CVT_VCVTQ)
+GREX_CVT(u, 32, i, 32, 4, GREX_CVT_REINTERPRET)
+GREX_CVT(u, 32, u, 16, 4, GREX_CVT_WIDEN)
 // i16
 GREX_CVT(i, 16, i, 32, 4, GREX_CVT_NARROW)
+GREX_CVT(i, 16, u, 16, 8, GREX_CVT_REINTERPRET)
+GREX_CVT(i, 16, i, 8, 8, GREX_CVT_WIDEN)
 // i16
 GREX_CVT(u, 16, u, 32, 4, GREX_CVT_NARROW)
+GREX_CVT(u, 16, i, 16, 8, GREX_CVT_REINTERPRET)
+GREX_CVT(u, 16, u, 8, 8, GREX_CVT_WIDEN)
+// i8
+GREX_CVT(i, 8, i, 16, 8, GREX_CVT_NARROW)
+GREX_CVT(i, 8, u, 8, 16, GREX_CVT_REINTERPRET)
+// i8
+GREX_CVT(u, 8, u, 16, 8, GREX_CVT_NARROW)
+GREX_CVT(u, 8, i, 8, 16, GREX_CVT_REINTERPRET)
 
-// f32
-GREX_CVT(f, 32, i, 64, 2, GREX_CVT_f32_i64)
-GREX_CVT(f, 32, u, 64, 2, GREX_CVT_f32_i64)
-// i64
-GREX_CVT(i, 64, f, 32, 2, GREX_CVT_x64_f32)
-// i64
-GREX_CVT(u, 64, f, 32, 2, GREX_CVT_x64_f32)
-
-// Trivial no-op cases
-// Source and destination type identical
+// Source and destination type identical: no-op
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> convert(Vector<T, tSize> v, TypeTag<T> /*tag*/) {
   return v;
 }
-// Integers with the same number of bits
+
+// integer → smaller integer: Convert to half-size and go on from there
 template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
-requires(sizeof(TDst) == sizeof(TSrc))
-inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
-  return {.r = v.r};
+requires(sizeof(TDst) < sizeof(TSrc))
+inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<TSrc, sizeof(TSrc) / 2>>), tag);
+}
+// integer → bigger integer: Convert to double-size while retaining signedness and go on from there
+template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tPart, std::size_t tSize>
+requires(sizeof(TDst) > sizeof(TSrc))
+inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<TSrc, sizeof(TSrc) * 2>>), tag);
 }
 
-// Conversion from super-native: Convert halves separately and merge
-template<typename TDst, typename THalf>
-requires(is_supernative<TDst, THalf::size * 2>)
+// from super-native vector: Work on the halves separately
+template<typename THalf, Vectorizable TDst>
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
   return merge(convert(v.lower, type_tag<TDst>), convert(v.upper, type_tag<TDst>));
 }
 
-// Mask conversion: Convert as (signed) integers
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-inline MaskFor<TDst, tSize> convert(Mask<TSrc, tSize> m, TypeTag<TDst> /*tag*/) {
-  using SrcMask = Mask<TSrc, tSize>;
-  using SrcI = SrcMask::SignedValue;
-  using SrcU = SrcMask::UnsignedValue;
-  using DstMask = Mask<TDst, tSize>;
-  using DstI = DstMask::SignedValue;
-  using DstU = DstMask::UnsignedValue;
+// integer → bigger floating-point: Convert to destination-sized integer and then cast
+template<FloatVectorizable TDst, IntVectorizable TSrc, std::size_t tPart, std::size_t tSize>
+requires(sizeof(TSrc) < sizeof(TDst))
+inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<TSrc, sizeof(TDst)>>), tag);
+}
+// floating-point → bigger integer: Convert to destination-sized floating-point and then cast
+template<IntVectorizable TDst, FloatVectorizable TSrc, std::size_t tPart, std::size_t tSize>
+requires(sizeof(TSrc) < sizeof(TDst))
+inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
+  return convert(convert(v, type_tag<Float<sizeof(TDst)>>), tag);
+}
+// integer → smaller floating-point: Convert to source-sized floating-point and then cast
+template<FloatVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
+requires(sizeof(TDst) < sizeof(TSrc))
+inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) {
+  return convert(convert(v, type_tag<Float<sizeof(TSrc)>>), tag);
+}
+// floating-point → smaller integer: Convert to destination-sized integer and then cast
+template<IntVectorizable TDst, FloatVectorizable TSrc, std::size_t tSize>
+requires(sizeof(TDst) < sizeof(TSrc))
+inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<TDst, sizeof(TSrc)>>), tag);
+}
 
-  // interpret as unsigned integer
-  const Vector<SrcU, tSize> usrc{m.r};
-  // unsigned → signed
-  const auto isrc = convert(usrc, type_tag<SrcI>);
-  // source signed → destination signed
-  const auto idst = convert(isrc, type_tag<DstI>);
-  // signed → unsigned
-  const auto udst = convert(idst, type_tag<DstU>);
-  return {.r = udst.r};
+// native → super-native: Split native
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
+requires(is_supernative<TDst, tSize>)
+inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) {
+  return merge(convert(get_low(v), tag), convert(get_high(v), tag));
+}
+
+// from sub-native without size increase: Convert the native vector
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
+requires(sizeof(TDst) <= sizeof(TSrc))
+inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
+  return VectorFor<TDst, tPart>{convert(v.full, tag).registr()};
+}
+} // namespace grex::backend
+
+namespace grex::backend {
+template<AnyMask TMask, typename TDst>
+inline auto convert(TMask mask, TypeTag<TDst> /*tag*/) {
+  return vector2mask(convert(mask2vector(mask), type_tag<SignedInt<sizeof(TDst)>>), type_tag<TDst>);
+}
+
+template<Vectorizable TDst, typename THalf>
+inline MaskFor<TDst, 2 * THalf::size> convert(SuperMask<THalf> m, TypeTag<TDst> tag) {
+  return merge(convert(m.lower, tag), convert(m.upper, tag));
 }
 } // namespace grex::backend
 

@@ -10,6 +10,7 @@
 #include <arm_neon.h>
 
 #include "grex/backend/macros/base.hpp"
+#include "grex/backend/macros/types.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
 
@@ -38,6 +39,12 @@ namespace grex::backend {
   }
 
 GREX_FOREACH_TYPE(GREX_MINMAX, 128)
+
+GREX_SUBVECTOR_BINARY(min)
+GREX_SUBVECTOR_BINARY(max)
+
+GREX_SUPERVECTOR_BINARY(min)
+GREX_SUPERVECTOR_BINARY(max)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_MINMAX_HPP

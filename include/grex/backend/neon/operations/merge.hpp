@@ -13,6 +13,7 @@
 
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
+#include "grex/backend/neon/operations/mask-convert.hpp"
 #include "grex/backend/neon/types.hpp" // IWYU pragma: keep
 #include "grex/base/defs.hpp"
 
@@ -57,6 +58,11 @@ inline SuperVector<Vector<T, tSize>> merge(Vector<T, tSize> a, Vector<T, tSize> 
 template<typename THalf>
 inline SuperVector<SuperVector<THalf>> merge(SuperVector<THalf> a, SuperVector<THalf> b) {
   return {.lower = a, .upper = b};
+}
+
+template<AnyMask TMask>
+inline MaskFor<typename TMask::VectorValue, TMask::size * 2> merge(TMask a, TMask b) {
+  return vector2mask(merge(mask2vector(a), mask2vector(b)), type_tag<typename TMask::VectorValue>);
 }
 } // namespace grex::backend
 
