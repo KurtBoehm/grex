@@ -6,6 +6,7 @@
 #include "macros/bool-conversion.hpp"
 #include "macros/cast.hpp"
 #include "macros/conditional.hpp"
+#include "macros/equals.hpp"
 #include "macros/for-each.hpp"
 #include "macros/math.hpp"
 #include "macros/repeat.hpp"

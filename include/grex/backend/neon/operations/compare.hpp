@@ -9,7 +9,6 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/bitwise.hpp"
 #include "grex/backend/neon/types.hpp"
@@ -18,20 +17,36 @@ namespace grex::backend {
 #define GREX_CMP_VEC(KIND, BITS, SIZE) \
   inline Mask<KIND##BITS, SIZE> compare_eq(Vector<KIND##BITS, SIZE> a, \
                                            Vector<KIND##BITS, SIZE> b) { \
-    return {.r = GREX_CAT(vceqq_, GREX_ISUFFIX(KIND, BITS))(a.r, b.r)}; \
+    return {.r = GREX_ISUFFIXED(vceqq, KIND, BITS)(a.r, b.r)}; \
   } \
   inline Mask<KIND##BITS, SIZE> compare_lt(Vector<KIND##BITS, SIZE> a, \
                                            Vector<KIND##BITS, SIZE> b) { \
-    return {.r = GREX_CAT(vcltq_, GREX_ISUFFIX(KIND, BITS))(a.r, b.r)}; \
+    return {.r = GREX_ISUFFIXED(vcltq, KIND, BITS)(a.r, b.r)}; \
   } \
   inline Mask<KIND##BITS, SIZE> compare_ge(Vector<KIND##BITS, SIZE> a, \
                                            Vector<KIND##BITS, SIZE> b) { \
-    return {.r = GREX_CAT(vcgeq_, GREX_ISUFFIX(KIND, BITS))(a.r, b.r)}; \
+    return {.r = GREX_ISUFFIXED(vcgeq, KIND, BITS)(a.r, b.r)}; \
   } \
   inline Mask<KIND##BITS, SIZE> compare_eq(Mask<KIND##BITS, SIZE> a, Mask<KIND##BITS, SIZE> b) { \
     return {.r = vceqq_u##BITS(a.r, b.r)}; \
   }
 GREX_FOREACH_TYPE(GREX_CMP_VEC, 128)
+template<Vectorizable T, std::size_t tSize>
+inline Mask<T, tSize> compare_neq(Vector<T, tSize> a, Vector<T, tSize> b) {
+  return logical_not(compare_eq(a, b));
+}
+
+#define GREX_CMP_SUB(NAME) \
+  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
+  inline SubMask<T, tPart, tSize> NAME(SubVector<T, tPart, tSize> a, \
+                                       SubVector<T, tPart, tSize> b) { \
+    return SubMask<T, tPart, tSize>{NAME(a.full, b.full)}; \
+  }
+GREX_CMP_SUB(compare_eq)
+GREX_CMP_SUB(compare_neq)
+GREX_CMP_SUB(compare_lt)
+GREX_CMP_SUB(compare_ge)
+
 #define GREX_CMP_SUPER(NAME) \
   template<typename THalf> \
   inline auto NAME(SuperVector<THalf> a, SuperVector<THalf> b) { \
@@ -42,10 +57,6 @@ GREX_CMP_SUPER(compare_neq)
 GREX_CMP_SUPER(compare_lt)
 GREX_CMP_SUPER(compare_ge)
 
-template<Vectorizable T, std::size_t tSize>
-inline Mask<T, tSize> compare_neq(Vector<T, tSize> a, Vector<T, tSize> b) {
-  return logical_not(compare_eq(a, b));
-}
 GREX_SUBMASK_BINARY(compare_eq)
 GREX_SUPERMASK_BINARY(compare_eq)
 } // namespace grex::backend

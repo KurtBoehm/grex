@@ -59,11 +59,11 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         for (std::size_t j = 0; j <= tSize; ++j) {
           VC checker{Vec::load_part(buf.data(), j),
                      std::array{((tIdxs < j) ? buf[tIdxs] : T{})...}};
-          checker.check("load_part", false);
+          checker.check("load_part", j, false);
           // tagged
           VC tchecker{grex::load(buf.data(), grex::part_tag<tSize>(j)),
                       std::array{((tIdxs < j) ? buf[tIdxs] : T{})...}};
-          tchecker.check("load_part tagged", false);
+          tchecker.check("load_part tagged", j, false);
         }
       }
     });

@@ -12,7 +12,6 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/cast.hpp"
 #include "grex/backend/macros/repeat.hpp"
 #include "grex/backend/neon/macros/types.hpp"
@@ -26,7 +25,7 @@ namespace grex::backend {
   inline Vector<KIND##BITS, SIZE> insert(Vector<KIND##BITS, SIZE> v, std::size_t index, \
                                          KIND##BITS value) { \
     switch (index) { \
-      GREX_REPEAT(SIZE, GREX_INSERT_SWITCH, GREX_CAT(vsetq_lane_, GREX_ISUFFIX(KIND, BITS))) \
+      GREX_REPEAT(SIZE, GREX_INSERT_SWITCH, GREX_ISUFFIXED(vsetq_lane, KIND, BITS)) \
       default: std::unreachable(); \
     } \
   }
@@ -40,5 +39,7 @@ namespace grex::backend {
 GREX_FOREACH_TYPE(GREX_INSERT_VEC, 128)
 GREX_FOREACH_TYPE(GREX_INSERT_MASK, 128)
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/insert.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_INSERT_HPP

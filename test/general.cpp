@@ -72,7 +72,7 @@ int main() {
         std::array<int, size> dst{};
         std::size_t i = 0;
         grex::for_each([&](auto j) { dst.at(i++) = int(j + 1); }, dir,
-                       grex::typed_full_tag<std::size_t, size>);
+                       grex::typed_full_tag<grex::u64, size>);
         const auto ref = grex::static_apply<size>([&]<std::size_t... tIdxs>() {
           return std::array{int{(dir == forward) ? (tIdxs + 1) : (size - tIdxs)}...};
         });

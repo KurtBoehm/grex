@@ -9,7 +9,6 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/types.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
@@ -17,7 +16,7 @@
 namespace grex::backend {
 #define GREX_ABS(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> abs(Vector<KIND##BITS, SIZE> a) { \
-    return {.r = GREX_CAT(vabsq_, GREX_ISUFFIX(KIND, BITS))(a.r)}; \
+    return {.r = GREX_ISUFFIXED(vabsq, KIND, BITS)(a.r)}; \
   }
 
 GREX_FOREACH_FP_TYPE(GREX_ABS, 128)

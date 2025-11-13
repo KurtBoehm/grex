@@ -11,8 +11,8 @@
 
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/macros/base.hpp"
+#include "grex/backend/neon/operations/expand.hpp"
 #include "grex/backend/neon/operations/merge.hpp"
-#include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/neon/operations/split.hpp"
 #include "grex/base/defs.hpp"
 
@@ -21,19 +21,17 @@ namespace grex::backend {
   return {.r = GREX_CAT(vcvtq_, GREX_ISUFFIX(DSTKIND, DSTBITS), _, \
                         GREX_ISUFFIX(SRCKIND, SRCBITS))(v.registr())};
 #define GREX_CVT_WIDEN(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
-  const auto low = GREX_CAT(vget_low_, GREX_ISUFFIX(SRCKIND, SRCBITS))(v.registr()); \
-  return {.r = GREX_CAT(vmovl_, GREX_ISUFFIX(SRCKIND, SRCBITS))(low)};
+  const auto low = GREX_ISUFFIXED(vget_low, SRCKIND, SRCBITS)(v.registr()); \
+  return {.r = GREX_ISUFFIXED(vmovl, SRCKIND, SRCBITS)(low)};
 #define GREX_CVT_NARROW(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
   const auto lo = GREX_ISUFFIXED(vmovn, SRCKIND, SRCBITS)(v.r); \
-  const auto hi = make_undefined<GREX_REGISTER(DSTKIND, DSTBITS, SIZE)>(); \
-  const auto combined = GREX_ISUFFIXED(vcombine, DSTKIND, DSTBITS)(lo, hi); \
+  const auto combined = expand64(lo); \
   return VectorFor<DSTKIND##DSTBITS, SIZE>{combined};
 #define GREX_CVT_REINTERPRET(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
   return {.r = GREX_CAT(vreinterpretq_, GREX_ISUFFIX(DSTKIND, DSTBITS), _, \
                         GREX_ISUFFIX(SRCKIND, SRCBITS))(v.r)};
 #define GREX_CVT_f64_f32(...) return {.r = vcvt_f64_f32(vget_low_f32(v.full.r))};
-#define GREX_CVT_f32_f64(...) \
-  return VectorFor<f32, 2>{vcombine_f32(vcvt_f32_f64(v.r), make_undefined<float32x2_t>())};
+#define GREX_CVT_f32_f64(...) return VectorFor<f32, 2>{expand64(vcvt_f32_f64(v.r))};
 
 #define GREX_CVT(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, INTRINSIC, ...) \
   inline VectorFor<DSTKIND##DSTBITS, SIZE> convert(VectorFor<SRCKIND##SRCBITS, SIZE> v, \
@@ -87,6 +85,25 @@ template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> convert(Vector<T, tSize> v, TypeTag<T> /*tag*/) {
   return v;
 }
+// sub-native → sub-native: Make the smaller one native
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
+requires(is_subnative<TDst, tPart>)
+inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
+  constexpr std::size_t work_size = std::min(min_native_size<TDst>, min_native_size<TSrc>);
+  return VectorFor<TDst, tPart>{convert(VectorFor<TSrc, work_size>(v.full.r), tag).registr()};
+}
+// from super-native vector: Work on the halves separately
+// TODO This might introduce unnecessary work when converting to sub-native
+template<typename THalf, Vectorizable TDst>
+inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
+  return merge(convert(v.lower, type_tag<TDst>), convert(v.upper, type_tag<TDst>));
+}
+// native → super-native: Split native
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
+requires(is_supernative<TDst, tSize>)
+inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) {
+  return merge(convert(get_low(v), tag), convert(get_high(v), tag));
+}
 
 // integer → smaller integer: Convert to half-size and go on from there
 template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
@@ -96,20 +113,19 @@ inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) 
 }
 // integer → bigger integer: Convert to double-size while retaining signedness and go on from there
 template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tPart, std::size_t tSize>
-requires(sizeof(TDst) > sizeof(TSrc))
+requires(sizeof(TSrc) < sizeof(TDst) && !is_subnative<TDst, tPart>)
 inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<CopySignInt<TSrc, sizeof(TSrc) * 2>>), tag);
-}
+  using Inter = CopySignInt<TSrc, sizeof(TSrc) * 2>;
+  constexpr std::size_t inter_size = min_native_size<Inter>;
+  static_assert(inter_size >= tPart);
 
-// from super-native vector: Work on the halves separately
-template<typename THalf, Vectorizable TDst>
-inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
-  return merge(convert(v.lower, type_tag<TDst>), convert(v.upper, type_tag<TDst>));
+  const auto inter = convert(VectorFor<TSrc, inter_size>{v.registr()}, type_tag<Inter>);
+  return convert(VectorFor<Inter, tPart>{inter.registr()}, tag);
 }
 
 // integer → bigger floating-point: Convert to destination-sized integer and then cast
 template<FloatVectorizable TDst, IntVectorizable TSrc, std::size_t tPart, std::size_t tSize>
-requires(sizeof(TSrc) < sizeof(TDst))
+requires(sizeof(TSrc) < sizeof(TDst) && !is_subnative<TDst, tPart>)
 inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<TSrc, sizeof(TDst)>>), tag);
 }
@@ -130,20 +146,6 @@ template<IntVectorizable TDst, FloatVectorizable TSrc, std::size_t tSize>
 requires(sizeof(TDst) < sizeof(TSrc))
 inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<TDst, sizeof(TSrc)>>), tag);
-}
-
-// native → super-native: Split native
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-requires(is_supernative<TDst, tSize>)
-inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) {
-  return merge(convert(get_low(v), tag), convert(get_high(v), tag));
-}
-
-// from sub-native without size increase: Convert the native vector
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
-requires(sizeof(TDst) <= sizeof(TSrc))
-inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
-  return VectorFor<TDst, tPart>{convert(v.full, tag).registr()};
 }
 } // namespace grex::backend
 

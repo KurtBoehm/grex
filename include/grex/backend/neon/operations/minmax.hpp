@@ -9,22 +9,21 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/types.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
 
 namespace grex::backend {
 #define GREX_MINMAX_IMPL_BASE(NAME, KIND, BITS) \
-  return {.r = GREX_CAT(v##NAME##q_, GREX_ISUFFIX(KIND, BITS))(a.r, b.r)};
+  return {.r = GREX_ISUFFIXED(v##NAME##q, KIND, BITS)(a.r, b.r)};
 #define GREX_MINMAX_IMPL_INT8 GREX_MINMAX_IMPL_BASE
 #define GREX_MINMAX_IMPL_INT16 GREX_MINMAX_IMPL_BASE
 #define GREX_MINMAX_IMPL_INT32 GREX_MINMAX_IMPL_BASE
-#define GREX_MINMAX_CMP_min vcgtq
-#define GREX_MINMAX_CMP_max vcltq
+#define GREX_MINMAX_CMP_min vcltq
+#define GREX_MINMAX_CMP_max vcgtq
 #define GREX_MINMAX_IMPL_INT64(NAME, KIND, BITS) \
-  const auto mask = GREX_CAT(GREX_MINMAX_CMP_##NAME, _, GREX_ISUFFIX(KIND, BITS))(a.r, b.r); \
-  return {.r = vbslq_u64(mask, a.r, b.r)};
+  const auto mask = GREX_ISUFFIXED(GREX_MINMAX_CMP_##NAME, KIND, BITS)(a.r, b.r); \
+  return {.r = GREX_ISUFFIXED(vbslq, KIND, BITS)(mask, a.r, b.r)};
 
 #define GREX_MINMAX_IMPL_f(NAME, KIND, BITS) return {.r = v##NAME##nmq_f##BITS(a.r, b.r)};
 #define GREX_MINMAX_IMPL_i(NAME, KIND, BITS) GREX_MINMAX_IMPL_INT##BITS(NAME, KIND, BITS)

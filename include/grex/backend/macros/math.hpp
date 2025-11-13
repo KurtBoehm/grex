@@ -1,3 +1,9 @@
+// This file is part of https://github.com/KurtBoehm/grex.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 #ifndef INCLUDE_GREX_BACKEND_MACROS_MATH_HPP
 #define INCLUDE_GREX_BACKEND_MACROS_MATH_HPP
 
@@ -15,6 +21,7 @@
 // · Multiplication by two to double the size of a vector (where 2 is the second factor)
 // · Computing the register size from the value bits and size
 // · Computing the number of bits taken up by a given number of elements
+#define GREX_MULTIPLY_1_2 2
 #define GREX_MULTIPLY_2_2 4
 #define GREX_MULTIPLY_4_2 8
 #define GREX_MULTIPLY_8_2 16

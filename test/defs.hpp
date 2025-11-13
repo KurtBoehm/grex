@@ -53,7 +53,7 @@ struct EquivVal {
   bool result{};
   T err{};
 
-  operator bool() const {
+  operator bool() const { // NOLINT
     return result;
   }
 };
@@ -117,6 +117,21 @@ inline void check(const auto& label, T1 a, T2 b, bool verbose = true) {
     [&]<std::size_t... tIdxs>() { return (... && are_equivalent(a[tIdxs], b[tIdxs])); });
   check_msg(label, same, a, b, verbose);
 }
+template<typename T1, typename T2>
+requires(requires {
+  std::tuple_size<T1>::value;
+  std::tuple_size<T2>::value;
+  requires std::tuple_size_v<T1> == std::tuple_size_v<T2>;
+})
+inline void check(const auto& label, T1 a, T2 b, std::size_t size, bool verbose = true) {
+  bool same = true;
+  for (std::size_t i = 0; i < size; ++i) {
+    if (!are_equivalent(a[i], b[i])) {
+      same = false;
+    }
+  }
+  check_msg(label, same, a, b, verbose);
+}
 
 #if !GREX_BACKEND_SCALAR
 template<Vectorizable T, std::size_t tSize>
@@ -136,6 +151,9 @@ struct VectorChecker {
 
   void check(const auto& label, bool verbose = true) const {
     test::check(label, vec, ref, verbose);
+  }
+  void check(const auto& label, std::size_t size, bool verbose = true) const {
+    test::check(label, vec, ref, size, verbose);
   }
 };
 template<Vectorizable T, std::size_t tSize>

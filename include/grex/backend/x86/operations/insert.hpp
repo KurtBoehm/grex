@@ -93,33 +93,8 @@ namespace grex::backend {
   GREX_FOREACH_TYPE(GREX_VEC_INSERT, REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_MASK_INSERT, REGISTERBITS, BITPREFIX)
 GREX_FOREACH_X86_64_LEVEL(GREX_INSERT_ALL)
-
-// SubVector/SubMask
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubVector<T, tPart, tSize> insert(SubVector<T, tPart, tSize> v, std::size_t index, T value) {
-  return SubVector<T, tPart, tSize>{insert(v.full, index, value)};
-}
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubMask<T, tPart, tSize> insert(SubMask<T, tPart, tSize> v, std::size_t index, bool value) {
-  return SubMask<T, tPart, tSize>{insert(v.full, index, value)};
-}
-
-// SuperVector/SuperMask
-template<typename THalf>
-inline SuperVector<THalf> insert(SuperVector<THalf> v, std::size_t index,
-                                 typename THalf::Value value) {
-  if (index < THalf::size) {
-    return {.lower = insert(v.lower, index, value), .upper = v.upper};
-  }
-  return {.lower = v.lower, .upper = insert(v.upper, index - THalf::size, value)};
-}
-template<typename THalf>
-inline SuperMask<THalf> insert(SuperMask<THalf> m, std::size_t index, bool value) {
-  if (index < THalf::size) {
-    return {.lower = insert(m.lower, index, value), .upper = m.upper};
-  }
-  return {.lower = m.lower, .upper = insert(m.upper, index - THalf::size, value)};
-}
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/insert.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_INSERT_HPP

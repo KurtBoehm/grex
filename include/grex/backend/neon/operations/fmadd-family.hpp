@@ -11,7 +11,6 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/arithmetic.hpp"
 #include "grex/backend/neon/types.hpp"
@@ -23,18 +22,18 @@ inline constexpr bool has_fma = true;
 #define GREX_FMADDF(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> fmadd(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b, \
                                         Vector<KIND##BITS, SIZE> c) { \
-    return {.r = GREX_CAT(vfmaq_, GREX_ISUFFIX(KIND, BITS))(a.r, b.r, c.r)}; \
+    return {.r = GREX_ISUFFIXED(vfmaq, KIND, BITS)(c.r, a.r, b.r)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> fmsub(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b, \
-                                        Vector<KIND##BITS, SIZE> c) { \
-    return {.r = GREX_CAT(vfmsq_, GREX_ISUFFIX(KIND, BITS))(a.r, b.r, c.r)}; \
+  inline Vector<KIND##BITS, SIZE> fnmadd(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b, \
+                                         Vector<KIND##BITS, SIZE> c) { \
+    return {.r = GREX_ISUFFIXED(vfmsq, KIND, BITS)(c.r, a.r, b.r)}; \
   }
 
 GREX_FOREACH_FP_TYPE(GREX_FMADDF, 128)
 
 template<FloatVectorizable T, std::size_t tSize>
-inline Vector<T, tSize> fnmadd(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
-  return negate(fmsub(a, b, c));
+inline Vector<T, tSize> fmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
+  return fmadd(a, b, negate(c));
 }
 template<FloatVectorizable T, std::size_t tSize>
 inline Vector<T, tSize> fnmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {

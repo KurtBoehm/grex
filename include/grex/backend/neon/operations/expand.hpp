@@ -95,6 +95,32 @@ inline VectorFor<T, tDstSize> expand(SubVector<T, tPart, tSize> v, IndexTag<tDst
     return expand(work, size_tag, zero_tag);
   }
 }
+
+template<AnyVector TVec, std::size_t tSize>
+inline VectorFor<typename TVec::Value, tSize> expand_any(TVec v, IndexTag<tSize> size) {
+  return expand(v, size, false_tag);
+}
+template<AnyVector TVec, std::size_t tSize>
+inline VectorFor<typename TVec::Value, tSize> expand_zero(TVec v, IndexTag<tSize> size) {
+  return expand(v, size, true_tag);
+}
+
+#define GREX_EXPAND_64(KIND, BITS, SIZE) \
+  inline GREX_REGISTER(KIND, BITS, GREX_MULTIPLY(SIZE, 2)) \
+    expand64(GREX_REGISTER(KIND, BITS, SIZE) v) { \
+    return GREX_ISUFFIXED(vcombine, KIND, \
+                          BITS)(v, make_undefined<GREX_REGISTER(KIND, BITS, SIZE)>()); \
+  }
+GREX_EXPAND_64(f, 64, 1)
+GREX_EXPAND_64(i, 64, 1)
+GREX_EXPAND_64(u, 64, 1)
+GREX_EXPAND_64(f, 32, 2)
+GREX_EXPAND_64(i, 32, 2)
+GREX_EXPAND_64(u, 32, 2)
+GREX_EXPAND_64(i, 16, 4)
+GREX_EXPAND_64(u, 16, 4)
+GREX_EXPAND_64(i, 8, 8)
+GREX_EXPAND_64(u, 8, 8)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXPAND_HPP

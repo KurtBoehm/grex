@@ -11,7 +11,6 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/types.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
@@ -19,7 +18,7 @@
 namespace grex::backend {
 #define GREX_SQRT(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> sqrt(Vector<KIND##BITS, SIZE> v) { \
-    return {.r = GREX_CAT(vsqrtq_, GREX_ISUFFIX(KIND, BITS))(v.r)}; \
+    return {.r = GREX_ISUFFIXED(vsqrtq, KIND, BITS)(v.r)}; \
   }
 GREX_FOREACH_FP_TYPE(GREX_SQRT, 128)
 GREX_SUBVECTOR_UNARY(sqrt)

@@ -72,34 +72,8 @@ namespace grex::backend {
   GREX_FOREACH_TYPE(GREX_CUTOFF_VEC, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_INDEX_MASK_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_CUTOFF_VEC_ALL)
-
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubMask<T, tPart, tSize> cutoff_mask(std::size_t i,
-                                            TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
-  return SubMask<T, tPart, tSize>{cutoff_mask(i, type_tag<Mask<T, tSize>>)};
-}
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubVector<T, tPart, tSize> cutoff(std::size_t i, SubVector<T, tPart, tSize> v) {
-  return SubVector<T, tPart, tSize>{cutoff(i, v.full)};
-}
-
-template<typename THalf>
-inline SuperMask<THalf> cutoff_mask(std::size_t i, TypeTag<SuperMask<THalf>> /*tag*/) {
-  if (i <= THalf::size) {
-    return {.lower = cutoff_mask(i, type_tag<THalf>), .upper = zeros(type_tag<THalf>)};
-  }
-  return {
-    .lower = ones(type_tag<THalf>),
-    .upper = cutoff_mask(i - THalf::size, type_tag<THalf>),
-  };
-}
-template<typename THalf>
-inline SuperVector<THalf> cutoff(std::size_t i, SuperVector<THalf> v) {
-  if (i <= THalf::size) {
-    return {.lower = cutoff(i, v.lower), .upper = zeros(type_tag<THalf>)};
-  }
-  return {.lower = v.lower, .upper = cutoff(i - THalf::size, v.upper)};
-}
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/mask-index.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_MASK_INDEX_HPP

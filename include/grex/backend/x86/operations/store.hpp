@@ -304,27 +304,8 @@ GREX_FOREACH_SUB(GREX_STORE_SUB)
     GREX_PARTSTORE_SUB_##BITS##_##PART(KIND) \
   }
 GREX_FOREACH_SUB(GREX_PARTSTORE_SUB)
-
-// SuperVector
-template<typename THalf>
-inline void store(typename THalf::Value* dst, SuperVector<THalf> src) {
-  store(dst, src.lower);
-  store(dst + THalf::size, src.upper);
-}
-template<typename THalf>
-inline void store_aligned(typename THalf::Value* dst, SuperVector<THalf> src) {
-  store_aligned(dst, src.lower);
-  store_aligned(dst + THalf::size, src.upper);
-}
-template<typename THalf>
-inline void store_part(typename THalf::Value* dst, SuperVector<THalf> src, std::size_t size) {
-  if (size <= THalf::size) {
-    store_part(dst, src.lower, size);
-    return;
-  }
-  store(dst, src.lower);
-  store_part(dst + THalf::size, src.upper, size - THalf::size);
-}
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/store.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_STORE_HPP

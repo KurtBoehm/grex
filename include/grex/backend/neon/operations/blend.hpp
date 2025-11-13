@@ -11,7 +11,6 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/neon/types.hpp"
 
 namespace grex::backend {
@@ -27,7 +26,7 @@ namespace grex::backend {
 #define GREX_BLEND(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> blend(Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> v0, \
                                         Vector<KIND##BITS, SIZE> v1) { \
-    return {.r = GREX_CAT(vbslq_, GREX_ISUFFIX(KIND, BITS))(m.r, v1.r, v0.r)}; \
+    return {.r = GREX_ISUFFIXED(vbslq, KIND, BITS)(m.r, v1.r, v0.r)}; \
   } \
   inline Vector<KIND##BITS, SIZE> blend_zero(Mask<KIND##BITS, SIZE> m, \
                                              Vector<KIND##BITS, SIZE> v1) { \

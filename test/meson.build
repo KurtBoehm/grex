@@ -21,13 +21,13 @@ thesauros_dep = dependency('thesauros')
 
 # tests that are separated based on the value type
 foreach name, conf : {
-  'blend': [true, true],
-  'convert': [false, true],
-  'shuffle': [true, true],
+  'blend': [['x86_64'], true], # neon
+  'convert': [['scalar', 'x86_64', 'neon'], true],
+  'shuffle': [['x86_64'], true], # neon
 }
-  simd_only = conf[0]
+  backends = conf[0]
   parallel = conf[1]
-  if not simd_only or backend != 'scalar'
+  if backends.contains(backend)
     deps = [fmt_dep, grex_dep, pcg_dep, thesauros_dep]
     if not parallel
       deps += [omp_dep]
@@ -55,20 +55,20 @@ endforeach
 
 # monolithic tests
 foreach name, conf : {
-  'componentwise': [false, true],
-  'expand': [true, true],
-  'extract': [false, true],
-  'gather': [false, false],
-  'general': [false, true],
-  'horizontal': [false, true],
-  'mem': [false, true],
-  'multibyte': [false, true],
-  'set': [false, true],
-  'shingle': [false, true],
+  'componentwise': [['scalar', 'x86_64', 'neon'], true],
+  'expand': [['x86_64', 'neon'], true],
+  'extract': [['scalar', 'x86_64', 'neon'], true],
+  'gather': [['scalar', 'x86_64', 'neon'], false],
+  'general': [['scalar', 'x86_64', 'neon'], true],
+  'horizontal': [['scalar', 'x86_64', 'neon'], true],
+  'mem': [['scalar', 'x86_64', 'neon'], true],
+  'multibyte': [['scalar', 'x86_64', 'neon'], true],
+  'set': [['scalar', 'x86_64', 'neon'], true],
+  'shingle': [['scalar', 'x86_64'], true], # neon
 }
-  simd_only = conf[0]
+  backends = conf[0]
   parallel = conf[1]
-  if not simd_only or backend != 'scalar'
+  if backends.contains(backend)
     deps = [fmt_dep, grex_dep, pcg_dep, thesauros_dep]
     if not parallel
       deps += [omp_dep]

@@ -9,7 +9,6 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/types.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
@@ -21,8 +20,7 @@ namespace grex::backend {
   const int##BITS##x##SIZE##_t reinterpreted = vreinterpretq_s##BITS##_u##BITS(a.r); \
   return {.r = vreinterpretq_u##BITS##_s##BITS(vnegq_s##BITS(reinterpreted))};
 
-#define GREX_MUL_BASE(KIND, BITS) \
-  return {.r = GREX_CAT(vmulq_, GREX_ISUFFIX(KIND, BITS))(a.r, b.r)};
+#define GREX_MUL_BASE(KIND, BITS) return {.r = GREX_ISUFFIXED(vmulq, KIND, BITS)(a.r, b.r)};
 #define GREX_MUL_f64 GREX_MUL_BASE
 #define GREX_MUL_u64(...) \
   /* Let `a32` and `b32` be `a` and `b` interpreted as u32x4 */ \
@@ -60,11 +58,11 @@ namespace grex::backend {
     GREX_NEGATE_##KIND(BITS, SIZE) \
   } \
   inline Vector<KIND##BITS, SIZE> add(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
-    return {.r = GREX_CAT(vaddq_, GREX_ISUFFIX(KIND, BITS))(a.r, b.r)}; \
+    return {.r = GREX_ISUFFIXED(vaddq, KIND, BITS)(a.r, b.r)}; \
   } \
   inline Vector<KIND##BITS, SIZE> subtract(Vector<KIND##BITS, SIZE> a, \
                                            Vector<KIND##BITS, SIZE> b) { \
-    return {.r = GREX_CAT(vsubq_, GREX_ISUFFIX(KIND, BITS))(a.r, b.r)}; \
+    return {.r = GREX_ISUFFIXED(vsubq, KIND, BITS)(a.r, b.r)}; \
   } \
   inline Vector<KIND##BITS, SIZE> multiply(Vector<KIND##BITS, SIZE> a, \
                                            Vector<KIND##BITS, SIZE> b) { \
@@ -73,7 +71,7 @@ namespace grex::backend {
 
 #define GREX_ARITH_DIV(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> divide(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
-    return {.r = GREX_CAT(vdivq_, GREX_ISUFFIX(KIND, BITS))(a.r, b.r)}; \
+    return {.r = GREX_ISUFFIXED(vdivq, KIND, BITS)(a.r, b.r)}; \
   }
 
 GREX_FOREACH_TYPE(GREX_ARITH, 128)

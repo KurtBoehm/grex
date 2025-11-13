@@ -252,39 +252,8 @@ GREX_FOREACH_SUB(GREX_LOAD_SUB)
     GREX_PARTLOAD_SUB_##BITS##_##PART(KIND) \
   }
 GREX_FOREACH_SUB(GREX_PARTLOAD_SUB)
-
-// Super-native vectors: Split into halves
-
-template<typename THalf>
-inline SuperVector<THalf> load(const typename THalf::Value* ptr,
-                               TypeTag<SuperVector<THalf>> /*tag*/) {
-  return {
-    .lower = load(ptr, type_tag<THalf>),
-    .upper = load(ptr + THalf::size, type_tag<THalf>),
-  };
-}
-template<typename THalf>
-inline SuperVector<THalf> load_aligned(const typename THalf::Value* ptr,
-                                       TypeTag<SuperVector<THalf>> /*tag*/) {
-  return {
-    .lower = load_aligned(ptr, type_tag<THalf>),
-    .upper = load_aligned(ptr + THalf::size, type_tag<THalf>),
-  };
-}
-template<typename THalf>
-inline SuperVector<THalf> load_part(const typename THalf::Value* ptr, std::size_t size,
-                                    TypeTag<SuperVector<THalf>> /*tag*/) {
-  if (size <= THalf::size) {
-    return {
-      .lower = load_part(ptr, size, type_tag<THalf>),
-      .upper = zeros(type_tag<THalf>),
-    };
-  }
-  return {
-    .lower = load(ptr, type_tag<THalf>),
-    .upper = load_part(ptr + THalf::size, size - THalf::size, type_tag<THalf>),
-  };
-}
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/load.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_LOAD_HPP

@@ -299,12 +299,12 @@ static auto load_multibyte(TIt it, TTag tag) {
 }
 
 // transform
-template<typename TSize = std::size_t>
+template<typename TSize = u64>
 GREX_ALWAYS_INLINE inline auto transform(auto op, OptValuedScalarTag<TSize> auto /*tag*/) {
   return op(value_tag<TSize, 0>);
 }
 #if !GREX_BACKEND_SCALAR
-template<typename TSize = std::size_t, OptValuedFullVectorTag<TSize> TTag>
+template<typename TSize = u64, OptValuedFullVectorTag<TSize> TTag>
 GREX_ALWAYS_INLINE inline auto transform(auto op, TTag /*tag*/) {
   static constexpr std::size_t size = TTag::size;
   using Value = decltype(op(value_tag<TSize, 0>));
@@ -313,7 +313,7 @@ GREX_ALWAYS_INLINE inline auto transform(auto op, TTag /*tag*/) {
     return Vector<Value, size>{op(value_tag<TSize, tIdxs>)...};
   });
 }
-template<typename TSize = std::size_t, OptValuedPartVectorTag<TSize> TTag>
+template<typename TSize = u64, OptValuedPartVectorTag<TSize> TTag>
 GREX_ALWAYS_INLINE inline auto transform(auto op, TTag tag) {
   static constexpr std::size_t size = TTag::size;
   using Value = decltype(op(value_tag<TSize, 0>));
@@ -325,13 +325,13 @@ GREX_ALWAYS_INLINE inline auto transform(auto op, TTag tag) {
 // TODO Support for masked transform?
 #endif
 
-template<typename TSize = std::size_t>
+template<typename TSize = u64>
 inline void for_each(auto op, TypedValueTag<IterDirection> auto /*tag*/,
                      OptValuedScalarTag<TSize> auto /*tag*/) {
   op(value_tag<TSize, 0>);
 }
 #if !GREX_BACKEND_SCALAR
-template<typename TSize = std::size_t, OptValuedFullVectorTag<TSize> TTag>
+template<typename TSize = u64, OptValuedFullVectorTag<TSize> TTag>
 inline void for_each(auto op, TypedValueTag<IterDirection> auto dir, TTag /*tag*/) {
   static constexpr std::size_t size = TTag::size;
   if constexpr (dir.value == IterDirection::forward) {
@@ -344,7 +344,7 @@ inline void for_each(auto op, TypedValueTag<IterDirection> auto dir, TTag /*tag*
     }
   }
 }
-template<typename TSize = std::size_t, OptValuedPartVectorTag<TSize> TTag>
+template<typename TSize = u64, OptValuedPartVectorTag<TSize> TTag>
 inline auto for_each(auto op, TypedValueTag<IterDirection> auto dir, TTag tag) {
   const auto part = TSize(tag.part());
   if constexpr (dir.value == IterDirection::forward) {
@@ -358,7 +358,7 @@ inline auto for_each(auto op, TypedValueTag<IterDirection> auto dir, TTag tag) {
   }
 }
 #endif
-template<typename TSize = std::size_t>
+template<typename TSize = u64>
 inline void for_each(auto op, AnyTag auto tag) {
   for_each(std::move(op), auto_tag<IterDirection::forward>, tag);
 }

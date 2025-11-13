@@ -89,31 +89,8 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_MASKADDSUB_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_MASKMUL_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_MASKDIV_ALL)
-
-#define GREX_MASKARITH_SUB(NAME) \
-  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
-  inline SubVector<T, tPart, tSize> NAME(SubMask<T, tPart, tSize> m, SubVector<T, tPart, tSize> a, \
-                                         SubVector<T, tPart, tSize> b) { \
-    return SubVector<T, tPart, tSize>{NAME(m.full, a.full, b.full)}; \
-  }
-GREX_MASKARITH_SUB(mask_add)
-GREX_MASKARITH_SUB(mask_subtract)
-GREX_MASKARITH_SUB(mask_multiply)
-GREX_MASKARITH_SUB(mask_divide)
-
-#define GREX_MASKARITH_SUPER(NAME) \
-  template<typename TVecHalf, typename TMaskHalf> \
-  inline SuperVector<TVecHalf> NAME(SuperMask<TMaskHalf> m, SuperVector<TVecHalf> a, \
-                                    SuperVector<TVecHalf> b) { \
-    return { \
-      .lower = NAME(m.lower, a.lower, b.lower), \
-      .upper = NAME(m.upper, a.upper, b.upper), \
-    }; \
-  }
-GREX_MASKARITH_SUPER(mask_add)
-GREX_MASKARITH_SUPER(mask_subtract)
-GREX_MASKARITH_SUPER(mask_multiply)
-GREX_MASKARITH_SUPER(mask_divide)
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/arithmetic-mask.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_MASK_HPP

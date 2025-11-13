@@ -26,7 +26,8 @@ namespace test = grex::test;
 inline constexpr std::size_t mbi_size = 1UL << 15UL;
 inline constexpr std::size_t repetitions = 4096;
 
-#if !GREX_BACKEND_SCALAR
+// TODO Implement for ARM64 NEON
+#if GREX_BACKEND_X86_64
 template<std::size_t tSrc>
 void run_simd(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
   static constexpr std::size_t src_bytes = tSrc;
@@ -118,7 +119,7 @@ int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
   grex::static_apply<8>([&]<std::size_t... tIdxs>() {
-#if !GREX_BACKEND_SCALAR
+#if GREX_BACKEND_X86_64
     (..., run_simd(rng, grex::index_tag<tIdxs + 1>));
 #endif
     (..., run_scalar(rng, grex::index_tag<tIdxs + 1>));

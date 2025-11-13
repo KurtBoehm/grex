@@ -9,7 +9,6 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/cast.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
@@ -18,13 +17,13 @@ namespace grex::backend {
 #define GREX_VEC_SINSERT(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> insert(Vector<KIND##BITS, SIZE> v, AnyIndexTag auto index, \
                                          KIND##BITS value) { \
-    const auto ret = GREX_CAT(vsetq_lane_, GREX_ISUFFIX(KIND, BITS))(value, v.r, index.value); \
+    const auto ret = GREX_ISUFFIXED(vsetq_lane, KIND, BITS)(value, v.r, index.value); \
     return {.r = ret}; \
   } \
   inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> v, AnyIndexTag auto index, \
                                        bool value) { \
-    const auto ret = GREX_CAT(vsetq_lane_, GREX_ISUFFIX(u, BITS))( \
-      GREX_OPCAST(u, BITS, -u##BITS(value)), v.r, index.value); \
+    const auto ret = GREX_ISUFFIXED(vsetq_lane, u, BITS)(GREX_OPCAST(u, BITS, -u##BITS(value)), \
+                                                         v.r, index.value); \
     return {.r = ret}; \
   }
 

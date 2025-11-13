@@ -23,13 +23,15 @@ namespace grex::backend {
     const auto ref = broadcast(u##BITS(i), type_tag<Vector<u##BITS, SIZE>>); \
     return {.r = compare_lt(idxs, ref).r}; \
   }
+GREX_FOREACH_TYPE(GREX_INDEX_MASK, 128)
+
 #define GREX_CUTOFF(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> cutoff(std::size_t i, Vector<KIND##BITS, SIZE> v) { \
     return blend_zero(cutoff_mask(i, type_tag<Mask<KIND##BITS, SIZE>>), v); \
   }
-
-GREX_FOREACH_TYPE(GREX_INDEX_MASK, 128)
 GREX_FOREACH_TYPE(GREX_CUTOFF, 128)
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/mask-index.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_MASK_INDEX_HPP

@@ -158,7 +158,7 @@ int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
   test::for_each_type([&](auto tag) {
-#if !GREX_BACKEND_SCALAR
+#if GREX_BACKEND_X86_64
     run_simd(rng, tag);
 #endif
     run_scalar(rng, tag);

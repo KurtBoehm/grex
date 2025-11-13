@@ -12,7 +12,6 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/repeat.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
@@ -24,7 +23,7 @@ namespace grex::backend {
 #define GREX_EXTRACT_VEC(KIND, BITS, SIZE) \
   inline KIND##BITS extract(Vector<KIND##BITS, SIZE> v, std::size_t index) { \
     switch (index) { \
-      GREX_REPEAT(SIZE, GREX_EXTRACT_SWITCH, GREX_CAT(vgetq_lane_, GREX_ISUFFIX(KIND, BITS))) \
+      GREX_REPEAT(SIZE, GREX_EXTRACT_SWITCH, GREX_ISUFFIXED(vgetq_lane, KIND, BITS)) \
       default: std::unreachable(); \
     } \
   }
