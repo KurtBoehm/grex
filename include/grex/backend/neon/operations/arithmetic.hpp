@@ -18,8 +18,8 @@ namespace grex::backend {
 #define GREX_NEGATE_f(BITS, SIZE) return {.r = vnegq_f##BITS(a.r)};
 #define GREX_NEGATE_i(BITS, SIZE) return {.r = vnegq_s##BITS(a.r)};
 #define GREX_NEGATE_u(BITS, SIZE) \
-  const int##BITS##x##SIZE##_t reinterpreted = reinterpret<GREX_REGISTER(i, BITS, SIZE)>(a.r); \
-  return {.r = reinterpret<GREX_REGISTER(u, BITS, SIZE)>(vnegq_s##BITS(reinterpreted))};
+  const int##BITS##x##SIZE##_t reinterpreted = reinterpret<i##BITS>(a.r); \
+  return {.r = reinterpret<u##BITS>(vnegq_s##BITS(reinterpreted))};
 
 #define GREX_MUL_BASE(KIND, BITS) return {.r = GREX_ISUFFIXED(vmulq, KIND, BITS)(a.r, b.r)};
 #define GREX_MUL_f64 GREX_MUL_BASE

@@ -17,8 +17,7 @@
 namespace grex::backend {
 #define GREX_REINTERPRET_DEFAULT(DSTKIND, DSTBITS, DSTSIZE, SRCKIND, SRCBITS, SRCSIZE) \
   inline GREX_REGISTER(DSTKIND, DSTBITS, DSTSIZE) \
-    reinterpret(GREX_REGISTER(SRCKIND, SRCBITS, SRCSIZE) v, \
-                TypeTag<GREX_REGISTER(DSTKIND, DSTBITS, DSTSIZE)>) { \
+    reinterpret(GREX_REGISTER(SRCKIND, SRCBITS, SRCSIZE) v, TypeTag<DSTKIND##DSTBITS>) { \
     return GREX_CAT(vreinterpretq_, GREX_ISUFFIX(DSTKIND, DSTBITS), _, \
                     GREX_ISUFFIX(SRCKIND, SRCBITS))(v); \
   }
@@ -142,8 +141,8 @@ GREX_REINTERPRET_DEFAULT(u, 8, 16, u, 32, 4)
 GREX_REINTERPRET_DEFAULT(u, 8, 16, u, 16, 8)
 GREX_REINTERPRET_NOOP(u, 8, 16, u, 8, 16)
 
-template<typename TDst, typename TSrc>
-inline TDst reinterpret(TSrc src) {
+template<Vectorizable TDst, typename TSrc>
+inline auto reinterpret(TSrc src) {
   return reinterpret(src, type_tag<TDst>);
 }
 } // namespace grex::backend

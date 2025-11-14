@@ -17,12 +17,9 @@
 
 namespace grex::backend {
 #define GREX_BLENDZ_f(BITS, SIZE) \
-  const auto iv1 = reinterpret<GREX_REGISTER(u, BITS, SIZE)>(v1.r); \
-  const auto iret = vandq_u##BITS(m.r, iv1); \
-  return {.r = reinterpret<GREX_REGISTER(f, BITS, SIZE)>(iret)};
-#define GREX_BLENDZ_i(BITS, SIZE) \
-  const auto im = reinterpret<GREX_REGISTER(i, BITS, SIZE)>(m.r); \
-  return {.r = vandq_s##BITS(im, v1.r)};
+  const auto unret = vandq_u##BITS(m.r, reinterpret<u##BITS>(v1.r)); \
+  return {.r = reinterpret<f##BITS>(unret)};
+#define GREX_BLENDZ_i(BITS, SIZE) return {.r = vandq_s##BITS(reinterpret<i##BITS>(m.r), v1.r)};
 #define GREX_BLENDZ_u(BITS, SIZE) return {.r = vandq_s##BITS(m.r, v1.r)};
 
 #define GREX_BLEND(KIND, BITS, SIZE) \

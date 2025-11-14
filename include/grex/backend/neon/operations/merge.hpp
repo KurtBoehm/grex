@@ -14,40 +14,24 @@
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/neon/operations/mask-convert.hpp"
+#include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/types.hpp" // IWYU pragma: keep
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
 // Merging sub-native vectors
-#define GREX_MERGE_BASE(KIND, BITS, SIZE, HALF) \
-  const auto zipped = GREX_ISUFFIXED(vzip1q, KIND, HALF)(v0.registr(), v1.registr()); \
-  return VectorFor<KIND##BITS, SIZE>{zipped};
-#define GREX_MERGE_64x2(KIND, BITS, SIZE) GREX_MERGE_BASE(KIND, BITS, SIZE, 64)
-#define GREX_MERGE_32x2(KIND, BITS, SIZE) GREX_MERGE_BASE(KIND, BITS, SIZE, 32)
-#define GREX_MERGE_16x2(KIND, BITS, SIZE) GREX_MERGE_BASE(KIND, BITS, SIZE, 16)
-
-#define GREX_MERGE_SUB(KIND, BITS, SIZE, IMPL) \
-  inline VectorFor<KIND##BITS, SIZE> merge(VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v0, \
-                                           VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v1) { \
-    IMPL(KIND, BITS, SIZE) \
+#define GREX_MERGE_SUB_II(KIND, BITS, PART, PARTSIZE) \
+  const auto r0 = reinterpret<u##PARTSIZE>(v0.full.r); \
+  const auto r1 = reinterpret<u##PARTSIZE>(v1.full.r); \
+  const auto zipped = vzip1q_u##PARTSIZE(r0, r1); \
+  return VectorFor<KIND##BITS, PART>{reinterpret<KIND##BITS>(zipped)};
+#define GREX_MERGE_SUB_I(KIND, BITS, PART, PARTSIZE) GREX_MERGE_SUB_II(KIND, BITS, PART, PARTSIZE)
+#define GREX_MERGE_SUB(KIND, BITS, PART, SIZE) \
+  inline VectorFor<KIND##BITS, GREX_MULTIPLY(PART, 2)> merge(VectorFor<KIND##BITS, PART> v0, \
+                                                             VectorFor<KIND##BITS, PART> v1) { \
+    GREX_MERGE_SUB_I(KIND, BITS, GREX_MULTIPLY(PART, 2), GREX_MULTIPLY(BITS, PART)) \
   }
-
-// 2×64
-GREX_MERGE_SUB(f, 32, 4, GREX_MERGE_64x2)
-GREX_MERGE_SUB(i, 32, 4, GREX_MERGE_64x2)
-GREX_MERGE_SUB(u, 32, 4, GREX_MERGE_64x2)
-GREX_MERGE_SUB(i, 16, 8, GREX_MERGE_64x2)
-GREX_MERGE_SUB(u, 16, 8, GREX_MERGE_64x2)
-GREX_MERGE_SUB(i, 8, 16, GREX_MERGE_64x2)
-GREX_MERGE_SUB(u, 8, 16, GREX_MERGE_64x2)
-// 2×32
-GREX_MERGE_SUB(i, 16, 4, GREX_MERGE_32x2)
-GREX_MERGE_SUB(u, 16, 4, GREX_MERGE_32x2)
-GREX_MERGE_SUB(i, 8, 8, GREX_MERGE_32x2)
-GREX_MERGE_SUB(u, 8, 8, GREX_MERGE_32x2)
-// 2×16
-GREX_MERGE_SUB(i, 8, 4, GREX_MERGE_16x2)
-GREX_MERGE_SUB(u, 8, 4, GREX_MERGE_16x2)
+GREX_FOREACH_SUB(GREX_MERGE_SUB)
 
 // Merge to super-native vector
 template<Vectorizable T, std::size_t tSize>

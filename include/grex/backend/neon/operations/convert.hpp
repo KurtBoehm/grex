@@ -29,7 +29,7 @@ namespace grex::backend {
   const auto combined = expand64(lo); \
   return VectorFor<DSTKIND##DSTBITS, SIZE>{combined};
 #define GREX_CVT_REINTERPRET(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \
-  return {.r = reinterpret<GREX_REGISTER(DSTKIND, DSTBITS, SIZE)>(v.r)};
+  return {.r = reinterpret<DSTKIND##DSTBITS>(v.r)};
 #define GREX_CVT_f64_f32(...) return {.r = vcvt_f64_f32(vget_low_f32(v.full.r))};
 #define GREX_CVT_f32_f64(...) return VectorFor<f32, 2>{expand64(vcvt_f32_f64(v.r))};
 

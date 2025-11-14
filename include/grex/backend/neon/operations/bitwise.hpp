@@ -21,9 +21,9 @@ namespace grex::backend {
 #define GREX_BITWISE_NOT_16 GREX_BITWISE_NOT_BASE
 #define GREX_BITWISE_NOT_32 GREX_BITWISE_NOT_BASE
 #define GREX_BITWISE_NOT_64(KIND, BITS, SIZE) \
-  const auto a32 = reinterpret<GREX_REGISTER(KIND, 32, GREX_MULTIPLY(SIZE, 2))>(a.r); \
+  const auto a32 = reinterpret<KIND##32>(a.r); \
   const auto neg = GREX_ISUFFIXED(vmvnq, KIND, 32)(a32); \
-  return {.r = reinterpret<GREX_REGISTER(KIND, 64, SIZE)>(neg)};
+  return {.r = reinterpret<KIND##64>(neg)};
 
 #define GREX_BITWISE(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> bitwise_not(Vector<KIND##BITS, SIZE> a) { \
