@@ -64,7 +64,7 @@ foreach name, conf : {
   'mem': [['scalar', 'x86_64', 'neon'], true],
   'multibyte': [['scalar', 'x86_64', 'neon'], true],
   'set': [['scalar', 'x86_64', 'neon'], true],
-  'shingle': [['scalar', 'x86_64'], true], # neon
+  'shingle': [['scalar', 'x86_64', 'neon'], true],
 }
   backends = conf[0]
   parallel = conf[1]

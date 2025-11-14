@@ -14,7 +14,8 @@
 #define GREX_DECR_16 15
 #define GREX_DECR_32 31
 #define GREX_DECR_64 63
-#define GREX_DECR(X) GREX_DECR_##X
+#define GREX_DECR_I(X) GREX_DECR_##X
+#define GREX_DECR(X) GREX_DECR_I(X)
 
 // Multiply the two arguments
 // This is used for (and limited to):

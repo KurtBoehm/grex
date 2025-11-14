@@ -404,4 +404,6 @@ inline SuperVector<THalf> shingle_down(SuperVector<THalf> v, Scalar<typename THa
 }
 } // namespace grex::backend
 
+#include "grex/backend/shared/operations/shingle.hpp" // IWYU pragma: export
+
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHINGLE_HPP

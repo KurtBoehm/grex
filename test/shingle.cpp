@@ -16,8 +16,7 @@
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
-// TODO Implement for ARM64 NEON
-#if GREX_BACKEND_X86_64
+#if !GREX_BACKEND_SCALAR
 template<grex::Vectorizable T, std::size_t tSize>
 void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
   using VC = test::VectorChecker<T, tSize>;
@@ -137,7 +136,7 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
-#if GREX_BACKEND_X86_64
+#if !GREX_BACKEND_SCALAR
   test::run_types_sizes([&](auto vtag, auto stag) { run_simd(rng, vtag, stag); });
 #endif
   test::run_types([&](auto tag) { run_scalar(rng, tag); });

@@ -26,10 +26,16 @@ namespace grex::backend {
       GREX_REPEAT(SIZE, GREX_EXTRACT_SWITCH, GREX_ISUFFIXED(vgetq_lane, KIND, BITS)) \
       default: std::unreachable(); \
     } \
+  } \
+  inline KIND##BITS extract(Vector<KIND##BITS, SIZE> v, AnyIndexTag auto index) { \
+    return GREX_ISUFFIXED(vgetq_lane, KIND, BITS)(v.r, index.value); \
   }
 
 #define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \
   inline bool extract(Mask<KIND##BITS, SIZE> m, std::size_t i) { \
+    return extract(Vector<u##BITS, SIZE>{m.r}, i) != 0; \
+  } \
+  inline bool extract(Mask<KIND##BITS, SIZE> m, AnyIndexTag auto i) { \
     return extract(Vector<u##BITS, SIZE>{m.r}, i) != 0; \
   }
 

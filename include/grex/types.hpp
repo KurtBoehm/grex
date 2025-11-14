@@ -265,8 +265,6 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
     return Vector<T, tDstSize>{backend::expand_zero(vec_, index_tag<tDstSize>)};
   }
 
-// TODO Implement for ARM64 NEON
-#if GREX_BACKEND_X86_64
   Vector shingle_up() const {
     return Vector{backend::shingle_up(vec_)};
   }
@@ -279,7 +277,6 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   Vector shingle_down(Value back) const {
     return Vector{backend::shingle_down(vec_, backend::Scalar<T>{back})};
   }
-#endif
 
   Backend backend() const {
     return vec_;
