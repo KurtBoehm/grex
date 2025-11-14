@@ -14,7 +14,7 @@
 
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/instruction-sets.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/load.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
@@ -22,6 +22,9 @@
 #if GREX_X86_64_LEVEL >= 4
 #include "grex/backend/x86/operations/set.hpp"
 #endif
+
+// shared definitions
+#include "grex/backend/shared/operations/multibyte.hpp" // IWYU pragma: keep
 
 // Load integers consisting of M bytes into integers containing N = 2^B bytes,
 // assuming N = std::bitceil(M).
@@ -31,27 +34,6 @@
 // by the numnber of bytes in the largest supported SIMD register
 
 namespace grex::backend {
-namespace mb {
-template<std::size_t tSrc, std::size_t tDst, std::size_t tSize, std::size_t tPart = tSize>
-requires((tDst * tSize) == 16)
-inline constexpr auto shuffle_indices_128 = static_apply<tSize * tDst>([]<std::size_t... tIdxs>() {
-  auto op = []<std::size_t tIdx>(IndexTag<tIdx> /*idx*/) {
-    constexpr std::size_t j = tIdx % tDst;
-    constexpr std::size_t k = tIdx / tDst;
-    return (j < tSrc && k < tPart) ? i8(j + tSrc * k) : i8(-1);
-  };
-  return std::array{op(index_tag<tIdxs>)...};
-});
-} // namespace mb
-
-// N == M: simply load
-template<std::size_t tSrc, AnyVector TDst>
-requires(!AnySuperNativeVector<TDst> && tSrc == sizeof(typename TDst::Value))
-inline TDst load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/, TypeTag<TDst> /*dst*/) {
-  const auto raw = load(ptr, type_tag<VectorFor<u8, tSrc * TDst::size>>).registr();
-  return TDst{raw};
-}
-
 #if GREX_X86_64_LEVEL >= 2
 template<std::size_t tSrc, typename TDst>
 requires(tSrc < sizeof(typename TDst::Value) && sizeof(typename TDst::Register) == 16)
@@ -163,16 +145,6 @@ inline Vector<TDst, tSize> load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/,
   return {.r = _mm512_shuffle_epi8(out, idxs8)};
 }
 #endif
-
-// super-native
-template<std::size_t tSrc, typename THalf>
-inline SuperVector<THalf> load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/,
-                                         TypeTag<SuperVector<THalf>> /*dst*/) {
-  return {
-    .lower = load_multibyte(ptr, index_tag<tSrc>, type_tag<THalf>),
-    .upper = load_multibyte(ptr + tSrc * THalf::size, index_tag<tSrc>, type_tag<THalf>),
-  };
-}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_MULTIBYTE_HPP

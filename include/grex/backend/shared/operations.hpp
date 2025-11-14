@@ -9,7 +9,9 @@
 #include "operations/load.hpp"
 #include "operations/mask-convert.hpp"
 #include "operations/mask-index.hpp"
+#include "operations/multibyte.hpp"
 #include "operations/set.hpp"
+#include "operations/shingle.hpp"
 #include "operations/store.hpp"
 // IWYU pragma: end_exports
 

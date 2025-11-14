@@ -65,9 +65,10 @@ GREX_FOREACH_TYPE(GREX_SHINGLE, 128)
   const auto dst = GREX_ISUFFIXED(vext, KIND, 8)(tmp, zero, 5)
 #define GREX_ZDSHINGLE_8x2 GREX_ZDSHINGLE_x2
 
-#define GREX_VDSHINGLE_64(KIND, BITS) \
+#define GREX_VDSHINGLE_64(KIND, BITS, SIZE) \
+  const auto back64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(expand_any(back, index_tag<SIZE>).r); \
   const auto dst = GREX_ISUFFIXED(vext, KIND, BITS)(low64, back64, 1)
-#define GREX_VDSHINGLE_x2(KIND, BITS) \
+#define GREX_VDSHINGLE_x2(KIND, BITS, SIZE) \
   const auto down = GREX_ISUFFIXED(vext, KIND, BITS)(low64, low64, 1); \
   const auto dst = GREX_ISUFFIXED(vset_lane, KIND, BITS)(back.value, down, 1)
 
@@ -75,7 +76,8 @@ GREX_FOREACH_TYPE(GREX_SHINGLE, 128)
 #define GREX_VDSHINGLE_16x4 GREX_VDSHINGLE_64
 #define GREX_VDSHINGLE_16x2 GREX_VDSHINGLE_x2
 #define GREX_VDSHINGLE_8x8 GREX_VDSHINGLE_64
-#define GREX_VDSHINGLE_8x4(KIND, BITS) \
+#define GREX_VDSHINGLE_8x4(KIND, BITS, SIZE) \
+  const auto back64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(expand_any(back, index_tag<SIZE>).r); \
   /* [0, 0, 0, 0, 0, v[0], v[1], v[2], v[3]] */ \
   const auto tmp = GREX_ISUFFIXED(vext, KIND, 8)(GREX_ISUFFIXED(vdup_n, KIND, 8)(0), low64, 4); \
   /* [v[1], v[2], v[3], back, -, -, -, -] */ \
@@ -105,8 +107,7 @@ GREX_FOREACH_TYPE(GREX_SHINGLE, 128)
   inline SubVector<KIND##BITS, PART, SIZE> shingle_down(SubVector<KIND##BITS, PART, SIZE> v, \
                                                         Scalar<KIND##BITS> back) { \
     const auto low64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(v.full.r); \
-    const auto back64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(expand_any(back, index_tag<SIZE>).r); \
-    GREX_CAT(GREX_VDSHINGLE_, BITS, x, PART)(KIND, BITS); \
+    GREX_CAT(GREX_VDSHINGLE_, BITS, x, PART)(KIND, BITS, SIZE); \
     return SubVector<KIND##BITS, PART, SIZE>{expand64(dst)}; \
   }
 GREX_FOREACH_SUB(GREX_SHINGLE_SUB)

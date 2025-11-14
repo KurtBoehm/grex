@@ -4,8 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHINGLE_HPP
-#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHINGLE_HPP
+#ifndef INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SHINGLE_HPP
+#define INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SHINGLE_HPP
 
 #include <cstddef>
 
@@ -43,4 +43,4 @@ inline SuperVector<THalf> shingle_down(SuperVector<THalf> v, Scalar<typename THa
 }
 } // namespace grex::backend
 
-#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHINGLE_HPP
+#endif // INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SHINGLE_HPP
