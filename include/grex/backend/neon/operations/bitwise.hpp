@@ -9,9 +9,9 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/types.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/types.hpp"
 
 namespace grex::backend {
@@ -21,10 +21,9 @@ namespace grex::backend {
 #define GREX_BITWISE_NOT_16 GREX_BITWISE_NOT_BASE
 #define GREX_BITWISE_NOT_32 GREX_BITWISE_NOT_BASE
 #define GREX_BITWISE_NOT_64(KIND, BITS, SIZE) \
-  const auto a32 = \
-    GREX_CAT(vreinterpretq_, GREX_ISUFFIX(KIND, 32), _, GREX_ISUFFIX(KIND, 64))(a.r); \
+  const auto a32 = reinterpret<GREX_REGISTER(KIND, 32, GREX_MULTIPLY(SIZE, 2))>(a.r); \
   const auto neg = GREX_ISUFFIXED(vmvnq, KIND, 32)(a32); \
-  return {.r = GREX_CAT(vreinterpretq_, GREX_ISUFFIX(KIND, 64), _, GREX_ISUFFIX(KIND, 32))(neg)};
+  return {.r = reinterpret<GREX_REGISTER(KIND, 64, SIZE)>(neg)};
 
 #define GREX_BITWISE(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> bitwise_not(Vector<KIND##BITS, SIZE> a) { \

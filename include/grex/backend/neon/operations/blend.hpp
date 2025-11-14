@@ -11,15 +11,17 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/types.hpp"
 
 namespace grex::backend {
 #define GREX_BLENDZ_f(BITS, SIZE) \
-  const auto iv1 = vreinterpretq_u##BITS##_f##BITS(v1.r); \
+  const auto iv1 = reinterpret<GREX_REGISTER(u, BITS, SIZE)>(v1.r); \
   const auto iret = vandq_u##BITS(m.r, iv1); \
-  return {.r = vreinterpretq_f##BITS##_u##BITS(iret)};
+  return {.r = reinterpret<GREX_REGISTER(f, BITS, SIZE)>(iret)};
 #define GREX_BLENDZ_i(BITS, SIZE) \
-  const auto im = vreinterpretq_s##BITS##_u##BITS(m.r); \
+  const auto im = reinterpret<GREX_REGISTER(i, BITS, SIZE)>(m.r); \
   return {.r = vandq_s##BITS(im, v1.r)};
 #define GREX_BLENDZ_u(BITS, SIZE) return {.r = vandq_s##BITS(m.r, v1.r)};
 

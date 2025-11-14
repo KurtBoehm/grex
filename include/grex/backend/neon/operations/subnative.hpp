@@ -14,6 +14,7 @@
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/types.hpp"
 
 namespace grex::backend {
@@ -24,8 +25,7 @@ namespace grex::backend {
     const auto low = GREX_CAT(vget_low_u, GREX_MULTIPLY(BITS, PART))(reinterpreted); \
     auto out = GREX_CAT(vdupq_n_u, GREX_MULTIPLY(BITS, PART))(0); \
     out = GREX_CAT(vcopyq_lane_u, GREX_MULTIPLY(BITS, PART))(out, 0, low, 0); \
-    return {.r = GREX_CAT(vreinterpretq_, GREX_ISUFFIX(KIND, BITS), _u, \
-                          GREX_MULTIPLY(BITS, PART))(out)}; \
+    return {.r = reinterpret<GREX_REGISTER(KIND, BITS, SIZE)>(out)}; \
   }
 
 GREX_FOREACH_SUB(GREX_CUTOFF_SUB)

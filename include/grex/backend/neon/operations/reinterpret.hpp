@@ -141,6 +141,11 @@ GREX_REINTERPRET_DEFAULT(u, 8, 16, u, 64, 2)
 GREX_REINTERPRET_DEFAULT(u, 8, 16, u, 32, 4)
 GREX_REINTERPRET_DEFAULT(u, 8, 16, u, 16, 8)
 GREX_REINTERPRET_NOOP(u, 8, 16, u, 8, 16)
+
+template<typename TDst, typename TSrc>
+inline TDst reinterpret(TSrc src) {
+  return reinterpret(src, type_tag<TDst>);
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_REINTERPRET_HPP
