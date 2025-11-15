@@ -28,8 +28,7 @@ using Distribution =
   std::conditional_t<grex::FloatVectorizable<T>, std::uniform_real_distribution<T>,
                      std::uniform_int_distribution<T>>;
 
-// TODO Implement for ARM64 NEON
-#if GREX_BACKEND_X86_64
+#if !GREX_BACKEND_SCALAR
 template<grex::Vectorizable TValue>
 void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
   fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::text_style(fmt::emphasis::bold),
@@ -158,7 +157,7 @@ int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
   test::for_each_type([&](auto tag) {
-#if GREX_BACKEND_X86_64
+#if !GREX_BACKEND_SCALAR
     run_simd(rng, tag);
 #endif
     run_scalar(rng, tag);
