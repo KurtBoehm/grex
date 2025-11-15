@@ -153,6 +153,18 @@ template<typename THalf>
 inline THalf split(SuperMask<THalf> m, IndexTag<1> /*tag*/) {
   return m.upper;
 }
+
+// Add more convenient naming that is compatible with the AR64 NEON backend
+template<typename T>
+requires(AnyVector<T> || AnyMask<T>)
+inline auto get_low(T a) {
+  return split(a, index_tag<0>);
+}
+template<typename T>
+requires(AnyVector<T> || AnyMask<T>)
+inline auto get_high(T a) {
+  return split(a, index_tag<1>);
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SPLIT_HPP
