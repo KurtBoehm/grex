@@ -8,78 +8,35 @@
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_GATHER_HPP
 
 #include <cstddef>
-#include <span>
 
-#include "grex/backend/choosers.hpp"
-#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/math.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
-#include "grex/backend/x86/operations/extract.hpp"
-#include "grex/backend/x86/operations/merge.hpp"
-#include "grex/backend/x86/operations/set.hpp"
-#include "grex/backend/x86/operations/split.hpp"
+#include "grex/backend/x86/operations/extract.hpp" // IWYU pragma: export
+#include "grex/backend/x86/operations/merge.hpp" // IWYU pragma: export
+#include "grex/backend/x86/operations/set.hpp" // IWYU pragma: export
+#include "grex/backend/x86/operations/split.hpp" // IWYU pragma: export
 #include "grex/backend/x86/types.hpp" // IWYU pragma: keep
-#include "grex/base/defs.hpp"
 
 #if GREX_X86_64_LEVEL >= 3
+#include <span>
+
 #include <immintrin.h>
 
+#include "grex/backend/choosers.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/x86/operations/convert.hpp"
+#include "grex/base/defs.hpp"
 #endif
 #if GREX_X86_64_LEVEL >= 4
 #include "grex/backend/x86/operations/intrinsics.hpp" // IWYU pragma: keep
 #endif
 
+// shared definitions
+#include "grex/backend/shared/operations/gather.hpp" // IWYU pragma: export
+
 namespace grex::backend {
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
-inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
-                                       Vector<TIndex, tSize> idxs) {
-  return static_apply<tSize>([&]<std::size_t... tIdxs> {
-    return set(type_tag<VectorFor<TValue, tSize>>, data[std::size_t(extract(idxs, tIdxs))]...);
-  });
-}
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tPart,
-         std::size_t tSize>
-inline VectorFor<TValue, tPart> gather(std::span<const TValue, tExtent> data,
-                                       SubVector<TIndex, tPart, tSize> idxs) {
-  return static_apply<tPart>([&]<std::size_t... tIdxs> {
-    return set(type_tag<VectorFor<TValue, tPart>>, data[std::size_t(extract(idxs, tIdxs))]...);
-  });
-}
-template<Vectorizable TValue, std::size_t tExtent, typename THalf>
-inline VectorFor<TValue, 2 * THalf::size> gather(std::span<const TValue, tExtent> data,
-                                                 SuperVector<THalf> idxs) {
-  return merge(gather(data, idxs.lower), gather(data, idxs.upper));
-}
-
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
-inline VectorFor<TValue, tSize> mask_gather(std::span<const TValue, tExtent> data,
-                                            MaskFor<TValue, tSize> m, Vector<TIndex, tSize> idxs) {
-  return static_apply<tSize>([&]<std::size_t... tIdxs> {
-    return set(type_tag<VectorFor<TValue, tSize>>,
-               (extract(m, tIdxs) ? data[std::size_t(extract(idxs, tIdxs))] : TValue{})...);
-  });
-}
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tPart,
-         std::size_t tSize>
-inline VectorFor<TValue, tPart> mask_gather(std::span<const TValue, tExtent> data,
-                                            MaskFor<TValue, tPart> m,
-                                            SubVector<TIndex, tPart, tSize> idxs) {
-  return static_apply<tPart>([&]<std::size_t... tIdxs> {
-    return set(type_tag<VectorFor<TValue, tPart>>,
-               (extract(m, tIdxs) ? data[std::size_t(extract(idxs, tIdxs))] : TValue{})...);
-  });
-}
-template<Vectorizable TValue, std::size_t tExtent, typename TVecHalf>
-inline VectorFor<TValue, 2 * TVecHalf::size> mask_gather(std::span<const TValue, tExtent> data,
-                                                         MaskFor<TValue, 2 * TVecHalf::size> m,
-                                                         SuperVector<TVecHalf> idxs) {
-  return merge(mask_gather(data, split(m, index_tag<0>), idxs.lower),
-               mask_gather(data, split(m, index_tag<1>), idxs.upper));
-}
-
 #define GREX_GATHER_CAST_F32 data.data()
 #define GREX_GATHER_CAST_F64 data.data()
 #define GREX_GATHER_CAST_I32 reinterpret_cast<const int*>(data.data())

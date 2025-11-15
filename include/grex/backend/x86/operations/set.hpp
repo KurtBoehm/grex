@@ -127,6 +127,6 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_SET_ALL)
 } // namespace grex::backend
 
-#include "grex/backend/shared/operations/set.hpp"
+#include "grex/backend/shared/operations/set.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SET_HPP

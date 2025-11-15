@@ -19,7 +19,6 @@
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/expand-scalar.hpp"
-#include "grex/backend/x86/operations/extract.hpp"
 #include "grex/backend/x86/operations/intrinsics.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
@@ -371,36 +370,6 @@ inline SubVector<T, tPart, tSize> shingle_up(SubVector<T, tPart, tSize> v) {
 template<typename T, std::size_t tPart, std::size_t tSize>
 inline SubVector<T, tPart, tSize> shingle_up(Scalar<T> front, SubVector<T, tPart, tSize> v) {
   return SubVector<T, tPart, tSize>{shingle_up(front, v.full)};
-}
-
-// super-native vectors: carry over the last element from the lower part to the upper part
-template<typename THalf>
-inline SuperVector<THalf> shingle_up(SuperVector<THalf> v) {
-  return {
-    .lower = shingle_up(v.lower),
-    .upper = shingle_up(Scalar{extract(v.lower, THalf::size - 1)}, v.upper),
-  };
-}
-template<typename THalf>
-inline SuperVector<THalf> shingle_up(Scalar<typename THalf::Value> front, SuperVector<THalf> v) {
-  return {
-    .lower = shingle_up(front, v.lower),
-    .upper = shingle_up(Scalar{extract(v.lower, THalf::size - 1)}, v.upper),
-  };
-}
-template<typename THalf>
-inline SuperVector<THalf> shingle_down(SuperVector<THalf> v) {
-  return {
-    .lower = shingle_down(v.lower, Scalar{extract(v.upper, 0)}),
-    .upper = shingle_down(v.upper),
-  };
-}
-template<typename THalf>
-inline SuperVector<THalf> shingle_down(SuperVector<THalf> v, Scalar<typename THalf::Value> back) {
-  return {
-    .lower = shingle_down(v.lower, Scalar{extract(v.upper, 0)}),
-    .upper = shingle_down(v.upper, back),
-  };
 }
 } // namespace grex::backend
 
