@@ -15,6 +15,7 @@
 #include "operations/extract-single.hpp"
 #include "operations/extract.hpp"
 #include "operations/fmadd-family.hpp"
+#include "operations/gather.hpp"
 #include "operations/horizontal-add.hpp"
 #include "operations/horizontal-and.hpp"
 #include "operations/horizontal-minmax.hpp"

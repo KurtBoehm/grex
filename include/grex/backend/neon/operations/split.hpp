@@ -17,6 +17,7 @@
 #include "grex/backend/neon/types.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
+// native vectors
 #define GREX_SPLIT(KIND, BITS, PART, SIZE) \
   inline VectorFor<KIND##BITS, PART> get_low(VectorFor<KIND##BITS, GREX_MULTIPLY(PART, 2)> v) { \
     return VectorFor<KIND##BITS, PART>{v.registr()}; \
@@ -27,6 +28,48 @@ namespace grex::backend {
     return VectorFor<KIND##BITS, PART>{out}; \
   }
 GREX_FOREACH_SUB(GREX_SPLIT)
+
+// super-native vectors
+template<typename THalf>
+inline THalf get_low(SuperVector<THalf> v) {
+  return v.lower;
+}
+template<typename THalf>
+inline THalf get_high(SuperVector<THalf> v) {
+  return v.upper;
+}
+
+// native masks
+template<Vectorizable T, std::size_t tSize>
+inline MaskFor<T, tSize / 2> get_low(Mask<T, tSize> m) {
+  return MaskFor<T, tSize / 2>{get_low(Vector<UnsignedInt<sizeof(T)>, tSize>{m.r}).registr()};
+}
+template<Vectorizable T, std::size_t tSize>
+inline MaskFor<T, tSize / 2> get_high(Mask<T, tSize> m) {
+  return MaskFor<T, tSize / 2>{get_high(Vector<UnsignedInt<sizeof(T)>, tSize>{m.r}).registr()};
+}
+
+// sub-native masks
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline MaskFor<T, tPart / 2> get_low(SubMask<T, tPart, tSize> m) {
+  return MaskFor<T, tPart / 2>{
+    get_low(SubVector<UnsignedInt<sizeof(T)>, tPart, tSize>{m.registr()}).registr()};
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline MaskFor<T, tPart / 2> get_high(SubMask<T, tPart, tSize> m) {
+  return MaskFor<T, tPart / 2>{
+    get_high(SubVector<UnsignedInt<sizeof(T)>, tPart, tSize>{m.registr()}).registr()};
+}
+
+// super-native masks
+template<typename THalf>
+inline THalf get_low(SuperMask<THalf> v) {
+  return v.lower;
+}
+template<typename THalf>
+inline THalf get_high(SuperMask<THalf> v) {
+  return v.upper;
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SPLIT_HPP

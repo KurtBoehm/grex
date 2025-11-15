@@ -440,8 +440,6 @@ inline Vector<T, tSize> mask_divide(Mask<T, tSize> mask, Vector<T, tSize> a, Vec
   return Vector<T, tSize>{backend::mask_divide(mask.backend(), a.backend(), b.backend())};
 }
 
-// TODO Implement for ARM64 NEON
-#if GREX_BACKEND_X86_64
 template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
 inline Vector<TValue, tSize> gather(std::span<const TValue, tExtent> data,
                                     Vector<TIndex, tSize> indices) {
@@ -452,7 +450,6 @@ inline Vector<TValue, tSize> mask_gather(std::span<const TValue, tExtent> data,
                                          Mask<TValue, tSize> mask, Vector<TIndex, tSize> indices) {
   return Vector<TValue, tSize>{backend::mask_gather(data, mask.backend(), indices.backend())};
 }
-#endif
 } // namespace grex
 
 // implement the tuple-like interface for structured bindings and automatic {fmt} formatting
