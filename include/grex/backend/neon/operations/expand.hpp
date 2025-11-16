@@ -10,19 +10,24 @@
 #include <arm_neon.h>
 
 #include "grex/backend/choosers.hpp"
+#include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/expand-register.hpp"
 #include "grex/backend/neon/operations/insert-static.hpp"
 #include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/neon/operations/subnative.hpp"
 #include "grex/backend/neon/sizes.hpp"
 
 namespace grex::backend {
-template<Vectorizable T, std::size_t tSize, bool tZero>
-inline Vector<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> /*tag*/) {
-  if constexpr (tZero) {
-    return insert(zeros(type_tag<Vector<T, tSize>>), index_tag<0>, x.value);
-  } else {
-    return insert(undefined(type_tag<Vector<T, tSize>>), index_tag<0>, x.value);
+#define GREX_EXPAND_ANY(KIND, BITS, SIZE) \
+  inline Vector<KIND##BITS, SIZE> expand(Scalar<KIND##BITS> x, IndexTag<SIZE> /*tag*/, \
+                                         BoolTag<false> /*tag*/) { \
+    return {.r = expand_register(x)}; \
   }
+GREX_FOREACH_TYPE(GREX_EXPAND_ANY, 128)
+
+template<Vectorizable T, std::size_t tSize>
+inline VectorFor<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<true> /*tag*/) {
+  return insert(zeros(type_tag<VectorFor<T, tSize>>), index_tag<0>, x.value);
 }
 
 // Sub-native: Delegate to the native version
@@ -105,12 +110,22 @@ inline VectorFor<typename TVec::Value, tSize> expand_zero(TVec v, IndexTag<tSize
   return expand(v, size, true_tag);
 }
 
+#if GREX_GCC
 #define GREX_EXPAND_64(KIND, BITS, SIZE) \
   inline GREX_REGISTER(KIND, BITS, GREX_MULTIPLY(SIZE, 2)) \
     expand64(GREX_REGISTER(KIND, BITS, SIZE) v) { \
-    return GREX_ISUFFIXED(vcombine, KIND, \
-                          BITS)(v, make_undefined<GREX_REGISTER(KIND, BITS, SIZE)>()); \
+    GREX_REGISTER(KIND, BITS, GREX_MULTIPLY(SIZE, 2)) retval; \
+    asm("" : "=w"(retval) : "0"(v)); /*NOLINT*/ \
+    return retval; \
   }
+#elif GREX_CLANG
+#define GREX_EXPAND_64(KIND, BITS, SIZE) \
+  inline GREX_REGISTER(KIND, BITS, GREX_MULTIPLY(SIZE, 2)) \
+    expand64(GREX_REGISTER(KIND, BITS, SIZE) v) { \
+    const auto undef = make_undefined<GREX_REGISTER(KIND, BITS, SIZE)>(); \
+    return GREX_ISUFFIXED(vcombine, KIND, BITS)(v, undef); \
+  }
+#endif
 GREX_EXPAND_64(f, 64, 1)
 GREX_EXPAND_64(i, 64, 1)
 GREX_EXPAND_64(u, 64, 1)

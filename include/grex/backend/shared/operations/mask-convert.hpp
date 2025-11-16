@@ -11,17 +11,19 @@
 
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
+#include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
 // Convert a mask to signed integers
 template<Vectorizable T, std::size_t tSize>
 inline Vector<SignedInt<sizeof(T)>, tSize> mask2vector(Mask<T, tSize> m) {
-  return {.r = m.r};
+  return {.r = reinterpret<SignedInt<sizeof(T)>>(m.r)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubVector<SignedInt<sizeof(T)>, tPart, tSize> mask2vector(SubMask<T, tPart, tSize> m) {
-  return SubVector<SignedInt<sizeof(T)>, tPart, tSize>{m.registr()};
+  const auto r = reinterpret<SignedInt<sizeof(T)>>(m.registr());
+  return SubVector<SignedInt<sizeof(T)>, tPart, tSize>{r};
 }
 template<typename THalf>
 inline VectorFor<SignedInt<sizeof(typename THalf::VectorValue)>, 2 * THalf::size>
@@ -33,13 +35,14 @@ mask2vector(SuperMask<THalf> m) {
 template<SignedIntVectorizable T, std::size_t tSize, Vectorizable TDst>
 requires(sizeof(T) == sizeof(TDst))
 inline Mask<TDst, tSize> vector2mask(Vector<T, tSize> m, TypeTag<TDst> /*tag*/) {
-  return {.r = m.r};
+  return {.r = reinterpret<UnsignedInt<sizeof(T)>>(m.r)};
 }
 template<SignedIntVectorizable T, std::size_t tPart, std::size_t tSize, Vectorizable TDst>
 requires(sizeof(T) == sizeof(TDst))
 inline SubMask<TDst, tPart, tSize> vector2mask(SubVector<T, tPart, tSize> m,
                                                TypeTag<TDst> /*tag*/) {
-  return SubMask<TDst, tPart, tSize>{m.registr()};
+  const auto r = reinterpret<UnsignedInt<sizeof(T)>>(m.registr());
+  return SubMask<TDst, tPart, tSize>{r};
 }
 template<typename THalf, Vectorizable TDst>
 requires(SignedIntVectorizable<typename THalf::Value> &&

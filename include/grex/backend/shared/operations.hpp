@@ -6,6 +6,7 @@
 #include "operations/blend.hpp"
 #include "operations/extract.hpp"
 #include "operations/gather.hpp"
+#include "operations/insert-static.hpp"
 #include "operations/insert.hpp"
 #include "operations/load.hpp"
 #include "operations/mask-convert.hpp"

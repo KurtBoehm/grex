@@ -458,14 +458,14 @@ struct std::tuple_size<grex::Vector<T, tSize>> : public std::integral_constant<s
 };
 template<std::size_t tIdx, grex::Vectorizable T, std::size_t tSize>
 struct std::tuple_element<tIdx, grex::Vector<T, tSize>> {
-  using type = const T;
+  using type = const T; // NOLINT
 };
 
 template<grex::Vectorizable T, std::size_t tSize>
 struct std::tuple_size<grex::Mask<T, tSize>> : public std::integral_constant<std::size_t, tSize> {};
 template<std::size_t tIdx, grex::Vectorizable T, std::size_t tSize>
 struct std::tuple_element<tIdx, grex::Mask<T, tSize>> {
-  using type = const bool;
+  using type = const bool; // NOLINT
 };
 #else
 #include "grex/backend.hpp"

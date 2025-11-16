@@ -229,7 +229,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
           VC a{dval(tIdxs)...};
           VC b{dval(tIdxs)...};
           MC checker{op(a.vec, b.vec), std::array{op(a.ref[tIdxs], b.ref[tIdxs])...}};
-          checker.check([&] { return std::format("{}({}, {})", label, a.ref, b.ref); }, false);
+          checker.check(label, false);
         };
         vv2m("equal_to", std::equal_to{});
         vv2m("not_equal_to", std::not_equal_to{});

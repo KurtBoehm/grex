@@ -21,11 +21,11 @@ namespace grex::backend {
 template<bool tZero>
 inline f32x4 expand(Scalar<f32> x, IndexTag<4> /*tag*/, BoolTag<tZero> /*tag*/) {
   if constexpr (!tZero) {
-#if defined(__GNUC__) && !defined(__clang__)
+#if GREX_GCC
     __m128 retval;
     asm("" : "=x"(retval) : "0"(x.value));
     return {.r = retval};
-#elif defined(__clang__)
+#elif GREX_CLANG
     f32 data[4];
     data[0] = x.value;
     return {.r = _mm_load_ps(static_cast<const f32*>(data))};
@@ -36,11 +36,11 @@ inline f32x4 expand(Scalar<f32> x, IndexTag<4> /*tag*/, BoolTag<tZero> /*tag*/) 
 template<bool tZero>
 inline f64x2 expand(Scalar<f64> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
   if constexpr (!tZero) {
-#if defined(__GNUC__) && !defined(__clang__)
+#if GREX_GCC
     __m128d retval;
     asm("" : "=x"(retval) : "0"(x.value));
     return {.r = retval};
-#elif defined(__clang__)
+#elif GREX_CLANG
     f64 data[2];
     data[0] = x.value;
     return {.r = _mm_load_pd(static_cast<const f64*>(data))};

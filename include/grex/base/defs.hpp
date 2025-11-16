@@ -16,6 +16,14 @@
 #include <type_traits>
 #include <utility>
 
+#if defined(__GNUC__) && !defined(__clang__)
+#define GREX_GCC true
+#define GREX_CLANG false
+#elif defined(__clang__)
+#define GREX_GCC false
+#define GREX_CLANG true
+#endif
+
 namespace grex {
 namespace primitives {
 using u8 = std::uint8_t;

@@ -23,8 +23,7 @@ namespace grex::backend {
   }
 #define GREX_REINTERPRET_NOOP(DSTKIND, DSTBITS, DSTSIZE, SRCKIND, SRCBITS, SRCSIZE) \
   inline GREX_REGISTER(DSTKIND, DSTBITS, DSTSIZE) \
-    reinterpret(GREX_REGISTER(SRCKIND, SRCBITS, SRCSIZE) v, \
-                TypeTag<GREX_REGISTER(DSTKIND, DSTBITS, DSTSIZE)>) { \
+    reinterpret(GREX_REGISTER(SRCKIND, SRCBITS, SRCSIZE) v, TypeTag<DSTKIND##DSTBITS>) { \
     return v; \
   }
 

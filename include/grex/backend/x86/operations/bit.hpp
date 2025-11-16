@@ -12,7 +12,7 @@
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
-// Casts from TSrc to TDst with arbitrary values in
+// Casts from TSrc to TDst with arbitrary values in the upper bits
 template<IntVectorizable TDst, IntVectorizable TSrc>
 inline TDst expand_any(TSrc src) {
   if (__builtin_constant_p(src)) {

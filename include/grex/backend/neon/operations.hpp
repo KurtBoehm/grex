@@ -11,6 +11,7 @@
 #include "operations/classification.hpp"
 #include "operations/compare.hpp"
 #include "operations/convert.hpp"
+#include "operations/expand-register.hpp"
 #include "operations/expand.hpp"
 #include "operations/extract-single.hpp"
 #include "operations/extract.hpp"

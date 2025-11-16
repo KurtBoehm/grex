@@ -173,4 +173,6 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_SINSERT_ALL)
 } // namespace grex::backend
 
+#include "grex/backend/shared/operations/insert-static.hpp" // IWYU pragma: export
+
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_INSERT_STATIC_HPP

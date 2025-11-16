@@ -26,8 +26,9 @@ namespace grex::backend {
                                                          v.r, index.value); \
     return {.r = ret}; \
   }
-
 GREX_FOREACH_TYPE(GREX_VEC_SINSERT, 128)
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/insert-static.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_INSERT_STATIC_HPP

@@ -11,14 +11,22 @@
 
 #include "grex/backend/macros/cast.hpp"
 #include "grex/backend/macros/conditional.hpp"
+#include "grex/backend/macros/equals.hpp"
 #include "grex/backend/macros/repeat.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/expand-register.hpp"
 #include "grex/backend/neon/types.hpp"
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
+#if GREX_GCC
+#define GREX_DIAGUNDEF_PUSH() \
+  _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wuninitialized\"") \
+    _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
+#elif GREX_CLANG
 #define GREX_DIAGUNDEF_PUSH() \
   _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wuninitialized\"")
+#endif
 #define GREX_DIAGUNDEF_POP() _Pragma("GCC diagnostic pop")
 
 template<typename T>
@@ -32,10 +40,18 @@ inline T make_undefined() {
 
 #define GREX_SET_ARG(CNT, IDX, TYPE) GREX_COMMA_IF(IDX) TYPE v##IDX
 #define GREX_SET_VAL(CNT, IDX, KIND, BITS) v##IDX GREX_COMMA_IF(IDX)
-#define GREX_SET_LANE(CNT, IDX, KIND, BITS) \
+
+#define GREX_SET_LANE_0(CNT, IDX, KIND, BITS) \
   out = GREX_ISUFFIXED(vsetq_lane, KIND, BITS)(v##IDX, out, IDX);
-#define GREX_SET_BOOLLANE(CNT, IDX, BITS) \
+#define GREX_SET_LANE_1(...)
+#define GREX_SET_LANE(CNT, IDX, KIND, BITS) \
+  GREX_CAT(GREX_SET_LANE_, GREX_EQUALS(IDX, 0))(CNT, IDX, KIND, BITS)
+
+#define GREX_SET_BOOLLANE_0(CNT, IDX, BITS) \
   ext = GREX_ISUFFIXED(vsetq_lane, i, BITS)(i##BITS(v##IDX), ext, IDX);
+#define GREX_SET_BOOLLANE_1(...)
+#define GREX_SET_BOOLLANE(CNT, IDX, BITS) \
+  GREX_CAT(GREX_SET_BOOLLANE_, GREX_EQUALS(IDX, 0))(CNT, IDX, BITS)
 
 #define GREX_SET(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> zeros(TypeTag<Vector<KIND##BITS, SIZE>>) { \
@@ -49,7 +65,7 @@ inline T make_undefined() {
   } \
   inline Vector<KIND##BITS, SIZE> set(TypeTag<Vector<KIND##BITS, SIZE>>, \
                                       GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
-    GREX_REGISTER(KIND, BITS, SIZE) out = make_undefined<GREX_REGISTER(KIND, BITS, SIZE)>(); \
+    GREX_REGISTER(KIND, BITS, SIZE) out = expand_register(Scalar{v0}); \
     GREX_RREPEAT(SIZE, GREX_SET_LANE, KIND, BITS) \
     return {.r = out}; \
   } \
@@ -67,13 +83,22 @@ inline T make_undefined() {
   /* Idea: Set to the Boolean values and use a greater-than comparison with zero */ \
   inline Mask<KIND##BITS, SIZE> set(TypeTag<Mask<KIND##BITS, SIZE>>, \
                                     GREX_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
-    GREX_REGISTER(i, BITS, SIZE) ext = make_undefined<GREX_REGISTER(i, BITS, SIZE)>(); \
+    GREX_REGISTER(i, BITS, SIZE) ext = expand_register(Scalar{i##BITS(v0)}); \
     GREX_RREPEAT(SIZE, GREX_SET_BOOLLANE, BITS) \
     GREX_REGISTER(u, BITS, SIZE) cmp = GREX_ISUFFIXED(vcgtzq, i, BITS)(ext); \
     return {.r = cmp}; \
   }
 
 GREX_FOREACH_TYPE(GREX_SET, 128)
+
+#define GREX_SET_SUB(KIND, BITS, PART, SIZE) \
+  inline SubVector<KIND##BITS, PART, SIZE> set(TypeTag<SubVector<KIND##BITS, PART, SIZE>>, \
+                                               GREX_REPEAT(PART, GREX_SET_ARG, KIND##BITS)) { \
+    GREX_REGISTER(KIND, BITS, SIZE) out = expand_register(Scalar{v0}); \
+    GREX_RREPEAT(PART, GREX_SET_LANE, KIND, BITS) \
+    return SubVector<KIND##BITS, PART, SIZE>{out}; \
+  }
+GREX_FOREACH_SUB(GREX_SET_SUB)
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/set.hpp"

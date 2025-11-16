@@ -20,7 +20,7 @@ namespace grex::backend {
   const auto unret = vandq_u##BITS(m.r, reinterpret<u##BITS>(v1.r)); \
   return {.r = reinterpret<f##BITS>(unret)};
 #define GREX_BLENDZ_i(BITS, SIZE) return {.r = vandq_s##BITS(reinterpret<i##BITS>(m.r), v1.r)};
-#define GREX_BLENDZ_u(BITS, SIZE) return {.r = vandq_s##BITS(m.r, v1.r)};
+#define GREX_BLENDZ_u(BITS, SIZE) return {.r = vandq_u##BITS(m.r, v1.r)};
 
 #define GREX_BLEND(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> blend(Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> v0, \
