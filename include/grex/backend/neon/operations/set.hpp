@@ -19,23 +19,13 @@
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
-#if GREX_GCC
-#define GREX_DIAGUNDEF_PUSH() \
-  _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wuninitialized\"") \
-    _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
-#elif GREX_CLANG
-#define GREX_DIAGUNDEF_PUSH() \
-  _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wuninitialized\"")
-#endif
-#define GREX_DIAGUNDEF_POP() _Pragma("GCC diagnostic pop")
-
 template<typename T>
 requires(std::is_trivial_v<T>)
 inline T make_undefined() {
-  GREX_DIAGUNDEF_PUSH()
+  GREX_DIAGNOSTIC_UNINIT_PUSH()
   T undefined;
   return undefined;
-  GREX_DIAGUNDEF_POP()
+  GREX_DIAGNOSTIC_UNINIT_POP()
 }
 
 #define GREX_SET_ARG(CNT, IDX, TYPE) GREX_COMMA_IF(IDX) TYPE v##IDX

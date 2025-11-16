@@ -68,6 +68,8 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
     fmt::print("size: {}\n", tDstSize);
     grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
       grex::static_apply<tDstSize>([&]<std::size_t... tDstIdxs> {
+        // Super-native expansion leads to warnings on GCC
+        GREX_DIAGNOSTIC_UNINIT_PUSH()
         for (std::size_t i = 0; i < repetitions; ++i) {
           VC checker{dval(tIdxs)...};
           {
@@ -83,6 +85,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
             dchecker.check("expand_zero", false);
           }
         }
+        GREX_DIAGNOSTIC_UNINIT_POP()
       });
     });
   };

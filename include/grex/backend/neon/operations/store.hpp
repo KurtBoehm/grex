@@ -47,25 +47,22 @@ inline void part(void* dst, uint8x16_t src, AnyIndexTag auto bytes) {
   }
   if constexpr ((bytes.value & 4U) != 0) {
     constexpr std::size_t offset = (bytes.value & 8U) / 4U;
-    u32* dst32 = reinterpret_cast<u32*>(dst);
-    vst1q_lane_u32(dst32 + offset, vreinterpretq_u32_u8(src), offset);
+    u32* dst32 = reinterpret_cast<u32*>(dst) + offset;
+    vst1q_lane_u32(dst32, vreinterpretq_u32_u8(src), offset);
   }
   if constexpr ((bytes.value & 2U) != 0) {
     constexpr std::size_t offset = (bytes.value & 12U) / 2U;
-    u16* dst16 = reinterpret_cast<u16*>(dst);
+    u16* dst16 = reinterpret_cast<u16*>(dst) + offset;
 // Sadly, GCC gobbles 2-byte writes sometimes when using ARM64 intrinsics
 // Therefore, inline assembly is used in the case of GCC
 #if GREX_GCC
     if constexpr (bytes.value == 2) {
-      asm volatile("str %h0, [%x1]" : : "w"(src), "r"(dst16 + offset) : "memory");
+      asm volatile("str %h1, %0" : "=m"(*dst16) : "w"(src) :);
     } else {
-      asm volatile("st1.h { %0 }[%2], [%x1]"
-                   :
-                   : "w"(src), "r"(dst16 + offset), "i"(offset)
-                   : "memory");
+      asm volatile("st1.h { %1 }[%2], %0" : "=Q"(*dst16) : "w"(src), "i"(offset) : "memory");
     }
 #elif GREX_CLANG
-    vst1q_lane_u16(dst16 + offset, vreinterpretq_u16_u8(src), offset);
+    vst1q_lane_u16(dst16, vreinterpretq_u16_u8(src), offset);
 #endif
   }
   if constexpr ((bytes.value & 1U) != 0) {

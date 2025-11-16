@@ -24,6 +24,16 @@
 #define GREX_CLANG true
 #endif
 
+#if GREX_GCC
+#define GREX_DIAGNOSTIC_UNINIT_PUSH() \
+  _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wuninitialized\"") \
+    _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
+#elif GREX_CLANG
+#define GREX_DIAGNOSTIC_UNINIT_PUSH() \
+  _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wuninitialized\"")
+#endif
+#define GREX_DIAGNOSTIC_UNINIT_POP() _Pragma("GCC diagnostic pop")
+
 namespace grex {
 namespace primitives {
 using u8 = std::uint8_t;
