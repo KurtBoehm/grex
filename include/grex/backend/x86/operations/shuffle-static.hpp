@@ -5,7 +5,6 @@
 #include "shuffle-static/128.hpp"
 #include "shuffle-static/256.hpp"
 #include "shuffle-static/512.hpp"
-#include "shuffle-static/base.hpp"
 #include "shuffle-static/shared.hpp"
 // IWYU pragma: end_exports
 

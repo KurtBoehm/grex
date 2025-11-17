@@ -16,6 +16,7 @@
 #include "operations/multibyte.hpp"
 #include "operations/set.hpp"
 #include "operations/shingle.hpp"
+#include "operations/shuffle-static.hpp"
 #include "operations/store.hpp"
 // IWYU pragma: end_exports
 

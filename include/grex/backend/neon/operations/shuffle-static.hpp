@@ -4,20 +4,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHUFFLE_STATIC_SHARED_HPP
-#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHUFFLE_STATIC_SHARED_HPP
+#ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SHUFFLE_STATIC_HPP
+#define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SHUFFLE_STATIC_HPP
 
-#include <cstddef>
-#include <utility>
-
-#include "grex/backend/defs.hpp"
-#include "grex/backend/shared/defs.hpp"
-#include "grex/backend/shared/operations/blend-zero-static.hpp"
+#include "grex/backend/neon/operations/extract.hpp"
+#include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/shared/operations/shuffle-static.hpp"
-#include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/extract.hpp"
-#include "grex/backend/x86/operations/set.hpp"
-#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 struct ShufflerExtractSet : public BaseExpensiveOp {
@@ -39,6 +31,12 @@ struct ShufflerExtractSet : public BaseExpensiveOp {
     return {f64(tSh.size * 2), 1};
   }
 };
+
+template<AnyShuffleIndices auto tIdxs>
+requires((tIdxs.value_size * tIdxs.size == 16))
+struct ShufflerTrait<tIdxs> {
+  using Shuffler = CheapestType<tIdxs, ShufflerBlendZero, ShufflerExtractSet>;
+};
 } // namespace grex::backend
 
-#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHUFFLE_STATIC_SHARED_HPP
+#endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SHUFFLE_STATIC_HPP

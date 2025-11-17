@@ -9,10 +9,8 @@
 
 #include <array>
 
-#include "grex/backend/neon/operations/bitwise.hpp"
 #include "grex/backend/neon/operations/load.hpp"
 #include "grex/backend/neon/operations/mask-convert.hpp"
-#include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/shared/operations/blend-static.hpp"
 
 namespace grex::backend {

@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SET_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SET_HPP
 
+#include <array>
+
 #include <arm_neon.h>
 
 #include "grex/backend/macros/cast.hpp"
@@ -29,7 +31,7 @@ inline T make_undefined() {
 }
 
 #define GREX_SET_ARG(CNT, IDX, TYPE) GREX_COMMA_IF(IDX) TYPE v##IDX
-#define GREX_SET_VAL(CNT, IDX, KIND, BITS) v##IDX GREX_COMMA_IF(IDX)
+#define GREX_SET_VAL(CNT, IDX) GREX_COMMA_IF(IDX) v##IDX
 
 #define GREX_SET_LANE_0(CNT, IDX, KIND, BITS) \
   out = GREX_ISUFFIXED(vsetq_lane, KIND, BITS)(v##IDX, out, IDX);
@@ -43,7 +45,26 @@ inline T make_undefined() {
 #define GREX_SET_BOOLLANE(CNT, IDX, BITS) \
   GREX_CAT(GREX_SET_BOOLLANE_, GREX_EQUALS(IDX, 0))(CNT, IDX, BITS)
 
+#if GREX_GCC || true
 #define GREX_SET(KIND, BITS, SIZE) \
+  inline Vector<KIND##BITS, SIZE> set(TypeTag<Vector<KIND##BITS, SIZE>>, \
+                                      GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
+    std::array<KIND##BITS, SIZE> data{GREX_REPEAT(SIZE, GREX_SET_VAL)}; \
+    return {.r = GREX_ISUFFIXED(vld1q, KIND, BITS)(data.data())}; \
+  }
+#elif GREX_CLANG
+#define GREX_SET(KIND, BITS, SIZE) \
+  inline Vector<KIND##BITS, SIZE> set(TypeTag<Vector<KIND##BITS, SIZE>>, \
+                                      GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
+    GREX_REGISTER(KIND, BITS, SIZE) out = expand_register(Scalar{v0}); \
+    GREX_RREPEAT(SIZE, GREX_SET_LANE, KIND, BITS) \
+    return {.r = out}; \
+  }
+#endif
+
+GREX_FOREACH_TYPE(GREX_SET, 128)
+
+#define GREX_CREATE(KIND, BITS, SIZE) \
   inline Vector<KIND##BITS, SIZE> zeros(TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_ISUFFIXED(vdupq_n, KIND, BITS)(0)}; \
   } \
@@ -52,12 +73,6 @@ inline T make_undefined() {
   } \
   inline Vector<KIND##BITS, SIZE> broadcast(KIND##BITS value, TypeTag<Vector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_ISUFFIXED(vdupq_n, KIND, BITS)(value)}; \
-  } \
-  inline Vector<KIND##BITS, SIZE> set(TypeTag<Vector<KIND##BITS, SIZE>>, \
-                                      GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
-    GREX_REGISTER(KIND, BITS, SIZE) out = expand_register(Scalar{v0}); \
-    GREX_RREPEAT(SIZE, GREX_SET_LANE, KIND, BITS) \
-    return {.r = out}; \
   } \
 \
   inline Mask<KIND##BITS, SIZE> zeros(TypeTag<Mask<KIND##BITS, SIZE>>) { \
@@ -79,7 +94,7 @@ inline T make_undefined() {
     return {.r = cmp}; \
   }
 
-GREX_FOREACH_TYPE(GREX_SET, 128)
+GREX_FOREACH_TYPE(GREX_CREATE, 128)
 
 #define GREX_SET_SUB(KIND, BITS, PART, SIZE) \
   inline SubVector<KIND##BITS, PART, SIZE> set(TypeTag<SubVector<KIND##BITS, PART, SIZE>>, \

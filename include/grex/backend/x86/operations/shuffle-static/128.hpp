@@ -12,10 +12,10 @@
 
 #include "grex/backend/defs.hpp"
 #include "grex/backend/shared/defs.hpp"
+#include "grex/backend/shared/operations/blend-zero-static.hpp"
+#include "grex/backend/shared/operations/shuffle-static.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/backend/x86/operations/blend-zero-static/base.hpp"
 #include "grex/backend/x86/operations/reinterpret.hpp"
-#include "grex/backend/x86/operations/shuffle-static/base.hpp"
 #include "grex/backend/x86/operations/shuffle-static/shared.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base/defs.hpp"
