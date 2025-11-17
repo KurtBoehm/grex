@@ -3,6 +3,7 @@
 
 // IWYU pragma: begin_exports
 #include "operations/arithmetic-mask.hpp"
+#include "operations/blend-static.hpp"
 #include "operations/blend-zero-static.hpp"
 #include "operations/blend.hpp"
 #include "operations/extract.hpp"

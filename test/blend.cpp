@@ -71,8 +71,6 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
           std::exit(EXIT_FAILURE);
         }
       }
-// TODO Implement for ARM64 NEON
-#if GREX_BACKEND_X86_64
       {
         const auto blended = grex::blend<bls[rep][tIdxs]...>(vca.vec, vcb.vec);
         bool same = true;
@@ -96,7 +94,6 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
           std::exit(EXIT_FAILURE);
         }
       }
-#endif
     };
     grex::static_apply<repetitions>(
       [&]<std::size_t... tReps>() { (..., fix(grex::index_tag<tReps>)); });
