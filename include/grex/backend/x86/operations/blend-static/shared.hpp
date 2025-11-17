@@ -16,7 +16,6 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/blend.hpp"
 #include "grex/backend/x86/operations/set.hpp"
-#include "grex/backend/x86/sizes.hpp"
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {

@@ -12,7 +12,7 @@
 
 #include "grex/backend/defs.hpp"
 #include "grex/backend/shared/defs.hpp"
-#include "grex/backend/shared/operations/blend-zero-static.hpp"
+#include "grex/backend/shared/operations/blend-zero-static.hpp" // IWYU pragma: export
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/bitwise.hpp"
 #include "grex/backend/x86/operations/reinterpret.hpp"
