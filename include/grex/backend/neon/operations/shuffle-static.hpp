@@ -12,6 +12,26 @@
 #include "grex/backend/shared/operations/shuffle-static.hpp"
 
 namespace grex::backend {
+struct ShufflerTbl : public BaseExpensiveOp {
+  template<AnyShuffleIndices auto tSh>
+  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
+    return true;
+  }
+  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
+  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
+    using Value = TVec::Value;
+    static constexpr auto shuf = convert<1>(tSh).value();
+
+    const uint8x16_t data = reinterpret<u8>(vec.r);
+    const uint8x16_t idxs = shuf.vector(false_tag).r;
+    return {.r = reinterpret<Value>(vqtbl1q_u8(data, idxs))};
+  }
+  template<AnyShuffleIndices auto tSh>
+  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
+    return {1.0, 8};
+  }
+};
+
 struct ShufflerExtractSet : public BaseExpensiveOp {
   template<AnyShuffleIndices auto tSh>
   static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
@@ -28,14 +48,14 @@ struct ShufflerExtractSet : public BaseExpensiveOp {
   }
   template<AnyShuffleIndices auto tSh>
   static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
-    return {f64(tSh.size * 2), 1};
+    return {1.0, 8};
   }
 };
 
 template<AnyShuffleIndices auto tIdxs>
 requires((tIdxs.value_size * tIdxs.size == 16))
 struct ShufflerTrait<tIdxs> {
-  using Shuffler = CheapestType<tIdxs, ShufflerBlendZero, ShufflerExtractSet>;
+  using Shuffler = CheapestType<tIdxs, ShufflerBlendZero, ShufflerTbl, ShufflerExtractSet>;
 };
 } // namespace grex::backend
 

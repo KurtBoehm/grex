@@ -38,7 +38,7 @@ struct BlenderVariable : public BaseExpensiveOp {
     return blend(mask, a, b);
   }
   static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {0.5, 4};
+    return {1.0, 8};
   }
 };
 
