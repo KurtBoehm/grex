@@ -7,7 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_MULTIBYTE_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_MULTIBYTE_HPP
 
-#include <array>
 #include <cstddef>
 
 #include <immintrin.h>
@@ -34,6 +33,14 @@
 // by the numnber of bytes in the largest supported SIMD register
 
 namespace grex::backend {
+// N == M: simply load
+template<std::size_t tSrc, AnyVector TDst>
+requires(!AnySuperNativeVector<TDst> && tSrc == sizeof(typename TDst::Value))
+inline TDst load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/, TypeTag<TDst> /*dst*/) {
+  const auto raw = load(ptr, type_tag<VectorFor<u8, tSrc * TDst::size>>).registr();
+  return TDst{raw};
+}
+
 #if GREX_X86_64_LEVEL >= 2
 template<std::size_t tSrc, typename TDst>
 requires(tSrc < sizeof(typename TDst::Value) && sizeof(typename TDst::Register) == 16)

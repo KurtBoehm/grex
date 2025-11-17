@@ -11,6 +11,27 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 
 #if GREX_X86_64_LEVEL < 4
+
+#include <cstddef>
+
+#include "grex/backend/defs.hpp"
+#include "grex/base/defs.hpp"
+
+namespace grex::backend {
+// Convert a mask to signed integers
+template<Vectorizable T, std::size_t tSize>
+inline Vector<SignedInt<sizeof(T)>, tSize> mask2vector(Mask<T, tSize> m) {
+  return {.r = m.r};
+}
+
+// Convert (signed) integers to a mask
+template<SignedIntVectorizable T, std::size_t tSize, Vectorizable TDst>
+requires(sizeof(T) == sizeof(TDst))
+inline Mask<TDst, tSize> vector2mask(Vector<T, tSize> m, TypeTag<TDst> /*tag*/) {
+  return {.r = m.r};
+}
+} // namespace grex::backend
+
 #include "grex/backend/shared/operations/mask-convert.hpp" // IWYU pragma: export
 #endif
 

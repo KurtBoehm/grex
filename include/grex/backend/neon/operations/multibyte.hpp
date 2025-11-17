@@ -11,8 +11,11 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/choosers.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/neon/operations/load.hpp" // IWYU pragma: keep
 #include "grex/backend/neon/types.hpp" // IWYU pragma: keep
+#include "grex/base/defs.hpp"
 
 // shared definitions
 #include "grex/backend/shared/operations/multibyte.hpp" // IWYU pragma: keep
@@ -25,6 +28,14 @@
 // by the numnber of bytes in the largest supported SIMD register
 
 namespace grex::backend {
+// N == M: simply load
+template<std::size_t tSrc, AnyVector TDst>
+requires(!AnySuperNativeVector<TDst> && tSrc == sizeof(typename TDst::Value))
+inline TDst load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/, TypeTag<TDst> /*dst*/) {
+  const auto raw = load(ptr, type_tag<VectorFor<u8, tSrc * TDst::size>>).registr();
+  return TDst{reinterpret<typename TDst::Value>(raw)};
+}
+
 template<std::size_t tSrc>
 requires(tSrc < 8)
 inline u64x2 load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/, TypeTag<u64x2> /*dst*/) {

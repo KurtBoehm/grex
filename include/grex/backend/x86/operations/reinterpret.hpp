@@ -41,6 +41,11 @@ template<Vectorizable TDst, typename THalf>
 inline VectorFor<TDst, THalf::size> reinterpret(SuperVector<THalf> v, TypeTag<TDst> tag) {
   return {.lower = reinterpret(v.lower, tag), .upper = reinterpret(v.upper, tag)};
 }
+
+template<Vectorizable TDst, typename TSrc>
+inline auto reinterpret(TSrc src) {
+  return reinterpret(src, type_tag<TDst>);
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_REINTERPRET_HPP

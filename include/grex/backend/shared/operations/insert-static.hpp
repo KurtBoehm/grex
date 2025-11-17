@@ -31,17 +31,21 @@ inline SubMask<T, tPart, tSize> insert(SubMask<T, tPart, tSize> v, IndexTag<tInd
 template<typename THalf>
 inline SuperVector<THalf> insert(SuperVector<THalf> v, AnyIndexTag auto index,
                                  typename THalf::Value value) {
-  if (index < THalf::size) {
+  if constexpr (index.value < THalf::size) {
     return {.lower = insert(v.lower, index, value), .upper = v.upper};
+  } else {
+    return {.lower = v.lower,
+            .upper = insert(v.upper, index_tag<index.value - THalf::size>, value)};
   }
-  return {.lower = v.lower, .upper = insert(v.upper, index - THalf::size, value)};
 }
 template<typename THalf>
 inline SuperMask<THalf> insert(SuperMask<THalf> m, AnyIndexTag auto index, bool value) {
-  if (index < THalf::size) {
+  if constexpr (index.value < THalf::size) {
     return {.lower = insert(m.lower, index, value), .upper = m.upper};
+  } else {
+    return {.lower = m.lower,
+            .upper = insert(m.upper, index_tag<index.value - THalf::size>, value)};
   }
-  return {.lower = m.lower, .upper = insert(m.upper, index - THalf::size, value)};
 }
 } // namespace grex::backend
 
