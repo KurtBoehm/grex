@@ -411,12 +411,10 @@ inline Vector<T, tSize> blend(Vector<T, tSize> v0, Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend<tBls...>(v0.backend(), v1.backend())};
 }
 
-#if GREX_BACKEND_X86_64
 template<ShuffleIndex... tIdxs, Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> shuffle(Vector<T, tSize> v) {
   return Vector<T, tSize>{backend::shuffle<tIdxs...>(v.backend())};
 }
-#endif
 
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> mask_add(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b) {

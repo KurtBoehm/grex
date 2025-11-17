@@ -23,7 +23,7 @@ thesauros_dep = dependency('thesauros')
 foreach name, conf : {
   'blend': [['x86_64', 'neon'], true],
   'convert': [['scalar', 'x86_64', 'neon'], true],
-  'shuffle': [['x86_64'], true], # neon
+  'shuffle': [['x86_64', 'neon'], true],
 }
   backends = conf[0]
   parallel = conf[1]
