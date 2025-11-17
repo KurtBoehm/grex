@@ -12,9 +12,9 @@
 
 #include "grex/backend/defs.hpp"
 #include "grex/backend/shared/defs.hpp"
+#include "grex/backend/shared/operations/blend-zero-static.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/blend-static.hpp"
-#include "grex/backend/x86/operations/blend-zero-static/base.hpp"
 #include "grex/backend/x86/operations/extract.hpp"
 #include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/operations/shuffle-static/base.hpp"
