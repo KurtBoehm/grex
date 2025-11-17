@@ -14,6 +14,7 @@
 #include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/blend-zero-static.hpp"
 #include "grex/backend/shared/operations/shuffle-static.hpp"
+#include "grex/backend/shared/operations/blend-zero-static.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/reinterpret.hpp"
 #include "grex/backend/x86/operations/shuffle-static/shared.hpp"
