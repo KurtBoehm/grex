@@ -399,12 +399,10 @@ template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend_zero(Mask<T, tSize> mask, Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend_zero(mask.backend(), v1.backend())};
 }
-#if GREX_BACKEND_X86_64
 template<BlendZero... tBzs, Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend_zero(Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend_zero<tBzs...>(v1.backend())};
 }
-#endif
 template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend(Mask<T, tSize> mask, Vector<T, tSize> v0, Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend(mask.backend(), v0.backend(), v1.backend())};

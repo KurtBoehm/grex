@@ -21,7 +21,7 @@ thesauros_dep = dependency('thesauros')
 
 # tests that are separated based on the value type
 foreach name, conf : {
-  'blend': [['x86_64'], true], # neon
+  'blend': [['x86_64', 'neon'], true],
   'convert': [['scalar', 'x86_64', 'neon'], true],
   'shuffle': [['x86_64'], true], # neon
 }

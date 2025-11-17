@@ -4,8 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_DEFS_HPP
-#define INCLUDE_GREX_BACKEND_X86_DEFS_HPP
+#ifndef INCLUDE_GREX_BACKEND_SHARED_DEFS_HPP
+#define INCLUDE_GREX_BACKEND_SHARED_DEFS_HPP
 
 #include <concepts>
 #include <type_traits>
@@ -51,4 +51,4 @@ template<auto tValue, typename... TRemaining>
 using CheapestType = CheapestTypeTrait<tValue, ApplicableTypes<tValue, TRemaining...>>::Cheapest;
 } // namespace grex::backend
 
-#endif // INCLUDE_GREX_BACKEND_X86_DEFS_HPP
+#endif // INCLUDE_GREX_BACKEND_SHARED_DEFS_HPP

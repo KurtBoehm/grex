@@ -3,7 +3,6 @@
 
 // IWYU pragma: begin_exports
 #include "x86/cpuid.hpp"
-#include "x86/defs.hpp"
 #include "x86/instruction-sets.hpp"
 #include "x86/macros.hpp"
 #include "x86/operations.hpp"

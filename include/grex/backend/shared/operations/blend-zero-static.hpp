@@ -4,8 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_ZERO_STATIC_BASE_HPP
-#define INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_ZERO_STATIC_BASE_HPP
+#ifndef INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_BLEND_ZERO_STATIC_HPP
+#define INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_BLEND_ZERO_STATIC_HPP
 
 #include <array>
 #include <cstddef>
@@ -13,7 +13,9 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include "grex/backend/active/sizes.hpp"
 #include "grex/backend/defs.hpp"
+#include "grex/backend/shared/defs.hpp"
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
@@ -185,6 +187,88 @@ inline void blend_zero_static_test() {
   static_assert(!bzs2.single_lane().has_value());
   static_assert(bzs3.single_lane()->ctrl == std::array{zero_bz, keep_bz});
 }
+
+struct ZeroBlenderNoop : public BaseExpensiveOp {
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+    return static_apply<tBzs.size>([&]<std::size_t... tIdxs>() {
+      return (... && (tBzs[tIdxs] == keep_bz || tBzs[tIdxs] == any_bz));
+    });
+  }
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
+    static_assert(is_applicable(auto_tag<tBzs>));
+    return vec;
+  }
+  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
+    return {0, 0};
+  }
+};
+struct ZeroBlenderZero : public BaseExpensiveOp {
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+    return static_apply<tBzs.size>([&]<std::size_t... tIdxs>() {
+      return (... && (tBzs[tIdxs] == zero_bz || tBzs[tIdxs] == any_bz));
+    });
+  }
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec /*vec*/, AutoTag<tBzs> /*tag*/) {
+    static_assert(is_applicable(auto_tag<tBzs>));
+    return zeros(type_tag<TVec>);
+  }
+  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
+    return {0, 1};
+  }
+};
+
+struct SubZeroBlender : public BaseExpensiveOp {
+  template<AnyBlendZeros auto tBzs>
+  using Base = ZeroBlender<tBzs.sub_extended()>;
+
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+    return Base<tBzs>::is_applicable(auto_tag<tBzs.sub_extended()>);
+  }
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
+    return TVec{Base<tBzs>::apply(vec.full, auto_tag<tBzs.sub_extended()>)};
+  }
+  template<AnyBlendZeros auto tBzs>
+  static constexpr std::pair<f64, f64> cost(AutoTag<tBzs> /*tag*/) {
+    return Base<tBzs>::cost(auto_tag<tBzs.sub_extended()>);
+  }
+};
+struct SuperZeroBlender : public BaseExpensiveOp {
+  template<AnyBlendZeros auto tBzs>
+  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+    return ZeroBlender<tBzs.lower()>::is_applicable(auto_tag<tBzs.lower()>) &&
+           ZeroBlender<tBzs.upper()>::is_applicable(auto_tag<tBzs.upper()>);
+  }
+  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
+    return TVec{
+      .lower = ZeroBlender<tBzs.lower()>::apply(vec.lower, auto_tag<tBzs.lower()>),
+      .upper = ZeroBlender<tBzs.upper()>::apply(vec.upper, auto_tag<tBzs.upper()>),
+    };
+  }
+  template<AnyBlendZeros auto tBzs>
+  static constexpr std::pair<f64, f64> cost(AutoTag<tBzs> /*tag*/) {
+    const auto [c0a, c1a] = ZeroBlender<tBzs.lower()>::cost(auto_tag<tBzs.lower()>);
+    const auto [c0b, c1b] = ZeroBlender<tBzs.upper()>::cost(auto_tag<tBzs.upper()>);
+    return {c0a + c0b, c1a + c1b};
+  }
+};
+
+template<AnyBlendZeros auto tBzs>
+requires((tBzs.value_size * tBzs.size < register_bytes.front()))
+struct ZeroBlenderTrait<tBzs> {
+  using Type = SubZeroBlender;
+};
+template<AnyBlendZeros auto tBzs>
+requires((tBzs.value_size * tBzs.size > register_bytes.back()))
+struct ZeroBlenderTrait<tBzs> {
+  using Type = SuperZeroBlender;
+};
 } // namespace grex::backend
 
-#endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_ZERO_STATIC_BASE_HPP
+#endif // INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_BLEND_ZERO_STATIC_HPP

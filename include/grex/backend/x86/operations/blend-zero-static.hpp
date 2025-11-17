@@ -5,7 +5,6 @@
 #include "blend-zero-static/128.hpp"
 #include "blend-zero-static/256.hpp"
 #include "blend-zero-static/512.hpp"
-#include "blend-zero-static/base.hpp"
 #include "blend-zero-static/shared.hpp"
 // IWYU pragma: end_exports
 

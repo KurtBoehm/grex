@@ -11,7 +11,7 @@
 #include <utility>
 
 #include "grex/backend/defs.hpp"
-#include "grex/backend/x86/defs.hpp"
+#include "grex/backend/shared/defs.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/blend-zero-static/base.hpp"
 #include "grex/backend/x86/operations/reinterpret.hpp"

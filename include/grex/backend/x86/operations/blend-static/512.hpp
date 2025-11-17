@@ -12,7 +12,7 @@
 // TODO This only includes the basic operations and could be extended using the vinserti family,
 //      the vshufi family, and others
 #if GREX_X86_64_LEVEL >= 4
-#include "grex/backend/x86/defs.hpp"
+#include "grex/backend/shared/defs.hpp"
 #include "grex/backend/x86/operations/blend-static/base.hpp"
 #include "grex/backend/x86/operations/blend-static/shared.hpp"
 
