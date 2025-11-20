@@ -10,10 +10,13 @@
 #include <array>
 #include <bit>
 #include <climits>
+#include <cstddef>
 
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
+static_assert(std::endian::native == std::endian::little, "Only little-endian ARM64 is supported!");
+
 // TODO Support 64-bit registers? MMX is not supported on x86-64…
 static constexpr std::array<std::size_t, 1> register_bits{128};
 

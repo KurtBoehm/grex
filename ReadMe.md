@@ -18,16 +18,22 @@ The _high level_, which has been described so far, and the _backend_, which prov
 The main goal of this separation is to allow for the transparent implementation of different backends for different ISAs without implementing the high level repeatedly, as well as the ability to disable all backends to support platforms for which no backend has been implemented.
 However, this goal is not fully realized yet.
 
-## Future Work
+## Platform Support
 
-Currently, Grex fully supports vectorization on x86-64 processors (support for 32-bit x86 processors is not planned, as those are too old to be relevant in contemporaneous high-performance applications) and partially supports vectorization on ARM64 usign NEON (support for 32-bit ARM processors is not planned).
-On other platforms, the scalar backend can be used, which does not define any vector types but defines the generic operations (using `grex::ScalarTag`).
+Grex fully supports vectorization on x86-64 and (little-endian) ARM64 processors.
+Support for vectorization on 32-bit x86 processors (too old to be relevant in HPC applications), 32-bit ARM (not relevant in HPC), or big-endian ARM64 (not used in any relevant system) is not planned.
+On other platforms, the scalar backend can be used, which defines the generic operations using `grex::ScalarTag` but does not provide vector/mask types.
+
+Grex has been tested with x86-64 and ARM64 on Linux, ARM64 on macOS Tahoe, and x86-64 on Windows 11 (Windows 10 should also work) using both GCC 14+ and Clang 17+.
+Support for other operating systems and compilers (including MSVC) is not planned.
 
 ## Building
 
 Grex uses the Meson build system and includes a very extensive set of tests.
 These can be run by executing `meson setup -C <build directory>` followed by `meson test -C <build directory>`.
 `Makefile` contains targets for calling `meson setup` with different optimization and debug settings.
+
+Grex additionally provides fully-featured CMake build files, including the tests (which use CTest in the CMake version).
 
 ## Dependencies
 

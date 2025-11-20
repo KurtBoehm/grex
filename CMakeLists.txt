@@ -17,8 +17,14 @@ if(GREX_SIMD_BACKEND STREQUAL "auto")
     "#if !defined(__x86_64__) && !defined(_M_X64)\n#error\n#endif\nint main() {}"
     grex_is_x86_64
   )
+  check_cxx_source_compiles(
+    "#if !defined(__aarch64__) && !defined(_M_ARM64)\n#error\n#endif\nint main() {}"
+    grex_is_arm64
+  )
   if(grex_is_x86_64)
     set(grex_backend "x86_64")
+  elseif(grex_is_arm64)
+    set(grex_backend "neon")
   else()
     set(grex_backend "scalar")
   endif()
@@ -34,6 +40,8 @@ add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_23)
 if(grex_backend STREQUAL "x86_64")
   target_compile_definitions(${PROJECT_NAME} INTERFACE "GREX_BACKEND_X86_64=1")
+elseif(grex_backend STREQUAL "neon")
+  target_compile_definitions(${PROJECT_NAME} INTERFACE "GREX_BACKEND_NEON=1")
 elseif(grex_backend STREQUAL "scalar")
   target_compile_definitions(${PROJECT_NAME} INTERFACE "GREX_BACKEND_SCALAR=1")
 else()
@@ -87,6 +95,8 @@ if(GREX_BUILD_TESTS)
       cpuid_run_res
       cpuid_compile_res
       SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/tools/cpuid.cpp"
+      CMAKE_FLAGS
+        "-DINCLUDE_DIRECTORIES:STRING=${CMAKE_CURRENT_SOURCE_DIR}/include"
       RUN_OUTPUT_VARIABLE cpuid_output
     )
     if(NOT cpuid_compile_res)
@@ -117,11 +127,16 @@ if(GREX_BUILD_TESTS)
   endfunction()
 
   # tests that are separated based on the value type
-  foreach(test_info IN ITEMS "blend;true" "convert;false" "shuffle;true")
+  foreach(
+    test_info
+    IN
+    ITEMS "blend;x86_64;neon" "convert;scalar;x86_64;neon" "shuffle;x86_64;neon"
+  )
     list(GET test_info 0 test_name)
-    list(GET test_info 1 test_simd_only)
+    list(SUBLIST test_info 1 -1 test_backends)
+    list(FIND test_backends ${grex_backend} grex_backend_index)
 
-    if(NOT ${test_simd_only} OR NOT (${grex_backend} STREQUAL "scalar"))
+    if(${grex_backend_index} GREATER_EQUAL 0)
       foreach(
         test_type
         f64
@@ -166,21 +181,22 @@ if(GREX_BUILD_TESTS)
     test_info
     IN
     ITEMS
-      "componentwise;false"
-      "expand;true"
-      "extract;false"
-      "gather;false"
-      "general;false"
-      "horizontal;false"
-      "mem;false"
-      "multibyte;false"
-      "set;false"
-      "shingle;false"
+      "componentwise;scalar;x86_64;neon"
+      "expand;x86_64;neon"
+      "extract;scalar;x86_64;neon"
+      "gather;scalar;x86_64;neon"
+      "general;scalar;x86_64;neon"
+      "horizontal;scalar;x86_64;neon"
+      "mem;scalar;x86_64;neon"
+      "multibyte;scalar;x86_64;neon"
+      "set;scalar;x86_64;neon"
+      "shingle;scalar;x86_64;neon"
   )
     list(GET test_info 0 test_name)
-    list(GET test_info 1 test_simd_only)
+    list(SUBLIST test_info 1 -1 test_backends)
+    list(FIND test_backends ${grex_backend} grex_backend_index)
 
-    if(NOT ${test_simd_only} OR NOT (${grex_backend} STREQUAL "scalar"))
+    if(${grex_backend_index} GREATER_EQUAL 0)
       foreach(test_arch ${grex_arches})
         set(test_target_name "${PROJECT_NAME}_${test_name}_${test_arch}")
         create_grex_test(${test_target_name} ${test_name} "${PROJECT_NAME}.${test_name}.${test_arch}")
