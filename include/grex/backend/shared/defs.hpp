@@ -13,6 +13,12 @@
 #include "grex/base/defs.hpp"
 
 namespace grex::backend {
+template<typename... T>
+struct TypeSeq {
+  template<typename... TOther>
+  using Prepended = TypeSeq<TOther..., T...>;
+};
+
 struct BaseExpensiveOp {};
 template<typename T>
 concept AnyExpensiveOp = std::derived_from<T, BaseExpensiveOp>;

@@ -7,10 +7,14 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_CONVERT_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_CONVERT_HPP
 
+#include <cstddef>
+
 #include <arm_neon.h>
 
 #include "grex/backend/choosers.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/base.hpp"
+#include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/expand.hpp"
 #include "grex/backend/neon/operations/merge.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"

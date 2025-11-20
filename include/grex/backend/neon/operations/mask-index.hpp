@@ -11,10 +11,13 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/defs.hpp"
+#include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/operations/blend.hpp"
 #include "grex/backend/neon/operations/compare.hpp"
 #include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/neon/types.hpp"
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 #define GREX_INDEX_MASK(KIND, BITS, SIZE) \

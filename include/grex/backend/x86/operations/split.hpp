@@ -154,7 +154,7 @@ inline THalf split(SuperMask<THalf> m, IndexTag<1> /*tag*/) {
   return m.upper;
 }
 
-// Add more convenient naming that is compatible with the AR64 NEON backend
+// Add more convenient naming that is compatible with the ARM64 backend
 template<typename T>
 requires(AnyVector<T> || AnyMask<T>)
 inline auto get_low(T a) {

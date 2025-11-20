@@ -12,9 +12,13 @@
 #include <arm_neon.h>
 
 #include "grex/backend/choosers.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
+#include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp" // IWYU pragma: keep
+#include "grex/base/defs.hpp"
+#include "grex/types.hpp"
 
 namespace grex::backend {
 // native vectors

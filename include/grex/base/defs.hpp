@@ -173,12 +173,6 @@ struct TypeTag {};
 template<typename T>
 inline constexpr TypeTag<T> type_tag{};
 
-template<typename... T>
-struct TypeSeq {
-  template<typename... TOther>
-  using Prepended = TypeSeq<TOther..., T...>;
-};
-
 template<typename T, T tVal>
 struct ValueTag {
   using Value = T;
@@ -221,6 +215,8 @@ concept TypedValueTag = requires {
 };
 template<typename TTag>
 concept AnyIndexTag = TypedValueTag<TTag, std::size_t>;
+template<typename TTag>
+concept AnyIntTag = TypedValueTag<TTag, int>;
 template<typename TTag>
 concept AnyBoolTag = TypedValueTag<TTag, bool>;
 

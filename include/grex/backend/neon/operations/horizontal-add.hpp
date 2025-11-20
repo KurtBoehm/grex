@@ -9,6 +9,10 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/defs.hpp"
+#include "grex/backend/macros/base.hpp"
+#include "grex/backend/macros/for-each.hpp"
+#include "grex/backend/macros/math.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/arithmetic.hpp"
 #include "grex/backend/neon/types.hpp"

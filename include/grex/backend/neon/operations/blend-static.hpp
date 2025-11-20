@@ -8,10 +8,15 @@
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_BLEND_STATIC_HPP
 
 #include <array>
+#include <cstddef>
+#include <utility>
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/neon/operations/load.hpp"
 #include "grex/backend/neon/operations/mask-convert.hpp"
+#include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/blend-static.hpp"
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 // TODO Add more efficient operations, for instance:

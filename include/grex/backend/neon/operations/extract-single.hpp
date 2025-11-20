@@ -7,10 +7,15 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXTRACT_SINGLE_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXTRACT_SINGLE_HPP
 
+#include <cstddef>
+
 #include <arm_neon.h>
 
+#include "grex/backend/defs.hpp"
+#include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 #define GREX_EXTRINGLE(KIND, BITS, SIZE) \

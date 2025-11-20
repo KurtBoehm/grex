@@ -9,6 +9,7 @@
 
 #include <cstddef>
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/neon/operations/arithmetic.hpp"
 #include "grex/backend/neon/operations/blend.hpp"
 #include "grex/backend/neon/types.hpp" // IWYU pragma: keep

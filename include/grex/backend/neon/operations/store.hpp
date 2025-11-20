@@ -8,10 +8,15 @@
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_STORE_HPP
 
 #include <climits>
+#include <cstddef>
+#include <utility>
 
 #include <arm_neon.h>
 
+#include "grex/backend/defs.hpp"
+#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/equals.hpp"
+#include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/repeat.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"

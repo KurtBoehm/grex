@@ -13,10 +13,13 @@
 
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
+#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
+#include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/expand.hpp"
 #include "grex/backend/neon/types.hpp"
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 #define GREX_VUSHINGLE_f(KIND, BITS, SIZE) \

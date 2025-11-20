@@ -13,6 +13,7 @@
 #include <arm_neon.h>
 
 #include "grex/backend/macros/cast.hpp"
+#include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/repeat.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"

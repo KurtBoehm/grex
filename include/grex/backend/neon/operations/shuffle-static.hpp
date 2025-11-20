@@ -7,9 +7,15 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SHUFFLE_STATIC_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SHUFFLE_STATIC_HPP
 
+#include <cstddef>
+#include <utility>
+
+#include "grex/backend/defs.hpp"
 #include "grex/backend/neon/operations/extract.hpp"
 #include "grex/backend/neon/operations/set.hpp"
+#include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/shuffle-static.hpp"
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 struct ShufflerTbl : public BaseExpensiveOp {

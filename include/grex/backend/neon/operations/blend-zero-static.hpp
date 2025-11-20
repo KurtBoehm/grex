@@ -8,11 +8,16 @@
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_BLEND_ZERO_STATIC_HPP
 
 #include <array>
+#include <cstddef>
+#include <utility>
 
+#include "grex/backend/defs.hpp"
 #include "grex/backend/neon/operations/bitwise.hpp"
 #include "grex/backend/neon/operations/load.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"
+#include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/blend-zero-static.hpp"
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 // TODO Add more efficient operations, for instance:

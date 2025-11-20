@@ -7,15 +7,21 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXPAND_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXPAND_HPP
 
+#include <cstddef>
+
 #include <arm_neon.h>
 
 #include "grex/backend/choosers.hpp"
+#include "grex/backend/defs.hpp"
+#include "grex/backend/macros/for-each.hpp"
+#include "grex/backend/macros/math.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/expand-register.hpp"
 #include "grex/backend/neon/operations/insert-static.hpp"
 #include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/neon/operations/subnative.hpp"
 #include "grex/backend/neon/sizes.hpp"
+#include "grex/base/defs.hpp"
 
 namespace grex::backend {
 #define GREX_EXPAND_ANY(KIND, BITS, SIZE) \
