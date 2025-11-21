@@ -16,7 +16,7 @@
 #include "grex/backend/neon/operations/mask-convert.hpp"
 #include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/blend-static.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 // TODO Add more efficient operations, for instance:

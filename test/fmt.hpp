@@ -9,7 +9,7 @@
 
 #include "fmt/base.h"
 
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 template<>
 struct fmt::formatter<grex::ShuffleIndex> {

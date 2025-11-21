@@ -16,7 +16,7 @@
 #include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/blend-static.hpp"
 #include "grex/backend/shared/operations/blend-zero-static.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 template<std::size_t tValueBytes, std::size_t tSize>

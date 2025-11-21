@@ -16,7 +16,7 @@
 #include "grex/backend/active/sizes.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/shared/defs.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 template<std::size_t tValueBytes, std::size_t tSize>

@@ -27,7 +27,7 @@
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/operations/convert.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 #endif
 #if GREX_X86_64_LEVEL >= 4
 #include "grex/backend/x86/operations/intrinsics.hpp" // IWYU pragma: keep

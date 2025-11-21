@@ -24,7 +24,7 @@
 #include <fmt/std.h>
 #include <pcg_random.hpp>
 
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 #include "grex/types.hpp"
 
 namespace grex::test {

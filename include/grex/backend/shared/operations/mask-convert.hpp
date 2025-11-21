@@ -11,7 +11,7 @@
 
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 // Convert a mask to signed integers
@@ -28,8 +28,7 @@ mask2vector(SuperMask<THalf> m) {
 // Convert (signed) integers to a mask
 template<SignedIntVectorizable T, std::size_t tPart, std::size_t tSize, Vectorizable TDst>
 requires(sizeof(T) == sizeof(TDst))
-inline SubMask<TDst, tPart, tSize> vector2mask(SubVector<T, tPart, tSize> m,
-                                               TypeTag<TDst> tag) {
+inline SubMask<TDst, tPart, tSize> vector2mask(SubVector<T, tPart, tSize> m, TypeTag<TDst> tag) {
   return SubMask<TDst, tPart, tSize>{vector2mask(m.full, tag)};
 }
 template<typename THalf, Vectorizable TDst>

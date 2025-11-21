@@ -19,7 +19,7 @@
 #include "grex/backend/neon/operations/merge.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/operations/split.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 #define GREX_CVT_VCVTQ(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE) \

@@ -16,7 +16,7 @@
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/arithmetic.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp" // IWYU pragma: keep
+#include "grex/base.hpp" // IWYU pragma: keep
 
 #if GREX_X86_64_LEVEL >= 3
 #include "grex/backend/x86/operations/split.hpp"

@@ -17,7 +17,7 @@
 #include "grex/backend/neon/operations/expand.hpp"
 #include "grex/backend/neon/operations/extract-single.hpp"
 #include "grex/backend/neon/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 #define GREX_ISFIN(KIND, BITS, SIZE, ...) \

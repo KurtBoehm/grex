@@ -10,7 +10,7 @@
 #include <concepts>
 #include <cstddef>
 
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 #include "grex/operations.hpp"
 #include "grex/types.hpp"
 

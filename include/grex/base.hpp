@@ -4,8 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BASE_DEFS_HPP
-#define INCLUDE_GREX_BASE_DEFS_HPP
+#ifndef INCLUDE_GREX_BASE_HPP
+#define INCLUDE_GREX_BASE_HPP
 
 #include <concepts>
 #include <cstddef>
@@ -250,4 +250,4 @@ GREX_ALWAYS_INLINE constexpr decltype(auto) static_apply(auto f) {
 }
 } // namespace grex
 
-#endif // INCLUDE_GREX_BASE_DEFS_HPP
+#endif // INCLUDE_GREX_BASE_HPP

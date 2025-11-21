@@ -9,7 +9,7 @@
 
 #include <bit>
 
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 // Casts from TSrc to TDst with arbitrary values in the upper bits

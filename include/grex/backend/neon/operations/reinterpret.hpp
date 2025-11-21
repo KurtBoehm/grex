@@ -13,7 +13,7 @@
 
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/neon/macros/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 #define GREX_REINTERPRET_DEFAULT(DSTKIND, DSTBITS, DSTSIZE, SRCKIND, SRCBITS, SRCSIZE) \

@@ -12,7 +12,7 @@
 #include <cstddef>
 #include <span>
 
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 #include "grex/tags.hpp"
 #include "grex/types.hpp"
 

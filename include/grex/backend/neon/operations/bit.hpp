@@ -9,7 +9,7 @@
 
 #include <cstddef>
 
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 template<UnsignedIntVectorizable T>

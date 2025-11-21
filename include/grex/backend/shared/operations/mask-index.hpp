@@ -10,7 +10,7 @@
 #include <cstddef>
 
 #include "grex/backend/defs.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>

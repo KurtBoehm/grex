@@ -15,7 +15,7 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 // A mask for the given number of bits

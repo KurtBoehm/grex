@@ -10,7 +10,7 @@
 #include <concepts>
 #include <type_traits>
 
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 template<typename... T>

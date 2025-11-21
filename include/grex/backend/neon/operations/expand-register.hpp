@@ -13,7 +13,7 @@
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 // Cast TSrc to TDst with arbitrary values in the upper bits

@@ -21,7 +21,7 @@
 #include "grex/backend/x86/operations/insert.hpp"
 #include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 #if GREX_X86_64_LEVEL > 2
 #include "grex/backend/x86/operations/mask-index.hpp"

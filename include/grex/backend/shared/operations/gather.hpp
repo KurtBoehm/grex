@@ -12,7 +12,7 @@
 
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>

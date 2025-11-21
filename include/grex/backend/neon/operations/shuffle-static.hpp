@@ -15,7 +15,7 @@
 #include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/shuffle-static.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 struct ShufflerTbl : public BaseExpensiveOp {

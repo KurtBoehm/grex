@@ -18,7 +18,7 @@
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 #define GREX_BLEND_CAST_f(BITS, REGISTERBITS, X) \

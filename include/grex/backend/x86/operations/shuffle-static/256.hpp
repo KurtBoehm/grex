@@ -20,7 +20,7 @@
 #include "grex/backend/x86/operations/blend-zero-static.hpp"
 #include "grex/backend/x86/operations/load.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 struct ShufflerShuffle8x32 : public BaseExpensiveOp {

@@ -23,7 +23,7 @@
 #if GREX_X86_64_LEVEL < 4
 #include "grex/backend/defs.hpp"
 #include "grex/backend/x86/operations/convert/base.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 #endif
 
 // Definitions for 128-bit masks below level 4

@@ -17,7 +17,7 @@
 #include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/blend-zero-static.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 // TODO Add more efficient operations, for instance:

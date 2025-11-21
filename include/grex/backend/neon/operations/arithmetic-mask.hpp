@@ -13,7 +13,7 @@
 #include "grex/backend/neon/operations/arithmetic.hpp"
 #include "grex/backend/neon/operations/blend.hpp"
 #include "grex/backend/neon/types.hpp" // IWYU pragma: keep
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 template<Vectorizable T, std::size_t tSize>

@@ -21,7 +21,7 @@
 #include "grex/backend/x86/macros/types.hpp"
 #include "grex/backend/x86/operations/merge.hpp"
 #include "grex/backend/x86/operations/split.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 #if GREX_X86_64_LEVEL < 4
 #include "grex/backend/x86/operations/mask-convert.hpp"

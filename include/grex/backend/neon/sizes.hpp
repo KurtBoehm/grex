@@ -12,7 +12,7 @@
 #include <climits>
 #include <cstddef>
 
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 static_assert(std::endian::native == std::endian::little, "Only little-endian ARM64 is supported!");

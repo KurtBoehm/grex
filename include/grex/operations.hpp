@@ -12,7 +12,7 @@
 #include "grex/backend/active/operations.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/operations.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 #include "grex/types.hpp"
 
 namespace grex {

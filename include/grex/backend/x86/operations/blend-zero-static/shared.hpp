@@ -17,7 +17,7 @@
 #include "grex/backend/x86/operations/bitwise.hpp"
 #include "grex/backend/x86/operations/reinterpret.hpp"
 #include "grex/backend/x86/operations/set.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 struct ZeroBlenderAnd : public BaseExpensiveOp {

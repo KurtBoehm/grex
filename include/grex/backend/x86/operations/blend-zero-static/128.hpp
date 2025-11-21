@@ -17,7 +17,7 @@
 #include "grex/backend/x86/operations/blend-zero-static/shared.hpp"
 #include "grex/backend/x86/operations/reinterpret.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 // TODO There are no optimized implementations at level 1, as those would require a lot of work
 //      for very old architectures.

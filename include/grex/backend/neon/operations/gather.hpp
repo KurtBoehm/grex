@@ -9,9 +9,9 @@
 
 #include <cstddef>
 
-#include "grex/backend/neon/operations/extract.hpp"// IWYU pragma: export
-#include "grex/backend/neon/operations/merge.hpp"// IWYU pragma: export
-#include "grex/backend/neon/operations/set.hpp"// IWYU pragma: export
+#include "grex/backend/neon/operations/extract.hpp" // IWYU pragma: export
+#include "grex/backend/neon/operations/merge.hpp" // IWYU pragma: export
+#include "grex/backend/neon/operations/set.hpp" // IWYU pragma: export
 #include "grex/backend/neon/operations/split.hpp" // IWYU pragma: export
 
 // shared definitions

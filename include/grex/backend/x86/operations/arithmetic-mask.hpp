@@ -20,7 +20,7 @@
 #include "grex/backend/x86/operations/arithmetic.hpp"
 #include "grex/backend/x86/operations/blend.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 // AVX-512: Use intrinsics

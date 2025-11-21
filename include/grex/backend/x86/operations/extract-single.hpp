@@ -16,7 +16,7 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 #if GREX_X86_64_LEVEL >= 3
 #include "grex/backend/x86/operations/split.hpp"

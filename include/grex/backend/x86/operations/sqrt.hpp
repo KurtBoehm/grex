@@ -17,7 +17,7 @@
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/expand-scalar.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 #define GREX_SQRT_INSTRINSIC(KIND, BITS, BITPREFIX) \

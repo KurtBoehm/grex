@@ -21,7 +21,7 @@
 #include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/neon/operations/subnative.hpp"
 #include "grex/backend/neon/sizes.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 #define GREX_EXPAND_ANY(KIND, BITS, SIZE) \

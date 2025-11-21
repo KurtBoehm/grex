@@ -16,7 +16,7 @@
 #include "grex/backend/macros/repeat.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 #define GREX_EXTRACT_SWITCH(SIZE, INDEX, INTRINSIC) \

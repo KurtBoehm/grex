@@ -16,7 +16,7 @@
 #include "grex/backend/x86/instruction-sets.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/operations/load.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 #if GREX_X86_64_LEVEL >= 4
 #include "grex/backend/x86/operations/set.hpp"

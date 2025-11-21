@@ -17,7 +17,7 @@
 #include "grex/backend/macros/math.hpp"
 #include "grex/backend/x86/macros/types.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 #endif
 #if GREX_X86_64_LEVEL < 4
 #include "grex/backend/defs.hpp"

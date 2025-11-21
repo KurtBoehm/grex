@@ -16,7 +16,7 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/extract.hpp"
 #include "grex/backend/x86/operations/set.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 struct ShufflerExtractSet : public BaseExpensiveOp {

@@ -15,7 +15,7 @@
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 #define GREX_EXTRINGLE(KIND, BITS, SIZE) \

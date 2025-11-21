@@ -18,7 +18,7 @@
 #include "grex/backend/neon/operations/mask-convert.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/types.hpp" // IWYU pragma: keep
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 #include "grex/types.hpp"
 
 namespace grex::backend {

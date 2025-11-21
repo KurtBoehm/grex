@@ -20,7 +20,7 @@
 #include "grex/backend/x86/operations/expand-scalar.hpp"
 #include "grex/backend/x86/operations/extract-single.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 #if GREX_X86_64_LEVEL < 4
 #include "grex/backend/x86/operations/abs.hpp"

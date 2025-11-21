@@ -18,7 +18,7 @@
 #include "grex/backend/x86/operations/reinterpret.hpp"
 #include "grex/backend/x86/operations/shuffle-static/shared.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 // TODO Very inefficient for 8- and 16-bit values on level 1, but a more efficient implementation
 //      would require more work than I am willing to invest in such old archtectures:

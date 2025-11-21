@@ -17,7 +17,7 @@
 #include "grex/backend/neon/operations/compare.hpp"
 #include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/neon/types.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 #define GREX_INDEX_MASK(KIND, BITS, SIZE) \

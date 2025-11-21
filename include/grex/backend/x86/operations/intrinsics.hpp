@@ -10,7 +10,7 @@
 #include <immintrin.h>
 
 #include "grex/backend/x86/instruction-sets.hpp"
-#include "grex/base/defs.hpp"
+#include "grex/base.hpp"
 
 // Wrap intrinsics that lead to conversion warnings in debug builds with libstdc++
 
