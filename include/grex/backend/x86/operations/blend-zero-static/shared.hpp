@@ -21,11 +21,11 @@
 
 namespace grex::backend {
 struct ZeroBlenderAnd : public BaseExpensiveOp {
-  template<AnyBlendZeros auto tBzs>
+  template<AnyBlendZeroSelectors auto tBzs>
   static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
   static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
     static constexpr std::size_t size = TVec::size;

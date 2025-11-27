@@ -30,7 +30,7 @@ namespace grex::backend {
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_ABS_FP(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return { \
-    .r = GREX_BITNS(REGISTERBITS)::GREX_CAT(range_, GREX_FP_SUFFIX(BITS))(v.r, v.r, imm_tag<8>)};
+    .r = GREX_BITNS(REGISTERBITS)::GREX_CAT(range_, GREX_FP_SUFFIX(BITS))(v.r, v.r, int_tag<8>)};
 #else
 #define GREX_ABS_FP32(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   BITPREFIX##_castsi##REGISTERBITS##_ps(BITPREFIX##_set1_epi32(0x7FFFFFFF))

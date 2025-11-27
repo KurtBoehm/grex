@@ -36,9 +36,9 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
 
     constexpr auto bzs = grex::static_apply<repetitions>([&]<std::size_t... tReps>() {
       test::Pcg32 pcg{};
-      auto r = [&](auto /*dummy*/) { return grex::BlendZero(pcg.bounded_random(3)); };
+      auto r = [&](auto /*dummy*/) { return grex::BlendZeroSelector(pcg.bounded_random(3)); };
       auto arr = [&](auto /*dummy*/) { return std::array{r(tIdxs)...}; };
-      return std::array<std::array<grex::BlendZero, tSize>, repetitions>{arr(tReps)...};
+      return std::array<std::array<grex::BlendZeroSelector, tSize>, repetitions>{arr(tReps)...};
     });
     constexpr auto bls = grex::static_apply<repetitions>([&]<std::size_t... tReps>() {
       test::Pcg32 pcg{};
@@ -52,7 +52,7 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
         const auto blended = grex::blend_zero<bzs[rep][tIdxs]...>(vca.vec);
         bool same = true;
         for (std::size_t i = 0; i < tSize; ++i) {
-          const grex::BlendZero bz = bzs[rep][i];
+          const grex::BlendZeroSelector bz = bzs[rep][i];
           switch (bz) {
             case grex::keep_bz: same = same && blended[i] == vca.ref[i]; break;
             case grex::zero_bz: same = same && blended[i] == 0; break;

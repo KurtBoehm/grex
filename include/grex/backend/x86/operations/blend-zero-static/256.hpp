@@ -24,11 +24,11 @@
 
 namespace grex::backend {
 struct ZeroBlenderBlend32x8 : public BaseExpensiveOp {
-  template<AnyBlendZeros auto tBzs>
+  template<AnyBlendZeroSelectors auto tBzs>
   static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
     return convert<4>(tBzs).has_value();
   }
-  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
   static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
     static constexpr int imm8 = convert<4>(tBzs).value().imm8();
@@ -41,7 +41,7 @@ struct ZeroBlenderBlend32x8 : public BaseExpensiveOp {
 };
 
 struct ZeroBlenderBlend16x16 : public BaseExpensiveOp {
-  template<AnyBlendZeros auto tBzs>
+  template<AnyBlendZeroSelectors auto tBzs>
   static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
     const auto base = convert<2>(tBzs);
     if (!base.has_value()) {
@@ -49,7 +49,7 @@ struct ZeroBlenderBlend16x16 : public BaseExpensiveOp {
     }
     return base.value().single_lane().has_value();
   }
-  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
   static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
     static constexpr int imm8 = convert<2>(tBzs).value().single_lane().value().imm8();
@@ -62,7 +62,7 @@ struct ZeroBlenderBlend16x16 : public BaseExpensiveOp {
   }
 };
 
-template<AnyBlendZeros auto tBzs>
+template<AnyBlendZeroSelectors auto tBzs>
 requires((tBzs.value_size * tBzs.size == 32))
 struct ZeroBlenderTrait<tBzs> {
   using Type = CheapestType<tBzs, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderBlend32x8,

@@ -26,11 +26,11 @@ struct fmt::formatter<grex::ShuffleIndex> {
 };
 
 template<>
-struct fmt::formatter<grex::BlendZero> {
+struct fmt::formatter<grex::BlendZeroSelector> {
   static constexpr const char* parse(fmt::parse_context<>& ctx) {
     return ctx.begin();
   }
-  static auto format(grex::BlendZero bz, format_context& ctx) {
+  static auto format(grex::BlendZeroSelector bz, format_context& ctx) {
     switch (bz) {
       case grex::zero_bz: return fmt::format_to(ctx.out(), "zero_bz");
       case grex::keep_bz: return fmt::format_to(ctx.out(), "keep_bz");

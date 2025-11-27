@@ -25,11 +25,11 @@ namespace grex::backend {
 // - Inserting one value into zeros
 // - A contiguous ranges of non-zeros/zeros
 struct ZeroBlenderAnd : public BaseExpensiveOp {
-  template<AnyBlendZeros auto tBzs>
+  template<AnyBlendZeroSelectors auto tBzs>
   static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, BlendZerosFor<TVec> tBzs>
+  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
   static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     using Value = TVec::Value;
     static constexpr std::size_t size = TVec::size;
@@ -49,7 +49,7 @@ struct ZeroBlenderAnd : public BaseExpensiveOp {
   }
 };
 
-template<AnyBlendZeros auto tBzs>
+template<AnyBlendZeroSelectors auto tBzs>
 requires((tBzs.value_size * tBzs.size == 16))
 struct ZeroBlenderTrait<tBzs> {
   using Type = CheapestType<tBzs, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderAnd>;

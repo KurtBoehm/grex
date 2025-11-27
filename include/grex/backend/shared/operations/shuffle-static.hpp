@@ -11,7 +11,9 @@
 #include <cstddef>
 #include <optional>
 #include <type_traits>
+#include <utility>
 
+#include "grex/backend/active/sizes.hpp"
 #include "grex/backend/defs.hpp"
 #include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/blend-static.hpp"
@@ -336,7 +338,7 @@ struct ShuffleIndices {
     }
   }
 
-  [[nodiscard]] constexpr BlendZeros<tValueBytes, tSize> blend_zeros() const {
+  [[nodiscard]] constexpr BlendZeroSelectors<tValueBytes, tSize> blend_zeros() const {
     auto f = [](ShuffleIndex sh) {
       switch (sh) {
         case any_sh: return any_bz;
@@ -344,8 +346,9 @@ struct ShuffleIndices {
         default: return keep_bz;
       }
     };
-    return static_apply<tSize>(
-      [&]<std::size_t... tIdxs>() { return BlendZeros<tValueBytes, tSize>{f(indices[tIdxs])...}; });
+    return static_apply<tSize>([&]<std::size_t... tIdxs>() {
+      return BlendZeroSelectors<tValueBytes, tSize>{f(indices[tIdxs])...};
+    });
   }
 };
 template<AnyVector TVec>

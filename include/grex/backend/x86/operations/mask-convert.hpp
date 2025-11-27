@@ -7,11 +7,10 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_MASK_CONVERT_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_MASK_CONVERT_HPP
 
-// reinterpret-casts between signed integer vectors and masks → only defined for levels below 4
 #include "grex/backend/x86/instruction-sets.hpp"
 
+// reinterpret-casts between signed integer vectors and masks → only defined for levels below 4
 #if GREX_X86_64_LEVEL < 4
-
 #include <cstddef>
 
 #include "grex/backend/defs.hpp"

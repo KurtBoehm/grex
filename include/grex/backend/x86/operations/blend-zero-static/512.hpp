@@ -17,7 +17,7 @@
 #include "grex/backend/x86/operations/blend-zero-static/shared.hpp"
 
 namespace grex::backend {
-template<AnyBlendZeros auto tBzs>
+template<AnyBlendZeroSelectors auto tBzs>
 requires((tBzs.value_size * tBzs.size == 64))
 struct ZeroBlenderTrait<tBzs> {
   using Type = CheapestType<tBzs, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderAnd>;

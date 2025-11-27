@@ -24,6 +24,12 @@
 #define GREX_CLANG true
 #endif
 
+#if defined(__GNUC__)
+#define GREX_ALWAYS_INLINE __attribute__((always_inline))
+#else
+#define GREX_ALWAYS_INLINE
+#endif
+
 #if GREX_GCC
 #define GREX_DIAGNOSTIC_UNINIT_PUSH() \
   _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wuninitialized\"") \
@@ -132,42 +138,6 @@ struct FloatTrait<8> {
 template<std::size_t tBytes>
 using Float = FloatTrait<tBytes>::Type;
 
-enum struct ShuffleIndex : u8 { any = 254, zero = 255 };
-inline constexpr ShuffleIndex any_sh = ShuffleIndex::any;
-inline constexpr ShuffleIndex zero_sh = ShuffleIndex::zero;
-constexpr bool is_index(ShuffleIndex sh) {
-  return u8(sh) < u8(any_sh);
-}
-
-enum struct BlendZero : u8 { zero = 0, keep = 1, any = 2 };
-inline constexpr BlendZero zero_bz = BlendZero::zero;
-inline constexpr BlendZero keep_bz = BlendZero::keep;
-inline constexpr BlendZero any_bz = BlendZero::any;
-
-enum struct BlendSelector : u8 { lhs = 0, rhs = 1, any = 2 };
-inline constexpr BlendSelector lhs_bl = BlendSelector::lhs;
-inline constexpr BlendSelector rhs_bl = BlendSelector::rhs;
-inline constexpr BlendSelector any_bl = BlendSelector::any;
-
-namespace literals {
-consteval ShuffleIndex operator""_sh(unsigned long long int v) {
-  if (v < 254) {
-    return ShuffleIndex(v);
-  }
-  throw std::invalid_argument{"Unsupported value!"};
-}
-} // namespace literals
-
-template<typename TIt>
-concept MultiByteIterator = requires(TIt it) {
-  typename TIt::Container;
-  { TIt::Container::element_bytes } -> std::convertible_to<std::size_t>;
-  { it.raw() } -> std::convertible_to<const std::byte*>;
-};
-
-template<std::size_t tIdx, typename T>
-using IdxType = T;
-
 template<typename T>
 struct TypeTag {};
 template<typename T>
@@ -184,7 +154,7 @@ struct ValueTag {
 template<auto tValue>
 using AutoTag = ValueTag<std::decay_t<decltype(tValue)>, tValue>;
 template<int tValue>
-using ImmTag = AutoTag<tValue>;
+using IntTag = AutoTag<tValue>;
 template<std::size_t tValue>
 using IndexTag = AutoTag<tValue>;
 template<bool tValue>
@@ -195,7 +165,7 @@ inline constexpr ValueTag<T, tValue> value_tag{};
 template<auto tValue>
 inline constexpr AutoTag<tValue> auto_tag{};
 template<int tValue>
-inline constexpr ImmTag<tValue> imm_tag{};
+inline constexpr IntTag<tValue> int_tag{};
 template<std::size_t tValue>
 inline constexpr IndexTag<tValue> index_tag{};
 template<bool tValue>
@@ -220,6 +190,32 @@ concept AnyIntTag = TypedValueTag<TTag, int>;
 template<typename TTag>
 concept AnyBoolTag = TypedValueTag<TTag, bool>;
 
+enum struct ShuffleIndex : u8 { any = 254, zero = 255 };
+inline constexpr ShuffleIndex any_sh = ShuffleIndex::any;
+inline constexpr ShuffleIndex zero_sh = ShuffleIndex::zero;
+
+constexpr bool is_index(ShuffleIndex sh) {
+  return u8(sh) < u8(any_sh);
+}
+namespace literals {
+consteval ShuffleIndex operator""_sh(unsigned long long int v) {
+  if (v < 254) {
+    return ShuffleIndex(v);
+  }
+  throw std::invalid_argument{"Value too large!"};
+}
+} // namespace literals
+
+enum struct BlendZeroSelector : u8 { zero = 0, keep = 1, any = 2 };
+inline constexpr BlendZeroSelector zero_bz = BlendZeroSelector::zero;
+inline constexpr BlendZeroSelector keep_bz = BlendZeroSelector::keep;
+inline constexpr BlendZeroSelector any_bz = BlendZeroSelector::any;
+
+enum struct BlendSelector : u8 { lhs = 0, rhs = 1, any = 2 };
+inline constexpr BlendSelector lhs_bl = BlendSelector::lhs;
+inline constexpr BlendSelector rhs_bl = BlendSelector::rhs;
+inline constexpr BlendSelector any_bl = BlendSelector::any;
+
 enum struct IterDirection : bool { forward, backward };
 inline std::string_view format_as(IterDirection dir) {
   switch (dir) {
@@ -228,11 +224,15 @@ inline std::string_view format_as(IterDirection dir) {
   }
 }
 
-#if defined(__GNUC__)
-#define GREX_ALWAYS_INLINE __attribute__((always_inline))
-#else
-#define GREX_ALWAYS_INLINE
-#endif
+template<typename TIt>
+concept MultiByteIterator = requires(TIt it) {
+  typename TIt::Container;
+  { TIt::Container::element_bytes } -> std::convertible_to<std::size_t>;
+  { it.raw() } -> std::convertible_to<const std::byte*>;
+};
+
+template<std::size_t tIdx, typename T>
+using IdxType = T;
 
 template<std::size_t tSize>
 GREX_ALWAYS_INLINE constexpr decltype(auto) static_apply(auto f) {

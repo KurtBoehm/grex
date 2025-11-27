@@ -398,7 +398,7 @@ template<Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend_zero(Mask<T, tSize> mask, Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend_zero(mask.backend(), v1.backend())};
 }
-template<BlendZero... tBzs, Vectorizable T, std::size_t tSize>
+template<BlendZeroSelector... tBzs, Vectorizable T, std::size_t tSize>
 inline Vector<T, tSize> blend_zero(Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend_zero<tBzs...>(v1.backend())};
 }
