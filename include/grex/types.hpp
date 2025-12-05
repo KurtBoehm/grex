@@ -8,6 +8,7 @@
 #define INCLUDE_GREX_TYPES_HPP
 
 #if !GREX_BACKEND_SCALAR
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <span>
@@ -88,6 +89,9 @@ struct Mask {
 
   Backend backend() const {
     return mask_;
+  }
+  std::array<bool, size> as_array() const {
+    return backend::to_array(mask_);
   }
 
 private:
@@ -204,6 +208,18 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   GREX_VECTOR_BINOP(^, requires(IntVectorizable<T>), bitwise_xor)
 #undef GREX_VECTOR_BINOP
 
+#define GREX_VECTOR_SHOP(OP, REQ, NAME) \
+  friend Vector operator OP(Vector a, AnyIndexTag auto offset) REQ { \
+    return Vector{backend::NAME(a.vec_, offset)}; \
+  } \
+  Vector& operator OP##=(AnyIndexTag auto offset) REQ { \
+    return *this = *this OP offset; \
+  }
+
+  GREX_VECTOR_SHOP(<<, , shift_left)
+  GREX_VECTOR_SHOP(>>, , shift_right)
+#undef GREX_VECTOR_SHOP
+
   Vector cutoff(std::size_t i) const {
     return Vector{backend::cutoff(i, vec_)};
   }
@@ -215,11 +231,15 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   T operator[](std::size_t i) const {
     return backend::extract(vec_, i);
   }
+  T operator[](AnyIndexTag auto i) const {
+    return backend::extract(vec_, i);
+  }
   // this form of get is required for {fmt} to use its formatter for tuple-like types
   template<std::size_t tIdx>
   friend T get(const Vector& v) {
     return backend::extract(v.vec_, tIdx);
   }
+
   Vector insert(std::size_t i, T value) const {
     return Vector{backend::insert(vec_, i, value)};
   }
@@ -280,6 +300,9 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
 
   Backend backend() const {
     return vec_;
+  }
+  std::array<Value, size> as_array() const {
+    return backend::to_array(vec_);
   }
 
 private:
@@ -411,9 +434,13 @@ inline Vector<T, tSize> blend(Vector<T, tSize> v0, Vector<T, tSize> v1) {
   return Vector<T, tSize>{backend::blend<tBls...>(v0.backend(), v1.backend())};
 }
 
+template<Vectorizable T, UnsignedIntVectorizable TIdx, std::size_t tTableSize, std::size_t tIdxSize>
+inline Vector<T, tIdxSize> shuffle(Vector<T, tTableSize> table, Vector<TIdx, tIdxSize> idxs) {
+  return Vector<T, tIdxSize>{backend::shuffle(table.backend(), idxs.backend())};
+}
 template<ShuffleIndex... tIdxs, Vectorizable T, std::size_t tSize>
-inline Vector<T, tSize> shuffle(Vector<T, tSize> v) {
-  return Vector<T, tSize>{backend::shuffle<tIdxs...>(v.backend())};
+inline Vector<T, tSize> shuffle(Vector<T, tSize> table) {
+  return Vector<T, tSize>{backend::shuffle<tIdxs...>(table.backend())};
 }
 
 template<Vectorizable T, std::size_t tSize>

@@ -126,6 +126,11 @@ inline SuperMask<THalf> set(TypeTag<SuperMask<THalf>> /*tag*/, Ts... values) {
   auto op = [&]<std::size_t... tIdxs>() { return set(type_tag<THalf>, std::get<tIdxs>(buf)...); };
   return {.lower = static_apply<0, size / 2>(op), .upper = static_apply<size / 2, size>(op)};
 }
+
+template<AnyVector TVec>
+inline TVec zeros() {
+  return zeros(type_tag<TVec>);
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SET_HPP

@@ -33,12 +33,16 @@
 #include "operations/multibyte.hpp"
 #include "operations/reinterpret.hpp"
 #include "operations/set.hpp"
+#include "operations/shift.hpp"
 #include "operations/shingle.hpp"
+#include "operations/shrink.hpp"
 #include "operations/shuffle-static.hpp"
+#include "operations/shuffle.hpp"
 #include "operations/split.hpp"
 #include "operations/sqrt.hpp"
 #include "operations/store.hpp"
 #include "operations/subnative.hpp"
+#include "operations/to-array.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_HPP

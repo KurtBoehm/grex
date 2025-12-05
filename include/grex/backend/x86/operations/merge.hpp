@@ -7,6 +7,7 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_MERGE_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_MERGE_HPP
 
+#include <bit>
 #include <cstddef>
 
 #include <immintrin.h>
@@ -19,6 +20,7 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/operations/reinterpret.hpp"
 #include "grex/backend/x86/types.hpp" // IWYU pragma: keep
 #include "grex/base.hpp"
 
@@ -101,6 +103,34 @@ inline SuperVector<Vector<T, tSize>> merge(Vector<T, tSize> a, Vector<T, tSize> 
 template<typename THalf>
 inline SuperVector<SuperVector<THalf>> merge(SuperVector<THalf> a, SuperVector<THalf> b) {
   return {.lower = a, .upper = b};
+}
+
+template<typename TVector>
+inline auto quadruple(TVector v) {
+  const auto half = merge(v, v);
+  return merge(half, half);
+}
+#if GREX_X86_64_LEVEL >= 4
+template<typename TValue, std::size_t tSize>
+requires(sizeof(TValue) * tSize == 16)
+inline Vector<TValue, tSize * 4> quadruple(Vector<TValue, tSize> v) {
+  const __m512i v512 = _mm512_castsi128_si512(reinterpret<u8>(v).r);
+  const __m512i shuf = _mm512_shuffle_i64x2(v512, v512, 0);
+  return reinterpret<TValue>(u8x64{shuf});
+}
+#endif
+
+template<std::size_t tRepetitions, typename TVector>
+requires(tRepetitions > 0 && std::has_single_bit(tRepetitions))
+inline auto repeat(TVector v) {
+  if constexpr (tRepetitions == 1) {
+    return v;
+  } else if constexpr (tRepetitions == 4) {
+    return quadruple(v);
+  } else {
+    const auto half = repeat<tRepetitions / 2>(v);
+    return merge(half, half);
+  }
 }
 
 #if GREX_X86_64_LEVEL >= 4

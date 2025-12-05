@@ -67,6 +67,9 @@ namespace grex::backend {
 \
     Register r; \
 \
+    Vector native() const { \
+      return *this; \
+    } \
     Register registr() const { \
       return r; \
     } \

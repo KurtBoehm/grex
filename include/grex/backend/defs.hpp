@@ -31,6 +31,9 @@ struct SubVector {
   explicit SubVector(Full v) : full{v} {}
   explicit SubVector(Register r) : full{.r = r} {}
 
+  [[nodiscard]] Full native() const {
+    return full;
+  }
   [[nodiscard]] Register registr() const {
     return full.r;
   }

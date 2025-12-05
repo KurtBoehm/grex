@@ -112,6 +112,6 @@ GREX_FOREACH_X86_64_LEVEL(GREX_EXTRACT_VEC_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_EXTRACT_MASK_ALL)
 } // namespace grex::backend
 
-#include "grex/backend/shared/operations/extract.hpp"
+#include "grex/backend/shared/operations/extract.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_EXTRACT_HPP

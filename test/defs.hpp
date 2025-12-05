@@ -226,9 +226,9 @@ void for_each_type(auto op) {
 };
 
 #if !GREX_BACKEND_SCALAR
-template<Vectorizable T>
+template<Vectorizable T, std::size_t tMaxShift = std::bit_width(max_native_size<T>) + 1>
 inline void for_each_size(auto op) {
-  static_apply<1, std::bit_width(max_native_size<T>) + 1>(
+  static_apply<1, tMaxShift>(
     [&]<std::size_t... tIdxs>() { (..., op(type_tag<T>, index_tag<1U << tIdxs>)); });
 };
 

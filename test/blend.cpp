@@ -16,7 +16,6 @@
 #include "grex/grex.hpp"
 
 #include "defs.hpp"
-#include "fmt.hpp" // IWYU pragma: keep
 #include "rng.hpp"
 
 namespace test = grex::test;

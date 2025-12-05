@@ -10,6 +10,7 @@ Checks: "
   -zircon-*,
   -bugprone-easily-swappable-parameters,
   -bugprone-macro-parentheses,
+  -cert-dcl58-cpp,
   -concurrency-mt-unsafe,
   -cppcoreguidelines-avoid-c-arrays,
   -cppcoreguidelines-avoid-magic-numbers,

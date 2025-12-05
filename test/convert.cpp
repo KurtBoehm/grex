@@ -84,6 +84,13 @@ void run_simd(Rng& rng) {
             dstsca.check([&] { return fmt::format("vector/tagged scalar {}", src); }, false);
           }
           {
+            test::VectorChecker<Src, tSize> src{dval(tIdxs)...};
+            const auto arr = src.vec.as_array();
+            test::check([&] { return fmt::format("vector to array {}", src); }, arr, src.ref,
+                        false);
+          }
+
+          {
             test::MaskChecker<Src, tSize> src{bval(tIdxs)...};
             test::MaskChecker<TDst, tSize> dst{src.mask.convert(grex::type_tag<TDst>), src.ref};
             dst.check([&] { return fmt::format("mask/copy {}", src); }, false);
@@ -97,6 +104,11 @@ void run_simd(Rng& rng) {
               std::array{grex::convert<TDst>(src.ref[tIdxs])...},
             };
             dstsca.check([&] { return fmt::format("mask/tagged scalar {}", src); }, false);
+          }
+          {
+            test::MaskChecker<Src, tSize> src{bval(tIdxs)...};
+            const auto arr = src.mask.as_array();
+            test::check([&] { return fmt::format("mask to array {}", src); }, arr, src.ref, false);
           }
         });
       }

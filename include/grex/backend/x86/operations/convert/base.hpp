@@ -303,6 +303,15 @@ requires((!IntVectorizable<TDst> || !IntVectorizable<typename THalf::Value>) &&
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
   return merge(convert(v.lower, type_tag<TDst>), convert(v.upper, type_tag<TDst>));
 }
+
+template<Vectorizable TDst, AnyVector TSrc>
+inline VectorFor<TDst, TSrc::size> convert(TSrc v) {
+  return convert(v, type_tag<TDst>);
+}
+template<Vectorizable TDst, AnyMask TSrc>
+inline MaskFor<TDst, TSrc::size> convert(TSrc v) {
+  return convert(v, type_tag<TDst>);
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_BASE_HPP

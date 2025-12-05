@@ -38,7 +38,7 @@ inline SubVector<TDst, tPart, tSize> reinterpret(SubVector<TSrc, tPart, tSize> v
   return SubVector<TDst, tPart, tSize>{reinterpret(v.full, tag)};
 }
 template<Vectorizable TDst, typename THalf>
-inline VectorFor<TDst, THalf::size> reinterpret(SuperVector<THalf> v, TypeTag<TDst> tag) {
+inline VectorFor<TDst, 2 * THalf::size> reinterpret(SuperVector<THalf> v, TypeTag<TDst> tag) {
   return {.lower = reinterpret(v.lower, tag), .upper = reinterpret(v.upper, tag)};
 }
 

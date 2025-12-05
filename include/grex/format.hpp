@@ -4,12 +4,39 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef TEST_FMT_HPP
-#define TEST_FMT_HPP
+#ifndef INCLUDE_GREX_FORMAT_HPP
+#define INCLUDE_GREX_FORMAT_HPP
 
-#include "fmt/base.h"
+#include <array>
+#include <cstddef>
+
+#include <fmt/base.h>
+#include <fmt/ranges.h>
 
 #include "grex/base.hpp"
+#include "grex/types.hpp"
+
+template<grex::Vectorizable T, std::size_t tSize>
+struct fmt::formatter<grex::Vector<T, tSize>> : formatter<std::array<T, tSize>> {
+  format_context::iterator format(grex::Vector<T, tSize> v, format_context& ctx) const {
+    return formatter<std::array<T, tSize>>::format(v.as_array(), ctx);
+  }
+};
+template<grex::Vectorizable T, std::size_t tSize, typename TChar>
+struct fmt::is_tuple_formattable<grex::Vector<T, tSize>, TChar> {
+  static constexpr bool value = false;
+};
+
+template<grex::Vectorizable T, std::size_t tSize>
+struct fmt::formatter<grex::Mask<T, tSize>> : formatter<std::array<bool, tSize>> {
+  format_context::iterator format(grex::Mask<T, tSize> m, format_context& ctx) const {
+    return formatter<std::array<bool, tSize>>::format(m.as_array(), ctx);
+  }
+};
+template<grex::Vectorizable T, std::size_t tSize, typename TChar>
+struct fmt::is_tuple_formattable<grex::Mask<T, tSize>, TChar> {
+  static constexpr bool value = false;
+};
 
 template<>
 struct fmt::formatter<grex::ShuffleIndex> {
@@ -55,4 +82,4 @@ struct fmt::formatter<grex::BlendSelector> {
   }
 };
 
-#endif // TEST_FMT_HPP
+#endif // INCLUDE_GREX_FORMAT_HPP

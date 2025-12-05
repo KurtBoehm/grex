@@ -8,6 +8,10 @@
 #include "operations.hpp"
 #include "tags.hpp"
 #include "types.hpp"
+
+#ifdef FMT_VERSION
+#include "format.hpp"
+#endif
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_GREX_HPP

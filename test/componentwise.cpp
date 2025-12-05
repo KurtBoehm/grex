@@ -5,11 +5,13 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <array>
+#include <climits>
 #include <cstddef>
 #include <functional>
 #include <limits>
 #include <random>
 
+#include <fmt/format.h>
 #include <pcg_extras.hpp>
 
 #include "grex/grex.hpp"
@@ -69,6 +71,15 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         vv2v("multiplies", std::multiplies{});
         if constexpr (grex::FloatVectorizable<T>) {
           vv2v("divides", std::divides{});
+        }
+
+        if constexpr (grex::IntVectorizable<T>) {
+          auto f = [&](grex::AnyIndexTag auto offset) {
+            v2v(fmt::format("shift_left<{}>", offset.value), [&](auto v) { return v << offset; });
+            v2v(fmt::format("shift_right<{}>", offset.value), [&](auto v) { return v >> offset; });
+          };
+          grex::static_apply<sizeof(T) * CHAR_BIT>(
+            [&]<std::size_t... tJ>() { (..., f(grex::index_tag<tJ>)); });
         }
 
         // bit operations
