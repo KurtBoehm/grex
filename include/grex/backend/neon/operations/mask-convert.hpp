@@ -10,6 +10,7 @@
 #include <cstddef>
 
 #include "grex/backend/defs.hpp"
+#include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/base.hpp"
 
 namespace grex::backend {
