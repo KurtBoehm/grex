@@ -59,7 +59,7 @@ inline void part(void* dst, uint8x16_t src, AnyIndexTag auto bytes) {
     constexpr std::size_t offset = (bytes.value & 12U) / 2U;
     u16* dst16 = reinterpret_cast<u16*>(dst) + offset;
 // Sadly, GCC gobbles 2-byte writes sometimes when using ARM64 intrinsics
-// Therefore, inline assembly is used in the case of GCC
+// Therefore, inline assembly is used when compiling with GCC
 #if GREX_GCC
     if constexpr (bytes.value == 2) {
       asm volatile("str %h1, %0" : "=m"(*dst16) : "w"(src) :);
