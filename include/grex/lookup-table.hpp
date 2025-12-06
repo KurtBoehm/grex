@@ -41,7 +41,7 @@ private:
 };
 
 template<Vectorizable T, std::size_t tSize>
-requires(sizeof(T) * tSize <= 128)
+requires(sizeof(T) * tSize <= 64)
 struct LookupTable<T, tSize> {
   using VectorData = grex::Vector<T, tSize>;
 
