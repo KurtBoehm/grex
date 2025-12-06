@@ -84,7 +84,7 @@ inline Vector<T, tSize> part(const T* ptr, AnyIndexTag auto bytes) {
       out = vld1q_lane_u8(ptr8 + offset, out, offset);
     }
   }
-  return {.r = reinterpret<T>(out)};
+  return {.r = as<T>(out)};
 }
 } // namespace ld1
 

@@ -33,7 +33,7 @@ template<std::size_t tSrc, AnyVector TDst>
 requires(!AnySuperNativeVector<TDst> && tSrc == sizeof(typename TDst::Value))
 inline TDst load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/, TypeTag<TDst> /*dst*/) {
   const auto raw = load(ptr, type_tag<VectorFor<u8, tSrc * TDst::size>>).registr();
-  return TDst{reinterpret<typename TDst::Value>(raw)};
+  return TDst{as<typename TDst::Value>(raw)};
 }
 
 template<std::size_t tSrc>

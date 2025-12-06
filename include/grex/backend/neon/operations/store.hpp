@@ -79,12 +79,10 @@ inline void part(void* dst, uint8x16_t src, AnyIndexTag auto bytes) {
 
 #define GREX_SUBSTORE(KIND, BITS, PART, SIZE) \
   inline void store(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src) { \
-    const auto src8 = reinterpret<u8>(src.registr()); \
-    st1::part(dst, src8, index_tag<PART##UZ * BITS##UZ / CHAR_BIT>); \
+    st1::part(dst, as<u8>(src.registr()), index_tag<PART##UZ * BITS##UZ / CHAR_BIT>); \
   } \
   inline void store_aligned(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src) { \
-    const auto src8 = reinterpret<u8>(src.registr()); \
-    st1::part(dst, src8, index_tag<PART##UZ * BITS##UZ / CHAR_BIT>); \
+    st1::part(dst, as<u8>(src.registr()), index_tag<PART##UZ * BITS##UZ / CHAR_BIT>); \
   }
 GREX_FOREACH_SUB(GREX_SUBSTORE)
 
@@ -99,7 +97,7 @@ GREX_FOREACH_SUB(GREX_SUBSTORE)
   }
 #define GREX_PARTSTORE(KIND, BITS, SIZE) \
   inline void store_part(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src, std::size_t size) { \
-    const auto src8 = reinterpret<u8>(src.r); \
+    const auto src8 = as<u8>(src.r); \
     switch (size) { \
       GREX_REPEAT(SIZE, GREX_PARTSTORE_CASE, KIND, BITS) \
       [[unlikely]] GREX_PARTSTORE_CASE(SIZE, SIZE, KIND, BITS) default : std::unreachable(); \
@@ -110,7 +108,7 @@ GREX_FOREACH_TYPE(GREX_PARTSTORE, 128)
 #define GREX_SUBPARTSTORE(KIND, BITS, PART, SIZE) \
   inline void store_part(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src, \
                          std::size_t size) { \
-    const auto src8 = reinterpret<u8>(src.registr()); \
+    const auto src8 = as<u8>(src.registr()); \
     switch (size) { \
       GREX_REPEAT(PART, GREX_PARTSTORE_CASE, KIND, BITS) \
       [[unlikely]] GREX_PARTSTORE_CASE(PART, PART, KIND, BITS) default : std::unreachable(); \

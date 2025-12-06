@@ -6,6 +6,9 @@
 
 options_sub = subproject('options')
 args = options_sub.get_variable('basic_args') + ['-fconstexpr-depth=2048', '-ftemplate-depth=2048']
+if meson.get_compiler('cpp').get_id() == 'clang'
+  args += ['-fbracket-depth=1024']
+endif
 
 test_arches = {}
 foreach arch : arches
@@ -22,7 +25,7 @@ thesauros_dep = dependency('thesauros')
 # tests that are separated based on the value and index type
 dynamic_shuffles = []
 foreach name, conf : {
-  'shuffle-dynamic': [['x86_64'], true], # neon
+  'shuffle-dynamic': [['x86_64', 'neon'], true],
 }
   backends = conf[0]
   parallel = conf[1]

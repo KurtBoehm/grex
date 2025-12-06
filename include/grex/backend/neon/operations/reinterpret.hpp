@@ -11,6 +11,8 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/choosers.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/base.hpp"
@@ -142,8 +144,24 @@ GREX_REINTERPRET_DEFAULT(u, 8, 16, u, 16, 8)
 GREX_REINTERPRET_NOOP(u, 8, 16, u, 8, 16)
 
 template<Vectorizable TDst, typename TSrc>
-inline auto reinterpret(TSrc src) {
+inline auto as(TSrc src) {
   return reinterpret(src, type_tag<TDst>);
+}
+
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
+inline Vector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)> as(Vector<TSrc, tSize> src) {
+  return Vector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)>{as<TDst>(src.r)};
+}
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
+inline VectorFor<TDst, tPart * sizeof(TSrc) / sizeof(TDst)> as(SubVector<TSrc, tPart, tSize> src) {
+  using Out = VectorFor<TDst, tPart * sizeof(TSrc) / sizeof(TDst)>;
+  return Out{as<TDst>(src.full)};
+}
+template<Vectorizable TDst, AnyVector THalf>
+inline VectorFor<TDst, 2 * THalf::size * sizeof(typename THalf::Value) / sizeof(TDst)>
+as(SuperVector<THalf> src) {
+  using Out = VectorFor<TDst, 2 * THalf::size * sizeof(typename THalf::Value) / sizeof(TDst)>;
+  return Out{.lower = as<TDst>(src.lower), .upper = as<TDst>(src.upper)};
 }
 } // namespace grex::backend
 

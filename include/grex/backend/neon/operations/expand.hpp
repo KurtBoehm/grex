@@ -111,9 +111,18 @@ template<AnyVector TVec, std::size_t tSize>
 inline VectorFor<typename TVec::Value, tSize> expand_any(TVec v, IndexTag<tSize> size) {
   return expand(v, size, false_tag);
 }
+template<std::size_t tSize, AnyVector TVec>
+inline VectorFor<typename TVec::Value, tSize> expand_any(TVec v) {
+  return expand(v, index_tag<tSize>, false_tag);
+}
+
 template<AnyVector TVec, std::size_t tSize>
 inline VectorFor<typename TVec::Value, tSize> expand_zero(TVec v, IndexTag<tSize> size) {
   return expand(v, size, true_tag);
+}
+template<std::size_t tSize, AnyVector TVec>
+inline VectorFor<typename TVec::Value, tSize> expand_zero(TVec v) {
+  return expand(v, index_tag<tSize>, true_tag);
 }
 
 #if GREX_GCC

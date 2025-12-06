@@ -17,14 +17,14 @@ namespace grex::backend {
 // Convert a mask to signed integers
 template<Vectorizable T, std::size_t tSize>
 inline Vector<SignedInt<sizeof(T)>, tSize> mask2vector(Mask<T, tSize> m) {
-  return {.r = reinterpret<SignedInt<sizeof(T)>>(m.r)};
+  return {.r = as<SignedInt<sizeof(T)>>(m.r)};
 }
 
 // Convert (signed) integers to a mask
 template<SignedIntVectorizable T, std::size_t tSize, Vectorizable TDst>
 requires(sizeof(T) == sizeof(TDst))
 inline Mask<TDst, tSize> vector2mask(Vector<T, tSize> m, TypeTag<TDst> /*tag*/) {
-  return {.r = reinterpret<UnsignedInt<sizeof(T)>>(m.r)};
+  return {.r = as<UnsignedInt<sizeof(T)>>(m.r)};
 }
 } // namespace grex::backend
 

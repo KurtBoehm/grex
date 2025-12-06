@@ -131,6 +131,10 @@ template<AnyVector TVec>
 inline TVec zeros() {
   return zeros(type_tag<TVec>);
 }
+template<AnyVector TVec>
+inline TVec broadcast(typename TVec::Value value) {
+  return broadcast(value, type_tag<TVec>);
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SET_HPP

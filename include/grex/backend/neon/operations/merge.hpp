@@ -23,10 +23,10 @@
 namespace grex::backend {
 // Merging sub-native vectors
 #define GREX_MERGE_SUB_II(KIND, BITS, PART, PARTSIZE) \
-  const auto r0 = reinterpret<u##PARTSIZE>(v0.full.r); \
-  const auto r1 = reinterpret<u##PARTSIZE>(v1.full.r); \
+  const auto r0 = as<u##PARTSIZE>(v0.full.r); \
+  const auto r1 = as<u##PARTSIZE>(v1.full.r); \
   const auto zipped = vzip1q_u##PARTSIZE(r0, r1); \
-  return VectorFor<KIND##BITS, PART>{reinterpret<KIND##BITS>(zipped)};
+  return VectorFor<KIND##BITS, PART>{as<KIND##BITS>(zipped)};
 #define GREX_MERGE_SUB_I(KIND, BITS, PART, PARTSIZE) GREX_MERGE_SUB_II(KIND, BITS, PART, PARTSIZE)
 #define GREX_MERGE_SUB(KIND, BITS, PART, SIZE) \
   inline VectorFor<KIND##BITS, GREX_MULTIPLY(PART, 2)> merge(VectorFor<KIND##BITS, PART> v0, \

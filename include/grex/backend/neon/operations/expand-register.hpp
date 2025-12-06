@@ -43,12 +43,10 @@ inline TDst expand_bits(TSrc src) {
 // Use a bit cast from integer to a floating-point value to generate `fmov` and go from there
 // 8-bit and 16-bit integers are re-interpreted as a 32-bit integer (with garbage in the upper bits)
 #define GREX_EXPAND_INT_BIG(KIND, BITS, SIZE) \
-  const auto fp = expand_register(Scalar{std::bit_cast<f##BITS>(x.value)}); \
-  return reinterpret<KIND##BITS>(fp);
+  return as<KIND##BITS>(expand_register(Scalar{std::bit_cast<f##BITS>(x.value)}));
 #define GREX_EXPAND_INT_SMALL(KIND, BITS, SIZE) \
   const auto expanded = expand_bits<KIND##32>(x.value); \
-  const auto fp = expand_register(Scalar{std::bit_cast<f32>(expanded)}); \
-  return reinterpret<KIND##BITS>(fp);
+  return as<KIND##BITS>(expand_register(Scalar{std::bit_cast<f32>(expanded)}));
 #define GREX_EXPAND_INT64 GREX_EXPAND_INT_BIG
 #define GREX_EXPAND_INT32 GREX_EXPAND_INT_BIG
 #define GREX_EXPAND_INT16 GREX_EXPAND_INT_SMALL

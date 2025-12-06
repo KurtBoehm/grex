@@ -27,10 +27,7 @@ struct ShufflerTbl : public BaseExpensiveOp {
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
     using Value = TVec::Value;
     static constexpr auto shuf = convert<1>(tSh).value();
-
-    const uint8x16_t data = reinterpret<u8>(vec.r);
-    const uint8x16_t idxs = shuf.vector(false_tag).r;
-    return {.r = reinterpret<Value>(vqtbl1q_u8(data, idxs))};
+    return {.r = as<Value>(vqtbl1q_u8(as<u8>(vec.r), shuf.vector(false_tag).r))};
   }
   template<AnyShuffleIndices auto tSh>
   static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
