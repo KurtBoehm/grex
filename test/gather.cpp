@@ -5,7 +5,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <algorithm>
-#include <bit>
 #include <cstddef>
 #include <limits>
 #include <memory>
@@ -20,6 +19,10 @@
 #include "grex/grex.hpp"
 
 #include "defs.hpp"
+
+#if !GREX_BACKEND_SCALAR
+#include <bit>
+#endif
 
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;

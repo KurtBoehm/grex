@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_TYPES_HPP
 #define INCLUDE_GREX_TYPES_HPP
 
+#include "grex/backend.hpp"
+
 #if !GREX_BACKEND_SCALAR
 #include <array>
 #include <concepts>
@@ -15,7 +17,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "grex/backend.hpp"
 #include "grex/base.hpp"
 
 namespace grex {
@@ -488,8 +489,6 @@ struct std::tuple_element<tIdx, grex::Mask<T, tSize>> {
   using type = const bool; // NOLINT
 };
 #else
-#include "grex/backend.hpp"
-
 namespace grex {
 using backend::has_fma;
 using backend::max_native_size;

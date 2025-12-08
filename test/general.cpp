@@ -5,7 +5,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <array>
-#include <cstddef>
 
 #include <fmt/base.h>
 #include <fmt/format.h>
@@ -13,6 +12,10 @@
 #include "grex/grex.hpp"
 
 #include "defs.hpp"
+
+#if !GREX_BACKEND_SCALAR
+#include <cstddef>
+#endif
 
 namespace test = grex::test;
 

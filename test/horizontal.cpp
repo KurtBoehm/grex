@@ -4,10 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#include <algorithm>
 #include <cstddef>
-#include <functional>
-#include <limits>
 #include <random>
 
 #include <fmt/format.h>
@@ -16,6 +13,12 @@
 #include "grex/grex.hpp"
 
 #include "defs.hpp"
+
+#if !GREX_BACKEND_SCALAR
+#include <algorithm>
+#include <functional>
+#include <limits>
+#endif
 
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 65536;

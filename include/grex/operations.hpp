@@ -9,11 +9,15 @@
 
 #include <limits>
 
-#include "grex/backend/active/operations.hpp"
+#include "grex/backend/active/operations.hpp" // IWYU pragma: keep
 #include "grex/backend/base.hpp"
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/operations.hpp"
 #include "grex/base.hpp"
+
+#if !GREX_BACKEND_SCALAR
 #include "grex/types.hpp"
+#endif
 
 namespace grex {
 template<IntVectorizable TDst>

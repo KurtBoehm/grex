@@ -10,9 +10,13 @@
 #include <concepts>
 #include <cstddef>
 
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/base.hpp"
+
+#if !GREX_BACKEND_SCALAR
 #include "grex/operations.hpp"
 #include "grex/types.hpp"
+#endif
 
 namespace grex {
 /////////////////

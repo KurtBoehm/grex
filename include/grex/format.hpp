@@ -7,13 +7,16 @@
 #ifndef INCLUDE_GREX_FORMAT_HPP
 #define INCLUDE_GREX_FORMAT_HPP
 
-#include <array>
-#include <cstddef>
-
 #include <fmt/base.h>
 #include <fmt/ranges.h>
 
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/base.hpp"
+
+#if !GREX_BACKEND_SCALAR
+#include <array>
+#include <cstddef>
+
 #include "grex/types.hpp"
 
 template<grex::Vectorizable T, std::size_t tSize>
@@ -51,6 +54,7 @@ struct fmt::formatter<grex::ShuffleIndex> {
     }
   }
 };
+#endif
 
 template<>
 struct fmt::formatter<grex::BlendZeroSelector> {

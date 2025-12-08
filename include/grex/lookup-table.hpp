@@ -9,12 +9,17 @@
 
 #include <array>
 #include <cstddef>
+
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
+#include "grex/base.hpp"
+#include "grex/tags.hpp"
+
+#if !GREX_BACKEND_SCALAR
 #include <span>
 
-#include "grex/base.hpp"
 #include "grex/operations-tagged.hpp"
-#include "grex/tags.hpp"
 #include "grex/types.hpp"
+#endif
 
 namespace grex {
 template<Vectorizable T, std::size_t tSize>
@@ -30,16 +35,19 @@ struct LookupTable {
     return data_[i];
   }
 
+#if !GREX_BACKEND_SCALAR
   template<UnsignedIntVectorizable TIdx, std::size_t tVecSize>
   grex::Vector<T, tVecSize> lookup(grex::Vector<TIdx, tVecSize> i,
                                    grex::AnyVectorTag auto vtag) const {
     return grex::gather(std::span{data_}, i, vtag);
   }
+#endif
 
 private:
   std::array<T, tSize> data_{};
 };
 
+#if !GREX_BACKEND_SCALAR
 template<Vectorizable T, std::size_t tSize>
 requires(sizeof(T) * tSize <= 64)
 struct LookupTable<T, tSize> {
@@ -67,6 +75,7 @@ private:
   std::array<T, tSize> data_{};
   VectorData vdata_ = VectorData::zeros();
 };
+#endif
 } // namespace grex
 
 #endif // INCLUDE_GREX_LOOKUP_TABLE_HPP

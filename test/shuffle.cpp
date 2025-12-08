@@ -4,6 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#include "grex/grex.hpp"
+
 #if !GREX_BACKEND_SCALAR
 #include <array>
 #include <cstddef>
@@ -13,8 +15,6 @@
 #include <fmt/base.h>
 #include <fmt/color.h>
 #include <pcg_extras.hpp>
-
-#include "grex/grex.hpp"
 
 #include "defs.hpp"
 #include "rng.hpp"

@@ -8,13 +8,18 @@
 #define INCLUDE_GREX_OPERATIONS_TAGGED_HPP
 
 #include <bit>
-#include <concepts>
 #include <cstddef>
 #include <span>
 
+#include "grex/backend.hpp" // IWYU pragma: keep
 #include "grex/base.hpp"
 #include "grex/tags.hpp"
+
+#if !GREX_BACKEND_SCALAR
+#include <concepts>
+
 #include "grex/types.hpp"
+#endif
 
 namespace grex {
 // zeros

@@ -5,6 +5,7 @@
 #include "backend/active.hpp"
 #include "backend/base.hpp"
 #include "backend/choosers.hpp"
+#include "backend/defs.hpp"
 #include "backend/macros.hpp"
 #include "backend/operations.hpp"
 // IWYU pragma: end_exports

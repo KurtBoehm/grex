@@ -4,8 +4,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#include <array>
-#include <climits>
 #include <cstddef>
 #include <functional>
 #include <limits>
@@ -22,6 +20,9 @@ namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
 #if !GREX_BACKEND_SCALAR
+#include <array>
+#include <climits>
+
 template<grex::Vectorizable T, std::size_t tSize>
 void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
   using VC = test::VectorChecker<T, tSize>;

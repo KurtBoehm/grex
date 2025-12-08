@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_CHOOSERS_HPP
 #define INCLUDE_GREX_BACKEND_CHOOSERS_HPP
 
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
+
 #if !GREX_BACKEND_SCALAR
 #include <cstddef>
 

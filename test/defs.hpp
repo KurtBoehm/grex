@@ -7,9 +7,7 @@
 #ifndef TEST_DEFS_HPP
 #define TEST_DEFS_HPP
 
-#include <algorithm>
 #include <array>
-#include <bit>
 #include <concepts>
 #include <cstddef>
 #include <cstdlib>
@@ -24,8 +22,12 @@
 #include <fmt/std.h>
 #include <pcg_random.hpp>
 
-#include "grex/base.hpp"
-#include "grex/types.hpp"
+#include "grex/grex.hpp"
+
+#if !GREX_BACKEND_SCALAR
+#include <algorithm>
+#include <bit>
+#endif
 
 namespace grex::test {
 using Rng = pcg64;

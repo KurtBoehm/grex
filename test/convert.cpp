@@ -4,9 +4,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#include <algorithm>
-#include <array>
-#include <bit>
 #include <cstddef>
 #include <limits>
 #include <random>
@@ -20,6 +17,12 @@
 #include "grex/grex.hpp"
 
 #include "defs.hpp"
+
+#if !GREX_BACKEND_SCALAR
+#include <algorithm>
+#include <array>
+#include <bit>
+#endif
 
 namespace test = grex::test;
 using Src = grex::GREX_TEST_TYPE;
