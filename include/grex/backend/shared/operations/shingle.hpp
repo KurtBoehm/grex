@@ -9,7 +9,7 @@
 
 #include <cstddef>
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/base.hpp"
 
 namespace grex::backend {
 // super-native vectors: carry over the last element from the lower part to the upper part

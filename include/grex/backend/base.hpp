@@ -4,8 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef INCLUDE_GREX_BACKEND_DEFS_HPP
-#define INCLUDE_GREX_BACKEND_DEFS_HPP
+#ifndef INCLUDE_GREX_BACKEND_BASE_HPP
+#define INCLUDE_GREX_BACKEND_BASE_HPP
 
 #include <cstddef>
 
@@ -146,4 +146,4 @@ template<typename T>
 concept AnySuperNativeMask = AnyMaskTrait<T>::kind == SimdKind::supernative;
 } // namespace grex::backend
 
-#endif // INCLUDE_GREX_BACKEND_DEFS_HPP
+#endif // INCLUDE_GREX_BACKEND_BASE_HPP

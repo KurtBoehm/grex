@@ -13,7 +13,7 @@
 #if GREX_X86_64_LEVEL < 4
 #include <cstddef>
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/base.hpp"
 #include "grex/base.hpp"
 
 namespace grex::backend {

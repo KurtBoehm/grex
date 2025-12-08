@@ -10,8 +10,8 @@
 #include <cstddef>
 #include <span>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/choosers.hpp"
-#include "grex/backend/defs.hpp"
 #include "grex/base.hpp"
 
 namespace grex::backend {

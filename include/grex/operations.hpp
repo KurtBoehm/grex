@@ -10,7 +10,7 @@
 #include <limits>
 
 #include "grex/backend/active/operations.hpp"
-#include "grex/backend/defs.hpp"
+#include "grex/backend/base.hpp"
 #include "grex/backend/operations.hpp"
 #include "grex/base.hpp"
 #include "grex/types.hpp"

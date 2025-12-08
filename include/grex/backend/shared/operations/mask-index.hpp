@@ -9,7 +9,7 @@
 
 #include <cstddef>
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/base.hpp"
 #include "grex/base.hpp"
 
 namespace grex::backend {

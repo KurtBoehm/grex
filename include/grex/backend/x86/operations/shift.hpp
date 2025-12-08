@@ -11,7 +11,7 @@
 
 #include <immintrin.h>
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/base.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"

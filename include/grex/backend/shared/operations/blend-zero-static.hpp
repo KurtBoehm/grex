@@ -15,7 +15,7 @@
 #include <utility>
 
 #include "grex/backend/active/sizes.hpp"
-#include "grex/backend/defs.hpp"
+#include "grex/backend/base.hpp"
 #include "grex/backend/shared/defs.hpp"
 #include "grex/base.hpp"
 
@@ -51,8 +51,9 @@ struct BlendZeroSelectors {
   }
 
   [[nodiscard]] constexpr BlendZeroSelectors<value_size, size / 2> lower() const {
-    return static_apply<size / 2>(
-      [&]<std::size_t... tIdxs>() { return BlendZeroSelectors<value_size, size / 2>{ctrl[tIdxs]...}; });
+    return static_apply<size / 2>([&]<std::size_t... tIdxs>() {
+      return BlendZeroSelectors<value_size, size / 2>{ctrl[tIdxs]...};
+    });
   }
   [[nodiscard]] constexpr BlendZeroSelectors<value_size, size / 2> upper() const {
     return static_apply<size / 2>([&]<std::size_t... tIdxs>() {
@@ -60,13 +61,16 @@ struct BlendZeroSelectors {
     });
   }
 
-  [[nodiscard]] constexpr std::optional<BlendZeroSelectors<value_size, lane_size>> single_lane() const {
+  [[nodiscard]] constexpr std::optional<BlendZeroSelectors<value_size, lane_size>>
+  single_lane() const {
     static_assert(size >= lane_size, "At least one lane needs to be populated!");
     if constexpr (size == lane_size) {
       return *this;
     } else {
-      std::array<BlendZeroSelector, lane_size> data = static_apply<lane_size>(
-        [&]<std::size_t... tIdxs>() { return std::array<BlendZeroSelector, lane_size>{ctrl[tIdxs]...}; });
+      std::array<BlendZeroSelector, lane_size> data =
+        static_apply<lane_size>([&]<std::size_t... tIdxs>() {
+          return std::array<BlendZeroSelector, lane_size>{ctrl[tIdxs]...};
+        });
       for (std::size_t i = lane_size; i < size; ++i) {
         const BlendZeroSelector bz = ctrl[i];
         switch (data[i % lane_size]) {
@@ -96,7 +100,8 @@ struct BlendZeroSelectors {
   }
 
   template<std::size_t tDstValueBytes>
-  friend constexpr std::optional<BlendZeroSelectors<tDstValueBytes, tSize * tValueBytes / tDstValueBytes>>
+  friend constexpr std::optional<
+    BlendZeroSelectors<tDstValueBytes, tSize * tValueBytes / tDstValueBytes>>
   convert(const BlendZeroSelectors& self) {
     static_assert(size >= lane_size, "At least one lane needs to be populated!");
 
@@ -152,7 +157,8 @@ using BlendZeroSelectorsFor = BlendZeroSelectors<sizeof(typename TVec::Value), T
 template<typename T>
 struct AnyBlendZeroSelectorsTrait : public std::false_type {};
 template<std::size_t tValueBytes, std::size_t tSize>
-struct AnyBlendZeroSelectorsTrait<BlendZeroSelectors<tValueBytes, tSize>> : public std::true_type {};
+struct AnyBlendZeroSelectorsTrait<BlendZeroSelectors<tValueBytes, tSize>> : public std::true_type {
+};
 template<typename T>
 concept AnyBlendZeroSelectors = AnyBlendZeroSelectorsTrait<T>::value;
 

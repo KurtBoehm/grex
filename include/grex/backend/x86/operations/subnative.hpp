@@ -9,7 +9,7 @@
 
 #include <immintrin.h>
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/base.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
