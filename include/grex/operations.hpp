@@ -142,6 +142,10 @@ inline Mask<TDst, TSrc::size> convert(TSrc src) {
   return src.convert(type_tag<TDst>);
 }
 #endif
+
+#if GREX_BACKEND_X86_64
+using backend::runtime_x86_64_level;
+#endif
 } // namespace grex
 
 #endif // INCLUDE_GREX_OPERATIONS_HPP
