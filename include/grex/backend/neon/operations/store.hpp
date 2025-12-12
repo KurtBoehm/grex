@@ -13,7 +13,7 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/equals.hpp"
 #include "grex/backend/macros/for-each.hpp"

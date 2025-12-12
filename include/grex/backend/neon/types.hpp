@@ -9,9 +9,11 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/base.hpp"
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/base.hpp" // IWYU pragma: keep
 
 namespace grex::backend {
 #define GREX_TYPES_I(KIND, BITS, SIZE) \

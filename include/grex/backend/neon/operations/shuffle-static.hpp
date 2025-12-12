@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <utility>
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/neon/operations/extract.hpp"
 #include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/shared/defs.hpp"

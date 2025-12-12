@@ -11,7 +11,7 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/operations/blend.hpp"
 #include "grex/backend/neon/operations/compare.hpp"

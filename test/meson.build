@@ -126,15 +126,15 @@ foreach name, conf : {
     foreach arch_name, arch_args : test_arches
       space_name = name.replace('-', ' ')
       exe = executable(
-        f'test-@name@-@arch_name@',
+        f'@name@-@arch_name@',
         [f'@name@.cpp'],
         cpp_args: args + arch_args,
         dependencies: deps,
       )
       test(
-        f'test @space_name@ @arch_name@',
+        f'@space_name@ @arch_name@',
         exe,
-        suite: f'test @space_name@',
+        suite: space_name,
         is_parallel: parallel,
         timeout: -1,
       )
