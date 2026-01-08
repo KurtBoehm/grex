@@ -15,6 +15,7 @@
 #include <random>
 #include <string_view>
 #include <tuple>
+#include <type_traits>
 
 #include <fmt/base.h>
 #include <fmt/color.h>
@@ -100,10 +101,18 @@ inline void check_msg(const TLabel& label, bool same, T1 a, T2 b, bool verbose =
     std::exit(EXIT_FAILURE);
   }
 }
+
+template<typename T, std::size_t tSize = 1>
+struct IsCompleteTrait : public std::false_type {};
+template<typename T>
+struct IsCompleteTrait<T, sizeof(T) / sizeof(T)> : public std::true_type {};
+template<typename T>
+concept CompleteType = IsCompleteTrait<T>::value;
+
 template<typename T>
 requires(requires(T a) {
   { a == a } -> std::same_as<bool>;
-  requires !requires { std::tuple_size<T>::value; };
+  requires !CompleteType<std::tuple_size<T>>;
 })
 inline void check(const auto& label, T a, T b, bool verbose = true) {
   check_msg(label, are_equivalent(a, b), a, b, verbose);
@@ -122,8 +131,8 @@ inline void check(const auto& label, T1 a, T2 b, bool verbose = true) {
 }
 template<typename T1, typename T2>
 requires(requires {
-  std::tuple_size<T1>::value;
-  std::tuple_size<T2>::value;
+  requires CompleteType<std::tuple_size<T1>>;
+  requires CompleteType<std::tuple_size<T2>>;
   requires std::tuple_size_v<T1> == std::tuple_size_v<T2>;
 })
 inline void check(const auto& label, T1 a, T2 b, std::size_t size, bool verbose = true) {

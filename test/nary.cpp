@@ -111,7 +111,7 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
         grex::static_apply<num.value>([&]<std::size_t... tJ>() {
           std::array<T, num.value> arr{dval(tJ)...};
 
-          const auto ref = make_ref(arr[tJ]...);
+          const auto ref = T(make_ref(arr[tJ]...));
           const auto val = make_val(arr[tJ]...);
 
           if constexpr (grex::FloatVectorizable<T>) {
