@@ -143,21 +143,17 @@ namespace grex::backend {
   } \
   std::array<KIND##8, 16> buf{}; \
   store(buf.data(), src); \
-  std::size_t j = 0; \
   if ((size & 8U) != 0) { \
-    std::memcpy(dst + j, buf.data() + j, 8); \
-    j += 8; \
+    std::memcpy(dst, buf.data(), 8); \
   } \
   if ((size & 4U) != 0) { \
-    std::memcpy(dst + j, buf.data() + j, 4); \
-    j += 4; \
+    std::memcpy(dst + (size / 8) * 8, buf.data() + (size / 8) * 8, 4); \
   } \
   if ((size & 2U) != 0) { \
-    std::memcpy(dst + j, buf.data() + j, 2); \
-    j += 2; \
+    std::memcpy(dst + (size / 4) * 4, buf.data() + (size / 4) * 4, 2); \
   } \
   if ((size & 1U) != 0) { \
-    std::memcpy(dst + j, buf.data() + j, 1); \
+    std::memcpy(dst + (size / 2) * 2, buf.data() + (size / 2) * 2, 1); \
   }
 #endif
 // 256 bit: Split
