@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <random>
 
+#include <fmt/base.h>
 #include <pcg_extras.hpp>
 
 #include "grex/grex.hpp"

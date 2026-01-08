@@ -9,6 +9,7 @@
 #include <random>
 #include <type_traits>
 
+#include <fmt/base.h>
 #include <fmt/color.h>
 #include <fmt/format.h>
 #include <pcg_extras.hpp>

@@ -5,7 +5,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <fmt/base.h>
-#include <fmt/color.h>
 
 #include "grex/grex.hpp"
 
@@ -15,6 +14,7 @@
 #include <cstdlib>
 #include <random>
 
+#include <fmt/color.h>
 #include <pcg_extras.hpp>
 
 #include "defs.hpp"

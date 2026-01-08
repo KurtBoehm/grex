@@ -9,6 +9,7 @@
 #include <limits>
 #include <random>
 
+#include <fmt/base.h>
 #include <fmt/format.h>
 #include <pcg_extras.hpp>
 
