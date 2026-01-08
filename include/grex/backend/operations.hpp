@@ -11,10 +11,12 @@
 #include <bit>
 #include <climits>
 #include <cmath>
+#include <concepts>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <utility>
 
 #include "grex/backend/base.hpp"
 #include "grex/base.hpp"
@@ -86,6 +88,45 @@ static UnsignedInt<std::bit_ceil(tSrcBytes)> load_multibyte(const std::byte* dat
   }
   return output;
 }
+
+template<std::size_t tIdx, typename THead, typename... TTail>
+GREX_ALWAYS_INLINE inline THead pack_get(THead head, TTail... tail) {
+  if constexpr (tIdx == 0) {
+    return head;
+  } else {
+    return pack_get<tIdx - 1>(tail...);
+  }
+}
+
+#define GREX_NARY(NAME, OP, SECOP) \
+  template<typename THead, typename... TTail> \
+  requires((... && std::same_as<THead, TTail>)) \
+  GREX_ALWAYS_INLINE inline THead NAME(THead head, TTail... tail) { \
+    constexpr std::size_t num = sizeof...(TTail) + 1; \
+    if constexpr (num == 1) { \
+      return head; \
+    } else { \
+      const auto rec0 = \
+        [&]<std::size_t tOff, std::size_t... tI>(IndexTag<tOff>, std::index_sequence<tI...>) \
+          GREX_ALWAYS_INLINE { return NAME(pack_get<tOff + tI>(head, tail...)...); }; \
+      const auto rec1 = \
+        [&]<std::size_t tOff, std::size_t... tI>(IndexTag<tOff>, std::index_sequence<tI...>) \
+          GREX_ALWAYS_INLINE { return SECOP(pack_get<tOff + tI>(head, tail...)...); }; \
+\
+      if constexpr (std::has_single_bit(num)) { \
+        const auto s0 = rec0(index_tag<0>, std::make_index_sequence<num / 2>{}); \
+        const auto s1 = rec1(index_tag<num / 2>, std::make_index_sequence<num / 2>{}); \
+        return s0 OP s1; \
+      } else { \
+        constexpr std::size_t lower = std::bit_floor(num); \
+        const auto s0 = rec0(index_tag<0>, std::make_index_sequence<lower>{}); \
+        const auto s1 = rec1(index_tag<lower>, std::make_index_sequence<num - lower>{}); \
+        return s0 OP s1; \
+      } \
+    } \
+  }
+GREX_NARY(nary_add, +, nary_add)
+GREX_NARY(nary_subtract, -, nary_add)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_OPERATIONS_HPP

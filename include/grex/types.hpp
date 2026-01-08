@@ -9,6 +9,13 @@
 
 #include "grex/backend.hpp"
 
+namespace grex {
+template<Vectorizable T>
+static constexpr std::size_t max_native_size = backend::max_native_size<T>;
+template<Vectorizable T>
+static constexpr std::size_t min_native_size = backend::min_native_size<T>;
+} // namespace grex
+
 #if !GREX_BACKEND_SCALAR
 #include <array>
 #include <concepts>
@@ -20,12 +27,10 @@
 #include "grex/base.hpp"
 
 namespace grex {
-using backend::has_fma;
-using backend::max_native_size;
-using backend::min_native_size;
-using backend::native_sizes;
-using backend::register_bits;
-using backend::register_bytes;
+template<Vectorizable T>
+static constexpr std::array native_sizes = backend::native_sizes<T>;
+static constexpr std::array register_bits = backend::register_bits;
+static constexpr std::array register_bytes = backend::register_bytes;
 
 template<Vectorizable T, std::size_t tSize>
 struct Mask {
@@ -76,10 +81,12 @@ struct Mask {
   bool operator[](std::size_t i) const {
     return backend::extract(mask_, i);
   }
-  // this form of get is required for {fmt} to use its formatter for tuple-like types
+  bool operator[](AnyIndexTag auto i) const {
+    return backend::extract(mask_, i);
+  }
   template<std::size_t tIdx>
   friend bool get(const Mask& m) {
-    return backend::extract(m.mask_, tIdx);
+    return backend::extract(m.mask_, index_tag<tIdx>);
   }
   Mask insert(std::size_t i, bool value) const {
     return Mask{backend::insert(mask_, i, value)};
@@ -152,12 +159,16 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   }
 
   template<std::size_t tSrcBytes>
-  static Vector load_multibyte(const std::byte* data, IndexTag<tSrcBytes> src_bytes) {
+  static Vector load_multibyte(const std::byte* data, IndexTag<tSrcBytes> src_bytes)
+  requires(UnsignedIntVectorizable<T> && tSrcBytes <= sizeof(Value))
+  {
     const auto* raw = reinterpret_cast<const u8*>(data);
     return Vector{backend::load_multibyte(raw, src_bytes, type_tag<Backend>)};
   }
   template<MultiByteIterator TIt>
-  static Vector load_multibyte(TIt it) {
+  static Vector load_multibyte(TIt it)
+  requires(UnsignedIntVectorizable<T>)
+  {
     return load_multibyte(it.raw(), index_tag<TIt::Container::element_bytes>);
   }
 
@@ -235,10 +246,9 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   T operator[](AnyIndexTag auto i) const {
     return backend::extract(vec_, i);
   }
-  // this form of get is required for {fmt} to use its formatter for tuple-like types
   template<std::size_t tIdx>
   friend T get(const Vector& v) {
-    return backend::extract(v.vec_, tIdx);
+    return backend::extract(v.vec_, index_tag<tIdx>);
   }
 
   Vector insert(std::size_t i, T value) const {
@@ -273,8 +283,8 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   GREX_VECTOR_CMP_BINOP(!=, , backend::compare_neq(a.vec_, b.vec_))
   GREX_VECTOR_CMP_BINOP(<, , backend::compare_lt(a.vec_, b.vec_))
   GREX_VECTOR_CMP_BINOP(>, , backend::compare_lt(b.vec_, a.vec_))
-  GREX_VECTOR_CMP_BINOP(>=, , backend::compare_ge(a.vec_, b.vec_))
   GREX_VECTOR_CMP_BINOP(<=, , backend::compare_ge(b.vec_, a.vec_))
+  GREX_VECTOR_CMP_BINOP(>=, , backend::compare_ge(a.vec_, b.vec_))
 #undef GREX_VECTOR_CMP_BINOP
 
   template<std::size_t tDstSize>
@@ -310,11 +320,6 @@ private:
   using Base::vec_;
 };
 
-template<Vectorizable T, std::size_t tSize>
-inline Mask<T, tSize> andnot(Mask<T, tSize> a, Mask<T, tSize> b) {
-  return Mask<T, tSize>{backend::logical_andnot(a.backend(), b.backend())};
-}
-
 // traits
 template<typename T>
 struct MaskTrait : public std::false_type {};
@@ -333,15 +338,15 @@ struct VectorTrait<Vector<T, tSize>> : public std::true_type {
 template<typename T>
 concept AnyMask = MaskTrait<T>::value;
 template<typename T, std::size_t tSize>
-concept SizedMask = MaskTrait<T>::value && T::size == tSize;
+concept SizedMask = AnyMask<T> && T::size == tSize;
 
 // vector concepts
 template<typename TVec>
 concept AnyVector = VectorTrait<TVec>::value;
 template<typename TVec, typename TVal>
-concept ValuedVector = VectorTrait<TVec>::value && std::same_as<typename TVec::Value, TVal>;
+concept ValuedVector = AnyVector<TVec> && std::same_as<typename TVec::Value, TVal>;
 template<typename TVec, std::size_t tSize>
-concept SizedVector = VectorTrait<TVec>::value && TVec::size == tSize;
+concept SizedVector = AnyVector<TVec> && TVec::size == tSize;
 template<typename TVec>
 concept IntVector = AnyVector<TVec> && IntVectorizable<typename TVec::Value>;
 template<typename TVec>
@@ -350,8 +355,13 @@ concept FpVector = AnyVector<TVec> && FloatVectorizable<typename TVec::Value>;
 // type mappings
 template<AnyVector TVec>
 using MaskFor = VectorTrait<TVec>::MaskFor;
-template<AnyMask TVec>
-using VectorFor = MaskTrait<TVec>::VectorFor;
+template<AnyMask TMask>
+using VectorFor = MaskTrait<TMask>::VectorFor;
+
+template<Vectorizable T, std::size_t tSize>
+inline Mask<T, tSize> andnot(Mask<T, tSize> a, Mask<T, tSize> b) {
+  return Mask<T, tSize>{backend::logical_andnot(a.backend(), b.backend())};
+}
 
 template<SignedVectorizable T, std::size_t tSize>
 inline Vector<T, tSize> abs(Vector<T, tSize> v) {
@@ -488,12 +498,6 @@ template<std::size_t tIdx, grex::Vectorizable T, std::size_t tSize>
 struct std::tuple_element<tIdx, grex::Mask<T, tSize>> {
   using type = const bool; // NOLINT
 };
-#else
-namespace grex {
-using backend::has_fma;
-using backend::max_native_size;
-using backend::min_native_size;
-} // namespace grex
 #endif
 
 #endif // INCLUDE_GREX_TYPES_HPP

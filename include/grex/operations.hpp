@@ -20,6 +20,13 @@
 #endif
 
 namespace grex {
+/**
+  Indicates whether the backend supports fused multiply-add.
+
+  If `false`, fused multiply-addition is emulated using multiplication and addition.
+*/
+inline constexpr bool has_fma = backend::has_fma;
+
 template<IntVectorizable TDst>
 inline TDst expand_any(IntVectorizable auto value) {
   return backend::expand_any<TDst>(value);
@@ -146,6 +153,13 @@ inline Mask<TDst, TSrc::size> convert(TSrc src) {
   return src.convert(type_tag<TDst>);
 }
 #endif
+
+GREX_ALWAYS_INLINE inline auto add(auto... values) {
+  return backend::nary_add(values...);
+}
+GREX_ALWAYS_INLINE inline auto subtract(auto... values) {
+  return backend::nary_subtract(values...);
+}
 
 #if GREX_BACKEND_X86_64
 using backend::runtime_x86_64_level;

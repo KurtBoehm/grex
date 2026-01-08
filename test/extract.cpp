@@ -4,6 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#include <array>
 #include <cstddef>
 #include <random>
 
@@ -29,12 +30,21 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
 
   grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
     for (std::size_t i = 0; i < repetitions; ++i) {
-      const VC vc{dval(tIdxs)...};
-      vc.check("vector extract", false);
-      test::check("vector extract_single", grex::extract_single(vc.vec), vc.ref[0], false);
-
-      const MC mc{bval(tIdxs)...};
-      mc.check("mask extract", false);
+      {
+        const VC vc{dval(tIdxs)...};
+        test::check("vector extract run-time", std::array{vc.vec[tIdxs]...}, vc.ref, false);
+        test::check("vector extract compile-time", std::array{vc.vec[grex::index_tag<tIdxs>]...},
+                    vc.ref, false);
+        test::check("vector extract tuple-like", std::array{get<tIdxs>(vc.vec)...}, vc.ref, false);
+        test::check("vector extract_single", grex::extract_single(vc.vec), vc.ref[0], false);
+      }
+      {
+        const MC mc{bval(tIdxs)...};
+        test::check("vector extract run-time", std::array{mc.mask[tIdxs]...}, mc.ref, false);
+        test::check("vector extract compile-time", std::array{mc.mask[grex::index_tag<tIdxs>]...},
+                    mc.ref, false);
+        test::check("vector extract tuple-like", std::array{get<tIdxs>(mc.mask)...}, mc.ref, false);
+      }
     }
   });
 }

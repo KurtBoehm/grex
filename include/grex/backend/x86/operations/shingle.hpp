@@ -348,19 +348,7 @@ GREX_FOREACH_X86_64_LEVEL(GREX_SHINGLE_ALL)
                                                         Scalar<KIND##BITS> back) { \
     GREX_CAT(GREX_VDSHINGLE_, BITS, _, PART)(KIND, BITS, PART, SIZE, BITPREFIX, REGISTERBITS) \
   }
-GREX_SHINGLE_SUB(f, 32, 2, 4, _mm, 128)
-GREX_SHINGLE_SUB(i, 32, 2, 4, _mm, 128)
-GREX_SHINGLE_SUB(u, 32, 2, 4, _mm, 128)
-GREX_SHINGLE_SUB(i, 16, 4, 8, _mm, 128)
-GREX_SHINGLE_SUB(u, 16, 4, 8, _mm, 128)
-GREX_SHINGLE_SUB(i, 16, 2, 8, _mm, 128)
-GREX_SHINGLE_SUB(u, 16, 2, 8, _mm, 128)
-GREX_SHINGLE_SUB(i, 8, 8, 16, _mm, 128)
-GREX_SHINGLE_SUB(u, 8, 8, 16, _mm, 128)
-GREX_SHINGLE_SUB(i, 8, 4, 16, _mm, 128)
-GREX_SHINGLE_SUB(u, 8, 4, 16, _mm, 128)
-GREX_SHINGLE_SUB(i, 8, 2, 16, _mm, 128)
-GREX_SHINGLE_SUB(u, 8, 2, 16, _mm, 128)
+GREX_FOREACH_SUB(GREX_SHINGLE_SUB, _mm, 128)
 
 // sub-native vectors: just use the native version
 template<typename T, std::size_t tPart, std::size_t tSize>

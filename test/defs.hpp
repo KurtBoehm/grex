@@ -103,6 +103,7 @@ inline void check_msg(const TLabel& label, bool same, T1 a, T2 b, bool verbose =
 template<typename T>
 requires(requires(T a) {
   { a == a } -> std::same_as<bool>;
+  requires !requires { std::tuple_size<T>::value; };
 })
 inline void check(const auto& label, T a, T b, bool verbose = true) {
   check_msg(label, are_equivalent(a, b), a, b, verbose);
@@ -152,10 +153,10 @@ struct VectorChecker {
   VectorChecker(grex::Vector<T, tSize> v, std::array<T, tSize> a) : vec{v}, ref{a} {}
 
   void check(const auto& label, bool verbose = true) const {
-    test::check(label, vec, ref, verbose);
+    test::check(label, vec.as_array(), ref, verbose);
   }
   void check(const auto& label, std::size_t size, bool verbose = true) const {
-    test::check(label, vec, ref, size, verbose);
+    test::check(label, vec.as_array(), ref, size, verbose);
   }
 };
 template<Vectorizable T, std::size_t tSize>
@@ -179,7 +180,7 @@ struct MaskChecker {
   MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
 
   void check(const auto& label, bool verbose = true) const {
-    test::check(label, mask, ref, verbose);
+    test::check(label, mask.as_array(), ref, verbose);
   }
 };
 template<Vectorizable T, std::size_t tSize>
