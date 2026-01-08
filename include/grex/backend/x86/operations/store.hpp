@@ -9,6 +9,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstring>
 
 #include <immintrin.h>
 
@@ -144,19 +145,19 @@ namespace grex::backend {
   store(buf.data(), src); \
   std::size_t j = 0; \
   if ((size & 8U) != 0) { \
-    reinterpret_cast<u64*>(dst)[0] = reinterpret_cast<u64*>(buf.data())[0]; \
+    std::memcpy(dst + j, buf.data() + j, 8); \
     j += 8; \
   } \
   if ((size & 4U) != 0) { \
-    reinterpret_cast<u32*>(dst)[j / 4] = reinterpret_cast<u32*>(buf.data())[j / 4]; \
+    std::memcpy(dst + j, buf.data() + j, 4); \
     j += 4; \
   } \
   if ((size & 2U) != 0) { \
-    reinterpret_cast<u16*>(dst)[j / 2] = reinterpret_cast<u16*>(buf.data())[j / 2]; \
+    std::memcpy(dst + j, buf.data() + j, 2); \
     j += 2; \
   } \
   if ((size & 1U) != 0) { \
-    dst[j] = buf[j]; \
+    std::memcpy(dst + j, buf.data() + j, 1); \
   }
 #endif
 // 256 bit: Split
