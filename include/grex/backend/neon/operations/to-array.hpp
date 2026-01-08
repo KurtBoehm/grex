@@ -14,7 +14,7 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/neon/operations/convert.hpp"
 #include "grex/backend/neon/operations/expand.hpp"
 #include "grex/backend/neon/operations/store.hpp"

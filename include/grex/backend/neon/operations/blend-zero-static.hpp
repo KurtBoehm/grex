@@ -11,7 +11,7 @@
 #include <cstddef>
 #include <utility>
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/neon/operations/bitwise.hpp"
 #include "grex/backend/neon/operations/load.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"
