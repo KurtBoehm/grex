@@ -1,0 +1,106 @@
+@import url("https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;500;700&display=swap");
+
+/* Colors taken from https://www.radix-ui.com/colors. */
+html[data-theme="light"] {
+  --radix-gray-11: #646464;
+  --radix-mauve-11: #65636d;
+  --radix-slate-11: #60646c;
+  --radix-sage-11: #5f6563;
+  --radix-olive-11: #60655f;
+  --radix-sand-11: #63635e;
+  --radix-amber-11: #ab6400;
+  --radix-blue-11: #0d74ce;
+  --radix-bronze-11: #7d5e54;
+  --radix-brown-11: #815e46;
+  --radix-crimson-11: #cb1d63;
+  --radix-cyan-11: #107d98;
+  --radix-gold-11: #71624b;
+  --radix-grass-11: #2a7e3b;
+  --radix-green-11: #218358;
+  --radix-indigo-11: #3a5bc7;
+  --radix-iris-11: #5753c6;
+  --radix-jade-11: #208368;
+  --radix-lime-11: #5c7c2f;
+  --radix-mint-11: #027864;
+  --radix-orange-11: #cc4e00;
+  --radix-pink-11: #c2298a;
+  --radix-plum-11: #953ea3;
+  --radix-purple-11: #8145b5;
+  --radix-red-11: #ce2c31;
+  --radix-ruby-11: #ca244d;
+  --radix-sky-11: #00749e;
+  --radix-teal-11: #008573;
+  --radix-tomato-11: #d13415;
+  --radix-violet-11: #6550b9;
+  --radix-yellow-11: #9e6c00;
+}
+html[data-theme="dark"] {
+  --radix-gray-11: #b4b4b4;
+  --radix-mauve-11: #b5b2bc;
+  --radix-slate-11: #b0b4ba;
+  --radix-sage-11: #adb5b2;
+  --radix-olive-11: #afb5ad;
+  --radix-sand-11: #b5b3ad;
+  --radix-amber-11: #ffca16;
+  --radix-blue-11: #70b8ff;
+  --radix-bronze-11: #d4b3a5;
+  --radix-brown-11: #dbb594;
+  --radix-crimson-11: #ff92ad;
+  --radix-cyan-11: #4ccce6;
+  --radix-gold-11: #cbb99f;
+  --radix-grass-11: #71d083;
+  --radix-green-11: #3dd68c;
+  --radix-indigo-11: #9eb1ff;
+  --radix-iris-11: #b1a9ff;
+  --radix-jade-11: #1fd8a4;
+  --radix-lime-11: #bde56c;
+  --radix-mint-11: #58d5ba;
+  --radix-orange-11: #ffa057;
+  --radix-pink-11: #ff8dcc;
+  --radix-plum-11: #e796f3;
+  --radix-purple-11: #d19dff;
+  --radix-red-11: #ff9592;
+  --radix-ruby-11: #ff949d;
+  --radix-sky-11: #75c7f0;
+  --radix-teal-11: #0bd8b6;
+  --radix-tomato-11: #ff977d;
+  --radix-violet-11: #baa7ff;
+  --radix-yellow-11: #f5e147;
+}
+
+/* Use a nicer color scheme based on https://www.radix-ui.com/colors. */
+html {
+  --pst-font-family-base-system: "Fira Sans", ui-sans-serif, sans-serif;
+  --pst-font-family-monospace: "Fira Mono", ui-monospace, monospace;
+  --pst-color-primary: var(--radix-pink-11) !important;
+  --pst-color-secondary: var(--radix-red-11) !important;
+  --pst-color-inline-code: var(--radix-purple-11) !important;
+  --pst-color-inline-code-links: var(--radix-pink-11) !important;
+  --pst-sidebar-secondary: 20rem;
+}
+
+/* Highlight parameters using color, not by making it italic. */
+.sig-param.n {
+  font-style: normal;
+  color: var(--radix-iris-11);
+}
+
+/* Replace the hideous background of the field lists with coloring. */
+dl[class]:not(.option-list, .field-list, .footnote, .glossary, .simple)
+  dt.field-even,
+dl[class]:not(.option-list, .field-list, .footnote, .glossary, .simple)
+  dt.field-odd {
+  color: var(--radix-iris-11);
+  background-color: unset;
+}
+
+/* Do not highlight the colon. */
+dl[class]:not(.option-list, .field-list, .footnote, .glossary, .simple)
+  dt.field-even
+  .colon,
+dl[class]:not(.option-list, .field-list, .footnote, .glossary, .simple)
+  dt.field-odd
+  .colon {
+  color: var(--pst-color-text-base);
+}
