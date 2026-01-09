@@ -61,6 +61,7 @@ namespace grex::backend {
 // 256 bit, 32/64 bit: maskstore with casts
 #define GREX_MASKSTORE_CAST_32 reinterpret_cast<int*>(dst)
 #define GREX_MASKSTORE_CAST_64 reinterpret_cast<long long*>(dst)
+
 #define GREX_PARTSTORE_MASKSTORE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   BITPREFIX##_maskstore_epi##BITS(GREX_MASKSTORE_CAST_##BITS, \
                                   cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r, \
@@ -80,26 +81,30 @@ namespace grex::backend {
   const u64 lo64 = std::bit_cast<u64>(_mm_cvtsi128_si64(ru64)); \
   const u64 hi64 = std::bit_cast<u64>(_mm_cvtsi128_si64(_mm_shuffle_epi32(ru64, 0b11101110))); \
   u64 r64 = (size >= GREX_DIVIDE(SIZE, 2)) ? hi64 : lo64;
-#define GREX_PARTSTORE_FALLBACK_64_INIT(KIND, BITS, PART) \
-  const auto ru64 = reinterpret<u64>(src).full.r; \
+#define GREX_PARTSTORE_FALLBACK_SUB_INIT(BITS, PART) \
+  const __m128i reg = reinterpret<u##BITS>(src).full.r; \
   if (size >= PART) [[unlikely]] { \
-    _mm_storeu_si64(dst, ru64); \
+    _mm_storeu_si##BITS(dst, reg); \
     return; \
   } \
   if (size == 0) [[unlikely]] { \
     return; \
   } \
-  u64 r64 = std::bit_cast<u64>(_mm_cvtsi128_si64(ru64));
-#define GREX_PARTSTORE_FALLBACK_32_INIT(KIND, BITS, PART) \
-  const auto ru32 = reinterpret<u32>(src).full.r; \
-  if (size >= PART) [[unlikely]] { \
-    _mm_storeu_si32(dst, ru32); \
-    return; \
-  } \
-  if (size == 0) [[unlikely]] { \
-    return; \
-  } \
-  u32 r32 = std::bit_cast<u32>(_mm_cvtsi128_si32(ru32));
+  u##BITS r##BITS = std::bit_cast<u##BITS>(_mm_cvtsi128_si##BITS(reg));
+#define GREX_PARTSTORE_FALLBACK_64_INIT(KIND, BITS, PART) GREX_PARTSTORE_FALLBACK_SUB_INIT(64, PART)
+#define GREX_PARTSTORE_FALLBACK_32_INIT(KIND, BITS, PART) GREX_PARTSTORE_FALLBACK_SUB_INIT(32, PART)
+
+#define GREX_SWITCH_SIZE_0_1_DEFAULT(CASE1_STMT, DEFAULT_STMT) \
+  switch (size) { \
+    [[unlikely]] case 0: \
+      return; \
+    [[likely]] case 1: \
+      CASE1_STMT; \
+      return; \
+    [[unlikely]] default: \
+      DEFAULT_STMT; \
+      return; \
+  }
 
 #if GREX_X86_64_LEVEL >= 3
 #define GREX_PARTSTORE_128_64(KIND, ...) GREX_PARTSTORE_MASKSTORE(KIND, 64, 2, _mm, 128)
@@ -108,16 +113,9 @@ namespace grex::backend {
 #define GREX_PARTSTORE_256_32(KIND, ...) GREX_PARTSTORE_MASKSTORE(KIND, 32, 8, _mm256, 256)
 #else
 #define GREX_PARTSTORE_128_64(KIND, ...) \
-  switch (size) { \
-    [[unlikely]] case 0: \
-      return; \
-    [[likely]] case 1: \
-      _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 64, 128, src.r)); \
-      return; \
-    [[unlikely]] default: \
-      _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), GREX_KINDCAST(KIND, i, 64, 128, src.r)); \
-      return; \
-  }
+  GREX_SWITCH_SIZE_0_1_DEFAULT( \
+    _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 64, 128, src.r)), \
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), GREX_KINDCAST(KIND, i, 64, 128, src.r)))
 #define GREX_PARTSTORE_128_32(KIND, ...) \
   GREX_PARTSTORE_FALLBACK_128_INIT(KIND, 32, 4) \
   if ((size & 1U) != 0) { \
@@ -148,6 +146,7 @@ namespace grex::backend {
   }
 #define GREX_PARTSTORE_256_16 GREX_PARTSTORE_SPLIT
 #define GREX_PARTSTORE_256_8 GREX_PARTSTORE_SPLIT
+
 // 256/512 bits: Split
 #define GREX_PARTSTORE_SPLIT(KIND, BITS, SIZE, ...) \
   if (size == 0) [[unlikely]] { \
@@ -162,8 +161,8 @@ namespace grex::backend {
     store_part(dst + GREX_DIVIDE(SIZE, 2), get_high(src), size - GREX_DIVIDE(SIZE, 2)); \
   } else { \
     store_part(dst, get_low(src), size); \
-  } \
-// AVX-512: Intrinsics
+  }
+
 #define GREX_PARTSTORE_AVX512(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
   GREX_CAT(BITPREFIX##_mask_storeu_, GREX_EPI_SUFFIX(KIND, BITS)) \
   (dst, cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r, src.r);
@@ -208,16 +207,8 @@ GREX_FOREACH_SUB(GREX_STORE_SUB)
 
 #if GREX_X86_64_LEVEL <= 3
 #define GREX_PARTSTORE_SUB_32_2(KIND) \
-  switch (size) { \
-    [[unlikely]] case 0: \
-      return; \
-    [[likely]] case 1: \
-      _mm_storeu_si32(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)); \
-      return; \
-    [[unlikely]] default: \
-      _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)); \
-      return; \
-  }
+  GREX_SWITCH_SIZE_0_1_DEFAULT(_mm_storeu_si32(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)), \
+                               _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)))
 #define GREX_PARTSTORE_SUB_16_4(KIND) \
   GREX_PARTSTORE_FALLBACK_64_INIT(KIND, 16, 4) \
   if ((size & 2U) != 0) { \
@@ -228,16 +219,8 @@ GREX_FOREACH_SUB(GREX_STORE_SUB)
     std::memcpy(dst + (size / 2 * 2), &r64, 2); \
   }
 #define GREX_PARTSTORE_SUB_16_2(KIND) \
-  switch (size) { \
-    [[unlikely]] case 0: \
-      return; \
-    [[likely]] case 1: \
-      _mm_storeu_si16(dst, src.full.r); \
-      return; \
-    [[unlikely]] default: \
-      _mm_storeu_si32(dst, src.full.r); \
-      return; \
-  }
+  GREX_SWITCH_SIZE_0_1_DEFAULT(_mm_storeu_si16(dst, src.full.r), _mm_storeu_si32(dst, src.full.r))
+
 #define GREX_PARTSTORE_SUB_8_8(KIND) \
   GREX_PARTSTORE_FALLBACK_64_INIT(KIND, 8, 8) \
   if ((size & 4U) != 0) { \
@@ -261,17 +244,8 @@ GREX_FOREACH_SUB(GREX_STORE_SUB)
     std::memcpy(dst + (size / 2 * 2), &r32, 1); \
   }
 #define GREX_PARTSTORE_SUB_8_2(KIND) \
-  switch (size) { \
-    [[unlikely]] case 0: \
-      return; \
-    [[likely]] case 1: { \
-      dst[0] = KIND##8(_mm_cvtsi128_si32(src.full.r)); \
-      return; \
-    } \
-    [[unlikely]] default: \
-      _mm_storeu_si16(dst, src.full.r); \
-      return; \
-  }
+  GREX_SWITCH_SIZE_0_1_DEFAULT(dst[0] = KIND##8(_mm_cvtsi128_si32(src.full.r)), \
+                               _mm_storeu_si16(dst, src.full.r))
 #define GREX_PARTSTORE_SUB_IMPL(KIND, BITS, PART, SIZE) GREX_PARTSTORE_SUB_##BITS##_##PART(KIND)
 #else
 #define GREX_PARTSTORE_SUB_IMPL(...) return store_part(dst, src.full, size);
