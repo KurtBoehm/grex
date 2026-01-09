@@ -33,12 +33,15 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_REINTERPRET_ALL)
 
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
-inline SubVector<TDst, tPart, tSize> reinterpret(SubVector<TSrc, tPart, tSize> v,
-                                                 TypeTag<TDst> tag) {
-  return SubVector<TDst, tPart, tSize>{reinterpret(v.full, tag)};
+inline SubVector<TDst, tPart * sizeof(TSrc) / sizeof(TDst), tSize * sizeof(TSrc) / sizeof(TDst)>
+reinterpret(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
+  using Dst =
+    SubVector<TDst, tPart * sizeof(TSrc) / sizeof(TDst), tSize * sizeof(TSrc) / sizeof(TDst)>;
+  return Dst{reinterpret(v.full, tag)};
 }
 template<Vectorizable TDst, typename THalf>
-inline VectorFor<TDst, 2 * THalf::size> reinterpret(SuperVector<THalf> v, TypeTag<TDst> tag) {
+inline VectorFor<TDst, 2 * THalf::size * sizeof(typename THalf::Value) / sizeof(TDst)>
+reinterpret(SuperVector<THalf> v, TypeTag<TDst> tag) {
   return {.lower = reinterpret(v.lower, tag), .upper = reinterpret(v.upper, tag)};
 }
 

@@ -9,6 +9,7 @@
 #include <random>
 
 #include <fmt/base.h>
+#include <fmt/format.h>
 #include <pcg_extras.hpp>
 
 #include "grex/grex.hpp"
@@ -103,8 +104,8 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         for (std::size_t j = 0; j <= tSize; ++j) {
           std::array<T, tSize> buf{};
           checker.vec.store_part(buf.data(), j);
-          test::check("store_part", buf, std::array{((tIdxs < j) ? checker.ref[tIdxs] : T{})...},
-                      false);
+          test::check([&] { return fmt::format("store_part({}, {})", j, checker.ref); }, buf,
+                      std::array{((tIdxs < j) ? checker.ref[tIdxs] : T{})...}, false);
           // tagged
           std::array<T, tSize> tbuf{};
           grex::store(tbuf.data(), checker.vec, grex::part_tag<tSize>(j));
