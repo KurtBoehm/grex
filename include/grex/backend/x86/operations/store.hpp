@@ -37,12 +37,12 @@
 namespace grex::backend {
 // Define the casts
 #define GREX_STORE_CAST_f(REGISTERBITS) dst
-#define GREX_STORE_CAST_u(REGISTERBITS) reinterpret_cast<__m##REGISTERBITS##i*>(dst)
 #define GREX_STORE_CAST_i(REGISTERBITS) reinterpret_cast<__m##REGISTERBITS##i*>(dst)
+#define GREX_STORE_CAST_u(REGISTERBITS) reinterpret_cast<__m##REGISTERBITS##i*>(dst)
 
-#define GREX_STORE_BASE(NAME, INFIX, KIND, BITS, SIZE, KINDPREFIX, REGISTERBITS) \
+#define GREX_STORE_BASE(NAME, INFIX, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline void NAME(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src) { \
-    GREX_CAT(KINDPREFIX##_##INFIX##_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS)) \
+    GREX_CAT(BITPREFIX##_##INFIX##_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS)) \
     (GREX_STORE_CAST_##KIND(REGISTERBITS), src.r); \
   }
 #define GREX_STORE(...) \
@@ -61,11 +61,11 @@ namespace grex::backend {
 // 256 bit, 32/64 bit: maskstore with casts
 #define GREX_MASKSTORE_CAST_32 reinterpret_cast<int*>(dst)
 #define GREX_MASKSTORE_CAST_64 reinterpret_cast<long long*>(dst)
-
-#define GREX_PARTSTORE_MASKSTORE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
+#define GREX_PARTSTORE_MASKSTORE(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
   BITPREFIX##_maskstore_epi##BITS(GREX_MASKSTORE_CAST_##BITS, \
                                   cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r, \
                                   GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, src.r));
+
 #define GREX_PARTSTORE_FALLBACK_128_INIT(KIND, BITS, SIZE) \
   if (size >= SIZE) [[unlikely]] { \
     store(dst, src); \
@@ -94,7 +94,7 @@ namespace grex::backend {
 #define GREX_PARTSTORE_FALLBACK_64_INIT(KIND, BITS, PART) GREX_PARTSTORE_FALLBACK_SUB_INIT(64, PART)
 #define GREX_PARTSTORE_FALLBACK_32_INIT(KIND, BITS, PART) GREX_PARTSTORE_FALLBACK_SUB_INIT(32, PART)
 
-#define GREX_SWITCH_SIZE_0_1_DEFAULT(CASE1_STMT, DEFAULT_STMT) \
+#define GREX_PARTSTORE_SWITCH(CASE1_STMT, DEFAULT_STMT) \
   switch (size) { \
     [[unlikely]] case 0: \
       return; \
@@ -107,13 +107,13 @@ namespace grex::backend {
   }
 
 #if GREX_X86_64_LEVEL >= 3
-#define GREX_PARTSTORE_128_64(KIND, ...) GREX_PARTSTORE_MASKSTORE(KIND, 64, 2, _mm, 128)
-#define GREX_PARTSTORE_128_32(KIND, ...) GREX_PARTSTORE_MASKSTORE(KIND, 32, 4, _mm, 128)
-#define GREX_PARTSTORE_256_64(KIND, ...) GREX_PARTSTORE_MASKSTORE(KIND, 64, 4, _mm256, 256)
-#define GREX_PARTSTORE_256_32(KIND, ...) GREX_PARTSTORE_MASKSTORE(KIND, 32, 8, _mm256, 256)
+#define GREX_PARTSTORE_128_64 GREX_PARTSTORE_MASKSTORE
+#define GREX_PARTSTORE_128_32 GREX_PARTSTORE_MASKSTORE
+#define GREX_PARTSTORE_256_64 GREX_PARTSTORE_MASKSTORE
+#define GREX_PARTSTORE_256_32 GREX_PARTSTORE_MASKSTORE
 #else
 #define GREX_PARTSTORE_128_64(KIND, ...) \
-  GREX_SWITCH_SIZE_0_1_DEFAULT( \
+  GREX_PARTSTORE_SWITCH( \
     _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 64, 128, src.r)), \
     _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), GREX_KINDCAST(KIND, i, 64, 128, src.r)))
 #define GREX_PARTSTORE_128_32(KIND, ...) \
@@ -144,16 +144,14 @@ namespace grex::backend {
   if ((size & 1U) != 0) { \
     std::memcpy(dst + (size / 2 * 2), &r64, 1); \
   }
-#define GREX_PARTSTORE_256_16 GREX_PARTSTORE_SPLIT
-#define GREX_PARTSTORE_256_8 GREX_PARTSTORE_SPLIT
 
 // 256/512 bits: Split
 #define GREX_PARTSTORE_SPLIT(KIND, BITS, SIZE, ...) \
-  if (size == 0) [[unlikely]] { \
-    return; \
-  } \
   if (size >= SIZE) [[unlikely]] { \
     store(dst, src); \
+    return; \
+  } \
+  if (size == 0) [[unlikely]] { \
     return; \
   } \
   if (size >= GREX_DIVIDE(SIZE, 2)) { \
@@ -162,10 +160,13 @@ namespace grex::backend {
   } else { \
     store_part(dst, get_low(src), size); \
   }
+#define GREX_PARTSTORE_256_16 GREX_PARTSTORE_SPLIT
+#define GREX_PARTSTORE_256_8 GREX_PARTSTORE_SPLIT
 
 #define GREX_PARTSTORE_AVX512(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
   GREX_CAT(BITPREFIX##_mask_storeu_, GREX_EPI_SUFFIX(KIND, BITS)) \
   (dst, cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r, src.r);
+
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_PARTSTORE_128 GREX_PARTSTORE_AVX512
 #define GREX_PARTSTORE_256 GREX_PARTSTORE_AVX512
@@ -185,8 +186,8 @@ namespace grex::backend {
     GREX_PARTSTORE_##REGISTERBITS(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
   }
 
-#define GREX_STORE_ALL(REGISTERBITS, KINDPREFIX) \
-  GREX_FOREACH_TYPE(GREX_STORE, REGISTERBITS, KINDPREFIX, REGISTERBITS)
+#define GREX_STORE_ALL(REGISTERBITS, BITPREFIX) \
+  GREX_FOREACH_TYPE(GREX_STORE, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_STORE_ALL)
 
 #define GREX_PARTSTORE_ALL(REGISTERBITS, BITPREFIX) \
@@ -207,8 +208,8 @@ GREX_FOREACH_SUB(GREX_STORE_SUB)
 
 #if GREX_X86_64_LEVEL <= 3
 #define GREX_PARTSTORE_SUB_32_2(KIND) \
-  GREX_SWITCH_SIZE_0_1_DEFAULT(_mm_storeu_si32(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)), \
-                               _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)))
+  GREX_PARTSTORE_SWITCH(_mm_storeu_si32(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)), \
+                        _mm_storeu_si64(dst, GREX_KINDCAST(KIND, i, 32, 128, src.full.r)))
 #define GREX_PARTSTORE_SUB_16_4(KIND) \
   GREX_PARTSTORE_FALLBACK_64_INIT(KIND, 16, 4) \
   if ((size & 2U) != 0) { \
@@ -219,7 +220,7 @@ GREX_FOREACH_SUB(GREX_STORE_SUB)
     std::memcpy(dst + (size / 2 * 2), &r64, 2); \
   }
 #define GREX_PARTSTORE_SUB_16_2(KIND) \
-  GREX_SWITCH_SIZE_0_1_DEFAULT(_mm_storeu_si16(dst, src.full.r), _mm_storeu_si32(dst, src.full.r))
+  GREX_PARTSTORE_SWITCH(_mm_storeu_si16(dst, src.full.r), _mm_storeu_si32(dst, src.full.r))
 
 #define GREX_PARTSTORE_SUB_8_8(KIND) \
   GREX_PARTSTORE_FALLBACK_64_INIT(KIND, 8, 8) \
@@ -244,8 +245,8 @@ GREX_FOREACH_SUB(GREX_STORE_SUB)
     std::memcpy(dst + (size / 2 * 2), &r32, 1); \
   }
 #define GREX_PARTSTORE_SUB_8_2(KIND) \
-  GREX_SWITCH_SIZE_0_1_DEFAULT(dst[0] = KIND##8(_mm_cvtsi128_si32(src.full.r)), \
-                               _mm_storeu_si16(dst, src.full.r))
+  GREX_PARTSTORE_SWITCH(dst[0] = KIND##8(_mm_cvtsi128_si32(src.full.r)), \
+                        _mm_storeu_si16(dst, src.full.r))
 #define GREX_PARTSTORE_SUB_IMPL(KIND, BITS, PART, SIZE) GREX_PARTSTORE_SUB_##BITS##_##PART(KIND)
 #else
 #define GREX_PARTSTORE_SUB_IMPL(...) return store_part(dst, src.full, size);
