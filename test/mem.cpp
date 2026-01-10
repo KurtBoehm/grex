@@ -29,7 +29,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
   auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
 
   for (std::size_t i = 0; i < repetitions; ++i) {
-    grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+    grex::static_apply<tSize>([&]<std::size_t... tI>() {
       // load scalar
       {
         std::array<T, 1> buf{dist(rng)};
@@ -37,19 +37,19 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       }
       // load full
       {
-        std::array buf{dval(tIdxs)...};
+        std::array buf{dval(tI)...};
         VC checker{Vec::load(buf.data()), buf};
         checker.check("load", false);
       }
       {
-        std::array buf{dval(tIdxs)...};
+        std::array buf{dval(tI)...};
         VC checker{grex::load(buf.data(), grex::full_tag<tSize>), buf};
         checker.check("load tagged", false);
       }
 
       // load full aligned
       {
-        alignas(64) std::array buf{dval(tIdxs)...};
+        alignas(64) std::array buf{dval(tI)...};
         VC checker{Vec::load_aligned(buf.data()), buf};
         checker.check("load_aligned", false);
       }
@@ -57,21 +57,51 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
 
       // load part
       {
-        std::array buf{dval(tIdxs)...};
+        std::array buf{dval(tI)...};
         for (std::size_t j = 0; j <= tSize; ++j) {
-          VC checker{Vec::load_part(buf.data(), j),
-                     std::array{((tIdxs < j) ? buf[tIdxs] : T{})...}};
-          checker.check("load_part", j, false);
+          {
+            VC checker{Vec::load_part(buf.data(), j), std::array{((tI < j) ? buf[tI] : T{})...}};
+            checker.check("load_part", j, false);
+          }
           // tagged
-          VC tchecker{grex::load(buf.data(), grex::part_tag<tSize>(j)),
-                      std::array{((tIdxs < j) ? buf[tIdxs] : T{})...}};
-          tchecker.check("load_part tagged", j, false);
+          {
+            VC checker{grex::load(buf.data(), grex::part_tag<tSize>(j)),
+                       std::array{((tI < j) ? buf[tI] : T{})...}};
+            checker.check("load_part tagged", j, false);
+          }
         }
+      }
+      {
+        std::array buf{dval(tI)...};
+        auto load_part_wrap = [&](grex::AnyIndexTag auto j) {
+          {
+            VC checker{Vec::load_part(buf.data(), j.value),
+                       std::array{((tI < j) ? buf[tI] : T{})...}};
+            checker.check("load_part", j.value, false);
+          }
+          {
+            VC checker{Vec::load_part(buf.data(), j), std::array{((tI < j) ? buf[tI] : T{})...}};
+            checker.check("load_part", j.value, false);
+          }
+          // tagged
+          {
+            VC checker{grex::load(buf.data(), grex::part_tag<tSize>(j.value)),
+                       std::array{((tI < j) ? buf[tI] : T{})...}};
+            checker.check("load_part tagged", j.value, false);
+          }
+          {
+            VC checker{grex::load(buf.data(), grex::part_tag<tSize>(j)),
+                       std::array{((tI < j) ? buf[tI] : T{})...}};
+            checker.check("load_part tagged", j.value, false);
+          }
+        };
+        grex::static_apply<tSize + 1>(
+          [&]<std::size_t... tJ>() { (..., load_part_wrap(grex::index_tag<tJ>)); });
       }
     });
 
-    grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      VC checker{dval(tIdxs)...};
+    grex::static_apply<tSize>([&]<std::size_t... tI>() {
+      VC checker{dval(tI)...};
       // store scalar
       {
         std::array<T, 1> buf{};
@@ -100,18 +130,56 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       }
       // there is no tagged version of aligned storing
 
+      // store part
       {
         for (std::size_t j = 0; j <= tSize; ++j) {
-          std::array<T, tSize> buf{};
-          checker.vec.store_part(buf.data(), j);
-          test::check([&] { return fmt::format("store_part({}, {})", j, checker.ref); }, buf,
-                      std::array{((tIdxs < j) ? checker.ref[tIdxs] : T{})...}, false);
+          {
+            std::array<T, tSize> buf{};
+            checker.vec.store_part(buf.data(), j);
+            test::check([&] { return fmt::format("store_part({}, {})", j, checker.ref); }, buf,
+                        std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+          }
           // tagged
-          std::array<T, tSize> tbuf{};
-          grex::store(tbuf.data(), checker.vec, grex::part_tag<tSize>(j));
-          test::check("store_part tagged", tbuf,
-                      std::array{((tIdxs < j) ? checker.ref[tIdxs] : T{})...}, false);
+          {
+            std::array<T, tSize> buf{};
+            grex::store(buf.data(), checker.vec, grex::part_tag<tSize>(j));
+            test::check([&] { return fmt::format("store({}, part_tag({}))", checker.ref, j); }, buf,
+                        std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+          }
         }
+      }
+      {
+        auto store_part_wrap = [&](grex::AnyIndexTag auto j) {
+          {
+            std::array<T, tSize> buf{};
+            checker.vec.store_part(buf.data(), j.value);
+            test::check([&] { return fmt::format("store_part({}, {})", j.value, checker.ref); },
+                        buf, std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+          }
+          {
+            std::array<T, tSize> buf{};
+            checker.vec.store_part(buf.data(), j);
+            test::check([&] { return fmt::format("store_part({}, {})", j.value, checker.ref); },
+                        buf, std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+          }
+          // tagged
+          {
+            std::array<T, tSize> buf{};
+            grex::store(buf.data(), checker.vec, grex::part_tag<tSize>(j.value));
+            test::check(
+              [&] { return fmt::format("store({}, part_tag({}))", checker.ref, j.value); }, buf,
+              std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+          }
+          {
+            std::array<T, tSize> buf{};
+            grex::store(buf.data(), checker.vec, grex::part_tag<tSize>(j));
+            test::check(
+              [&] { return fmt::format("store({}, part_tag({}))", checker.ref, j.value); }, buf,
+              std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+          }
+        };
+        grex::static_apply<tSize + 1>(
+          [&]<std::size_t... tJ>() { (..., store_part_wrap(grex::index_tag<tJ>)); });
       }
     });
   }

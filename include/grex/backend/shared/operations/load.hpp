@@ -35,13 +35,28 @@ inline SuperVector<THalf> load_part(const typename THalf::Value* ptr, std::size_
   if (size <= THalf::size) {
     return {
       .lower = load_part(ptr, size, type_tag<THalf>),
-      .upper = zeros(type_tag<THalf>),
+      .upper = undefined(type_tag<THalf>),
     };
   }
   return {
     .lower = load(ptr, type_tag<THalf>),
     .upper = load_part(ptr + THalf::size, size - THalf::size, type_tag<THalf>),
   };
+}
+template<typename THalf>
+inline SuperVector<THalf> load_part(const typename THalf::Value* ptr, AnyIndexTag auto size,
+                                    TypeTag<SuperVector<THalf>> /*tag*/) {
+  if constexpr (size <= THalf::size) {
+    return {
+      .lower = load_part(ptr, size, type_tag<THalf>),
+      .upper = undefined(type_tag<THalf>),
+    };
+  } else {
+    return {
+      .lower = load(ptr, type_tag<THalf>),
+      .upper = load_part(ptr + THalf::size, index_tag<size - THalf::size>, type_tag<THalf>),
+    };
+  }
 }
 } // namespace grex::backend
 #endif // INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_LOAD_HPP

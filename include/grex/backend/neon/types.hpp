@@ -22,6 +22,7 @@ namespace grex::backend {
     using Register = GREX_REGISTER(u, BITS, SIZE); \
     using VectorValue = KIND##BITS; \
     static constexpr std::size_t size = SIZE; \
+    static constexpr std::size_t bytes = sizeof(VectorValue) * size; \
 \
     Register r; \
 \
@@ -35,6 +36,7 @@ namespace grex::backend {
     using Register = GREX_REGISTER(KIND, BITS, SIZE); \
     using Value = KIND##BITS; \
     static constexpr std::size_t size = SIZE; \
+    static constexpr std::size_t bytes = sizeof(Value) * size; \
 \
     Register r; \
 \

@@ -32,5 +32,15 @@ inline void store_part(typename THalf::Value* dst, SuperVector<THalf> src, std::
   store(dst, src.lower);
   store_part(dst + THalf::size, src.upper, size - THalf::size);
 }
+template<typename THalf>
+inline void store_part(typename THalf::Value* dst, SuperVector<THalf> src, AnyIndexTag auto size) {
+  if constexpr (size <= THalf::size) {
+    store_part(dst, src.lower, size);
+    return;
+  } else {
+    store(dst, src.lower);
+    store_part(dst + THalf::size, src.upper, index_tag<size - THalf::size>);
+  }
+}
 } // namespace grex::backend
 #endif // INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_STORE_HPP

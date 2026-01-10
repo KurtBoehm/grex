@@ -31,6 +31,8 @@ On other platforms, the scalar backend can be used, which provides scalar defini
 Grex has been tested with x86-64 and ARM64 on Linux, ARM64 on macOS Tahoe, and x86-64 on Windows 11 (Windows 10 should also work) using both GCC 14+ and Clang 17+.
 Support for other operating systems and compilers (including MSVC) is not planned.
 
+**Warning: The code emitted by GCC 14 on Apple Silicon intermittently omits SIMD loads/stores and should be avoided. GCC 15 does not exhibit these issues.**
+
 ## Building
 
 Grex uses the Meson build system and includes a very extensive set of tests.

@@ -25,6 +25,7 @@ struct SubVector {
   using Register = Full::Register;
   using Value = T;
   static constexpr std::size_t size = tPart;
+  static constexpr std::size_t bytes = sizeof(Value) * size;
 
   Full full;
 
@@ -42,6 +43,7 @@ template<typename THalf>
 struct SuperVector {
   using Value = THalf::Value;
   static constexpr std::size_t size = 2 * THalf::size;
+  static constexpr std::size_t bytes = sizeof(Value) * size;
 
   THalf lower;
   THalf upper;
@@ -91,6 +93,7 @@ struct SubMask {
   using Register = Full::Register;
   using VectorValue = T;
   static constexpr std::size_t size = tPart;
+  static constexpr std::size_t bytes = sizeof(VectorValue) * size;
 
   Full full;
 
@@ -105,6 +108,7 @@ template<typename THalf>
 struct SuperMask {
   using VectorValue = THalf::VectorValue;
   static constexpr std::size_t size = 2 * THalf::size;
+  static constexpr std::size_t bytes = sizeof(VectorValue) * size;
 
   THalf lower;
   THalf upper;

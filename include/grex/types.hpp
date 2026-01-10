@@ -224,6 +224,10 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
   GREX_ALWAYS_INLINE static Vector load_part(const T* ptr, std::size_t num) {
     return Vector{backend::load_part(ptr, num, type_tag<Backend>)};
   }
+  /** Loads `num` (up to `size`) elements from memory with undefined upper lanes. */
+  GREX_ALWAYS_INLINE static Vector load_part(const T* ptr, AnyIndexTag auto num) {
+    return Vector{backend::load_part(ptr, num, type_tag<Backend>)};
+  }
 
   /**
    * Loads `size` unsigned integers stored using `tSrcBytes` bytes each
@@ -334,10 +338,10 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
     return Vector{backend::cutoff(i, vec_)};
   }
 
-  /** Converts to another vectorizable type with the same lane count. */
+  /** Converts to another type with the same lane count. */
   template<Vectorizable TDst>
-  GREX_ALWAYS_INLINE Vector<TDst, tSize> convert(TypeTag<TDst> /*tag*/ = {}) const {
-    return Vector<TDst, tSize>{backend::convert(vec_, type_tag<TDst>)};
+  GREX_ALWAYS_INLINE Vector<TDst, size> convert(TypeTag<TDst> /*tag*/ = {}) const {
+    return Vector<TDst, size>{backend::convert(vec_, type_tag<TDst>)};
   }
 
   /** Returns lane `i`. */
@@ -378,6 +382,10 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
 
   /** Stores the first `num` elements to unaligned memory. */
   GREX_ALWAYS_INLINE void store_part(T* value, std::size_t num) const {
+    backend::store_part(value, vec_, num);
+  }
+  /** Stores the first `num` elements to unaligned memory. */
+  GREX_ALWAYS_INLINE void store_part(T* value, AnyIndexTag auto num) const {
     backend::store_part(value, vec_, num);
   }
 

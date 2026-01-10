@@ -7,9 +7,9 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_STORE_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_STORE_HPP
 
-#include <climits>
+#include <cassert>
 #include <cstddef>
-#include <utility>
+#include <cstring>
 
 #include <arm_neon.h>
 
@@ -25,66 +25,83 @@
 
 namespace grex::backend {
 #define GREX_STORE(KIND, BITS, SIZE) \
-  inline void store(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src) { \
+  GREX_ALWAYS_INLINE inline void store(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src) { \
     GREX_ISUFFIXED(vst1q, KIND, BITS)(dst, src.r); \
   } \
   /* This is not actually aligned, but who cares */ \
-  inline void store_aligned(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src) { \
+  GREX_ALWAYS_INLINE inline void store_aligned(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src) { \
     GREX_ISUFFIXED(vst1q, KIND, BITS)(dst, src.r); \
   }
 GREX_FOREACH_TYPE(GREX_STORE, 128)
 
-namespace st1 {
-inline void part(void* dst, uint8x16_t src, AnyIndexTag auto bytes) {
-  static_assert(bytes.value <= 16);
-  u8* dst8 = reinterpret_cast<u8*>(dst);
+template<std::size_t tBytes, typename T>
+GREX_ALWAYS_INLINE inline void store_first(T* dst, Vector<T, 16 / sizeof(T)> src) {
+  std::memcpy(dst, &src.r, tBytes);
+}
+template<std::size_t tBytes, typename T, std::size_t tPart, std::size_t tSize>
+requires(tBytes <= sizeof(T) * tPart)
+GREX_ALWAYS_INLINE inline void store_first(T* dst, SubVector<T, tPart, tSize> src) {
+  std::memcpy(dst, &src.full.r, tBytes);
+}
+
+template<AnyVector TVec, std::size_t tSize>
+requires((AnyNativeVector<TVec> || AnySubNativeVector<TVec>) && tSize <= TVec::size)
+GREX_ALWAYS_INLINE inline void store_part(typename TVec::Value* dst, TVec src,
+                                          IndexTag<tSize> /*size*/) {
+  using Value = TVec::Value;
+  constexpr std::size_t bytes = tSize * sizeof(Value);
 
   // Simple cases: 16 and 0
-  if constexpr (bytes.value == 16) {
-    vst1q_u8(dst8, src);
+  if constexpr (bytes == 16) {
+    store(dst, src);
     return;
-  } else if constexpr (bytes.value == 0) {
+  } else if constexpr (bytes == 0) {
     return;
   }
 
-  if constexpr ((bytes.value & 8U) != 0) {
-    vst1_u8(dst8, vget_low_u8(src));
+  if constexpr ((bytes & 8U) != 0) {
+    store_first<8>(dst, src);
   }
-  if constexpr ((bytes.value & 4U) != 0) {
-    constexpr std::size_t offset = (bytes.value & 8U) / 4U;
-    u32* dst32 = reinterpret_cast<u32*>(dst) + offset;
-    vst1q_lane_u32(dst32, vreinterpretq_u32_u8(src), offset);
-  }
-  if constexpr ((bytes.value & 2U) != 0) {
-    constexpr std::size_t offset = (bytes.value & 12U) / 2U;
-    u16* dst16 = reinterpret_cast<u16*>(dst) + offset;
-// Sadly, GCC gobbles 2-byte writes sometimes when using ARM64 intrinsics
-// Therefore, inline assembly is used when compiling with GCC
-#if GREX_GCC
-    if constexpr (bytes.value == 2) {
-      asm volatile("str %h1, %0" : "=m"(*dst16) : "w"(src) :);
+  if constexpr ((bytes & 4U) != 0) {
+    constexpr std::size_t offset = bytes & 8U;
+    if constexpr (offset == 0) {
+      store_first<4>(dst, src);
     } else {
-      asm volatile("st1.h { %1 }[%2], %0" : "=Q"(*dst16) : "w"(src), "i"(offset) : "memory");
+      asm("st1.s { %1 }[%2], %0" // NOLINT
+          : "=Q"(dst[offset / sizeof(Value)])
+          : "w"(src.registr()), "i"(offset / 4)
+          : "memory");
     }
-#elif GREX_CLANG
-    vst1q_lane_u16(dst16, vreinterpretq_u16_u8(src), offset);
-#endif
   }
-  if constexpr ((bytes.value & 1U) != 0) {
-    constexpr std::size_t offset = bytes.value & 14U;
-    vst1q_lane_u8(dst8 + offset, src, offset);
+  if constexpr ((bytes & 2U) != 0) {
+    constexpr std::size_t offset = bytes & 12U;
+    if constexpr (offset == 0) {
+      store_first<2>(dst, src);
+    } else {
+      asm("st1.h { %1 }[%2], %0" // NOLINT
+          : "=Q"(dst[offset / sizeof(Value)])
+          : "w"(src.registr()), "i"(offset / 2)
+          : "memory");
+    }
+  }
+  if constexpr ((bytes & 1U) != 0) {
+    constexpr std::size_t offset = bytes & 14U;
+    if constexpr (offset == 0) {
+      store_first<1>(dst, src);
+    } else {
+      vst1q_lane_u8(reinterpret_cast<u8*>(dst) + offset, as<u8>(src.registr()), offset);
+    }
   }
 }
-} // namespace st1
 
-#define GREX_SUBSTORE(KIND, BITS, PART, SIZE) \
-  inline void store(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src) { \
-    st1::part(dst, as<u8>(src.registr()), index_tag<PART##UZ * BITS##UZ / CHAR_BIT>); \
-  } \
-  inline void store_aligned(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src) { \
-    st1::part(dst, as<u8>(src.registr()), index_tag<PART##UZ * BITS##UZ / CHAR_BIT>); \
-  }
-GREX_FOREACH_SUB(GREX_SUBSTORE)
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+GREX_ALWAYS_INLINE inline void store(T* dst, SubVector<T, tPart, tSize> src) {
+  store_part(dst, src, index_tag<tPart>);
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+GREX_ALWAYS_INLINE inline void store_aligned(T* dst, SubVector<T, tPart, tSize> src) {
+  store_part(dst, src, index_tag<tPart>);
+}
 
 #define GREX_PARTSTORE_ATTR_0
 #define GREX_PARTSTORE_ATTR_1 [[unlikely]]
@@ -92,12 +109,11 @@ GREX_FOREACH_SUB(GREX_SUBSTORE)
 
 #define GREX_PARTSTORE_CASE(SIZE, INDEX, KIND, BITS) \
   GREX_PARTSTORE_ATTR(INDEX, 0) case INDEX: { \
-    st1::part(dst, src8, index_tag<INDEX * BITS / CHAR_BIT>); \
+    store_part(dst, src, index_tag<INDEX>); \
     return; \
   }
 #define GREX_PARTSTORE(KIND, BITS, SIZE) \
   inline void store_part(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src, std::size_t size) { \
-    const auto src8 = as<u8>(src.r); \
     switch (size) { \
       GREX_REPEAT(SIZE, GREX_PARTSTORE_CASE, KIND, BITS) \
       [[unlikely]] GREX_PARTSTORE_CASE(SIZE, SIZE, KIND, BITS) default : std::unreachable(); \
@@ -108,7 +124,6 @@ GREX_FOREACH_TYPE(GREX_PARTSTORE, 128)
 #define GREX_SUBPARTSTORE(KIND, BITS, PART, SIZE) \
   inline void store_part(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src, \
                          std::size_t size) { \
-    const auto src8 = as<u8>(src.registr()); \
     switch (size) { \
       GREX_REPEAT(PART, GREX_PARTSTORE_CASE, KIND, BITS) \
       [[unlikely]] GREX_PARTSTORE_CASE(PART, PART, KIND, BITS) default : std::unreachable(); \
