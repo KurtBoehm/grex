@@ -98,7 +98,6 @@ template<AnyVector TVec, std::size_t tSize>
 requires((AnyNativeVector<TVec> || AnySubNativeVector<TVec>) && tSize <= TVec::size)
 GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, IndexTag<tSize> /*size*/,
                                          TypeTag<TVec> /*tag*/) {
-  GREX_DIAGNOSTIC_UNINIT_PUSH()
   using Value = TVec::Value;
   using FullVec = Vector<Value, 16 / sizeof(Value)>;
   constexpr std::size_t bytes = tSize * sizeof(Value);
@@ -145,7 +144,6 @@ GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, IndexT
     }
   }
   return TVec{as<Value>(out)};
-  GREX_DIAGNOSTIC_UNINIT_POP()
 }
 
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
@@ -165,12 +163,11 @@ template<AnyVector TVec>
 requires(AnyNativeVector<TVec> || AnySubNativeVector<TVec>)
 GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, std::size_t size,
                                          TypeTag<TVec> tag) {
-  GREX_DIAGNOSTIC_UNINIT_PUSH()
   using Value = TVec::Value;
   constexpr std::size_t bytes = sizeof(Value) * TVec::size;
 
   if (__builtin_constant_p(size)) {
-    auto result = zeros(tag);
+    auto result = undefined(tag);
     bool matched = false;
     grex::static_apply<TVec::size>([&]<std::size_t... tI>() {
       matched =
@@ -182,7 +179,7 @@ GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, std::s
   if (size >= TVec::size) [[unlikely]] {
     return load(ptr, tag);
   }
-  auto out = zeros(tag).registr();
+  auto out = undefined(tag).registr();
   if constexpr (sizeof(Value) == 1) {
     if ((size & (1U / sizeof(Value))) != 0) {
       constexpr std::size_t f = 2 / sizeof(Value);
@@ -208,7 +205,6 @@ GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, std::s
     out = as<Value>(vzip1q_u64(as<u64>(lo), as<u64>(out)));
   }
   return TVec{out};
-  GREX_DIAGNOSTIC_UNINIT_POP()
 }
 } // namespace grex::backend
 

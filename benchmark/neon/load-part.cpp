@@ -15,7 +15,6 @@ template<be::AnyVector TVec>
 requires(be::AnyNativeVector<TVec> || be::AnySubNativeVector<TVec>)
 GREX_ALWAYS_INLINE inline TVec load_part_ifs(const typename TVec::Value* ptr, std::size_t size,
                                              grex::TypeTag<TVec> tag) {
-  GREX_DIAGNOSTIC_UNINIT_PUSH()
   using Value = TVec::Value;
   constexpr std::size_t bytes = sizeof(Value) * TVec::size;
 
@@ -59,7 +58,6 @@ GREX_ALWAYS_INLINE inline TVec load_part_ifs(const typename TVec::Value* ptr, st
     out = be::as<Value>(vzip1q_u64(be::as<u64>(lo), be::as<u64>(out)));
   }
   return TVec{out};
-  GREX_DIAGNOSTIC_UNINIT_POP()
 }
 
 #define BM_PARTLOAD_ATTR_0

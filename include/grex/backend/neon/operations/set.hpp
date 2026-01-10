@@ -27,10 +27,10 @@ namespace grex::backend {
 template<typename T>
 requires(std::is_trivial_v<T>)
 inline T make_undefined() {
-  GREX_DIAGNOSTIC_UNINIT_PUSH()
   T undefined;
+  // This prevents warnings about undefined values
+  __asm__("" : "=w"(undefined)); // NOLINT
   return undefined;
-  GREX_DIAGNOSTIC_UNINIT_POP()
 }
 
 #define GREX_SET_ARG(CNT, IDX, TYPE) GREX_COMMA_IF(IDX) TYPE v##IDX
