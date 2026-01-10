@@ -66,3 +66,7 @@ if get_option('build_tests')
 
   subdir('test')
 endif
+
+if get_option('build_benchmarks')
+  subdir('benchmark')
+endif

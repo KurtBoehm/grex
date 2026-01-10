@@ -2,4 +2,5 @@
 There are some wraps package files which are based on Meson wraps from the [Meson Wrap Database](https://github.com/mesonbuild/wrapdb), which are licenced under the MIT licence, which is provided as [`LicenseWrapDB`](LicenseWrapDB).
 These are:
 
+- `google-benchmark`
 - `fmt`

@@ -1,4 +1,5 @@
 fmt
+google-benchmark
 options
 pcg-cpp
 thesauros

@@ -3,6 +3,7 @@
 
 /packagecache/
 
+/benchmark-*/
 /fmt-*/
 /pcg-cpp-*/
 /preprocessor-boost-*/
