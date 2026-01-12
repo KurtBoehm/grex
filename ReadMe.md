@@ -24,14 +24,20 @@ Main features:
 
 ## Platform Support
 
-Grex fully supports vectorization on x86-64 and (little-endian) ARM64 processors.
-Support for vectorization on 32-bit x86 processors (too old to be relevant in HPC applications), 32-bit ARM (not relevant in HPC), or big-endian ARM64 (not used in any relevant system) is not planned.
-On other platforms, the scalar backend can be used, which provides scalar definitions of the generic operations but does not provide vector/mask types.
+Grex provides full vectorization support on x86-64 and little-endian ARM64 processors.
+Vectorization support for 32-bit x86, 32-bit ARM, or big-endian ARM64 is not planned, as these platforms are not relevant for modern HPC workloads.
+On these and other systems, Grex can still be used via the scalar backend, which implements all generic operations but does not provide vector or mask types.
 
-Grex has been tested with x86-64 and ARM64 on Linux, ARM64 on macOS Tahoe, and x86-64 on Windows 11 (Windows 10 should also work) using both GCC 14+ and Clang 17+.
-Support for other operating systems and compilers (including MSVC) is not planned.
+Grex has been tested with GCC 14+ and Clang 17+ on:
 
-**Warning: The code emitted by GCC 14 on Apple Silicon intermittently omits SIMD loads/stores and should be avoided. GCC 15 does not exhibit these issues.**
+- Linux: x86-64 and ARM64
+- macOS Tahoe and Sequoia: ARM64 (Apple Silicon)
+- Windows 11: x86-64 (Windows 10 is expected to work as well)
+
+Support for additional operating systems and compilers (including MSVC) is not planned.
+
+**Warning:** GCC 14 on Apple Silicon (and likely other ARM64 systems) intermittently fails to emit SIMD loads and stores.
+These issues have not been observed with GCC 15.
 
 ## Building
 
