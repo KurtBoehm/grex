@@ -31,6 +31,8 @@
 #endif
 #if GREX_X86_64_LEVEL >= 3
 #include "grex/backend/x86/operations/mask-index.hpp"
+#else
+#include <bit>
 #endif
 
 namespace grex::backend {
@@ -104,9 +106,11 @@ namespace grex::backend {
   if ((size & 2U) != 0) { \
     u64 lo; \
     std::memcpy(&lo, ptr, 8); \
-    return {.r = _mm_set_epi64x(std::bit_cast<i64>(out), std::bit_cast<i64>(lo))}; \
+    const auto merged = _mm_set_epi64x(std::bit_cast<i64>(out), std::bit_cast<i64>(lo)); \
+    return {.r = GREX_KINDCAST(i, KIND, 32, 128, merged)}; \
   } \
-  return {.r = _mm_set_epi64x(0, std::bit_cast<i64>(out))};
+  const auto merged = _mm_set_epi64x(0, std::bit_cast<i64>(out)); \
+  return {.r = GREX_KINDCAST(i, KIND, 32, 128, merged)};
 #endif
 #define GREX_PARTLOAD_128_16(KIND, ...) \
   GREX_PARTLOAD_FALLBACK_INIT(KIND, 16, 8) \
