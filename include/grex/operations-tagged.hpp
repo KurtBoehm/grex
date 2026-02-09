@@ -365,7 +365,7 @@ inline auto for_each(auto op, TypedValueTag<IterDirection> auto dir, TTag tag) {
 #endif
 template<typename TSize = u64>
 inline void for_each(auto op, AnyTag auto tag) {
-  for_each(std::move(op), auto_tag<IterDirection::forward>, tag);
+  for_each<TSize>(std::move(op), auto_tag<IterDirection::forward>, tag);
 }
 // TODO Support for masked for_each?
 } // namespace grex
