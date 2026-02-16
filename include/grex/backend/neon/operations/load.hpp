@@ -118,7 +118,7 @@ GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, IndexT
     if constexpr (offset == 0) {
       out = as<u8>(load_first<4>(ptr).r);
     } else {
-      asm("ld1.s { %0 }[%1], %2" // NOLINT
+      asm("ld1 { %0.s }[%1], %2" // NOLINT
           : "+w"(out)
           : "i"(offset / 4), "Q"(ptr[offset / sizeof(Value)])
           : "memory");
@@ -129,7 +129,7 @@ GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, IndexT
     if constexpr (offset == 0) {
       out = as<u8>(load_first<2>(ptr).r);
     } else {
-      asm("ld1.h { %0 }[%1], %2" // NOLINT
+      asm("ld1 { %0.h }[%1], %2" // NOLINT
           : "+w"(out)
           : "i"(offset / 2), "Q"(ptr[offset / sizeof(Value)])
           : "memory");

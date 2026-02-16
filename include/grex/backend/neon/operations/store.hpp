@@ -67,7 +67,7 @@ GREX_ALWAYS_INLINE inline void store_part(typename TVec::Value* dst, TVec src,
     if constexpr (offset == 0) {
       store_first<4>(dst, src);
     } else {
-      asm("st1.s { %1 }[%2], %0" // NOLINT
+      asm("st1 { %1.s }[%2], %0" // NOLINT
           : "=Q"(dst[offset / sizeof(Value)])
           : "w"(src.registr()), "i"(offset / 4)
           : "memory");
@@ -78,7 +78,7 @@ GREX_ALWAYS_INLINE inline void store_part(typename TVec::Value* dst, TVec src,
     if constexpr (offset == 0) {
       store_first<2>(dst, src);
     } else {
-      asm("st1.h { %1 }[%2], %0" // NOLINT
+      asm("st1 { %1.h }[%2], %0" // NOLINT
           : "=Q"(dst[offset / sizeof(Value)])
           : "w"(src.registr()), "i"(offset / 2)
           : "memory");
