@@ -59,15 +59,17 @@ foreach name, conf : {
     endforeach
   endif
 endforeach
-foreach arch_name, arch_args : test_arches
-  targets = []
-  foreach pair : dynamic_shuffles
-    if pair[0] == arch_name
-      targets += pair[1]
-    endif
+if dynamic_shuffles.length() > 0
+  foreach arch_name, arch_args : test_arches
+    targets = []
+    foreach pair : dynamic_shuffles
+      if pair[0] == arch_name
+        targets += pair[1]
+      endif
+    endforeach
+    alias_target(f'shuffle-dynamic-@arch_name@', targets)
   endforeach
-  alias_target(f'shuffle-dynamic-@arch_name@', targets)
-endforeach
+endif
 
 # tests that are separated based on the value type
 foreach name, conf : {

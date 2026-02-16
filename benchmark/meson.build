@@ -10,11 +10,13 @@ args = options_sub.get_variable('all_args')
 benchmark_dep = dependency('benchmark')
 pcg_dep = dependency('pcg-cpp')
 
-foreach name : ['load-part', 'store-part']
-  executable(
-    name,
-    f'neon/@name@.cpp',
-    cpp_args: args,
-    dependencies: [benchmark_dep, grex_dep, pcg_dep],
-  )
-endforeach
+if backend == 'neon'
+  foreach name : ['load-part', 'store-part']
+    executable(
+      name,
+      f'neon/@name@.cpp',
+      cpp_args: args,
+      dependencies: [benchmark_dep, grex_dep, pcg_dep],
+    )
+  endforeach
+endif
