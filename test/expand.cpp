@@ -5,6 +5,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include <fmt/base.h>
+
 #include "grex/grex.hpp"
 
 #if !GREX_BACKEND_SCALAR

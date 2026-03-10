@@ -105,7 +105,7 @@ inline void check_msg(const TLabel& label, bool same, T1 a, T2 b, bool verbose =
 template<typename T, std::size_t tSize = 1>
 struct IsCompleteTrait : public std::false_type {};
 template<typename T>
-struct IsCompleteTrait<T, sizeof(T) / sizeof(T)> : public std::true_type {};
+struct IsCompleteTrait<T, sizeof(T) / sizeof(T)> : public std::true_type {}; // NOLINT
 template<typename T>
 concept CompleteType = IsCompleteTrait<T>::value;
 
@@ -119,8 +119,8 @@ inline void check(const auto& label, T a, T b, bool verbose = true) {
 }
 template<typename T1, typename T2>
 requires(requires {
-  std::tuple_size<T1>::value;
-  std::tuple_size<T2>::value;
+  std::tuple_size<T1>::value; // NOLINT
+  std::tuple_size<T2>::value; // NOLINT
   requires std::tuple_size_v<T1> == std::tuple_size_v<T2>;
 })
 inline void check(const auto& label, T1 a, T2 b, bool verbose = true) {

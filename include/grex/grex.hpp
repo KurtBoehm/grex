@@ -4,15 +4,12 @@
 // IWYU pragma: begin_exports
 #include "backend.hpp"
 #include "base.hpp"
+#include "format.hpp"
 #include "lookup-table.hpp"
 #include "operations-tagged.hpp"
 #include "operations.hpp"
 #include "tags.hpp"
 #include "types.hpp"
-
-#ifdef FMT_VERSION
-#include "format.hpp"
-#endif
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_GREX_HPP
