@@ -1,3 +1,4 @@
 breathe
+lxml
 pydata-sphinx-theme
 sphinx

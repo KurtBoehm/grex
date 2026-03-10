@@ -104,3 +104,18 @@ dl[class]:not(.option-list, .field-list, .footnote, .glossary, .simple)
   .colon {
   color: var(--pst-color-text-base);
 }
+
+/* Ensure that TOC entries in the secondary side-bar do not overflow. */
+.toc-entry {
+  max-width: 100%;
+}
+/* Allow TOC entries in the secondary side-bar to wrap. */
+.toc-entry a.nav-link > code > span.pre {
+  white-space: wrap;
+}
+
+@media (min-width: 960px) {
+  .bd-sidebar-primary {
+    width: 18rem;
+  }
+}

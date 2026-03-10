@@ -1,6 +1,6 @@
-################
- SIMD Interface
-################
+##############
+SIMD Interface
+##############
 
 .. doxygenvariable:: grex::max_native_size
 

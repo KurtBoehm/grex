@@ -201,13 +201,13 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
       : Base{backend::broadcast(value, type_tag<Backend>)} {}
 
   /** Expands scalar `x` into a vector with undefined upper lanes. */
-  GREX_ALWAYS_INLINE static Vector expanded_any(T x) {
-    return Vector{backend::expand_any(backend::Scalar<T>{x}, index_tag<tSize>)};
+  GREX_ALWAYS_INLINE static Vector expanded_any(T value) {
+    return Vector{backend::expand_any(backend::Scalar<T>{value}, index_tag<tSize>)};
   }
 
   /** Expands scalar `x` into a vector with upper lanes filled with zeros. */
-  GREX_ALWAYS_INLINE static Vector expanded_zero(T x) {
-    return Vector{backend::expand_zero(backend::Scalar<T>{x}, index_tag<tSize>)};
+  GREX_ALWAYS_INLINE static Vector expanded_zero(T value) {
+    return Vector{backend::expand_zero(backend::Scalar<T>{value}, index_tag<tSize>)};
   }
 
   /** Loads a vector from unaligned memory. */
@@ -302,11 +302,11 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
     return Vector{a} OP b; \
   } \
   /** Compound lane-wise COMMENT_NAME assignment with vector. */ \
-  GREX_ALWAYS_INLINE Vector& operator OP##=(Vector b) REQ { \
+  GREX_ALWAYS_INLINE Vector& operator OP## = (Vector b)REQ { \
     return *this = *this OP b; \
   } \
   /** Compound lane-wise COMMENT_NAME assignment with scalar. */ \
-  GREX_ALWAYS_INLINE Vector& operator OP##=(Value b) REQ { \
+  GREX_ALWAYS_INLINE Vector& operator OP## = (Value b)REQ { \
     return *this = *this OP b; \
   }
 
@@ -325,7 +325,7 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
     return Vector{backend::NAME(a.vec_, offset)}; \
   } \
   /** Compound lane-wise COMMENT_NAME shift operator by `offset` bits. */ \
-  GREX_ALWAYS_INLINE Vector& operator OP##=(AnyIndexTag auto offset) REQ { \
+  GREX_ALWAYS_INLINE Vector& operator OP## = (AnyIndexTag auto offset)REQ { \
     return *this = *this OP offset; \
   }
 
