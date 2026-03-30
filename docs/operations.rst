@@ -6,7 +6,7 @@ Operations Overview
    :header-rows: 1
 
    * - Operation
-     - Signature / Description
+     - Signature/Description
 
    * - Construct zero vector
      - :cpp:func:`Vector::Vector() <Vector grex::Vector::Vector()>`
@@ -50,55 +50,55 @@ Operations Overview
      - | :cpp:func:`Vector::indices() <Vector grex::Vector::indices()>`
        | :cpp:func:`Vector::indices(T start) <Vector grex::Vector::indices(T)>`
 
-   * - Unary minus
+   * - :ref:`Unary minus <operations-negation>`
      - :cpp:func:`Vector::operator-() const <Vector grex::Vector::operator-() const>`
 
-   * - Bitwise NOT
+   * - :ref:`Bitwise NOT <operations-bitwise-not>`
      - :cpp:func:`Vector::operator~() const <Vector grex::Vector::operator~() const>`
 
-   * - Addition
+   * - :ref:`Addition <operations-addition>`
      - | :cpp:func:`operator+(Vector a, Vector b) <Vector grex::Vector::operator+(Vector, Vector)>`
        | :cpp:func:`operator+(Vector a, Value b) <Vector grex::Vector::operator+(Vector, Value)>`
        | :cpp:func:`operator+(Value a, Vector b) <Vector grex::Vector::operator+(Value, Vector)>`
        | :cpp:func:`operator+=(Vector b) <Vector& grex::Vector::operator+=(Vector)>`
        | :cpp:func:`operator+=(Value b) <Vector& grex::Vector::operator+=(Value)>`
 
-   * - Subtraction
+   * - :ref:`Subtraction <operations-subtraction>`
      - | :cpp:func:`operator-(Vector a, Vector b) <Vector grex::Vector::operator-(Vector, Vector)>`
        | :cpp:func:`operator-(Vector a, Value b) <Vector grex::Vector::operator-(Vector, Value)>`
        | :cpp:func:`operator-(Value a, Vector b) <Vector grex::Vector::operator-(Value, Vector)>`
        | :cpp:func:`operator-=(Vector b) <Vector& grex::Vector::operator-=(Vector)>`
        | :cpp:func:`operator-=(Value b) <Vector& grex::Vector::operator-=(Value)>`
 
-   * - Multiplication
+   * - :ref:`Multiplication <operations-multiplication>`
      - | :cpp:func:`operator*(Vector a, Vector b) <Vector grex::Vector::operator*(Vector, Vector)>`
        | :cpp:func:`operator*(Vector a, Value b) <Vector grex::Vector::operator*(Vector, Value)>`
        | :cpp:func:`operator*(Value a, Vector b) <Vector grex::Vector::operator*(Value, Vector)>`
        | :cpp:func:`operator*=(Vector b) <Vector& grex::Vector::operator*=(Vector)>`
        | :cpp:func:`operator*=(Value b) <Vector& grex::Vector::operator*=(Value)>`
 
-   * - Division
+   * - :ref:`Division <operations-division>`
      - | :cpp:func:`operator/(Vector a, Vector b) <Vector grex::Vector::operator/(Vector, Vector)>`
        | :cpp:func:`operator/(Vector a, Value b) <Vector grex::Vector::operator/(Vector, Value)>`
        | :cpp:func:`operator/(Value a, Vector b) <Vector grex::Vector::operator/(Value, Vector)>`
        | :cpp:func:`operator/=(Vector b) <Vector& grex::Vector::operator/=(Vector)>`
        | :cpp:func:`operator/=(Value b) <Vector& grex::Vector::operator/=(Value)>`
 
-   * - Bitwise AND
+   * - :ref:`Bitwise AND <operations-bitwise-and>`
      - | :cpp:func:`operator&(Vector a, Vector b) <Vector grex::Vector::operator&(Vector, Vector)>`
        | :cpp:func:`operator&(Vector a, Value b) <Vector grex::Vector::operator&(Vector, Value)>`
        | :cpp:func:`operator&(Value a, Vector b) <Vector grex::Vector::operator&(Value, Vector)>`
        | :cpp:func:`operator&=(Vector b) <Vector& grex::Vector::operator&=(Vector)>`
        | :cpp:func:`operator&=(Value b) <Vector& grex::Vector::operator&=(Value)>`
 
-   * - Bitwise OR
+   * - :ref:`Bitwise OR <operations-bitwise-or>`
      - | :cpp:func:`operator|(Vector a, Vector b) <Vector grex::Vector::operator|(Vector, Vector)>`
        | :cpp:func:`operator|(Vector a, Value b) <Vector grex::Vector::operator|(Vector, Value)>`
        | :cpp:func:`operator|(Value a, Vector b) <Vector grex::Vector::operator|(Value, Vector)>`
        | :cpp:func:`operator|=(Vector b) <Vector& grex::Vector::operator|=(Vector)>`
        | :cpp:func:`operator|=(Value b) <Vector& grex::Vector::operator|=(Value)>`
 
-   * - Bitwise XOR
+   * - :ref:`Bitwise XOR <operations-bitwise-xor>`
      - | :cpp:func:`operator^(Vector a, Vector b) <Vector grex::Vector::operator^(Vector, Vector)>`
        | :cpp:func:`operator^(Vector a, Value b) <Vector grex::Vector::operator^(Vector, Value)>`
        | :cpp:func:`operator^(Value a, Vector b) <Vector grex::Vector::operator^(Value, Vector)>`
@@ -183,13 +183,17 @@ Operations Overview
    * - Convert to different scalar type
      - :cpp:func:`Mask::convert(AnyTypeTag) const <template<Vectorizable TDst> Mask<TDst, tSize> grex::Mask::convert(TypeTag<TDst>) const>`
 
-   * - Logical NOT
+   * - :ref:`Logical NOT <operations-logical-not>`
      - :cpp:func:`Mask::operator!() const <Mask grex::Mask::operator!() const>`
 
-   * - Logical AND / OR / XOR
-     - | :cpp:func:`operator&&(Mask, Mask) <Mask grex::Mask::operator&&(Mask, Mask)>`
-       | :cpp:func:`operator||(Mask, Mask) <Mask grex::Mask::operator||(Mask, Mask)>`
-       | :cpp:func:`operator!=(Mask, Mask) <Mask grex::Mask::operator!=(Mask, Mask)>`
+   * - :ref:`Logical AND <operations-logical-and>`
+     - :cpp:func:`operator&&(Mask, Mask) <Mask grex::Mask::operator&&(Mask, Mask)>`
+
+   * - :ref:`Logical OR <operations-logical-or>`
+     - :cpp:func:`operator||(Mask, Mask) <Mask grex::Mask::operator||(Mask, Mask)>`
+
+   * - :ref:`Logical XOR <operations-logical-xor>`
+     - :cpp:func:`operator!=(Mask, Mask) <Mask grex::Mask::operator!=(Mask, Mask)>`
 
    * - Mask equality
      - :cpp:func:`operator==(Mask, Mask) <Mask grex::Mask::operator==(Mask, Mask)>`
@@ -206,7 +210,7 @@ Operations Overview
        | :cpp:func:`Mask::as_array() const <std::array grex::Mask::as_array() const>`
 
 
-   * - Logical AND NOT
+   * - :ref:`Logical AND NOT <operations-logical-andnot>`
      - :cpp:func:`grex::andnot(Mask a, Mask b) <template<Vectorizable T, std::size_t tSize> Mask<T, tSize> grex::andnot(Mask<T, tSize>, Mask<T, tSize>)>`
 
    * - Absolute value
@@ -215,15 +219,15 @@ Operations Overview
    * - Square root
      - :cpp:func:`grex::sqrt(Vector v) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::sqrt(Vector<T, tSize>)>`
 
-   * - min / max
+   * - Minimum/maximum
      - | :cpp:func:`grex::min(Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::min(Vector<T, tSize>, Vector<T, tSize>)>`
        | :cpp:func:`grex::max(Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::max(Vector<T, tSize>, Vector<T, tSize>)>`
 
-   * - is finite / make finite
+   * - Is/make finite
      - | :cpp:func:`grex::is_finite(Vector v) <template<FloatVectorizable T, std::size_t tSize> Mask<T, tSize> grex::is_finite(Vector<T, tSize>)>`
        | :cpp:func:`grex::make_finite(Vector v) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::make_finite(Vector<T, tSize>)>`
 
-   * - Horizontal add / min / max
+   * - Horizontal addition/minimum/maximum
      - | :cpp:func:`grex::horizontal_add(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_add(Vector<T, tSize>)>`
        | :cpp:func:`grex::horizontal_min(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_min(Vector<T, tSize>)>`
        | :cpp:func:`grex::horizontal_max(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_max(Vector<T, tSize>)>`
