@@ -26,36 +26,39 @@ namespace grex::backend {
   return {.r = as<KIND##64>(neg)};
 
 #define GREX_BITWISE(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> bitwise_not(Vector<KIND##BITS, SIZE> a) { \
+  inline NativeVector<KIND##BITS, SIZE> bitwise_not(NativeVector<KIND##BITS, SIZE> a) { \
     GREX_BITWISE_NOT_##BITS(KIND, BITS, SIZE) \
   } \
-  inline Vector<KIND##BITS, SIZE> bitwise_and(Vector<KIND##BITS, SIZE> a, \
-                                              Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> bitwise_and(NativeVector<KIND##BITS, SIZE> a, \
+                                                    NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(vandq, KIND, BITS)(a.r, b.r)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> bitwise_or(Vector<KIND##BITS, SIZE> a, \
-                                             Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> bitwise_or(NativeVector<KIND##BITS, SIZE> a, \
+                                                   NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(vorrq, KIND, BITS)(a.r, b.r)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> bitwise_xor(Vector<KIND##BITS, SIZE> a, \
-                                              Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> bitwise_xor(NativeVector<KIND##BITS, SIZE> a, \
+                                                    NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(veorq, KIND, BITS)(a.r, b.r)}; \
   }
 #define GREX_LOGICAL(KIND, BITS, SIZE) \
-  inline Mask<KIND##BITS, SIZE> logical_not(Mask<KIND##BITS, SIZE> a) { \
+  inline NativeMask<KIND##BITS, SIZE> logical_not(NativeMask<KIND##BITS, SIZE> a) { \
     GREX_BITWISE_NOT_##BITS(u, BITS, SIZE) \
   } \
-  inline Mask<KIND##BITS, SIZE> logical_and(Mask<KIND##BITS, SIZE> a, Mask<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> logical_and(NativeMask<KIND##BITS, SIZE> a, \
+                                                  NativeMask<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(vandq, u, BITS)(a.r, b.r)}; \
   } \
-  inline Mask<KIND##BITS, SIZE> logical_andnot(Mask<KIND##BITS, SIZE> a, \
-                                               Mask<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> logical_andnot(NativeMask<KIND##BITS, SIZE> a, \
+                                                     NativeMask<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(vbicq, u, BITS)(b.r, a.r)}; \
   } \
-  inline Mask<KIND##BITS, SIZE> logical_or(Mask<KIND##BITS, SIZE> a, Mask<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> logical_or(NativeMask<KIND##BITS, SIZE> a, \
+                                                 NativeMask<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(vorrq, u, BITS)(a.r, b.r)}; \
   } \
-  inline Mask<KIND##BITS, SIZE> logical_xor(Mask<KIND##BITS, SIZE> a, Mask<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> logical_xor(NativeMask<KIND##BITS, SIZE> a, \
+                                                  NativeMask<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(veorq, u, BITS)(a.r, b.r)}; \
   }
 

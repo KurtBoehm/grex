@@ -23,7 +23,7 @@ namespace grex::backend {
 #define GREX_HAND_64 vminvq_u32(vreinterpretq_u32_u64(m.r))
 
 #define GREX_HAND(KIND, BITS, SIZE) \
-  inline bool horizontal_and(Mask<KIND##BITS, SIZE> m) { \
+  inline bool horizontal_and(NativeMask<KIND##BITS, SIZE> m) { \
     return GREX_HAND_##BITS != 0; \
   }
 GREX_FOREACH_TYPE(GREX_HAND, 128)

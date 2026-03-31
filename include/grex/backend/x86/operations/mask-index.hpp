@@ -40,8 +40,8 @@ namespace grex::backend {
 #define GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, ...) GREX_SINGLE_MASK_##SIZE
 #else
 #define GREX_INDEX_MASK_CMPGT(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMP) \
-  BITPREFIX##_cmp##CMP##_epi##BITS(broadcast(i##BITS(i), type_tag<Vector<i##BITS, SIZE>>).r, \
-                                   indices(type_tag<Vector<i##BITS, SIZE>>).r)
+  BITPREFIX##_cmp##CMP##_epi##BITS(broadcast(i##BITS(i), type_tag<NativeVector<i##BITS, SIZE>>).r, \
+                                   indices(type_tag<NativeVector<i##BITS, SIZE>>).r)
 #define GREX_INDEX_MASK_8 GREX_INDEX_MASK_CMPGT
 #define GREX_INDEX_MASK_16 GREX_INDEX_MASK_CMPGT
 #define GREX_INDEX_MASK_32 GREX_INDEX_MASK_CMPGT
@@ -55,18 +55,20 @@ namespace grex::backend {
 #endif
 
 #define GREX_INDEX_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Mask<KIND##BITS, SIZE> cutoff_mask(std::size_t i, TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline NativeMask<KIND##BITS, SIZE> cutoff_mask(std::size_t i, \
+                                                  TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CUTOFF_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   } \
-  inline Mask<KIND##BITS, SIZE> single_mask(std::size_t i, TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline NativeMask<KIND##BITS, SIZE> single_mask(std::size_t i, \
+                                                  TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   }
 #define GREX_INDEX_MASK_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_INDEX_MASK, REGISTERBITS, BITPREFIX, REGISTERBITS)
 
 #define GREX_CUTOFF_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> cutoff(std::size_t i, Vector<KIND##BITS, SIZE> v) { \
-    return blend_zero(cutoff_mask(i, type_tag<Mask<KIND##BITS, SIZE>>), v); \
+  inline NativeVector<KIND##BITS, SIZE> cutoff(std::size_t i, NativeVector<KIND##BITS, SIZE> v) { \
+    return blend_zero(cutoff_mask(i, type_tag<NativeMask<KIND##BITS, SIZE>>), v); \
   }
 #define GREX_CUTOFF_VEC_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_CUTOFF_VEC, REGISTERBITS, BITPREFIX, REGISTERBITS)

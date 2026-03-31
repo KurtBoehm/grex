@@ -52,16 +52,16 @@ namespace grex::backend {
 #define GREX_VEC_INSERT_AVX512_i GREX_VEC_INSERT_AVX512_INT
 #define GREX_VEC_INSERT_AVX512_u GREX_VEC_INSERT_AVX512_INT
 #define GREX_VEC_INSERT_AVX512(KIND, BITS, SIZE, BITPREFIX) \
-  inline Vector<KIND##BITS, SIZE> insert(Vector<KIND##BITS, SIZE> v, std::size_t index, \
-                                         KIND##BITS value) { \
+  inline NativeVector<KIND##BITS, SIZE> insert(NativeVector<KIND##BITS, SIZE> v, \
+                                               std::size_t index, KIND##BITS value) { \
     return {.r = GREX_VEC_INSERT_AVX512_##KIND(KIND, BITS, SIZE, BITPREFIX)}; \
   }
 // Fallback: Broadcast and blend
 #define GREX_VEC_INSERT_FALLBACK(KIND, BITS, SIZE, BITPREFIX) \
-  inline Vector<KIND##BITS, SIZE> insert(Vector<KIND##BITS, SIZE> v, std::size_t index, \
-                                         KIND##BITS value) { \
-    return blend(single_mask(index, type_tag<Mask<KIND##BITS, SIZE>>), v, \
-                 broadcast(value, type_tag<Vector<KIND##BITS, SIZE>>)); \
+  inline NativeVector<KIND##BITS, SIZE> insert(NativeVector<KIND##BITS, SIZE> v, \
+                                               std::size_t index, KIND##BITS value) { \
+    return blend(single_mask(index, type_tag<NativeMask<KIND##BITS, SIZE>>), v, \
+                 broadcast(value, type_tag<NativeVector<KIND##BITS, SIZE>>)); \
   }
 
 // Mask insert:
@@ -71,14 +71,16 @@ namespace grex::backend {
 // AVX-512
 // TODO Use the btr instruction explicitly
 #define GREX_MASK_INSERT_AVX512(KIND, BITS, SIZE, BITPREFIX) \
-  inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> m, std::size_t index, bool value) { \
+  inline NativeMask<KIND##BITS, SIZE> insert(NativeMask<KIND##BITS, SIZE> m, std::size_t index, \
+                                             bool value) { \
     using Idx = GREX_CAT(u, GREX_MAX(SIZE, 8)); \
     return {.r = GREX_MMASK_CAST(SIZE, (m.r & ~(Idx{1} << index)) | (Idx{value} << index))}; \
   }
 #define GREX_MASK_INSERT_FALLBACK(KIND, BITS, SIZE, BITPREFIX) \
-  inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> m, std::size_t index, bool value) { \
+  inline NativeMask<KIND##BITS, SIZE> insert(NativeMask<KIND##BITS, SIZE> m, std::size_t index, \
+                                             bool value) { \
     const i##BITS entry = GREX_OPCAST(i, BITS, -i##BITS(value)); \
-    return {.r = insert(Vector<i##BITS, SIZE>{.r = m.r}, index, entry).r}; \
+    return {.r = insert(NativeVector<i##BITS, SIZE>{.r = m.r}, index, entry).r}; \
   }
 
 #if GREX_X86_64_LEVEL >= 4

@@ -16,55 +16,55 @@
 
 namespace grex::backend {
 template<Vectorizable T, std::size_t tSize>
-inline Vector<T, tSize> indices(TypeTag<Vector<T, tSize>> /*tag*/) {
+inline NativeVector<T, tSize> indices(TypeTag<NativeVector<T, tSize>> /*tag*/) {
   return static_apply<tSize>(
-    []<std::size_t... tIdxs>() { return set(type_tag<Vector<T, tSize>>, T(tIdxs)...); });
+    []<std::size_t... tIdxs>() { return set(type_tag<NativeVector<T, tSize>>, T(tIdxs)...); });
 }
 
 // SubVector
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> zeros(TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
-  return SubVector<T, tPart, tSize>{zeros(type_tag<Vector<T, tSize>>)};
+  return SubVector<T, tPart, tSize>{zeros(type_tag<NativeVector<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> undefined(TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
-  return SubVector<T, tPart, tSize>{undefined(type_tag<Vector<T, tSize>>)};
+  return SubVector<T, tPart, tSize>{undefined(type_tag<NativeVector<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> broadcast(T value, TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
-  return SubVector<T, tPart, tSize>{broadcast(value, type_tag<Vector<T, tSize>>)};
+  return SubVector<T, tPart, tSize>{broadcast(value, type_tag<NativeVector<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> set(TypeTag<SubVector<T, tPart, tSize>> /*tag*/, Ts... values) {
   std::array<T, tSize> elements{values...};
   const auto full = static_apply<tSize>([&]<std::size_t... tIdxs> {
-    return set(type_tag<Vector<T, tSize>>, std::get<tIdxs>(elements)...);
+    return set(type_tag<NativeVector<T, tSize>>, std::get<tIdxs>(elements)...);
   });
   return SubVector<T, tPart, tSize>{full};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> indices(TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
-  return SubVector<T, tPart, tSize>{indices(type_tag<Vector<T, tSize>>)};
+  return SubVector<T, tPart, tSize>{indices(type_tag<NativeVector<T, tSize>>)};
 }
 
 // SubMask
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubMask<T, tPart, tSize> zeros(TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
-  return SubMask<T, tPart, tSize>{zeros(type_tag<Mask<T, tSize>>)};
+  return SubMask<T, tPart, tSize>{zeros(type_tag<NativeMask<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 inline SubMask<T, tPart, tSize> ones(TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
-  return SubMask<T, tPart, tSize>{ones(type_tag<Mask<T, tSize>>)};
+  return SubMask<T, tPart, tSize>{ones(type_tag<NativeMask<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubMask<T, tPart, tSize> broadcast(bool value, TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
-  return SubMask<T, tPart, tSize>{broadcast(value, type_tag<Mask<T, tSize>>)};
+  return SubMask<T, tPart, tSize>{broadcast(value, type_tag<NativeMask<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubMask<T, tPart, tSize> set(TypeTag<SubMask<T, tPart, tSize>> /*tag*/, Ts... values) {
   std::array<bool, tSize> buf{values...};
   const auto full = static_apply<tSize>(
-    [&]<std::size_t... tIdxs>() { return set(type_tag<Mask<T, tSize>>, buf[tIdxs]...); });
+    [&]<std::size_t... tIdxs>() { return set(type_tag<NativeMask<T, tSize>>, buf[tIdxs]...); });
   return SubMask<T, tPart, tSize>{full};
 }
 

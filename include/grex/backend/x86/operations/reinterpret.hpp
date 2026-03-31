@@ -21,9 +21,9 @@
 
 namespace grex::backend {
 #define GREX_REINTERPRET_BASE(DSTKIND, DSTBITS, DSTSIZE, SRCKIND, SRCBITS, SRCSIZE, REGISTERBITS) \
-  inline Vector<DSTKIND##DSTBITS, DSTSIZE> reinterpret(Vector<SRCKIND##SRCBITS, SRCSIZE> v, \
-                                                       TypeTag<DSTKIND##DSTBITS>) { \
-    return Vector<DSTKIND##DSTBITS, DSTSIZE>{ \
+  inline NativeVector<DSTKIND##DSTBITS, DSTSIZE> reinterpret( \
+    NativeVector<SRCKIND##SRCBITS, SRCSIZE> v, TypeTag<DSTKIND##DSTBITS>) { \
+    return NativeVector<DSTKIND##DSTBITS, DSTSIZE>{ \
       .r = GREX_KINDCAST_EXT(DSTKIND, DSTBITS, SRCKIND, SRCBITS, REGISTERBITS, v.r)}; \
   }
 #define GREX_REINTERPRET(SRCKIND, SRCBITS, SRCSIZE, REGISTERBITS) \

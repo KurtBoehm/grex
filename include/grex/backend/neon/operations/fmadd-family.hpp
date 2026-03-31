@@ -12,6 +12,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/types.hpp"
@@ -24,23 +25,27 @@ namespace grex::backend {
 inline constexpr bool has_fma = true;
 
 #define GREX_FMADDF(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> fmadd(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b, \
-                                        Vector<KIND##BITS, SIZE> c) { \
+  inline NativeVector<KIND##BITS, SIZE> fmadd(NativeVector<KIND##BITS, SIZE> a, \
+                                              NativeVector<KIND##BITS, SIZE> b, \
+                                              NativeVector<KIND##BITS, SIZE> c) { \
     return {.r = GREX_ISUFFIXED(vfmaq, KIND, BITS)(c.r, a.r, b.r)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> fnmadd(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b, \
-                                         Vector<KIND##BITS, SIZE> c) { \
+  inline NativeVector<KIND##BITS, SIZE> fnmadd(NativeVector<KIND##BITS, SIZE> a, \
+                                               NativeVector<KIND##BITS, SIZE> b, \
+                                               NativeVector<KIND##BITS, SIZE> c) { \
     return {.r = GREX_ISUFFIXED(vfmsq, KIND, BITS)(c.r, a.r, b.r)}; \
   }
 
 GREX_FOREACH_FP_TYPE(GREX_FMADDF, 128)
 
 template<FloatVectorizable T, std::size_t tSize>
-inline Vector<T, tSize> fmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
+inline NativeVector<T, tSize> fmsub(NativeVector<T, tSize> a, NativeVector<T, tSize> b,
+                                    NativeVector<T, tSize> c) {
   return fmadd(a, b, negate(c));
 }
 template<FloatVectorizable T, std::size_t tSize>
-inline Vector<T, tSize> fnmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c) {
+inline NativeVector<T, tSize> fnmsub(NativeVector<T, tSize> a, NativeVector<T, tSize> b,
+                                     NativeVector<T, tSize> c) {
   return negate(fmadd(a, b, c));
 }
 

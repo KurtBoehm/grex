@@ -42,7 +42,8 @@ namespace grex::backend {
 #define GREX_LOAD_CAST_u(REGISTERBITS) reinterpret_cast<const __m##REGISTERBITS##i*>(ptr)
 
 #define GREX_LOAD_BASE(NAME, INFIX, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> NAME(const KIND##BITS* ptr, TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline NativeVector<KIND##BITS, SIZE> NAME(const KIND##BITS* ptr, \
+                                             TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CAT(BITPREFIX##_##INFIX##_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))( \
               GREX_LOAD_CAST_##KIND(REGISTERBITS))}; \
   }
@@ -63,10 +64,10 @@ namespace grex::backend {
 #define GREX_MASKLOAD_CAST_32 reinterpret_cast<const int*>(ptr)
 #define GREX_MASKLOAD_CAST_64 reinterpret_cast<const long long*>(ptr)
 #define GREX_PARTLOAD_MASKLOAD(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
-  return {.r = GREX_KINDCAST( \
-            i, KIND, BITS, REGISTERBITS, \
-            BITPREFIX##_maskload_epi##BITS( \
-              GREX_MASKLOAD_CAST_##BITS, cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r))};
+  return {.r = GREX_KINDCAST(i, KIND, BITS, REGISTERBITS, \
+                             BITPREFIX##_maskload_epi##BITS( \
+                               GREX_MASKLOAD_CAST_##BITS, \
+                               cutoff_mask(size, type_tag<NativeMask<KIND##BITS, SIZE>>).r))};
 
 #define GREX_PARTLOAD_FALLBACK_INIT(KIND, BITS, SIZE) \
   if (size >= SIZE) [[unlikely]] { \
@@ -152,24 +153,24 @@ namespace grex::backend {
 // 256/512 bits: Split
 #define GREX_PARTLOAD_SPLIT(KIND, BITS, SIZE, ...) \
   if (size >= SIZE) [[unlikely]] { \
-    return load(ptr, type_tag<Vector<KIND##BITS, SIZE>>); \
+    return load(ptr, type_tag<NativeVector<KIND##BITS, SIZE>>); \
   } \
   if (size == 0) [[unlikely]] { \
-    return zeros(type_tag<Vector<KIND##BITS, SIZE>>); \
+    return zeros(type_tag<NativeVector<KIND##BITS, SIZE>>); \
   } \
   if (size >= GREX_DIVIDE(SIZE, 2)) { \
-    return merge(load(ptr, type_tag<Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>), \
+    return merge(load(ptr, type_tag<NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>), \
                  load_part(ptr + GREX_DIVIDE(SIZE, 2), size - GREX_DIVIDE(SIZE, 2), \
-                           type_tag<Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>)); \
+                           type_tag<NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>)); \
   } \
-  return merge(load_part(ptr, size, type_tag<Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>), \
-               zeros(type_tag<Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>));
+  return merge(load_part(ptr, size, type_tag<NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>), \
+               zeros(type_tag<NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>));
 #define GREX_PARTLOAD_256_16 GREX_PARTLOAD_SPLIT
 #define GREX_PARTLOAD_256_8 GREX_PARTLOAD_SPLIT
 
 #define GREX_PARTLOAD_AVX512(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
   return {.r = GREX_CAT(BITPREFIX##_maskz_loadu_, GREX_EPI_SUFFIX(KIND, BITS))( \
-            cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r, ptr)};
+            cutoff_mask(size, type_tag<NativeMask<KIND##BITS, SIZE>>).r, ptr)};
 
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_PARTLOAD_128 GREX_PARTLOAD_AVX512
@@ -186,8 +187,8 @@ namespace grex::backend {
 #endif
 
 #define GREX_PARTLOAD(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
-  inline Vector<KIND##BITS, SIZE> load_part(const KIND##BITS* ptr, std::size_t size, \
-                                            TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline NativeVector<KIND##BITS, SIZE> load_part(const KIND##BITS* ptr, std::size_t size, \
+                                                  TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
     GREX_PARTLOAD_##REGISTERBITS(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
   }
 
@@ -271,7 +272,7 @@ GREX_FOREACH_SUB(GREX_LOAD_SUB)
 #else
 #define GREX_PARTLOAD_SUB_IMPL(KIND, BITS, PART, SIZE) \
   return SubVector<KIND##BITS, PART, SIZE>{ \
-    load_part(ptr, size, type_tag<Vector<KIND##BITS, SIZE>>)};
+    load_part(ptr, size, type_tag<NativeVector<KIND##BITS, SIZE>>)};
 #endif
 #define GREX_PARTLOAD_SUB(KIND, BITS, PART, SIZE) \
   inline SubVector<KIND##BITS, PART, SIZE> load_part(const KIND##BITS* ptr, std::size_t size, \

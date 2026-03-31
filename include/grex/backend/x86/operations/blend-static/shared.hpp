@@ -28,7 +28,7 @@ struct BlenderVariable : public BaseExpensiveOp {
   static TVec apply(TVec a, TVec b, AutoTag<tBls> /*tag*/) {
     using Value = TVec::Value;
     static constexpr std::size_t size = TVec::size;
-    using VMask = Mask<Value, size>;
+    using VMask = NativeMask<Value, size>;
 
     const VMask mask = static_apply<size>(
       []<std::size_t... tIdxs>() { return set(type_tag<VMask>, (tBls[tIdxs] == rhs_bl)...); });

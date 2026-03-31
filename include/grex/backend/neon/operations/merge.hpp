@@ -11,6 +11,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
@@ -38,7 +39,8 @@ GREX_FOREACH_SUB(GREX_MERGE_SUB)
 // Merge to super-native vector
 template<Vectorizable T, std::size_t tSize>
 requires(is_supernative<T, 2 * tSize>)
-inline SuperVector<Vector<T, tSize>> merge(Vector<T, tSize> a, Vector<T, tSize> b) {
+inline SuperVector<NativeVector<T, tSize>> merge(NativeVector<T, tSize> a,
+                                                 NativeVector<T, tSize> b) {
   return {.lower = a, .upper = b};
 }
 template<typename THalf>

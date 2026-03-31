@@ -38,8 +38,9 @@ namespace grex::backend {
 #endif
 
 #define GREX_MASKADDSUB_BASE(KIND, BITS, SIZE, NAME, OP) \
-  inline Vector<KIND##BITS, SIZE> mask_##NAME( \
-    Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> mask_##NAME(NativeMask<KIND##BITS, SIZE> m, \
+                                                    NativeVector<KIND##BITS, SIZE> a, \
+                                                    NativeVector<KIND##BITS, SIZE> b) { \
     GREX_MASKADDSUB_IMPL(KIND, BITS, SIZE, NAME, OP) \
   }
 
@@ -70,8 +71,9 @@ namespace grex::backend {
 #define GREX_MASKMUL_u(KIND, BITS, SIZE, BITPREFIX) \
   GREX_MASKMUL_INT##BITS(KIND, BITS, SIZE, multiply, BITPREFIX##_mask_mullo)
 #define GREX_MASKMUL(KIND, BITS, SIZE, BITPREFIX) \
-  inline Vector<KIND##BITS, SIZE> mask_multiply( \
-    Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> mask_multiply(NativeMask<KIND##BITS, SIZE> m, \
+                                                      NativeVector<KIND##BITS, SIZE> a, \
+                                                      NativeVector<KIND##BITS, SIZE> b) { \
     GREX_MASKMUL_##KIND(KIND, BITS, SIZE, BITPREFIX) \
   }
 #define GREX_MASKMUL_ALL(REGISTERBITS, BITPREFIX) \
@@ -79,8 +81,9 @@ namespace grex::backend {
 
 // Division
 #define GREX_MASKDIV(KIND, BITS, SIZE, BITPREFIX) \
-  inline Vector<KIND##BITS, SIZE> mask_divide( \
-    Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> mask_divide(NativeMask<KIND##BITS, SIZE> m, \
+                                                    NativeVector<KIND##BITS, SIZE> a, \
+                                                    NativeVector<KIND##BITS, SIZE> b) { \
     GREX_MASKMULDIV_IMPL(KIND, BITS, SIZE, divide, BITPREFIX##_mask_div) \
   }
 #define GREX_MASKDIV_ALL(REGISTERBITS, BITPREFIX) \

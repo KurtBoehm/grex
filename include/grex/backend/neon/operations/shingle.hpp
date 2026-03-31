@@ -32,20 +32,20 @@ namespace grex::backend {
 #define GREX_VUSHINGLE_u GREX_VUSHINGLE_i
 
 #define GREX_SHINGLE(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> shingle_up(Vector<KIND##BITS, SIZE> v) { \
+  inline NativeVector<KIND##BITS, SIZE> shingle_up(NativeVector<KIND##BITS, SIZE> v) { \
     return {.r = GREX_ISUFFIXED(vextq, KIND, BITS)(GREX_ISUFFIXED(vdupq_n, KIND, BITS)(0), v.r, \
                                                    GREX_DECR(SIZE))}; \
   } \
-  inline Vector<KIND##BITS, SIZE> shingle_up(Scalar<KIND##BITS> front, \
-                                             Vector<KIND##BITS, SIZE> v) { \
+  inline NativeVector<KIND##BITS, SIZE> shingle_up(Scalar<KIND##BITS> front, \
+                                                   NativeVector<KIND##BITS, SIZE> v) { \
     GREX_VUSHINGLE_##KIND(KIND, BITS, SIZE) \
   } \
-  inline Vector<KIND##BITS, SIZE> shingle_down(Vector<KIND##BITS, SIZE> v) { \
+  inline NativeVector<KIND##BITS, SIZE> shingle_down(NativeVector<KIND##BITS, SIZE> v) { \
     return {.r = \
               GREX_ISUFFIXED(vextq, KIND, BITS)(v.r, GREX_ISUFFIXED(vdupq_n, KIND, BITS)(0), 1)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> shingle_down(Vector<KIND##BITS, SIZE> v, \
-                                               Scalar<KIND##BITS> back) { \
+  inline NativeVector<KIND##BITS, SIZE> shingle_down(NativeVector<KIND##BITS, SIZE> v, \
+                                                     Scalar<KIND##BITS> back) { \
     const auto vback = expand_any(Scalar{back}, index_tag<SIZE>).r; \
     return {.r = GREX_ISUFFIXED(vextq, KIND, BITS)(v.r, vback, 1)}; \
   }

@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <utility>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/neon/operations/load.hpp"
 #include "grex/backend/neon/operations/mask-convert.hpp"
@@ -31,8 +32,8 @@ struct BlenderVariable : public BaseExpensiveOp {
     using Value = TVec::Value;
     static constexpr std::size_t size = TVec::size;
     using Int = SignedInt<sizeof(Value)>;
-    using IVec = Vector<Int, size>;
-    using VMask = Mask<Value, size>;
+    using IVec = NativeVector<Int, size>;
+    using VMask = NativeMask<Value, size>;
 
     static constexpr std::array<Int, size> mask_idxs =
       static_apply<size>([]<std::size_t... tIdxs>() {

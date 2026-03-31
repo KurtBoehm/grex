@@ -11,6 +11,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
@@ -44,12 +45,13 @@ inline THalf get_high(SuperVector<THalf> v) {
 
 // native masks
 template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tSize / 2> get_low(Mask<T, tSize> m) {
-  return MaskFor<T, tSize / 2>{get_low(Vector<UnsignedInt<sizeof(T)>, tSize>{m.r}).registr()};
+inline MaskFor<T, tSize / 2> get_low(NativeMask<T, tSize> m) {
+  return MaskFor<T, tSize / 2>{get_low(NativeVector<UnsignedInt<sizeof(T)>, tSize>{m.r}).registr()};
 }
 template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tSize / 2> get_high(Mask<T, tSize> m) {
-  return MaskFor<T, tSize / 2>{get_high(Vector<UnsignedInt<sizeof(T)>, tSize>{m.r}).registr()};
+inline MaskFor<T, tSize / 2> get_high(NativeMask<T, tSize> m) {
+  return MaskFor<T, tSize / 2>{
+    get_high(NativeVector<UnsignedInt<sizeof(T)>, tSize>{m.r}).registr()};
 }
 
 // sub-native masks

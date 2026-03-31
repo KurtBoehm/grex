@@ -46,9 +46,9 @@ namespace grex::backend {
 // assembly code which GCC generated
 #define GREX_ISFIN_FALLBACK(KIND, BITS, SIZE, REGISTERBITS) \
   /* mask out the sign bit to simplify the following comparisons */ \
-  const Vector<i##BITS, SIZE> vabs{GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, abs(v).r)}; \
+  const NativeVector<i##BITS, SIZE> vabs{GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, abs(v).r)}; \
   /* broadcast positive infinity as an unsigned integer */ \
-  const auto infty = broadcast(GREX_ISFIN_INFTY_##BITS, type_tag<Vector<i##BITS, SIZE>>); \
+  const auto infty = broadcast(GREX_ISFIN_INFTY_##BITS, type_tag<NativeVector<i##BITS, SIZE>>); \
   /* if interpreted as an unsigned integer, positive infinity is the smallest non-finite value */ \
   return {.r = compare_lt(vabs, infty).r};
 
@@ -59,7 +59,7 @@ namespace grex::backend {
 #endif
 
 #define GREX_ISFIN(KIND, BITS, SIZE, ...) \
-  inline Mask<KIND##BITS, SIZE> is_finite(Vector<KIND##BITS, SIZE> v) { \
+  inline NativeMask<KIND##BITS, SIZE> is_finite(NativeVector<KIND##BITS, SIZE> v) { \
     GREX_ISFIN_IMPL(KIND, BITS, SIZE, __VA_ARGS__) \
   }
 

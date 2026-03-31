@@ -25,8 +25,8 @@
 
 namespace grex::backend {
 #define GREX_EXPAND_ANY(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> expand(Scalar<KIND##BITS> x, IndexTag<SIZE> /*tag*/, \
-                                         BoolTag<false> /*tag*/) { \
+  inline NativeVector<KIND##BITS, SIZE> expand(Scalar<KIND##BITS> x, IndexTag<SIZE> /*tag*/, \
+                                               BoolTag<false> /*tag*/) { \
     return {.r = expand_register(x)}; \
   }
 GREX_FOREACH_TYPE(GREX_EXPAND_ANY, 128)

@@ -22,7 +22,7 @@ template<Vectorizable T, std::size_t tSize, bool tIsSub = (tSize < backend::min_
 struct VectorTrait;
 template<Vectorizable T, std::size_t tSize>
 struct VectorTrait<T, tSize, false, false> {
-  using Type = backend::Vector<T, tSize>;
+  using Type = backend::NativeVector<T, tSize>;
 };
 template<Vectorizable T, std::size_t tSize>
 struct VectorTrait<T, tSize, true, false> {
@@ -41,7 +41,7 @@ template<Vectorizable T, std::size_t tSize, bool tIsSub = (tSize < backend::min_
 struct MaskTrait;
 template<Vectorizable T, std::size_t tSize>
 struct MaskTrait<T, tSize, false, false> {
-  using Type = backend::Mask<T, tSize>;
+  using Type = backend::NativeMask<T, tSize>;
 };
 template<Vectorizable T, std::size_t tSize>
 struct MaskTrait<T, tSize, true, false> {

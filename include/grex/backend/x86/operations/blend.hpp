@@ -34,30 +34,33 @@ namespace grex::backend {
   (GREX_BLEND_CAST(KIND, BITS, REGISTERBITS, MASK), VEC)
 
 #define GREX_BLENDZ_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> blend_zero(Mask<KIND##BITS, SIZE> m, \
-                                             Vector<KIND##BITS, SIZE> v1) { \
+  inline NativeVector<KIND##BITS, SIZE> blend_zero(NativeMask<KIND##BITS, SIZE> m, \
+                                                   NativeVector<KIND##BITS, SIZE> v1) { \
     return {.r = GREX_CAT(BITPREFIX##_maskz_mov_, GREX_EPI_SUFFIX(KIND, BITS))(m.r, v1.r)}; \
   }
 #define GREX_BLENDZ_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> blend_zero(Mask<KIND##BITS, SIZE> m, \
-                                             Vector<KIND##BITS, SIZE> v1) { \
+  inline NativeVector<KIND##BITS, SIZE> blend_zero(NativeMask<KIND##BITS, SIZE> m, \
+                                                   NativeVector<KIND##BITS, SIZE> v1) { \
     return {.r = GREX_BLEND_MBINOP(KIND, BITS, BITPREFIX, REGISTERBITS, and, m.r, v1.r)}; \
   }
 
 #define GREX_BLEND_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> blend(Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> v0, \
-                                        Vector<KIND##BITS, SIZE> v1) { \
+  inline NativeVector<KIND##BITS, SIZE> blend(NativeMask<KIND##BITS, SIZE> m, \
+                                              NativeVector<KIND##BITS, SIZE> v0, \
+                                              NativeVector<KIND##BITS, SIZE> v1) { \
     return {.r = GREX_CAT(BITPREFIX##_mask_mov_, GREX_EPI_SUFFIX(KIND, BITS))(v0.r, m.r, v1.r)}; \
   }
 #define GREX_BLEND_SSE4(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> blend(Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> v0, \
-                                        Vector<KIND##BITS, SIZE> v1) { \
+  inline NativeVector<KIND##BITS, SIZE> blend(NativeMask<KIND##BITS, SIZE> m, \
+                                              NativeVector<KIND##BITS, SIZE> v0, \
+                                              NativeVector<KIND##BITS, SIZE> v1) { \
     return {.r = GREX_CAT(BITPREFIX##_blendv_, GREX_EPI8_SUFFIX(KIND, BITS))( \
               v0.r, v1.r, GREX_BLEND_CAST(KIND, BITS, REGISTERBITS, m.r))}; \
   }
 #define GREX_BLEND_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> blend(Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> v0, \
-                                        Vector<KIND##BITS, SIZE> v1) { \
+  inline NativeVector<KIND##BITS, SIZE> blend(NativeMask<KIND##BITS, SIZE> m, \
+                                              NativeVector<KIND##BITS, SIZE> v0, \
+                                              NativeVector<KIND##BITS, SIZE> v1) { \
     return {.r = GREX_BLEND_SIOP(KIND, BITS, BITPREFIX, REGISTERBITS, or)( \
               GREX_BLEND_MBINOP(KIND, BITS, BITPREFIX, REGISTERBITS, andnot, m.r, v0.r), \
               GREX_BLEND_MBINOP(KIND, BITS, BITPREFIX, REGISTERBITS, and, m.r, v1.r))}; \

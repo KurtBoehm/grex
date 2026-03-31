@@ -36,10 +36,10 @@ namespace grex::backend {
   GREX_HMINMAX_IMPL_INT##BITS(NAME, KIND, BITS, INFIX, VEC)
 
 #define GREX_HMINMAX(KIND, BITS, SIZE) \
-  inline KIND##BITS horizontal_min(Vector<KIND##BITS, SIZE> v) { \
+  inline KIND##BITS horizontal_min(NativeVector<KIND##BITS, SIZE> v) { \
     GREX_HMINMAX_IMPL_##KIND(min, KIND, BITS, q, v.r) \
   } \
-  inline KIND##BITS horizontal_max(Vector<KIND##BITS, SIZE> v) { \
+  inline KIND##BITS horizontal_max(NativeVector<KIND##BITS, SIZE> v) { \
     GREX_HMINMAX_IMPL_##KIND(max, KIND, BITS, q, v.r) \
   }
 GREX_FOREACH_TYPE(GREX_HMINMAX, 128)

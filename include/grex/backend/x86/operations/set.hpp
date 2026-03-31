@@ -71,33 +71,35 @@ namespace grex::backend {
 // Define mask operations, which can be applied to compressed or broad masks
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Mask<KIND##BITS, SIZE> zeros(TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline NativeMask<KIND##BITS, SIZE> zeros(TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
     return {.r = 0}; \
   } \
-  inline Mask<KIND##BITS, SIZE> ones(TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline NativeMask<KIND##BITS, SIZE> ones(TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_ONEMASK_##SIZE}; \
   } \
-  inline Mask<KIND##BITS, SIZE> broadcast(bool value, TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline NativeMask<KIND##BITS, SIZE> broadcast(bool value, \
+                                                TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_MMASK(SIZE)(-GREX_CAT(i, GREX_MAX(SIZE, 8))(value))}; \
   } \
-  inline Mask<KIND##BITS, SIZE> set(TypeTag<Mask<KIND##BITS, SIZE>>, \
-                                    GREX_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
+  inline NativeMask<KIND##BITS, SIZE> set(TypeTag<NativeMask<KIND##BITS, SIZE>>, \
+                                          GREX_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
     return {.r = GREX_MMASK_CAST(SIZE, GREX_CMASK_SET(SIZE, GREX_CAT(u, GREX_MAX(SIZE, 8))))}; \
   }
 #else
 #define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Mask<KIND##BITS, SIZE> zeros(TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline NativeMask<KIND##BITS, SIZE> zeros(TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
     return {.r = BITPREFIX##_setzero_si##REGISTERBITS()}; \
   } \
-  inline Mask<KIND##BITS, SIZE> ones(TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline NativeMask<KIND##BITS, SIZE> ones(TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
     return {.r = BITPREFIX##_set1_epi32(-1)}; \
   } \
-  inline Mask<KIND##BITS, SIZE> broadcast(bool value, TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline NativeMask<KIND##BITS, SIZE> broadcast(bool value, \
+                                                TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
     const i##BITS entry = GREX_OPCAST(i, BITS, -i##BITS(value)); \
     return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_EPI(BITS, REGISTERBITS))(entry)}; \
   } \
-  inline Mask<KIND##BITS, SIZE> set(TypeTag<Mask<KIND##BITS, SIZE>>, \
-                                    GREX_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
+  inline NativeMask<KIND##BITS, SIZE> set(TypeTag<NativeMask<KIND##BITS, SIZE>>, \
+                                          GREX_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
     return {.r = GREX_CAT(BITPREFIX##_set_, GREX_SET_EPI(BITS, REGISTERBITS))( \
               GREX_RREPEAT(SIZE, GREX_SET_NEGVAL, BITS))}; \
   }
@@ -105,18 +107,19 @@ namespace grex::backend {
 
 // Define vector operations
 #define GREX_SET_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> zeros(TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline NativeVector<KIND##BITS, SIZE> zeros(TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))()}; \
   } \
-  inline Vector<KIND##BITS, SIZE> undefined(TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline NativeVector<KIND##BITS, SIZE> undefined(TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_UNDEF(KIND, BITS, BITPREFIX, REGISTERBITS)()}; \
   } \
-  inline Vector<KIND##BITS, SIZE> broadcast(KIND##BITS value, TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline NativeVector<KIND##BITS, SIZE> broadcast(KIND##BITS value, \
+                                                  TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_CAT(BITPREFIX##_set1_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))( \
               GREX_SIGNED_CAST(KIND, BITS, value))}; \
   } \
-  inline Vector<KIND##BITS, SIZE> set(TypeTag<Vector<KIND##BITS, SIZE>>, \
-                                      GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
+  inline NativeVector<KIND##BITS, SIZE> set(TypeTag<NativeVector<KIND##BITS, SIZE>>, \
+                                            GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
     return {.r = GREX_CAT(BITPREFIX##_set_, GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS))( \
               GREX_RREPEAT(SIZE, GREX_SET_VAL, KIND, BITS))}; \
   }

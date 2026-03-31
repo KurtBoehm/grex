@@ -38,7 +38,7 @@ namespace grex::backend {
   return CONVERT;
 #define GREX_MASKZ_CMPR(KIND, BITS, SIZE, BITPREFIX) \
   GREX_CAT(BITPREFIX##_maskz_compress_, GREX_EPI_SUFFIX(KIND, BITS)) \
-  (single_mask(i, type_tag<Mask<KIND##BITS, SIZE>>).r, v.r)
+  (single_mask(i, type_tag<NativeMask<KIND##BITS, SIZE>>).r, v.r)
 
 // Define for floating-point types
 #if GREX_X86_64_LEVEL >= 4
@@ -82,7 +82,7 @@ namespace grex::backend {
 #define GREX_EXTRACT_VEC_i GREX_EXTRACT_INT_IMPL
 #define GREX_EXTRACT_VEC_u GREX_EXTRACT_INT_IMPL
 #define GREX_EXTRACT_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline KIND##BITS extract(Vector<KIND##BITS, SIZE> v, std::size_t i) { \
+  inline KIND##BITS extract(NativeVector<KIND##BITS, SIZE> v, std::size_t i) { \
     GREX_EXTRACT_VEC_##KIND(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   }
 #define GREX_EXTRACT_VEC_ALL(REGISTERBITS, BITPREFIX) \
@@ -92,7 +92,7 @@ namespace grex::backend {
 #if GREX_X86_64_LEVEL >= 4
 // With AVX-512, the mask can just be converted to an integer to get the requested bit
 #define GREX_EXTRACT_MASK_IMPL(KIND, BITS, SIZE, UMMASK) \
-  inline bool extract(Mask<KIND##BITS, SIZE> v, std::size_t i) { \
+  inline bool extract(NativeMask<KIND##BITS, SIZE> v, std::size_t i) { \
     return bit_test(v.r, UMMASK(i)); \
   }
 #define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \
@@ -100,8 +100,8 @@ namespace grex::backend {
 #else
 // Pre-AVX-512, we extract the corresponding part of the vector and compare it to 0
 #define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \
-  inline bool extract(Mask<KIND##BITS, SIZE> v, std::size_t i) { \
-    return extract(Vector<u##BITS, SIZE>{v.r}, i) != 0; \
+  inline bool extract(NativeMask<KIND##BITS, SIZE> v, std::size_t i) { \
+    return extract(NativeVector<u##BITS, SIZE>{v.r}, i) != 0; \
   }
 #endif
 #define GREX_EXTRACT_MASK_ALL(REGISTERBITS, BITPREFIX) \

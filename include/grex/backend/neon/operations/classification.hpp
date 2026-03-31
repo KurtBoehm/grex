@@ -11,6 +11,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/operations/blend.hpp"
@@ -21,7 +22,7 @@
 
 namespace grex::backend {
 #define GREX_ISFIN(KIND, BITS, SIZE, ...) \
-  inline Mask<KIND##BITS, SIZE> is_finite(Vector<KIND##BITS, SIZE> v) { \
+  inline NativeMask<KIND##BITS, SIZE> is_finite(NativeVector<KIND##BITS, SIZE> v) { \
     /* the largest finite value */ \
     const auto maxvec = vdupq_n_f##BITS(std::numeric_limits<f##BITS>::max()); \
     /* compare the absolute value with the largest finite value */ \

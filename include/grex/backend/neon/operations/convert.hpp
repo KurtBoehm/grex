@@ -11,6 +11,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/base.hpp"
@@ -86,7 +87,7 @@ GREX_CVT(u, 8, i, 8, 16, GREX_CVT_REINTERPRET)
 
 // Source and destination type identical: no-op
 template<Vectorizable T, std::size_t tSize>
-inline Vector<T, tSize> convert(Vector<T, tSize> v, TypeTag<T> /*tag*/) {
+inline NativeVector<T, tSize> convert(NativeVector<T, tSize> v, TypeTag<T> /*tag*/) {
   return v;
 }
 // sub-native → sub-native: Make the smaller one native
@@ -105,14 +106,14 @@ inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TD
 // native → super-native: Split native
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
 requires(is_supernative<TDst, tSize>)
-inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) {
+inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> tag) {
   return merge(convert(get_low(v), tag), convert(get_high(v), tag));
 }
 
 // integer → smaller integer: Convert to half-size and go on from there
 template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
 requires(sizeof(TDst) < sizeof(TSrc))
-inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) {
+inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<TSrc, sizeof(TSrc) / 2>>), tag);
 }
 // integer → bigger integer: Convert to double-size while retaining signedness and go on from there
@@ -142,13 +143,13 @@ inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<T
 // integer → smaller floating-point: Convert to source-sized floating-point and then cast
 template<FloatVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
 requires(sizeof(TDst) < sizeof(TSrc))
-inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) {
+inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<Float<sizeof(TSrc)>>), tag);
 }
 // floating-point → smaller integer: Convert to destination-sized integer and then cast
 template<IntVectorizable TDst, FloatVectorizable TSrc, std::size_t tSize>
 requires(sizeof(TDst) < sizeof(TSrc))
-inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> tag) {
+inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<TDst, sizeof(TSrc)>>), tag);
 }
 } // namespace grex::backend

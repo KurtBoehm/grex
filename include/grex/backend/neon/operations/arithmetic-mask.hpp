@@ -9,6 +9,7 @@
 
 #include <cstddef>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/neon/operations/arithmetic.hpp"
 #include "grex/backend/neon/operations/blend.hpp"
@@ -17,19 +18,23 @@
 
 namespace grex::backend {
 template<Vectorizable T, std::size_t tSize>
-inline Vector<T, tSize> mask_add(Mask<T, tSize> m, Vector<T, tSize> a, Vector<T, tSize> b) {
+inline NativeVector<T, tSize> mask_add(NativeMask<T, tSize> m, NativeVector<T, tSize> a,
+                                       NativeVector<T, tSize> b) {
   return blend(m, a, add(a, b));
 }
 template<Vectorizable T, std::size_t tSize>
-inline Vector<T, tSize> mask_subtract(Mask<T, tSize> m, Vector<T, tSize> a, Vector<T, tSize> b) {
+inline NativeVector<T, tSize> mask_subtract(NativeMask<T, tSize> m, NativeVector<T, tSize> a,
+                                            NativeVector<T, tSize> b) {
   return blend(m, a, subtract(a, b));
 }
 template<Vectorizable T, std::size_t tSize>
-inline Vector<T, tSize> mask_multiply(Mask<T, tSize> m, Vector<T, tSize> a, Vector<T, tSize> b) {
+inline NativeVector<T, tSize> mask_multiply(NativeMask<T, tSize> m, NativeVector<T, tSize> a,
+                                            NativeVector<T, tSize> b) {
   return blend(m, a, multiply(a, b));
 }
 template<FloatVectorizable T, std::size_t tSize>
-inline Vector<T, tSize> mask_divide(Mask<T, tSize> m, Vector<T, tSize> a, Vector<T, tSize> b) {
+inline NativeVector<T, tSize> mask_divide(NativeMask<T, tSize> m, NativeVector<T, tSize> a,
+                                          NativeVector<T, tSize> b) {
   return blend(m, a, divide(a, b));
 }
 } // namespace grex::backend

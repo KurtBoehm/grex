@@ -18,13 +18,13 @@
 
 namespace grex::backend {
 #define GREX_VEC_SINSERT(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> insert(Vector<KIND##BITS, SIZE> v, AnyIndexTag auto index, \
-                                         KIND##BITS value) { \
+  inline NativeVector<KIND##BITS, SIZE> insert(NativeVector<KIND##BITS, SIZE> v, \
+                                               AnyIndexTag auto index, KIND##BITS value) { \
     const auto ret = GREX_ISUFFIXED(vsetq_lane, KIND, BITS)(value, v.r, index.value); \
     return {.r = ret}; \
   } \
-  inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> v, AnyIndexTag auto index, \
-                                       bool value) { \
+  inline NativeMask<KIND##BITS, SIZE> insert(NativeMask<KIND##BITS, SIZE> v, \
+                                             AnyIndexTag auto index, bool value) { \
     const auto ret = GREX_ISUFFIXED(vsetq_lane, u, BITS)(GREX_OPCAST(u, BITS, -u##BITS(value)), \
                                                          v.r, index.value); \
     return {.r = ret}; \

@@ -11,6 +11,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/operations/blend.hpp"
@@ -21,16 +22,17 @@
 
 namespace grex::backend {
 #define GREX_INDEX_MASK(KIND, BITS, SIZE) \
-  inline Mask<KIND##BITS, SIZE> cutoff_mask(std::size_t i, TypeTag<Mask<KIND##BITS, SIZE>>) { \
-    const auto idxs = indices(type_tag<Vector<u##BITS, SIZE>>); \
-    const auto ref = broadcast(u##BITS(i), type_tag<Vector<u##BITS, SIZE>>); \
+  inline NativeMask<KIND##BITS, SIZE> cutoff_mask(std::size_t i, \
+                                                  TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
+    const auto idxs = indices(type_tag<NativeVector<u##BITS, SIZE>>); \
+    const auto ref = broadcast(u##BITS(i), type_tag<NativeVector<u##BITS, SIZE>>); \
     return {.r = compare_lt(idxs, ref).r}; \
   }
 GREX_FOREACH_TYPE(GREX_INDEX_MASK, 128)
 
 #define GREX_CUTOFF(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> cutoff(std::size_t i, Vector<KIND##BITS, SIZE> v) { \
-    return blend_zero(cutoff_mask(i, type_tag<Mask<KIND##BITS, SIZE>>), v); \
+  inline NativeVector<KIND##BITS, SIZE> cutoff(std::size_t i, NativeVector<KIND##BITS, SIZE> v) { \
+    return blend_zero(cutoff_mask(i, type_tag<NativeMask<KIND##BITS, SIZE>>), v); \
   }
 GREX_FOREACH_TYPE(GREX_CUTOFF, 128)
 } // namespace grex::backend

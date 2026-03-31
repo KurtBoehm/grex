@@ -11,6 +11,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/base.hpp"
@@ -149,8 +150,8 @@ inline auto as(TSrc src) {
 }
 
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-inline Vector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)> as(Vector<TSrc, tSize> src) {
-  return Vector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)>{as<TDst>(src.r)};
+inline NativeVector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)> as(NativeVector<TSrc, tSize> src) {
+  return NativeVector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)>{as<TDst>(src.r)};
 }
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
 inline VectorFor<TDst, tPart * sizeof(TSrc) / sizeof(TDst)> as(SubVector<TSrc, tPart, tSize> src) {

@@ -103,7 +103,7 @@ namespace grex::backend {
 #define GREX_ABS_IMPL_f GREX_ABS_FP
 #define GREX_ABS_IMPL_i GREX_ABS_INT
 #define GREX_ABS_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> abs(Vector<KIND##BITS, SIZE> v) { \
+  inline NativeVector<KIND##BITS, SIZE> abs(NativeVector<KIND##BITS, SIZE> v) { \
     GREX_ABS_IMPL_##KIND(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   }
 

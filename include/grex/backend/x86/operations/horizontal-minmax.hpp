@@ -169,7 +169,7 @@ namespace grex::backend {
 
 // Wrapper macros
 #define GREX_HMINMAX(KIND, BITS, SIZE, OP) \
-  inline KIND##BITS horizontal_##OP(Vector<KIND##BITS, SIZE> v) { \
+  inline KIND##BITS horizontal_##OP(NativeVector<KIND##BITS, SIZE> v) { \
     GREX_HMINMAX_##KIND(OP, KIND, BITS, SIZE) \
   }
 #define GREX_HMINMAX_SUB(KIND, BITS, PART, SIZE, OP) \

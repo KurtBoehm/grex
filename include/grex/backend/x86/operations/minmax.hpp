@@ -32,8 +32,8 @@ namespace grex::backend {
 #define GREX_MINMAX_INTRINSIC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
   return {.r = GREX_CAT(BITPREFIX##_##OP##_, GREX_EPU_SUFFIX(KIND, BITS))(a.r, b.r)};
 #define GREX_MINMAX_FLIP_IMPL(TOELEMENT, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
-  auto signbit = \
-    broadcast(KIND##BITS(1U << GREX_CAT(GREX_DECR(BITS), U)), type_tag<Vector<KIND##BITS, SIZE>>); \
+  auto signbit = broadcast(KIND##BITS(1U << GREX_CAT(GREX_DECR(BITS), U)), \
+                           type_tag<NativeVector<KIND##BITS, SIZE>>); \
   auto a1 = bitwise_xor(a, signbit); \
   auto b1 = bitwise_xor(b, signbit); \
   auto m1 = _mm_##OP##_ep##TOELEMENT(a1.r, b1.r); \
@@ -84,7 +84,8 @@ namespace grex::backend {
   GREX_MINMAX_IMPL_##REGISTERBITS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP)
 
 #define GREX_MINMAX(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
-  inline Vector<KIND##BITS, SIZE> OP(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> OP(NativeVector<KIND##BITS, SIZE> a, \
+                                           NativeVector<KIND##BITS, SIZE> b) { \
     GREX_MINMAX_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
   }
 #define GREX_MINMAX_ALL(REGISTERBITS, BITPREFIX) \

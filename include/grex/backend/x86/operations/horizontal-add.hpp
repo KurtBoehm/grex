@@ -137,7 +137,7 @@ namespace grex::backend {
 
 // Wrapper macros
 #define GREX_HADD(KIND, BITS, SIZE) \
-  inline KIND##BITS horizontal_add(Vector<KIND##BITS, SIZE> v) { \
+  inline KIND##BITS horizontal_add(NativeVector<KIND##BITS, SIZE> v) { \
     GREX_HADD_##KIND(KIND, BITS, SIZE) \
   }
 #define GREX_HADD_SUB(KIND, BITS, PART, SIZE) \

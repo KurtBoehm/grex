@@ -18,10 +18,10 @@ struct Scalar {
 };
 
 template<Vectorizable T, std::size_t tSize>
-struct Vector;
+struct NativeVector;
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 struct SubVector {
-  using Full = Vector<T, tSize>;
+  using Full = NativeVector<T, tSize>;
   using Register = Full::Register;
   using Value = T;
   static constexpr std::size_t size = tPart;
@@ -49,7 +49,7 @@ struct SuperVector {
   THalf upper;
 };
 template<Vectorizable T, std::size_t tSize>
-using VectorPair = SuperVector<Vector<T, tSize>>;
+using VectorPair = SuperVector<NativeVector<T, tSize>>;
 
 enum struct SimdKind : u8 { none, native, subnative, supernative };
 template<typename T>
@@ -59,7 +59,7 @@ struct AnyVectorTrait {
   static constexpr SimdKind kind = SimdKind::none;
 };
 template<Vectorizable T, std::size_t tSize>
-struct AnyVectorTrait<Vector<T, tSize>> {
+struct AnyVectorTrait<NativeVector<T, tSize>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = true;
   static constexpr SimdKind kind = SimdKind::native;
@@ -86,10 +86,10 @@ template<typename T>
 concept AnySuperNativeVector = AnyVectorTrait<T>::kind == SimdKind::supernative;
 
 template<Vectorizable T, std::size_t tSize>
-struct Mask;
+struct NativeMask;
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
 struct SubMask {
-  using Full = Mask<T, tSize>;
+  using Full = NativeMask<T, tSize>;
   using Register = Full::Register;
   using VectorValue = T;
   static constexpr std::size_t size = tPart;
@@ -114,7 +114,7 @@ struct SuperMask {
   THalf upper;
 };
 template<Vectorizable T, std::size_t tSize>
-using MaskPair = SuperMask<Mask<T, tSize>>;
+using MaskPair = SuperMask<NativeMask<T, tSize>>;
 
 template<typename T>
 struct AnyMaskTrait {
@@ -123,7 +123,7 @@ struct AnyMaskTrait {
   static constexpr SimdKind kind = SimdKind::none;
 };
 template<Vectorizable T, std::size_t tSize>
-struct AnyMaskTrait<Mask<T, tSize>> {
+struct AnyMaskTrait<NativeMask<T, tSize>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = true;
   static constexpr SimdKind kind = SimdKind::native;

@@ -162,13 +162,13 @@ namespace grex::backend {
 // Trivial no-op cases
 // Source and destination type identical
 template<Vectorizable T, std::size_t tSize>
-inline Vector<T, tSize> convert(Vector<T, tSize> v, TypeTag<T> /*tag*/) {
+inline NativeVector<T, tSize> convert(NativeVector<T, tSize> v, TypeTag<T> /*tag*/) {
   return v;
 }
 // Integers with the same number of bits
 template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
 requires(sizeof(TDst) == sizeof(TSrc))
-inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
+inline NativeVector<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
   return {.r = v.r};
 }
 
@@ -209,7 +209,7 @@ concept ConvertIntegralUp = (std::is_signed_v<TDst> != std::is_signed_v<TSrc>) &
 // native → native
 template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
 requires(ConvertIntegralUp<TDst, TSrc> && is_native<TDst, tSize>)
-inline Vector<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
+inline NativeVector<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
   using Tmp = std::conditional_t<std::is_signed_v<TSrc>, SignedOf<TDst>, UnsignedOf<TDst>>;
   return {.r = convert(v, type_tag<Tmp>).r};
 }
@@ -229,8 +229,8 @@ concept ConvertIntegralDown =
 // native → sub-native/native
 template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
 requires(ConvertIntegralDown<TDst, TSrc> && !is_supernative<TDst, tSize>)
-inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
-  const auto s = convert(Vector<UnsignedOf<TSrc>, tSize>{v.r}, type_tag<UnsignedOf<TDst>>);
+inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
+  const auto s = convert(NativeVector<UnsignedOf<TSrc>, tSize>{v.r}, type_tag<UnsignedOf<TDst>>);
   return VectorFor<TDst, tSize>{s.registr()};
 }
 // sub-native → sub-native: Covered by the base case
@@ -265,7 +265,7 @@ inline MaskFor<TDst, THalf::size * 2> convert(SuperMask<THalf> v, TypeTag<TDst> 
 // TODO Separate implementations for four-fold and eight-fold super-native vectors?!
 template<typename TDst, typename TSrc, std::size_t tSize>
 requires(is_supernative<TDst, tSize>)
-inline VectorFor<TDst, tSize> convert(Vector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
+inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
   return {
     .lower = convert(split(v, index_tag<0>), type_tag<TDst>),
     .upper = convert(split(v, index_tag<1>), type_tag<TDst>),

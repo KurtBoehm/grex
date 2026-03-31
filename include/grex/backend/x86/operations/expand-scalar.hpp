@@ -51,8 +51,8 @@ inline f64x2 expand(Scalar<f64> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) 
 // Integers with at most 32 bits: Cast to i32
 template<IntVectorizable T, bool tZero>
 requires(sizeof(T) <= 4)
-inline Vector<T, min_native_size<T>> expand(Scalar<T> x, IndexTag<min_native_size<T>> /*tag*/,
-                                            BoolTag<tZero> /*tag*/) {
+inline NativeVector<T, min_native_size<T>> expand(Scalar<T> x, IndexTag<min_native_size<T>> /*tag*/,
+                                                  BoolTag<tZero> /*tag*/) {
   // force zero extension
   using Unsigned = UnsignedOf<T>;
   return {.r = _mm_cvtsi32_si128(i32(Unsigned(x.value)))};
@@ -60,7 +60,7 @@ inline Vector<T, min_native_size<T>> expand(Scalar<T> x, IndexTag<min_native_siz
 // Integers with 64 bits: Cast to i64
 template<IntVectorizable T, bool tZero>
 requires(sizeof(T) == 8)
-inline Vector<T, 2> expand(Scalar<T> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
+inline NativeVector<T, 2> expand(Scalar<T> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
   return {.r = _mm_cvtsi64_si128(i64(x.value))};
 }
 

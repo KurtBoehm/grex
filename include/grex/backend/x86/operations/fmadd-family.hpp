@@ -53,8 +53,9 @@ inline constexpr bool has_fma = false;
 #endif
 
 #define GREX_FMADDF(KIND, BITS, SIZE, BITPREFIX, NAME) \
-  inline Vector<KIND##BITS, SIZE> NAME(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b, \
-                                       Vector<KIND##BITS, SIZE> c) { \
+  inline NativeVector<KIND##BITS, SIZE> NAME(NativeVector<KIND##BITS, SIZE> a, \
+                                             NativeVector<KIND##BITS, SIZE> b, \
+                                             NativeVector<KIND##BITS, SIZE> c) { \
     return GREX_FMADDF_CALL(NAME, KIND, BITS, BITPREFIX); \
   }
 #define GREX_FMADDF_ALL(REGISTERBITS, BITPREFIX, NAME) \

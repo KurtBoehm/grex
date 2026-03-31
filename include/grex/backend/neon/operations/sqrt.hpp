@@ -11,6 +11,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/types.hpp"
@@ -20,7 +21,7 @@
 
 namespace grex::backend {
 #define GREX_SQRT(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> sqrt(Vector<KIND##BITS, SIZE> v) { \
+  inline NativeVector<KIND##BITS, SIZE> sqrt(NativeVector<KIND##BITS, SIZE> v) { \
     return {.r = GREX_ISUFFIXED(vsqrtq, KIND, BITS)(v.r)}; \
   }
 GREX_FOREACH_FP_TYPE(GREX_SQRT, 128)

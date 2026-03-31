@@ -23,8 +23,8 @@
 
 namespace grex::backend {
 #define GREX_SHRINK_INTRINSIC(KIND, BITS, DSTSIZE, SRCSIZE) \
-  inline Vector<KIND##BITS, DSTSIZE> shrink(Vector<KIND##BITS, SRCSIZE> v, \
-                                            IndexTag<DSTSIZE> /*dst_size*/) { \
+  inline NativeVector<KIND##BITS, DSTSIZE> shrink(NativeVector<KIND##BITS, SRCSIZE> v, \
+                                                  IndexTag<DSTSIZE> /*dst_size*/) { \
     return {.r = GREX_CAT(GREX_BITPREFIX(GREX_MULTIPLY(BITS, SRCSIZE)), _cast, \
                           GREX_SIR_SUFFIX(KIND, BITS, GREX_MULTIPLY(BITS, SRCSIZE)), _, \
                           GREX_SIR_SUFFIX(KIND, BITS, GREX_MULTIPLY(BITS, DSTSIZE)))(v.r)}; \

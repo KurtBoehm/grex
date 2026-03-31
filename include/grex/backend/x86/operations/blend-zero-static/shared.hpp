@@ -30,7 +30,7 @@ struct ZeroBlenderAnd : public BaseExpensiveOp {
     using Value = TVec::Value;
     static constexpr std::size_t size = TVec::size;
     using Int = SignedInt<sizeof(Value)>;
-    using IVec = Vector<Int, size>;
+    using IVec = NativeVector<Int, size>;
 
     const IVec ivec = reinterpret(vec, type_tag<Int>);
     const IVec mask = static_apply<size>([]<std::size_t... tIdxs>() {

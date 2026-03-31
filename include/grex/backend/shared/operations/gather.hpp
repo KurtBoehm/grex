@@ -17,7 +17,7 @@
 namespace grex::backend {
 template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
 inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
-                                       Vector<TIndex, tSize> idxs) {
+                                       NativeVector<TIndex, tSize> idxs) {
   return static_apply<tSize>([&]<std::size_t... tIdxs> {
     return set(type_tag<VectorFor<TValue, tSize>>,
                data[std::size_t(extract(idxs, index_tag<tIdxs>))]...);
@@ -40,7 +40,8 @@ inline VectorFor<TValue, 2 * THalf::size> gather(std::span<const TValue, tExtent
 
 template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
 inline VectorFor<TValue, tSize> mask_gather(std::span<const TValue, tExtent> data,
-                                            MaskFor<TValue, tSize> m, Vector<TIndex, tSize> idxs) {
+                                            MaskFor<TValue, tSize> m,
+                                            NativeVector<TIndex, tSize> idxs) {
   return static_apply<tSize>([&]<std::size_t... tIdxs> {
     return set(type_tag<VectorFor<TValue, tSize>>,
                (extract(m, index_tag<tIdxs>) ? data[std::size_t(extract(idxs, index_tag<tIdxs>))]

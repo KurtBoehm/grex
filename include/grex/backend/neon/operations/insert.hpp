@@ -23,8 +23,8 @@ namespace grex::backend {
   case INDEX: return {.r = INTRINSIC(value, v.r, INDEX)};
 
 #define GREX_INSERT_VEC(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> insert(Vector<KIND##BITS, SIZE> v, std::size_t index, \
-                                         KIND##BITS value) { \
+  inline NativeVector<KIND##BITS, SIZE> insert(NativeVector<KIND##BITS, SIZE> v, \
+                                               std::size_t index, KIND##BITS value) { \
     switch (index) { \
       GREX_REPEAT(SIZE, GREX_INSERT_SWITCH, GREX_ISUFFIXED(vsetq_lane, KIND, BITS)) \
       default: std::unreachable(); \
@@ -32,9 +32,10 @@ namespace grex::backend {
   }
 
 #define GREX_INSERT_MASK(KIND, BITS, SIZE) \
-  inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> m, std::size_t index, bool value) { \
+  inline NativeMask<KIND##BITS, SIZE> insert(NativeMask<KIND##BITS, SIZE> m, std::size_t index, \
+                                             bool value) { \
     const u##BITS entry = GREX_OPCAST(u, BITS, -u##BITS(value)); \
-    return {.r = insert(Vector<u##BITS, SIZE>{m.r}, index, entry).r}; \
+    return {.r = insert(NativeVector<u##BITS, SIZE>{m.r}, index, entry).r}; \
   }
 
 GREX_FOREACH_TYPE(GREX_INSERT_VEC, 128)

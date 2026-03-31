@@ -29,8 +29,8 @@
 
 namespace grex::backend {
 #define GREX_CMP_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
-  inline Mask<KIND##BITS, SIZE> compare_##OPNAME(Vector<KIND##BITS, SIZE> a, \
-                                                 Vector<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> compare_##OPNAME(NativeVector<KIND##BITS, SIZE> a, \
+                                                       NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = \
               GREX_CAT(BITPREFIX##_cmp_, GREX_EPU_SUFFIX(KIND, BITS), _mask)(a.r, b.r, CMPIDX)}; \
   }
@@ -88,7 +88,7 @@ namespace grex::backend {
 // u8/16/32 on level 1, u64 on level 2 and 3: Flip the “sign” bit and use the signed comparison.
 #define GREX_CMPLT_UFLIP(KIND, BITS, SIZE, BITPREFIX) \
   const auto signbits = \
-    broadcast(u##BITS{1} << u##BITS{GREX_DECR(BITS)}, type_tag<Vector<KIND##BITS, SIZE>>); \
+    broadcast(u##BITS{1} << u##BITS{GREX_DECR(BITS)}, type_tag<NativeVector<KIND##BITS, SIZE>>); \
   const auto a1 = bitwise_xor(a, signbits); \
   const auto b1 = bitwise_xor(b, signbits); \
   return {.r = GREX_CAT(BITPREFIX##_cmpgt_, GREX_EPI_SUFFIX(KIND, BITS))(b1.r, a1.r)};
@@ -103,7 +103,7 @@ namespace grex::backend {
 // u8/u16 on level 1: saturated difference different from zero
 #define GREX_CMPLT_SUBS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return compare_neq({.r = GREX_CAT(BITPREFIX##_subs_, GREX_EPU_SUFFIX(KIND, BITS))(b.r, a.r)}, \
-                     zeros(type_tag<Vector<KIND##BITS, SIZE>>));
+                     zeros(type_tag<NativeVector<KIND##BITS, SIZE>>));
 // i64/u64 on level 1: Two 32 bit comparisons
 #define GREX_CMPLT_U32X2_u (u64{1} << u64{31}) | (u64{1} << u64{63})
 #define GREX_CMPLT_U32X2_i u64{1} << u64{31}
@@ -165,7 +165,7 @@ namespace grex::backend {
 // u8/u16 on level 1: saturated difference is from zero
 #define GREX_CMPGE_SUBS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return compare_eq({.r = GREX_CAT(BITPREFIX##_subs_, GREX_EPU_SUFFIX(KIND, BITS))(b.r, a.r)}, \
-                    zeros(type_tag<Vector<KIND##BITS, SIZE>>));
+                    zeros(type_tag<NativeVector<KIND##BITS, SIZE>>));
 // f
 #define GREX_CMPGE_f(BITS, SIZE, ...) GREX_CMPGE_INTRINSIC(f, BITS, __VA_ARGS__)
 // i
@@ -206,8 +206,8 @@ namespace grex::backend {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define GREX_CMP_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
-  inline Mask<KIND##BITS, SIZE> compare_##OPNAME(Vector<KIND##BITS, SIZE> a, \
-                                                 Vector<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> compare_##OPNAME(NativeVector<KIND##BITS, SIZE> a, \
+                                                       NativeVector<KIND##BITS, SIZE> b) { \
     GREX_CMP_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
   }
 
@@ -259,7 +259,8 @@ GREX_CMP_SUPER(compare_ge)
 #endif
 
 #define GREX_MASKEQ(KIND, BITS, SIZE, BITPREFIX) \
-  inline Mask<KIND##BITS, SIZE> compare_eq(Mask<KIND##BITS, SIZE> a, Mask<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> compare_eq(NativeMask<KIND##BITS, SIZE> a, \
+                                                 NativeMask<KIND##BITS, SIZE> b) { \
     return {.r = GREX_MASKEQ_IMPL(SIZE, BITPREFIX)}; \
   }
 #define GREX_MASKEQ_ALL(REGISTERBITS, BITPREFIX) \

@@ -16,7 +16,7 @@
 
 namespace grex::backend {
 #define GREX_ABS(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> abs(Vector<KIND##BITS, SIZE> a) { \
+  inline NativeVector<KIND##BITS, SIZE> abs(NativeVector<KIND##BITS, SIZE> a) { \
     return {.r = GREX_ISUFFIXED(vabsq, KIND, BITS)(a.r)}; \
   }
 

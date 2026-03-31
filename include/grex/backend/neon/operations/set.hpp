@@ -50,15 +50,15 @@ inline T make_undefined() {
 
 #if GREX_GCC || true
 #define GREX_SET(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> set(TypeTag<Vector<KIND##BITS, SIZE>>, \
-                                      GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
+  inline NativeVector<KIND##BITS, SIZE> set(TypeTag<NativeVector<KIND##BITS, SIZE>>, \
+                                            GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
     std::array<KIND##BITS, SIZE> data{GREX_REPEAT(SIZE, GREX_SET_VAL)}; \
     return {.r = GREX_ISUFFIXED(vld1q, KIND, BITS)(data.data())}; \
   }
 #elif GREX_CLANG
 #define GREX_SET(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> set(TypeTag<Vector<KIND##BITS, SIZE>>, \
-                                      GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
+  inline NativeVector<KIND##BITS, SIZE> set(TypeTag<NativeVector<KIND##BITS, SIZE>>, \
+                                            GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
     GREX_REGISTER(KIND, BITS, SIZE) out = expand_register(Scalar{v0}); \
     GREX_RREPEAT(SIZE, GREX_SET_LANE, KIND, BITS) \
     return {.r = out}; \
@@ -68,29 +68,31 @@ inline T make_undefined() {
 GREX_FOREACH_TYPE(GREX_SET, 128)
 
 #define GREX_CREATE(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> zeros(TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline NativeVector<KIND##BITS, SIZE> zeros(TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_ISUFFIXED(vdupq_n, KIND, BITS)(0)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> undefined(TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline NativeVector<KIND##BITS, SIZE> undefined(TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
     return {.r = make_undefined<GREX_REGISTER(KIND, BITS, SIZE)>()}; \
   } \
-  inline Vector<KIND##BITS, SIZE> broadcast(KIND##BITS value, TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  inline NativeVector<KIND##BITS, SIZE> broadcast(KIND##BITS value, \
+                                                  TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_ISUFFIXED(vdupq_n, KIND, BITS)(value)}; \
   } \
 \
-  inline Mask<KIND##BITS, SIZE> zeros(TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline NativeMask<KIND##BITS, SIZE> zeros(TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_ISUFFIXED(vdupq_n, u, BITS)(0)}; \
   } \
-  inline Mask<KIND##BITS, SIZE> ones(TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline NativeMask<KIND##BITS, SIZE> ones(TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
     return {.r = GREX_ISUFFIXED(vdupq_n, u, BITS)(u##BITS(-1))}; \
   } \
-  inline Mask<KIND##BITS, SIZE> broadcast(bool value, TypeTag<Mask<KIND##BITS, SIZE>>) { \
+  inline NativeMask<KIND##BITS, SIZE> broadcast(bool value, \
+                                                TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
     const u##BITS entry = GREX_OPCAST(u, BITS, -u##BITS(value)); \
     return {.r = GREX_ISUFFIXED(vdupq_n, u, BITS)(entry)}; \
   } \
   /* Idea: Set to the Boolean values and use a greater-than comparison with zero */ \
-  inline Mask<KIND##BITS, SIZE> set(TypeTag<Mask<KIND##BITS, SIZE>>, \
-                                    GREX_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
+  inline NativeMask<KIND##BITS, SIZE> set(TypeTag<NativeMask<KIND##BITS, SIZE>>, \
+                                          GREX_REPEAT(SIZE, GREX_SET_ARG, bool)) { \
     GREX_REGISTER(i, BITS, SIZE) ext = expand_register(Scalar{i##BITS(v0)}); \
     GREX_RREPEAT(SIZE, GREX_SET_BOOLLANE, BITS) \
     GREX_REGISTER(u, BITS, SIZE) cmp = GREX_ISUFFIXED(vcgtzq, i, BITS)(ext); \

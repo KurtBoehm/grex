@@ -39,7 +39,7 @@ namespace grex::backend {
 #define GREX_EXTRINGLE_512(...) extract_single(split(v, index_tag<0>))
 
 #define GREX_EXTRINGLE(KIND, BITS, SIZE, REGISTERBITS) \
-  inline Scalar<KIND##BITS> extract_single(Vector<KIND##BITS, SIZE> v) { \
+  inline Scalar<KIND##BITS> extract_single(NativeVector<KIND##BITS, SIZE> v) { \
     return GREX_EXTRINGLE_##REGISTERBITS(KIND, BITS, SIZE); \
   }
 

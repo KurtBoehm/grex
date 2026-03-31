@@ -22,7 +22,7 @@ namespace grex::backend {
 // Mask definition macros
 #define GREX_TYPES_MASK_BROAD(KIND, SIZE, REGISTERBITS) \
   template<> \
-  struct Mask<KIND, SIZE> { \
+  struct NativeMask<KIND, SIZE> { \
     using Register = __m##REGISTERBITS##i; \
     using VectorValue = KIND; \
     static constexpr std::size_t size = SIZE; \
@@ -34,10 +34,10 @@ namespace grex::backend {
       return r; \
     } \
   }; \
-  using b##KIND##x##SIZE = Mask<KIND, SIZE>
+  using b##KIND##x##SIZE = NativeMask<KIND, SIZE>
 #define GREX_TYPES_MASK_COMPACT(KIND, BITS, SIZE, REGISTERBITS) \
   template<> \
-  struct Mask<KIND##BITS, SIZE> { \
+  struct NativeMask<KIND##BITS, SIZE> { \
     using Register = GREX_MMASK(SIZE); \
     using VectorValue = KIND##BITS; \
     static constexpr std::size_t size = SIZE; \
@@ -49,7 +49,7 @@ namespace grex::backend {
       return r; \
     } \
   }; \
-  using b##KIND##BITS##x##SIZE = Mask<KIND##BITS, SIZE>
+  using b##KIND##BITS##x##SIZE = NativeMask<KIND##BITS, SIZE>
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_TYPES_MASK GREX_TYPES_MASK_COMPACT
 #else
@@ -60,21 +60,21 @@ namespace grex::backend {
 // Combined vector and mask definition macros
 #define GREX_TYPES_IMPL(KIND, BITS, SIZE, REGISTERBITS) \
   template<> \
-  struct Vector<KIND##BITS, SIZE> { \
+  struct NativeVector<KIND##BITS, SIZE> { \
     using Register = GREX_CAT(__m##REGISTERBITS, GREX_REGISTER_SUFFIX(KIND, BITS)); \
     using Value = KIND##BITS; \
     static constexpr std::size_t size = SIZE; \
 \
     Register r; \
 \
-    Vector native() const { \
+    NativeVector native() const { \
       return *this; \
     } \
     Register registr() const { \
       return r; \
     } \
   }; \
-  using KIND##BITS##x##SIZE = Vector<KIND##BITS, SIZE>; \
+  using KIND##BITS##x##SIZE = NativeVector<KIND##BITS, SIZE>; \
   GREX_TYPES_MASK(KIND, BITS, SIZE, REGISTERBITS);
 #define GREX_TYPES(KIND, BITS, SIZE, REGISTERBITS) GREX_TYPES_IMPL(KIND, BITS, SIZE, REGISTERBITS)
 

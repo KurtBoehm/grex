@@ -31,8 +31,8 @@ namespace grex::backend {
 #define GREX_LSHIFT_64 GREX_LSHIFT_INTRINSIC
 
 #define GREX_LSHIFT(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> shift_left(Vector<KIND##BITS, SIZE> v, \
-                                             AnyIndexTag auto offset) { \
+  inline NativeVector<KIND##BITS, SIZE> shift_left(NativeVector<KIND##BITS, SIZE> v, \
+                                                   AnyIndexTag auto offset) { \
     GREX_LSHIFT_##BITS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   }
 #define GREX_LSHIFT_ALL(REGISTERBITS, BITPREFIX) \
@@ -89,8 +89,8 @@ GREX_FOREACH_X86_64_LEVEL(GREX_LSHIFT_ALL)
 #endif
 
 #define GREX_RSHIFT(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> shift_right(Vector<KIND##BITS, SIZE> v, \
-                                              AnyIndexTag auto offset) { \
+  inline NativeVector<KIND##BITS, SIZE> shift_right(NativeVector<KIND##BITS, SIZE> v, \
+                                                    AnyIndexTag auto offset) { \
     GREX_RSHIFT_##KIND##BITS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   }
 #define GREX_RSHIFT_ALL(REGISTERBITS, BITPREFIX) \

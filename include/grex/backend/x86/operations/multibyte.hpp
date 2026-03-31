@@ -110,12 +110,13 @@ inline SubVector<u32, 2, 4> load_multibyte(const u8* ptr, IndexTag<3> /*src*/,
 #if GREX_X86_64_LEVEL >= 3
 template<std::size_t tSrc, typename TDst, std::size_t tSize>
 requires(tSrc < sizeof(TDst) && (sizeof(TDst) * tSize) == 32)
-inline Vector<TDst, tSize> load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/,
-                                          TypeTag<Vector<TDst, tSize>> /*dst*/) {
+inline NativeVector<TDst, tSize> load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/,
+                                                TypeTag<NativeVector<TDst, tSize>> /*dst*/) {
   static constexpr std::size_t src_bytes = tSrc;
   static constexpr std::size_t dst_bytes = sizeof(TDst);
   static constexpr std::size_t offset = dst_bytes - src_bytes;
-  const auto raw = load(ptr - (tSize / 2) * offset, type_tag<Vector<u8, dst_bytes * tSize>>).r;
+  const auto raw =
+    load(ptr - (tSize / 2) * offset, type_tag<NativeVector<u8, dst_bytes * tSize>>).r;
   const auto idxs = static_apply<dst_bytes * tSize>([&]<std::size_t... tIdxs>() {
     return _mm256_setr_epi8(
       ((tIdxs % dst_bytes < src_bytes)
@@ -128,21 +129,21 @@ inline Vector<TDst, tSize> load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/,
 #if GREX_X86_64_LEVEL >= 4
 template<std::size_t tSrc, typename TDst, std::size_t tSize>
 requires(tSrc < sizeof(TDst) && (sizeof(TDst) * tSize) == 64)
-inline Vector<TDst, tSize> load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/,
-                                          TypeTag<Vector<TDst, tSize>> /*dst*/) {
+inline NativeVector<TDst, tSize> load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/,
+                                                TypeTag<NativeVector<TDst, tSize>> /*dst*/) {
   static constexpr std::size_t src_bytes = tSrc;
   static constexpr std::size_t dst_bytes = sizeof(TDst);
   static constexpr std::size_t offset = (dst_bytes - src_bytes) * tSize;
-  __m512i out = load(ptr - offset / 2, type_tag<Vector<u8, dst_bytes * tSize>>).r;
+  __m512i out = load(ptr - offset / 2, type_tag<NativeVector<u8, dst_bytes * tSize>>).r;
   const __m512i idxs32 = static_apply<16>([]<std::size_t... tIdxs>() {
-    return set(type_tag<Vector<i32, 16>>,
+    return set(type_tag<NativeVector<i32, 16>>,
                i32{(tIdxs < 4) ? (tIdxs + offset / 8)
                                : ((tIdxs >= 12) ? (tIdxs - offset / 8) : tIdxs)}...)
       .r;
   });
   out = _mm512_permutexvar_epi32(idxs32, out);
   const __m512i idxs8 = static_apply<64>([]<std::size_t... tIdxs>() {
-    return set(type_tag<Vector<i8, 64>>,
+    return set(type_tag<NativeVector<i8, 64>>,
                ((tIdxs % dst_bytes < src_bytes)
                   ? i8{tIdxs % dst_bytes + ((tIdxs % 16) / dst_bytes) * src_bytes +
                        ((tIdxs / 16) % 2) * (offset / 4)}

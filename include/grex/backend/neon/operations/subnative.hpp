@@ -18,7 +18,7 @@
 
 namespace grex::backend {
 #define GREX_CUTOFF_SUB(KIND, BITS, PART, SIZE) \
-  inline Vector<KIND##BITS, SIZE> full_cutoff(SubVector<KIND##BITS, PART, SIZE> v) { \
+  inline NativeVector<KIND##BITS, SIZE> full_cutoff(SubVector<KIND##BITS, PART, SIZE> v) { \
     const auto reinterpreted = as<GREX_CAT(u, GREX_MULTIPLY(BITS, PART))>(v.registr()); \
     const auto low = GREX_CAT(vget_low_u, GREX_MULTIPLY(BITS, PART))(reinterpreted); \
     auto out = GREX_CAT(vdupq_n_u, GREX_MULTIPLY(BITS, PART))(0); \

@@ -67,13 +67,13 @@ struct ShuffleIndices {
     return static_apply<size>([&]<std::size_t... tIdxs>() GREX_ALWAYS_INLINE {
       using Val = std::conditional_t<signed_idxs, SignedInt<value_size>, UnsignedInt<value_size>>;
       auto f = [](ShuffleIndex sh) { return is_index(sh) ? Val(sh) : Val(-1); };
-      return set(type_tag<Vector<Val, size>>, f(indices[tIdxs])...);
+      return set(type_tag<NativeVector<Val, size>>, f(indices[tIdxs])...);
     });
   }
 
   [[nodiscard]] GREX_ALWAYS_INLINE auto mask() const {
     return static_apply<size>([&]<std::size_t... tIdxs>() GREX_ALWAYS_INLINE {
-      return set(type_tag<Mask<SignedInt<value_size>, size>>, is_index(indices[tIdxs])...);
+      return set(type_tag<NativeMask<SignedInt<value_size>, size>>, is_index(indices[tIdxs])...);
     });
   }
 

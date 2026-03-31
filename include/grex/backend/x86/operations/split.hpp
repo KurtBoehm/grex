@@ -29,8 +29,8 @@ namespace grex::backend {
 #define GREX_SPLIT_LETTER(KIND) GREX_SPLIT_LETTER_##KIND
 
 #define GREX_SPLIT_WRAP(KIND, BITS, SIZE, HALF, IMPL) \
-  inline Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)> split(Vector<KIND##BITS, SIZE> v, \
-                                                        IndexTag<HALF>) { \
+  inline NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)> split(NativeVector<KIND##BITS, SIZE> v, \
+                                                              IndexTag<HALF>) { \
     return {.r = IMPL}; \
   }
 
@@ -119,13 +119,13 @@ inline THalf split(SuperVector<THalf> v, IndexTag<1> /*tag*/) {
 #if GREX_X86_64_LEVEL >= 4
 // AVX-512: No-op for the lower half, bit shift for the upper
 template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tSize / 2> split(Mask<T, tSize> m, IndexTag<0> /*tag*/) {
+inline MaskFor<T, tSize / 2> split(NativeMask<T, tSize> m, IndexTag<0> /*tag*/) {
   using Out = MaskFor<T, tSize / 2>;
   using Register = Out::Register;
   return Out{Register(m.r)};
 }
 template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tSize / 2> split(Mask<T, tSize> m, IndexTag<1> /*tag*/) {
+inline MaskFor<T, tSize / 2> split(NativeMask<T, tSize> m, IndexTag<1> /*tag*/) {
   using Out = MaskFor<T, tSize / 2>;
   using Register = Out::Register;
   return Out{Register(m.r >> (tSize / 2))};
@@ -133,7 +133,7 @@ inline MaskFor<T, tSize / 2> split(Mask<T, tSize> m, IndexTag<1> /*tag*/) {
 #else
 // Pre-AVX-512: Reinterpret as signed integer and split that way
 template<Vectorizable T, std::size_t tSize, std::size_t tIdx>
-inline MaskFor<T, tSize / 2> split(Mask<T, tSize> m, IndexTag<tIdx> tag) {
+inline MaskFor<T, tSize / 2> split(NativeMask<T, tSize> m, IndexTag<tIdx> tag) {
   const auto r = split(VectorFor<SignedInt<sizeof(T)>, tSize>{m.registr()}, tag).registr();
   return MaskFor<T, tSize / 2>{r};
 }

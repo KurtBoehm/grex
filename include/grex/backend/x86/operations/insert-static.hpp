@@ -29,7 +29,7 @@ namespace grex::backend {
   if constexpr (BITS * index < 128) { \
     const auto v128 = GREX_CAT(_mm512_cast, GREX_SIR_SUFFIX(KIND, BITS, 512), _, \
                                GREX_SIR_SUFFIX(KIND, BITS, 128))(v.r); \
-    const auto ins128 = insert(Vector<KIND##BITS, 128 / BITS>{v128}, index, value).r; \
+    const auto ins128 = insert(NativeVector<KIND##BITS, 128 / BITS>{v128}, index, value).r; \
     const auto ins512 = GREX_CAT(_mm512_insert, GREX_SIGNED_KIND(KIND), GREX_MAX(BITS, 32), x, \
                                  GREX_DIVIDE(128, GREX_MAX(BITS, 32)))(v.r, ins128, 0); \
     return {.r = ins512}; \
@@ -147,22 +147,22 @@ namespace grex::backend {
 
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_MASK_SINSERT(KIND, BITS, SIZE, BITPREFIX) \
-  inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> m, AnyIndexTag auto index, \
-                                       bool value) { \
+  inline NativeMask<KIND##BITS, SIZE> insert(NativeMask<KIND##BITS, SIZE> m, \
+                                             AnyIndexTag auto index, bool value) { \
     return insert(m, index.value, value); \
   }
 #else
 #define GREX_MASK_SINSERT(KIND, BITS, SIZE, BITPREFIX) \
-  inline Mask<KIND##BITS, SIZE> insert(Mask<KIND##BITS, SIZE> m, AnyIndexTag auto index, \
-                                       bool value) { \
+  inline NativeMask<KIND##BITS, SIZE> insert(NativeMask<KIND##BITS, SIZE> m, \
+                                             AnyIndexTag auto index, bool value) { \
     const i##BITS entry = GREX_OPCAST(i, BITS, -i##BITS(value)); \
-    return {.r = insert(Vector<i##BITS, SIZE>{.r = m.r}, index, entry).r}; \
+    return {.r = insert(NativeVector<i##BITS, SIZE>{.r = m.r}, index, entry).r}; \
   }
 #endif
 
 #define GREX_VEC_SINSERT(KIND, BITS, SIZE, BITPREFIX) \
-  inline Vector<KIND##BITS, SIZE> insert(Vector<KIND##BITS, SIZE> v, AnyIndexTag auto index, \
-                                         KIND##BITS value) { \
+  inline NativeVector<KIND##BITS, SIZE> insert(NativeVector<KIND##BITS, SIZE> v, \
+                                               AnyIndexTag auto index, KIND##BITS value) { \
     GREX_CAT(GREX_VEC_SINSERT_, GREX_SIGNED_KIND(KIND), BITS, x, SIZE)(KIND, BITS, SIZE, \
                                                                        BITPREFIX) \
   }

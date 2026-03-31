@@ -55,7 +55,7 @@ namespace grex::backend {
 #endif
 
 #define GREX_HAND(KIND, BITS, SIZE, ...) \
-  inline bool horizontal_and(Mask<KIND##BITS, SIZE> m) { \
+  inline bool horizontal_and(NativeMask<KIND##BITS, SIZE> m) { \
     return GREX_HAND_IMPL(KIND, BITS, SIZE, __VA_ARGS__); \
   }
 #define GREX_HAND_ALL(REGISTERBITS, BITPREFIX) \

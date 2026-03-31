@@ -14,6 +14,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/neon/operations/convert.hpp"
 #include "grex/backend/neon/operations/expand.hpp"
@@ -27,7 +28,7 @@ inline void to_array(typename TVec::Value* dst, TVec v) {
   store(dst, v);
 }
 
-inline void to_array(bool* dst, Mask<u8, 16> m) {
+inline void to_array(bool* dst, NativeMask<u8, 16> m) {
   const auto masked = vandq_u8(m.r, vdupq_n_u8(1));
   vst1q_u8(reinterpret_cast<u8*>(dst), masked);
 }

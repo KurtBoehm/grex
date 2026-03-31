@@ -22,12 +22,13 @@ namespace grex::backend {
 #define GREX_BLENDZ_u(BITS, SIZE) return {.r = vandq_u##BITS(m.r, v1.r)};
 
 #define GREX_BLEND(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> blend(Mask<KIND##BITS, SIZE> m, Vector<KIND##BITS, SIZE> v0, \
-                                        Vector<KIND##BITS, SIZE> v1) { \
+  inline NativeVector<KIND##BITS, SIZE> blend(NativeMask<KIND##BITS, SIZE> m, \
+                                              NativeVector<KIND##BITS, SIZE> v0, \
+                                              NativeVector<KIND##BITS, SIZE> v1) { \
     return {.r = GREX_ISUFFIXED(vbslq, KIND, BITS)(m.r, v1.r, v0.r)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> blend_zero(Mask<KIND##BITS, SIZE> m, \
-                                             Vector<KIND##BITS, SIZE> v1) { \
+  inline NativeVector<KIND##BITS, SIZE> blend_zero(NativeMask<KIND##BITS, SIZE> m, \
+                                                   NativeVector<KIND##BITS, SIZE> v1) { \
     GREX_BLENDZ_##KIND(BITS, SIZE) \
   }
 

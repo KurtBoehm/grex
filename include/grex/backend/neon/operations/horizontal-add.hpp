@@ -19,7 +19,7 @@
 
 namespace grex::backend {
 #define GREX_HADD(KIND, BITS, SIZE) \
-  inline KIND##BITS horizontal_add(Vector<KIND##BITS, SIZE> v) { \
+  inline KIND##BITS horizontal_add(NativeVector<KIND##BITS, SIZE> v) { \
     return GREX_ISUFFIXED(vaddvq, KIND, BITS)(v.r); \
   }
 GREX_FOREACH_TYPE(GREX_HADD, 128)

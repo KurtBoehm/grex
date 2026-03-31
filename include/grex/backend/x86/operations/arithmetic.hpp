@@ -28,7 +28,8 @@
 namespace grex::backend {
 // Base case: Use intrinsics
 #define GREX_ARITH_BASE(KIND, BITS, SIZE, NAME, OP) \
-  inline Vector<KIND##BITS, SIZE> NAME(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> NAME(NativeVector<KIND##BITS, SIZE> a, \
+                                             NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_CAT(OP##_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r)}; \
   }
 #define GREX_ADDSUB_ALL(REGISTERBITS, BITPREFIX) \
@@ -44,7 +45,7 @@ namespace grex::backend {
 #define GREX_NEGATE_i(...) GREX_NEGATE_INT(__VA_ARGS__)
 #define GREX_NEGATE_u(...) GREX_NEGATE_INT(__VA_ARGS__)
 #define GREX_NEGATE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Vector<KIND##BITS, SIZE> negate(Vector<KIND##BITS, SIZE> v) { \
+  inline NativeVector<KIND##BITS, SIZE> negate(NativeVector<KIND##BITS, SIZE> v) { \
     return {.r = GREX_NEGATE_##KIND(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, \
                                     GREX_EPI_SUFFIX(KIND, BITS))}; \
   }
@@ -74,7 +75,7 @@ namespace grex::backend {
   GREX_MULLO_INT8_BASE(KIND, BITS, SIZE, BITPREFIX) \
   /* mask for even positions */ \
   auto mask = BITPREFIX##_set1_epi32(0x00FF00FF); \
-  return blend(Mask<KIND##BITS, SIZE>{.r = mask}, {.r = mulodd}, {.r = muleven});
+  return blend(NativeMask<KIND##BITS, SIZE>{.r = mask}, {.r = mulodd}, {.r = muleven});
 #endif
 // 16 bit: Use the existing intrinsic
 #define GREX_MUL_INT16(KIND, BITS, SIZE, BITPREFIX) return {.r = BITPREFIX##_mullo_epi16(a.r, b.r)};
@@ -123,8 +124,8 @@ namespace grex::backend {
 #define GREX_MUL_i(KIND, BITS, ...) GREX_MUL_INT##BITS(KIND, BITS, __VA_ARGS__)
 #define GREX_MUL_u(KIND, BITS, ...) GREX_MUL_INT##BITS(KIND, BITS, __VA_ARGS__)
 #define GREX_MUL(KIND, BITS, SIZE, BITPREFIX) \
-  inline Vector<KIND##BITS, SIZE> multiply(Vector<KIND##BITS, SIZE> a, \
-                                           Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> multiply(NativeVector<KIND##BITS, SIZE> a, \
+                                                 NativeVector<KIND##BITS, SIZE> b) { \
     GREX_MUL_##KIND(KIND, BITS, SIZE, BITPREFIX) \
   }
 #define GREX_MUL_ALL(REGISTERBITS, BITPREFIX) GREX_FOREACH_TYPE(GREX_MUL, REGISTERBITS, BITPREFIX)

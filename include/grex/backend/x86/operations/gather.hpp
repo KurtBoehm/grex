@@ -178,7 +178,7 @@ GREX_GATHER_DEFINE(u, 32, u, 64, 8, 512)
 template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
 requires(sizeof(TValue) >= 4 && sizeof(TIndex) <= 2)
 inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
-                                       Vector<TIndex, tSize> idxs) {
+                                       NativeVector<TIndex, tSize> idxs) {
   return gather(data, convert(idxs, type_tag<i32>));
 }
 template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tPart,
@@ -198,12 +198,12 @@ inline VectorFor<TValue, tPart> gather(std::span<const TValue, tExtent> data,
 template<Vectorizable TValue, std::size_t tExtent, std::size_t tSize>
 requires(sizeof(TValue) >= 4)
 inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
-                                       Vector<u32, tSize> idxs) {
+                                       NativeVector<u32, tSize> idxs) {
   constexpr u32 limit = std::size_t{1} << 31;
   if (data.size() >= limit) {
-    return gather(
-      std::span{data.data() + limit, data.size() - limit},
-      convert(bitwise_xor(idxs, broadcast(limit, type_tag<Vector<u32, tSize>>)), type_tag<i32>));
+    return gather(std::span{data.data() + limit, data.size() - limit},
+                  convert(bitwise_xor(idxs, broadcast(limit, type_tag<NativeVector<u32, tSize>>)),
+                          type_tag<i32>));
   }
   return gather(data, convert(idxs, type_tag<i32>));
 }

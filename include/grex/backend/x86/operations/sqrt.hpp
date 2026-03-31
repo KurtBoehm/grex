@@ -24,7 +24,7 @@ namespace grex::backend {
   {.r = GREX_CAT(BITPREFIX##_sqrt_, GREX_EPI_SUFFIX(KIND, BITS))(v.r)}
 
 #define GREX_SQRT(KIND, BITS, SIZE, BITPREFIX) \
-  inline Vector<KIND##BITS, SIZE> sqrt(Vector<KIND##BITS, SIZE> v) { \
+  inline NativeVector<KIND##BITS, SIZE> sqrt(NativeVector<KIND##BITS, SIZE> v) { \
     return GREX_SQRT_INSTRINSIC(KIND, BITS, BITPREFIX); \
   }
 #define GREX_SQRT_ALL(REGISTERBITS, BITPREFIX) \

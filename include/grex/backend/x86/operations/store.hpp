@@ -41,7 +41,7 @@ namespace grex::backend {
 #define GREX_STORE_CAST_u(REGISTERBITS) reinterpret_cast<__m##REGISTERBITS##i*>(dst)
 
 #define GREX_STORE_BASE(NAME, INFIX, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline void NAME(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src) { \
+  inline void NAME(KIND##BITS* dst, NativeVector<KIND##BITS, SIZE> src) { \
     GREX_CAT(BITPREFIX##_##INFIX##_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS)) \
     (GREX_STORE_CAST_##KIND(REGISTERBITS), src.r); \
   }
@@ -63,7 +63,7 @@ namespace grex::backend {
 #define GREX_MASKSTORE_CAST_64 reinterpret_cast<long long*>(dst)
 #define GREX_PARTSTORE_MASKSTORE(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
   BITPREFIX##_maskstore_epi##BITS(GREX_MASKSTORE_CAST_##BITS, \
-                                  cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r, \
+                                  cutoff_mask(size, type_tag<NativeMask<KIND##BITS, SIZE>>).r, \
                                   GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, src.r));
 
 #define GREX_PARTSTORE_FALLBACK_128_INIT(KIND, BITS, SIZE) \
@@ -165,7 +165,7 @@ namespace grex::backend {
 
 #define GREX_PARTSTORE_AVX512(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
   GREX_CAT(BITPREFIX##_mask_storeu_, GREX_EPI_SUFFIX(KIND, BITS)) \
-  (dst, cutoff_mask(size, type_tag<Mask<KIND##BITS, SIZE>>).r, src.r);
+  (dst, cutoff_mask(size, type_tag<NativeMask<KIND##BITS, SIZE>>).r, src.r);
 
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_PARTSTORE_128 GREX_PARTSTORE_AVX512
@@ -182,7 +182,7 @@ namespace grex::backend {
 #endif
 
 #define GREX_PARTSTORE(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
-  inline void store_part(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src, std::size_t size) { \
+  inline void store_part(KIND##BITS* dst, NativeVector<KIND##BITS, SIZE> src, std::size_t size) { \
     GREX_PARTSTORE_##REGISTERBITS(KIND, BITS, SIZE, REGISTERBITS, BITPREFIX) \
   }
 

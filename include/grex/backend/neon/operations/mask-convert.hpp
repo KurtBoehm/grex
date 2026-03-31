@@ -9,6 +9,7 @@
 
 #include <cstddef>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/base.hpp"
@@ -16,14 +17,14 @@
 namespace grex::backend {
 // Convert a mask to signed integers
 template<Vectorizable T, std::size_t tSize>
-inline Vector<SignedInt<sizeof(T)>, tSize> mask2vector(Mask<T, tSize> m) {
+inline NativeVector<SignedInt<sizeof(T)>, tSize> mask2vector(NativeMask<T, tSize> m) {
   return {.r = as<SignedInt<sizeof(T)>>(m.r)};
 }
 
 // Convert (signed) integers to a mask
 template<SignedIntVectorizable T, std::size_t tSize, Vectorizable TDst>
 requires(sizeof(T) == sizeof(TDst))
-inline Mask<TDst, tSize> vector2mask(Vector<T, tSize> m, TypeTag<TDst> /*tag*/) {
+inline NativeMask<TDst, tSize> vector2mask(NativeVector<T, tSize> m, TypeTag<TDst> /*tag*/) {
   return {.r = as<UnsignedInt<sizeof(T)>>(m.r)};
 }
 } // namespace grex::backend

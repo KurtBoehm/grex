@@ -64,7 +64,7 @@ namespace grex::backend {
   const auto shuffled = _mm_shuffle_epi8(scaled, vshuf.r); \
   return add(u8x16{shuffled}, voffs);
 #define GREX_SHFLIDX(DSTBITS, SRCBITS, VALBITS, SIZE, REGISTERBITS) \
-  inline Vector<u##DSTBITS, GREX_DIVIDE(REGISTERBITS, DSTBITS)> shuffle_indices( \
+  inline NativeVector<u##DSTBITS, GREX_DIVIDE(REGISTERBITS, DSTBITS)> shuffle_indices( \
     VectorFor<u##SRCBITS, SIZE> idxs, IndexTag<GREX_DIVIDE(DSTBITS, 8)> /*dst_bytes*/, \
     IndexTag<GREX_DIVIDE(VALBITS, 8)> value_bytes) { \
     GREX_SHFLIDX_##DSTBITS(DSTBITS, GREX_DIVIDE(REGISTERBITS, DSTBITS), SRCBITS, \
@@ -83,7 +83,7 @@ inline __m256i shuffle_epi8(__m256i a, __m256i b) {
 
 template<std::size_t tDstBytes, typename TIdxs, std::size_t tValueBytes>
 requires(sizeof(typename TIdxs::Value) <= tValueBytes && tDstBytes != tValueBytes && tDstBytes == 1)
-inline Vector<UnsignedInt<tDstBytes>, TIdxs::size * tValueBytes / tDstBytes>
+inline NativeVector<UnsignedInt<tDstBytes>, TIdxs::size * tValueBytes / tDstBytes>
 shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> /*dst_bytes*/,
                 IndexTag<tValueBytes> /*value_bytes*/) {
   using Src = TIdxs::Value;
@@ -96,7 +96,7 @@ shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> /*dst_bytes*/,
   const auto offs = grex::static_apply<dst_size>(
     []<std::size_t... tI>() { return std::array<u8, dst_size>{tI % tValueBytes...}; });
 
-  using UnIntVec = Vector<u8, dst_bytes>;
+  using UnIntVec = NativeVector<u8, dst_bytes>;
   const auto vshuf = load(shuf.data(), type_tag<UnIntVec>);
   const auto voffs = load(offs.data(), type_tag<UnIntVec>);
 
@@ -114,14 +114,14 @@ shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> /*dst_bytes*/,
 
 template<std::size_t tDstBytes, typename TIdxs, std::size_t tValueBytes>
 requires(sizeof(typename TIdxs::Value) > tValueBytes && tDstBytes != tValueBytes)
-inline Vector<UnsignedInt<tDstBytes>, TIdxs::size * tValueBytes / tDstBytes>
+inline NativeVector<UnsignedInt<tDstBytes>, TIdxs::size * tValueBytes / tDstBytes>
 shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> dst_bytes, IndexTag<tValueBytes> value_bytes) {
   return shuffle_indices(convert<UnsignedInt<tValueBytes>>(idxs), dst_bytes, value_bytes);
 }
 
 template<std::size_t tDstBytes, typename TIdxs, std::size_t tValueBytes>
 requires(tDstBytes == tValueBytes)
-inline Vector<UnsignedInt<tDstBytes>, TIdxs::size>
+inline NativeVector<UnsignedInt<tDstBytes>, TIdxs::size>
 shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> /*dst_bytes*/,
                 IndexTag<tValueBytes> /*value_bytes*/) {
   return convert<UnsignedInt<tValueBytes>>(idxs);
@@ -296,8 +296,8 @@ GREX_SHFL2_AVX512_IDXS(u, 8, 128)
 #endif
 
 #define GREX_SHFL(KIND, BITS, IDXBITS, SIZE, REGISTERBITS, BITPREFIX) \
-  inline Vector<KIND##BITS, SIZE> shuffle( \
-    Vector<KIND##BITS, SIZE> table, VectorFor<u##IDXBITS, SIZE> idxs, \
+  inline NativeVector<KIND##BITS, SIZE> shuffle( \
+    NativeVector<KIND##BITS, SIZE> table, VectorFor<u##IDXBITS, SIZE> idxs, \
     [[maybe_unused]] AnyIndexTag auto index_ub, [[maybe_unused]] AnyIndexTag auto index_offset) { \
     GREX_SHFL_IMPL(KIND, BITS, IDXBITS, SIZE, REGISTERBITS, BITPREFIX) \
   }
@@ -512,8 +512,8 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
   }
 #define GREX_SHFL_16(KIND) \
   inline KIND##16x8 shuffle(KIND##16x8 table, u16x8 idxs, AnyIndexTag auto /*index_offset*/) { \
-    using Vec = Vector<KIND##16, 8>; \
-    using Msk = Mask<KIND##16, 8>; \
+    using Vec = NativeVector<KIND##16, 8>; \
+    using Msk = NativeMask<KIND##16, 8>; \
 \
     const auto select0 = Msk{.r = compare_eq(shift_left(idxs, index_tag<15>), zeros<u16x8>()).r}; \
     const auto bit1 = shift_right(shift_left(idxs, index_tag<14>), index_tag<15>); \
@@ -543,8 +543,8 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
   } \
   inline KIND##16x8 shuffle(SubVector<KIND##16, 4, 8> table, u16x8 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
-    using Vec = Vector<KIND##16, 8>; \
-    using Msk = Mask<KIND##16, 8>; \
+    using Vec = NativeVector<KIND##16, 8>; \
+    using Msk = NativeMask<KIND##16, 8>; \
 \
     const auto select0 = Msk{.r = compare_eq(shift_left(idxs, index_tag<15>), zeros<u16x8>()).r}; \
     const auto bit1 = shift_right(shift_left(idxs, index_tag<14>), index_tag<15>); \
@@ -561,8 +561,8 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
   } \
   inline KIND##16x8 shuffle(SubVector<KIND##16, 2, 8> table, u16x8 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
-    using Vec = Vector<KIND##16, 8>; \
-    using Msk = Mask<KIND##16, 8>; \
+    using Vec = NativeVector<KIND##16, 8>; \
+    using Msk = NativeMask<KIND##16, 8>; \
 \
     const auto select0 = Msk{.r = compare_eq(shift_left(idxs, index_tag<15>), zeros<u16x8>()).r}; \
     auto duplo = [](__m128i v) { return _mm_unpacklo_epi64(v, v); }; \
@@ -572,8 +572,8 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
   }
 #define GREX_SHFL_8(KIND) \
   inline KIND##8x16 shuffle(KIND##8x16 table, u8x16 idxs, AnyIndexTag auto /*index_offset*/) { \
-    using Vec = Vector<KIND##8, 16>; \
-    using Msk = Mask<KIND##8, 16>; \
+    using Vec = NativeVector<KIND##8, 16>; \
+    using Msk = NativeMask<KIND##8, 16>; \
 \
     const auto select0 = Msk{.r = compare_eq(shift_left(idxs, index_tag<7>), zeros<u8x16>()).r}; \
     const auto bit1 = shift_right(shift_left(idxs, index_tag<6>), index_tag<7>); \
@@ -626,8 +626,8 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
   } \
   inline KIND##8x16 shuffle(SubVector<KIND##8, 8, 16> table, u8x16 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
-    using Vec = Vector<KIND##8, 16>; \
-    using Msk = Mask<KIND##8, 16>; \
+    using Vec = NativeVector<KIND##8, 16>; \
+    using Msk = NativeMask<KIND##8, 16>; \
 \
     const auto select0 = Msk{.r = compare_eq(shift_left(idxs, index_tag<7>), zeros<u8x16>()).r}; \
     const auto bit1 = shift_right(shift_left(idxs, index_tag<6>), index_tag<7>); \
@@ -657,8 +657,8 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
   } \
   inline KIND##8x16 shuffle(SubVector<KIND##8, 4, 16> table, u8x16 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
-    using Vec = Vector<KIND##8, 16>; \
-    using Msk = Mask<KIND##8, 16>; \
+    using Vec = NativeVector<KIND##8, 16>; \
+    using Msk = NativeMask<KIND##8, 16>; \
 \
     const auto select0 = Msk{.r = compare_eq(shift_left(idxs, index_tag<7>), zeros<u8x16>()).r}; \
     const auto bit1 = shift_right(shift_left(idxs, index_tag<6>), index_tag<7>); \
@@ -676,8 +676,8 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
   } \
   inline KIND##8x16 shuffle(SubVector<KIND##8, 2, 16> table, u8x16 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
-    using Vec = Vector<KIND##8, 16>; \
-    using Msk = Mask<KIND##8, 16>; \
+    using Vec = NativeVector<KIND##8, 16>; \
+    using Msk = NativeMask<KIND##8, 16>; \
 \
     const auto select0 = Msk{.r = compare_eq(shift_left(idxs, index_tag<7>), zeros<u8x16>()).r}; \
     const auto tablo = _mm_unpacklo_epi8(table.full.r, table.full.r); \

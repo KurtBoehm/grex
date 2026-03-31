@@ -11,6 +11,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/macros/types.hpp"
@@ -19,7 +20,7 @@
 
 namespace grex::backend {
 #define GREX_EXTRINGLE(KIND, BITS, SIZE) \
-  inline Scalar<KIND##BITS> extract_single(Vector<KIND##BITS, SIZE> v) { \
+  inline Scalar<KIND##BITS> extract_single(NativeVector<KIND##BITS, SIZE> v) { \
     return {.value = GREX_ISUFFIXED(vgetq_lane, KIND, BITS)(v.r, 0)}; \
   }
 GREX_FOREACH_TYPE(GREX_EXTRINGLE, 128)

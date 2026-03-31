@@ -32,10 +32,12 @@ namespace grex::backend {
 #define GREX_MINMAX_IMPL_u(NAME, KIND, BITS) GREX_MINMAX_IMPL_INT##BITS(NAME, KIND, BITS)
 
 #define GREX_MINMAX(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> min(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> min(NativeVector<KIND##BITS, SIZE> a, \
+                                            NativeVector<KIND##BITS, SIZE> b) { \
     GREX_MINMAX_IMPL_##KIND(min, KIND, BITS) \
   } \
-  inline Vector<KIND##BITS, SIZE> max(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> max(NativeVector<KIND##BITS, SIZE> a, \
+                                            NativeVector<KIND##BITS, SIZE> b) { \
     GREX_MINMAX_IMPL_##KIND(max, KIND, BITS) \
   }
 

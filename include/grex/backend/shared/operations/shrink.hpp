@@ -23,7 +23,7 @@ inline TVec shrink(TVec v, IndexTag<TVec::size> /*dst_size*/) {
 // Shrink native to sub-native: Shrink to smallest native and convert to sub-native
 template<Vectorizable T, std::size_t tSrcSize, std::size_t tDstSize>
 requires(is_subnative<T, tDstSize>)
-inline VectorFor<T, tDstSize> shrink(Vector<T, tSrcSize> v, IndexTag<tDstSize> /*dst_size*/) {
+inline VectorFor<T, tDstSize> shrink(NativeVector<T, tSrcSize> v, IndexTag<tDstSize> /*dst_size*/) {
   const auto min_native = shrink(v, index_tag<16 / sizeof(T)>);
   return VectorFor<T, tDstSize>{min_native};
 }

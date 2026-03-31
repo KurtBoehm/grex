@@ -11,6 +11,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/types.hpp"
@@ -21,24 +22,25 @@
 
 namespace grex::backend {
 #define GREX_CMP_VEC(KIND, BITS, SIZE) \
-  inline Mask<KIND##BITS, SIZE> compare_eq(Vector<KIND##BITS, SIZE> a, \
-                                           Vector<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> compare_eq(NativeVector<KIND##BITS, SIZE> a, \
+                                                 NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(vceqq, KIND, BITS)(a.r, b.r)}; \
   } \
-  inline Mask<KIND##BITS, SIZE> compare_lt(Vector<KIND##BITS, SIZE> a, \
-                                           Vector<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> compare_lt(NativeVector<KIND##BITS, SIZE> a, \
+                                                 NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(vcltq, KIND, BITS)(a.r, b.r)}; \
   } \
-  inline Mask<KIND##BITS, SIZE> compare_ge(Vector<KIND##BITS, SIZE> a, \
-                                           Vector<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> compare_ge(NativeVector<KIND##BITS, SIZE> a, \
+                                                 NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(vcgeq, KIND, BITS)(a.r, b.r)}; \
   } \
-  inline Mask<KIND##BITS, SIZE> compare_eq(Mask<KIND##BITS, SIZE> a, Mask<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> compare_eq(NativeMask<KIND##BITS, SIZE> a, \
+                                                 NativeMask<KIND##BITS, SIZE> b) { \
     return {.r = vceqq_u##BITS(a.r, b.r)}; \
   }
 GREX_FOREACH_TYPE(GREX_CMP_VEC, 128)
 template<Vectorizable T, std::size_t tSize>
-inline Mask<T, tSize> compare_neq(Vector<T, tSize> a, Vector<T, tSize> b) {
+inline NativeMask<T, tSize> compare_neq(NativeVector<T, tSize> a, NativeVector<T, tSize> b) {
   return logical_not(compare_eq(a, b));
 }
 

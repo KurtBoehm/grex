@@ -13,6 +13,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/equals.hpp"
@@ -25,17 +26,18 @@
 
 namespace grex::backend {
 #define GREX_STORE(KIND, BITS, SIZE) \
-  GREX_ALWAYS_INLINE inline void store(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src) { \
+  GREX_ALWAYS_INLINE inline void store(KIND##BITS* dst, NativeVector<KIND##BITS, SIZE> src) { \
     GREX_ISUFFIXED(vst1q, KIND, BITS)(dst, src.r); \
   } \
   /* This is not actually aligned, but who cares */ \
-  GREX_ALWAYS_INLINE inline void store_aligned(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src) { \
+  GREX_ALWAYS_INLINE inline void store_aligned(KIND##BITS* dst, \
+                                               NativeVector<KIND##BITS, SIZE> src) { \
     GREX_ISUFFIXED(vst1q, KIND, BITS)(dst, src.r); \
   }
 GREX_FOREACH_TYPE(GREX_STORE, 128)
 
 template<std::size_t tBytes, typename T>
-GREX_ALWAYS_INLINE inline void store_first(T* dst, Vector<T, 16 / sizeof(T)> src) {
+GREX_ALWAYS_INLINE inline void store_first(T* dst, NativeVector<T, 16 / sizeof(T)> src) {
   std::memcpy(dst, &src.r, tBytes);
 }
 template<std::size_t tBytes, typename T, std::size_t tPart, std::size_t tSize>
@@ -113,7 +115,7 @@ GREX_ALWAYS_INLINE inline void store_aligned(T* dst, SubVector<T, tPart, tSize> 
     return; \
   }
 #define GREX_PARTSTORE(KIND, BITS, SIZE) \
-  inline void store_part(KIND##BITS* dst, Vector<KIND##BITS, SIZE> src, std::size_t size) { \
+  inline void store_part(KIND##BITS* dst, NativeVector<KIND##BITS, SIZE> src, std::size_t size) { \
     switch (size) { \
       GREX_REPEAT(SIZE, GREX_PARTSTORE_CASE, KIND, BITS) \
       [[unlikely]] GREX_PARTSTORE_CASE(SIZE, SIZE, KIND, BITS) default : std::unreachable(); \

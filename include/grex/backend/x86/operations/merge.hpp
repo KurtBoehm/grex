@@ -32,8 +32,8 @@
 
 namespace grex::backend {
 #define GREX_MERGE_WRAP(KIND, BITS, SIZE, IMPL) \
-  inline Vector<KIND##BITS, SIZE> merge(Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v0, \
-                                        Vector<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v1) { \
+  inline NativeVector<KIND##BITS, SIZE> merge(NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v0, \
+                                              NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v1) { \
     return {.r = IMPL}; \
   }
 
@@ -97,7 +97,8 @@ GREX_MERGE_SUB(u, 8, 4, GREX_MERGE_i16x2)
 // Merge to super-native vector
 template<Vectorizable T, std::size_t tSize>
 requires(is_supernative<T, 2 * tSize>)
-inline SuperVector<Vector<T, tSize>> merge(Vector<T, tSize> a, Vector<T, tSize> b) {
+inline SuperVector<NativeVector<T, tSize>> merge(NativeVector<T, tSize> a,
+                                                 NativeVector<T, tSize> b) {
   return {.lower = a, .upper = b};
 }
 template<typename THalf>
@@ -113,7 +114,7 @@ inline auto quadruple(TVector v) {
 #if GREX_X86_64_LEVEL >= 4
 template<typename TValue, std::size_t tSize>
 requires(sizeof(TValue) * tSize == 16)
-inline Vector<TValue, tSize * 4> quadruple(Vector<TValue, tSize> v) {
+inline NativeVector<TValue, tSize * 4> quadruple(NativeVector<TValue, tSize> v) {
   const __m512i v512 = _mm512_castsi128_si512(reinterpret<u8>(v).r);
   const __m512i shuf = _mm512_shuffle_i64x2(v512, v512, 0);
   return reinterpret<TValue>(u8x64{shuf});

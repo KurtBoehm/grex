@@ -30,19 +30,19 @@ namespace grex::backend {
   GREX_CAT(BITPREFIX##_xor_, GREX_SI_SUFFIX(i, BITS, REGISTERBITS))(m.r, BITPREFIX##_set1_epi32(-1))
 
 #define GREX_NEGATION_VEC_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, SUFFIX) \
-  inline Vector<KIND##BITS, SIZE> bitwise_not(Vector<KIND##BITS, SIZE> m) { \
+  inline NativeVector<KIND##BITS, SIZE> bitwise_not(NativeVector<KIND##BITS, SIZE> m) { \
     return {.r = GREX_NEGATION_BASE_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> bitwise_and(Vector<KIND##BITS, SIZE> a, \
-                                              Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> bitwise_and(NativeVector<KIND##BITS, SIZE> a, \
+                                                    NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_CAT(BITPREFIX##_and_, SUFFIX)(a.r, b.r)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> bitwise_or(Vector<KIND##BITS, SIZE> a, \
-                                             Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> bitwise_or(NativeVector<KIND##BITS, SIZE> a, \
+                                                   NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_CAT(BITPREFIX##_or_, SUFFIX)(a.r, b.r)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> bitwise_xor(Vector<KIND##BITS, SIZE> a, \
-                                              Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> bitwise_xor(NativeVector<KIND##BITS, SIZE> a, \
+                                                    NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_CAT(BITPREFIX##_xor_, SUFFIX)(a.r, b.r)}; \
   }
 #define GREX_NEGATION_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
@@ -66,12 +66,12 @@ namespace grex::backend {
   GREX_CAT(BITPREFIX##_##NAME##_, GREX_SI_SUFFIX(i, BITS, REGISTERBITS))(a.r, b.r)
 #endif
 #define GREX_BITWISE_MASK(NAME, KNAME, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Mask<KIND##BITS, SIZE> logical_##NAME(Mask<KIND##BITS, SIZE> a, \
-                                               Mask<KIND##BITS, SIZE> b) { \
+  inline NativeMask<KIND##BITS, SIZE> logical_##NAME(NativeMask<KIND##BITS, SIZE> a, \
+                                                     NativeMask<KIND##BITS, SIZE> b) { \
     return {.r = GREX_BITWISE_MASK_IMPL(NAME, KNAME, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   }
 #define GREX_NEGATION_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline Mask<KIND##BITS, SIZE> logical_not(Mask<KIND##BITS, SIZE> m) { \
+  inline NativeMask<KIND##BITS, SIZE> logical_not(NativeMask<KIND##BITS, SIZE> m) { \
     return {.r = GREX_NEGATION_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   } \
   GREX_BITWISE_MASK(and, and, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \

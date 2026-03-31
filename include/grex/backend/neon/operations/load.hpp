@@ -13,6 +13,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/macros/types.hpp"
@@ -23,13 +24,13 @@
 
 namespace grex::backend {
 #define GREX_LOAD(KIND, BITS, SIZE) \
-  GREX_ALWAYS_INLINE inline Vector<KIND##BITS, SIZE> load(const KIND##BITS* src, \
-                                                          TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  GREX_ALWAYS_INLINE inline NativeVector<KIND##BITS, SIZE> load( \
+    const KIND##BITS* src, TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_ISUFFIXED(vld1q, KIND, BITS)(src)}; \
   } \
   /* This is not actually aligned, but who cares */ \
-  GREX_ALWAYS_INLINE inline Vector<KIND##BITS, SIZE> load_aligned( \
-    const KIND##BITS* src, TypeTag<Vector<KIND##BITS, SIZE>>) { \
+  GREX_ALWAYS_INLINE inline NativeVector<KIND##BITS, SIZE> load_aligned( \
+    const KIND##BITS* src, TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
     return {.r = GREX_ISUFFIXED(vld1q, KIND, BITS)(src)}; \
   }
 GREX_FOREACH_TYPE(GREX_LOAD, 128)
@@ -37,8 +38,8 @@ GREX_FOREACH_TYPE(GREX_LOAD, 128)
 // 8-bit load
 template<typename T>
 requires(sizeof(T) == 1)
-GREX_ALWAYS_INLINE inline Vector<T, 16> load_first(const T* data, IndexTag<1> /*bytes*/) {
-  using Vec = Vector<T, 16>;
+GREX_ALWAYS_INLINE inline NativeVector<T, 16> load_first(const T* data, IndexTag<1> /*bytes*/) {
+  using Vec = NativeVector<T, 16>;
   if (__builtin_constant_p(data[0])) {
     auto out = zeros(type_tag<Vec>);
     std::memcpy(&out, data, 1);
@@ -51,9 +52,9 @@ GREX_ALWAYS_INLINE inline Vector<T, 16> load_first(const T* data, IndexTag<1> /*
 // 16-bit load
 template<typename T>
 requires(sizeof(T) <= 2)
-GREX_ALWAYS_INLINE inline Vector<T, 16 / sizeof(T)> load_first(const T* data,
-                                                               IndexTag<2> /*bytes*/) {
-  using Vec = Vector<T, 16 / sizeof(T)>;
+GREX_ALWAYS_INLINE inline NativeVector<T, 16 / sizeof(T)> load_first(const T* data,
+                                                                     IndexTag<2> /*bytes*/) {
+  using Vec = NativeVector<T, 16 / sizeof(T)>;
   if (static_apply<Vec::size>(
         [&]<std::size_t... tI>() { return (... && __builtin_constant_p(data[tI])); })) {
     auto out = zeros(type_tag<Vec>);
@@ -67,9 +68,9 @@ GREX_ALWAYS_INLINE inline Vector<T, 16 / sizeof(T)> load_first(const T* data,
 // 32-bit load
 template<typename T>
 requires(sizeof(T) <= 4)
-GREX_ALWAYS_INLINE inline Vector<T, 16 / sizeof(T)> load_first(const T* data,
-                                                               IndexTag<4> /*bytes*/) {
-  using Vec = Vector<T, 16 / sizeof(T)>;
+GREX_ALWAYS_INLINE inline NativeVector<T, 16 / sizeof(T)> load_first(const T* data,
+                                                                     IndexTag<4> /*bytes*/) {
+  using Vec = NativeVector<T, 16 / sizeof(T)>;
   if (static_apply<Vec::size>(
         [&]<std::size_t... tI>() { return (... && __builtin_constant_p(data[tI])); })) {
     auto out = zeros(type_tag<Vec>);
@@ -82,15 +83,15 @@ GREX_ALWAYS_INLINE inline Vector<T, 16 / sizeof(T)> load_first(const T* data,
 }
 // 64-bit load
 template<typename T>
-GREX_ALWAYS_INLINE inline Vector<T, 16 / sizeof(T)> load_first(const T* data,
-                                                               IndexTag<8> /*bytes*/) {
+GREX_ALWAYS_INLINE inline NativeVector<T, 16 / sizeof(T)> load_first(const T* data,
+                                                                     IndexTag<8> /*bytes*/) {
   uint64x1_t out;
   std::memcpy(&out, data, 8);
   return {.r = as<T>(expand64(out))};
 }
 
 template<std::size_t tBytes, typename T>
-GREX_ALWAYS_INLINE inline Vector<T, 16 / sizeof(T)> load_first(const T* data) {
+GREX_ALWAYS_INLINE inline NativeVector<T, 16 / sizeof(T)> load_first(const T* data) {
   return load_first(data, index_tag<tBytes>);
 }
 
@@ -99,7 +100,7 @@ requires((AnyNativeVector<TVec> || AnySubNativeVector<TVec>) && tSize <= TVec::s
 GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, IndexTag<tSize> /*size*/,
                                          TypeTag<TVec> /*tag*/) {
   using Value = TVec::Value;
-  using FullVec = Vector<Value, 16 / sizeof(Value)>;
+  using FullVec = NativeVector<Value, 16 / sizeof(Value)>;
   constexpr std::size_t bytes = tSize * sizeof(Value);
 
   // Simple cases: 16 and 0

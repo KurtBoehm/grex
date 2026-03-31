@@ -9,6 +9,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/types.hpp"
@@ -55,23 +56,25 @@ namespace grex::backend {
 #define GREX_MUL_8 GREX_MUL_BASE
 
 #define GREX_ARITH(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> negate(Vector<KIND##BITS, SIZE> a) { \
+  inline NativeVector<KIND##BITS, SIZE> negate(NativeVector<KIND##BITS, SIZE> a) { \
     GREX_NEGATE_##KIND(BITS, SIZE) \
   } \
-  inline Vector<KIND##BITS, SIZE> add(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> add(NativeVector<KIND##BITS, SIZE> a, \
+                                            NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(vaddq, KIND, BITS)(a.r, b.r)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> subtract(Vector<KIND##BITS, SIZE> a, \
-                                           Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> subtract(NativeVector<KIND##BITS, SIZE> a, \
+                                                 NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(vsubq, KIND, BITS)(a.r, b.r)}; \
   } \
-  inline Vector<KIND##BITS, SIZE> multiply(Vector<KIND##BITS, SIZE> a, \
-                                           Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> multiply(NativeVector<KIND##BITS, SIZE> a, \
+                                                 NativeVector<KIND##BITS, SIZE> b) { \
     GREX_MUL_##BITS(KIND, BITS) \
   }
 
 #define GREX_ARITH_DIV(KIND, BITS, SIZE) \
-  inline Vector<KIND##BITS, SIZE> divide(Vector<KIND##BITS, SIZE> a, Vector<KIND##BITS, SIZE> b) { \
+  inline NativeVector<KIND##BITS, SIZE> divide(NativeVector<KIND##BITS, SIZE> a, \
+                                               NativeVector<KIND##BITS, SIZE> b) { \
     return {.r = GREX_ISUFFIXED(vdivq, KIND, BITS)(a.r, b.r)}; \
   }
 
