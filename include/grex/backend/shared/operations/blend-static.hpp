@@ -231,8 +231,8 @@ struct BlenderConstant : public BaseExpensiveOp {
       return a;
     }
   }
-  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {0, 0};
+  static constexpr Cost cost(auto /*bzs*/) {
+    return {.inv_throughput = 0, .latency = 0};
   }
 };
 
@@ -249,7 +249,7 @@ struct SubBlender : public BaseExpensiveOp {
     return TVec{Base<tBls>::apply(a.full, b.full, auto_tag<tBls.sub_extended()>)};
   }
   template<AnyBlendSelectors auto tBls>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tBls> /*tag*/) {
+  static constexpr Cost cost(AutoTag<tBls> /*tag*/) {
     return Base<tBls>::cost(auto_tag<tBls.sub_extended()>);
   }
 };
@@ -267,10 +267,10 @@ struct SuperBlender : public BaseExpensiveOp {
     };
   }
   template<AnyBlendSelectors auto tBls>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tBls> /*tag*/) {
+  static constexpr Cost cost(AutoTag<tBls> /*tag*/) {
     const auto [c0a, c1a] = Blender<tBls.lower()>::cost(auto_tag<tBls.lower()>);
     const auto [c0b, c1b] = Blender<tBls.upper()>::cost(auto_tag<tBls.upper()>);
-    return {c0a + c0b, c1a + c1b};
+    return {.inv_throughput = c0a + c0b, .latency = c1a + c1b};
   }
 };
 

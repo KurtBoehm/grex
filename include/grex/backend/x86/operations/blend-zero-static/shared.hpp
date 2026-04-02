@@ -38,8 +38,8 @@ struct ZeroBlenderAnd : public BaseExpensiveOp {
     });
     return reinterpret(bitwise_and(ivec, mask), type_tag<Value>);
   }
-  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {0.5, 4};
+  static constexpr Cost cost(auto /*bzs*/) {
+    return {.inv_throughput = 0.5, .latency = 4};
   }
 };
 } // namespace grex::backend

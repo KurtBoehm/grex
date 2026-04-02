@@ -39,6 +39,13 @@ struct ApplicableTypesTrait<tValue, THead, TTail...> {
 template<auto tValue, typename... TRemaining>
 using ApplicableTypes = ApplicableTypesTrait<tValue, TRemaining...>::Selected;
 
+struct Cost {
+  f64 inv_throughput;
+  f64 latency;
+
+  auto operator<=>(const Cost&) const = default;
+};
+
 template<auto tValue, typename TZeroBlenders>
 struct CheapestTypeTrait;
 template<auto tValue, AnyExpensiveOp TOnly>

@@ -34,8 +34,8 @@ struct ShufflerExtractSet : public BaseExpensiveOp {
       [&]<std::size_t... tIdxs>() { return set(type_tag<TVec>, f(tIdxs)...); });
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
-    return {f64(tSh.size * 2), 1};
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+    return {.inv_throughput = f64(tSh.size * 2), .latency = 1};
   }
 };
 } // namespace grex::backend

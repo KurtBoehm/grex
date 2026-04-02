@@ -9,7 +9,6 @@
 
 #include <array>
 #include <cstddef>
-#include <utility>
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
@@ -43,8 +42,8 @@ struct BlenderVariable : public BaseExpensiveOp {
     const VMask mask = vector2mask(load(mask_idxs.data(), type_tag<IVec>), type_tag<Value>);
     return blend(mask, a, b);
   }
-  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {1.0, 8};
+  static constexpr Cost cost(auto /*bzs*/) {
+    return {.inv_throughput = 1, .latency = 8};
   }
 };
 

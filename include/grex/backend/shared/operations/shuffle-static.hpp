@@ -422,7 +422,7 @@ struct ShufflerBlendZero : public BaseExpensiveOp {
     return ZeroBlender<tSh.blend_zeros()>::apply(vec, auto_tag<tSh.blend_zeros()>);
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
     static_assert(is_applicable(auto_tag<tSh>));
     return ZeroBlender<tSh.blend_zeros()>::cost(auto_tag<tSh>);
   }
@@ -441,7 +441,7 @@ struct SubShuffler : public BaseExpensiveOp {
     return TVec{Base<tSh>::apply(vec.full, auto_tag<tSh.sub_extended()>)};
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*tag*/) {
+  static constexpr Cost cost(AutoTag<tSh> /*tag*/) {
     return Base<tSh>::cost(auto_tag<tSh.sub_extended()>);
   }
 };
@@ -469,7 +469,7 @@ struct PairShufflerSingle : public BaseExpensiveOp {
     }
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*tag*/) {
+  static constexpr Cost cost(AutoTag<tSh> /*tag*/) {
     constexpr auto a_sh = tSh.indices_in_vector(0);
     constexpr auto b_sh = tSh.indices_in_vector(1);
 
@@ -496,14 +496,14 @@ struct PairShufflerBlend : public BaseExpensiveOp {
                                                auto_tag<tSh.blend_vectors()>);
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*tag*/) {
+  static constexpr Cost cost(AutoTag<tSh> /*tag*/) {
     constexpr auto a_sh = tSh.indices_in_vector_fallback(0, any_sh);
     constexpr auto b_sh = tSh.indices_in_vector_fallback(1, any_sh);
 
     const auto [c00, c01] = Shuffler<a_sh>::cost(auto_tag<a_sh>);
     const auto [c10, c11] = Shuffler<b_sh>::cost(auto_tag<b_sh>);
     const auto [c20, c21] = Blender<tSh.blend_vectors()>::cost(auto_tag<tSh.blend_vectors()>);
-    return std::make_pair(c00 + c10 + c20, c01 + c11 + c21);
+    return {.inv_throughput = c00 + c10 + c20, .latency = c01 + c11 + c21};
   }
 };
 template<AnyShuffleIndices auto tSh>
@@ -526,12 +526,12 @@ struct SuperShuffler : public BaseExpensiveOp {
     return TVec{.lower = lower, .upper = upper};
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*tag*/) {
+  static constexpr Cost cost(AutoTag<tSh> /*tag*/) {
     constexpr auto lower_sh = tSh.half_raw(0);
     constexpr auto upper_sh = tSh.half_raw(1);
     const auto [c0a, c1a] = PairShuffler<lower_sh>::cost(auto_tag<lower_sh>);
     const auto [c0b, c1b] = PairShuffler<upper_sh>::cost(auto_tag<upper_sh>);
-    return {c0a + c0b, c1a + c1b};
+    return {.inv_throughput = c0a + c0b, .latency = c1a + c1b};
   }
 };
 

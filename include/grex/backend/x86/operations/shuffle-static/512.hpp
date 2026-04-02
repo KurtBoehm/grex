@@ -52,8 +52,8 @@ struct ShufflerShuffle128x4 : public BaseExpensiveOp {
     }
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
-    return {0.5, 3};
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+    return {.inv_throughput = 0.5, .latency = 3};
   }
 };
 
@@ -73,8 +73,8 @@ struct ShufflerShuffle8x64 : public BaseExpensiveOp {
     return reinterpret(i8x64{shuf}, type_tag<Value>);
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
-    return {0.5, 4};
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+    return {.inv_throughput = 0.5, .latency = 4};
   }
 };
 
@@ -96,9 +96,9 @@ struct ShufflerShuffle32x16 : public BaseExpensiveOp {
     return ZeroBlender<tSh.blend_zeros()>::apply(shufr, auto_tag<tSh.blend_zeros()>);
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
     const auto [c0, c1] = ZeroBlender<tSh.blend_zeros()>::cost(auto_tag<tSh>);
-    return {0.5 + c0, std::max<f64>(c1, 1)};
+    return {.inv_throughput = 0.5 + c0, .latency = std::max<f64>(c1, 1)};
   }
 };
 
@@ -119,9 +119,9 @@ struct ShufflerPermutex64x8 : public BaseExpensiveOp {
     return ZeroBlender<tSh.blend_zeros()>::apply(shuffled, auto_tag<tSh.blend_zeros()>);
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
     const auto [c0, c1] = ZeroBlender<tSh.blend_zeros()>::cost(auto_tag<tSh>);
-    return {1.0 + c0, std::max<f64>(4, c1)};
+    return {.inv_throughput = 1 + c0, .latency = std::max<f64>(4, c1)};
   }
 };
 
@@ -150,8 +150,8 @@ struct ShufflerPermutex64x8 : public BaseExpensiveOp {
       } \
     } \
     template<AnyShuffleIndices auto tSh> \
-    static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) { \
-      return {1.0, COST2##.0}; \
+    static constexpr Cost cost(AutoTag<tSh> /*idxs*/) { \
+      return {.inv_throughput = 1, .latency = COST2}; \
     } \
   }; \
 \
@@ -179,8 +179,8 @@ struct ShufflerPermutex64x8 : public BaseExpensiveOp {
       } \
     } \
     template<AnyShuffleIndices auto tSh> \
-    static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) { \
-      return {1.0, COST2##.0}; \
+    static constexpr Cost cost(AutoTag<tSh> /*idxs*/) { \
+      return {.inv_throughput = 1, .latency = COST2}; \
     } \
   };
 
@@ -241,8 +241,8 @@ struct ShufflerPermutexVar8x64 : public BaseExpensiveOp {
     return reinterpret(bitwise_or(shuf8a, shuf8b), type_tag<Value>);
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
-    return {4.0, 7.0};
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+    return {.inv_throughput = 4, .latency = 7};
   }
 };
 struct PairShufflerPermutexVar8x64 : public BaseExpensiveOp {
@@ -290,8 +290,8 @@ struct PairShufflerPermutexVar8x64 : public BaseExpensiveOp {
     return reinterpret(bitwise_or(shuf8a, shuf8b), type_tag<Value>);
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
-    return {4.0, 7.0};
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+    return {.inv_throughput = 4, .latency = 7};
   }
 };
 #endif

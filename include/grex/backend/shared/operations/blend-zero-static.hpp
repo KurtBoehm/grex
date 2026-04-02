@@ -207,8 +207,8 @@ struct ZeroBlenderNoop : public BaseExpensiveOp {
     static_assert(is_applicable(auto_tag<tBzs>));
     return vec;
   }
-  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {0, 0};
+  static constexpr Cost cost(auto /*bzs*/) {
+    return {.inv_throughput = 0, .latency = 0};
   }
 };
 struct ZeroBlenderZero : public BaseExpensiveOp {
@@ -223,8 +223,8 @@ struct ZeroBlenderZero : public BaseExpensiveOp {
     static_assert(is_applicable(auto_tag<tBzs>));
     return zeros(type_tag<TVec>);
   }
-  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {0, 1};
+  static constexpr Cost cost(auto /*bzs*/) {
+    return {.inv_throughput = 0, .latency = 1};
   }
 };
 
@@ -241,7 +241,7 @@ struct SubZeroBlender : public BaseExpensiveOp {
     return TVec{Base<tBzs>::apply(vec.full, auto_tag<tBzs.sub_extended()>)};
   }
   template<AnyBlendZeroSelectors auto tBzs>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tBzs> /*tag*/) {
+  static constexpr Cost cost(AutoTag<tBzs> /*tag*/) {
     return Base<tBzs>::cost(auto_tag<tBzs.sub_extended()>);
   }
 };
@@ -259,10 +259,10 @@ struct SuperZeroBlender : public BaseExpensiveOp {
     };
   }
   template<AnyBlendZeroSelectors auto tBzs>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tBzs> /*tag*/) {
+  static constexpr Cost cost(AutoTag<tBzs> /*tag*/) {
     const auto [c0a, c1a] = ZeroBlender<tBzs.lower()>::cost(auto_tag<tBzs.lower()>);
     const auto [c0b, c1b] = ZeroBlender<tBzs.upper()>::cost(auto_tag<tBzs.upper()>);
-    return {c0a + c0b, c1a + c1b};
+    return {.inv_throughput = c0a + c0b, .latency = c1a + c1b};
   }
 };
 

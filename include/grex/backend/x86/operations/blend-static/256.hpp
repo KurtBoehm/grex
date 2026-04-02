@@ -35,8 +35,8 @@ struct BlenderBlend32x8 : public BaseExpensiveOp {
     const f32x8 fb = reinterpret(b, type_tag<f32>);
     return reinterpret(f32x8{_mm256_blend_ps(fa.r, fb.r, imm8)}, type_tag<Value>);
   }
-  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {0.5, 1};
+  static constexpr Cost cost(auto /*bzs*/) {
+    return {.inv_throughput = 0.5, .latency = 1};
   }
 };
 
@@ -57,8 +57,8 @@ struct BlenderBlend16x16 : public BaseExpensiveOp {
     const i16x16 ib = reinterpret(b, type_tag<i16>);
     return reinterpret(i16x16{_mm256_blend_epi16(ia.r, ib.r, imm8)}, type_tag<Value>);
   }
-  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {0.5, 1};
+  static constexpr Cost cost(auto /*bzs*/) {
+    return {.inv_throughput = 0.5, .latency = 1};
   }
 };
 

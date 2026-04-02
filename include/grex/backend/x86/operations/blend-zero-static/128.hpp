@@ -39,8 +39,8 @@ struct ZeroBlenderMovq : public BaseExpensiveOp {
     return reinterpret(i64x2{_mm_move_epi64(reinterpret(vec, type_tag<i64>).r)},
                        type_tag<typename TVec::Value>);
   }
-  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {0.5, 1};
+  static constexpr Cost cost(auto /*bzs*/) {
+    return {.inv_throughput = 0.5, .latency = 1};
   }
 };
 
@@ -62,8 +62,8 @@ struct ZeroBlenderInsert32 : public BaseExpensiveOp {
     const f32x4 fvec = reinterpret(vec, type_tag<f32>);
     return reinterpret(f32x4{_mm_insert_ps(fvec.r, fvec.r, ~imm8 & 0xF)}, type_tag<Value>);
   }
-  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {0.5, 1};
+  static constexpr Cost cost(auto /*bzs*/) {
+    return {.inv_throughput = 0.5, .latency = 1};
   }
 };
 
@@ -83,8 +83,8 @@ struct ZeroBlenderBlend32x4 : public BaseExpensiveOp {
     const f32x4 fvec = reinterpret(vec, type_tag<f32>);
     return reinterpret(f32x4{_mm_blend_ps(_mm_setzero_ps(), fvec.r, imm8)}, type_tag<Value>);
   }
-  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {0.5, 2};
+  static constexpr Cost cost(auto /*bzs*/) {
+    return {.inv_throughput = 0.5, .latency = 2};
   }
 };
 
@@ -104,8 +104,8 @@ struct ZeroBlenderBlend16x8 : public BaseExpensiveOp {
     const i16x8 ivec = reinterpret(vec, type_tag<i16>);
     return reinterpret(i16x8{_mm_blend_epi16(_mm_setzero_si128(), ivec.r, imm8)}, type_tag<Value>);
   }
-  static constexpr std::pair<f64, f64> cost(auto /*bzs*/) {
-    return {0.5, 2};
+  static constexpr Cost cost(auto /*bzs*/) {
+    return {.inv_throughput = 0.5, .latency = 2};
   }
 };
 

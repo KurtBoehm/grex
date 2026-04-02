@@ -30,8 +30,8 @@ struct ShufflerTbl : public BaseExpensiveOp {
     return {.r = as<Value>(vqtbl1q_u8(as<u8>(vec.r), shuf.vector(false_tag).r))};
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
-    return {1.0, 8};
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+    return {.inv_throughput = 1, .latency = 8};
   }
 };
 
@@ -50,8 +50,8 @@ struct ShufflerExtractSet : public BaseExpensiveOp {
       [&]<std::size_t... tIdxs>() { return set(type_tag<TVec>, f(tIdxs)...); });
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
-    return {1.0, 8};
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+    return {.inv_throughput = 1, .latency = 8};
   }
 };
 

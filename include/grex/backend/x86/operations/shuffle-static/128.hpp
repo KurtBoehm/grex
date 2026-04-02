@@ -41,8 +41,8 @@ struct ShufflerShuffle8x16 : public BaseExpensiveOp {
     return reinterpret(i8x16{_mm_shuffle_epi8(ivec.r, idxs.vector().r)}, type_tag<Value>);
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
-    return {0.5, 4};
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+    return {.inv_throughput = 0.5, .latency = 4};
   }
 };
 
@@ -61,9 +61,9 @@ struct ShufflerShuffle32x4 : public BaseExpensiveOp {
     return ZeroBlender<tSh.blend_zeros()>::apply(shuffled, auto_tag<tSh.blend_zeros()>);
   }
   template<AnyShuffleIndices auto tSh>
-  static constexpr std::pair<f64, f64> cost(AutoTag<tSh> /*idxs*/) {
+  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
     const auto [c0, c1] = ZeroBlender<tSh.blend_zeros()>::cost(auto_tag<tSh>);
-    return {0.5 + c0, std::max<f64>(c1, 1)};
+    return {.inv_throughput = 0.5 + c0, .latency = std::max<f64>(c1, 1)};
   }
 };
 
