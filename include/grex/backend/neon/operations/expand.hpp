@@ -18,8 +18,8 @@
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/expand-register.hpp"
 #include "grex/backend/neon/operations/insert-static.hpp"
-#include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/neon/operations/subnative.hpp"
+#include "grex/backend/neon/operations/undefined.hpp"
 #include "grex/backend/neon/sizes.hpp"
 #include "grex/base.hpp"
 

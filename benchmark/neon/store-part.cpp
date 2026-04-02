@@ -72,7 +72,7 @@ requires(be::AnyNativeVector<TVec> || be::AnySubNativeVector<TVec>)
     return; \
   }
 #define BM_PARTSTORE(KIND, BITS, SIZE) \
-  [[gnu::noinline]] void store_part_swi(KIND##BITS* dst, be::Vector<KIND##BITS, SIZE> src, \
+  [[gnu::noinline]] void store_part_swi(KIND##BITS* dst, be::NativeVector<KIND##BITS, SIZE> src, \
                                         std::size_t size) { \
     switch (size) { \
       GREX_REPEAT(SIZE, BM_PARTSTORE_CASE, KIND, BITS) \
@@ -106,7 +106,7 @@ auto value_distribution() {
 
 #define BM_OP(VALUE, SIZE, SUFFIX, DISTNAME, DIST) \
   static void bm_store_part_##SUFFIX##_##VALUE##x##SIZE##_##DISTNAME(benchmark::State& state) { \
-    using Vec = be::Vector<VALUE, SIZE>; \
+    using Vec = be::NativeVector<VALUE, SIZE>; \
     pcg_extras::seed_seq_from<std::random_device> seed_source; \
     pcg32 rng(seed_source); \
     DIST; \

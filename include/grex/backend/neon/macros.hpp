@@ -2,6 +2,7 @@
 #define INCLUDE_GREX_BACKEND_NEON_MACROS_HPP
 
 // IWYU pragma: begin_exports
+#include "macros/cast.hpp"
 #include "macros/types.hpp"
 // IWYU pragma: end_exports
 

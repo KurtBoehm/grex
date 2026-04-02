@@ -42,6 +42,7 @@
 #include "operations/store.hpp"
 #include "operations/subnative.hpp"
 #include "operations/to-array.hpp"
+#include "operations/undefined.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_HPP

@@ -4,6 +4,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#ifndef TEST_RNG_HPP
+#define TEST_RNG_HPP
+
 #include "grex/base.hpp"
 
 // Based on https://github.com/imneme/pcg-c-basic/blob/master/pcg_basic.c
@@ -58,3 +61,5 @@ struct Pcg32 {
   }
 };
 } // namespace grex::test
+
+#endif // TEST_RNG_HPP

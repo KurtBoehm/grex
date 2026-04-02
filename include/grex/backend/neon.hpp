@@ -2,6 +2,7 @@
 #define INCLUDE_GREX_BACKEND_NEON_HPP
 
 // IWYU pragma: begin_exports
+#include "neon/instructions.hpp"
 #include "neon/macros.hpp"
 #include "neon/operations.hpp"
 #include "neon/sizes.hpp"

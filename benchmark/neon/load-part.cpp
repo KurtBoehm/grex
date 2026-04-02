@@ -66,10 +66,11 @@ GREX_ALWAYS_INLINE inline TVec load_part_ifs(const typename TVec::Value* ptr, st
 
 #define BM_PARTLOAD_CASE(SIZE, INDEX, KIND, BITS) \
   BM_PARTLOAD_ATTR(INDEX, 0) case INDEX: \
-  return be::load_part(ptr, grex::index_tag<INDEX>, grex::type_tag<be::Vector<KIND##BITS, SIZE>>);
+  return be::load_part(ptr, grex::index_tag<INDEX>, \
+                       grex::type_tag<be::NativeVector<KIND##BITS, SIZE>>);
 #define GREX_PARTLOAD(KIND, BITS, SIZE) \
-  inline be::Vector<KIND##BITS, SIZE> load_part_swi(const KIND##BITS* ptr, std::size_t size, \
-                                                    grex::TypeTag<be::Vector<KIND##BITS, SIZE>>) { \
+  inline be::NativeVector<KIND##BITS, SIZE> load_part_swi( \
+    const KIND##BITS* ptr, std::size_t size, grex::TypeTag<be::NativeVector<KIND##BITS, SIZE>>) { \
     switch (size) { \
       GREX_REPEAT(SIZE, BM_PARTLOAD_CASE, KIND, BITS) \
       [[unlikely]] BM_PARTLOAD_CASE(SIZE, SIZE, KIND, BITS) default : std::unreachable(); \
@@ -79,8 +80,8 @@ GREX_FOREACH_TYPE(GREX_PARTLOAD, 128)
 
 #define GREX_SUBPARTLOAD_CASE(PART, INDEX, KIND, BITS, SIZE) \
   BM_PARTLOAD_ATTR(INDEX, 0) case INDEX: \
-  return Dst{ \
-    be::load_part(ptr, grex::index_tag<INDEX>, grex::type_tag<be::Vector<KIND##BITS, SIZE>>)};
+  return Dst{be::load_part(ptr, grex::index_tag<INDEX>, \
+                           grex::type_tag<be::NativeVector<KIND##BITS, SIZE>>)};
 #define GREX_SUBPARTLOAD(KIND, BITS, PART, SIZE) \
   inline be::SubVector<KIND##BITS, PART, SIZE> load_part_swi( \
     const KIND##BITS* ptr, std::size_t size, \
@@ -109,7 +110,7 @@ auto value_distribution() {
 
 #define BM_OP(VALUE, SIZE, SUFFIX, DISTNAME, DIST) \
   static void bm_load_part_##SUFFIX##_##VALUE##x##SIZE##_##DISTNAME(benchmark::State& state) { \
-    using Vec = be::Vector<VALUE, SIZE>; \
+    using Vec = be::NativeVector<VALUE, SIZE>; \
     pcg_extras::seed_seq_from<std::random_device> seed_source; \
     pcg32 rng(seed_source); \
     DIST; \
