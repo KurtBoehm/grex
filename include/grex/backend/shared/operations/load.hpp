@@ -10,6 +10,7 @@
 #include <cstddef>
 
 #include "grex/backend/base.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 // Super-native vectors: Split into halves

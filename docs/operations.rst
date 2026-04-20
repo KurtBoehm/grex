@@ -16,6 +16,10 @@ Similarly, ``Mask<T, N>`` denotes any backend mask type for value type ``T`` and
 - ``backend::SubMask<T, N, M>`` with some ``M`` for which ``backend::NativeMask<T, M>`` is defined.
 - ``backend::SuperMask<THalf>`` where ``THalf::Value == T`` and ``2 * THalf::size == N``.
 
+##########################
+Vector-Specific Operations
+##########################
+
 .. list-table::
    :header-rows: 1
 
@@ -40,15 +44,17 @@ Similarly, ``Mask<T, N>`` denotes any backend mask type for value type ``T`` and
    * - Expand scalar (zero upper lanes)
      - :cpp:func:`Vector::expanded_zero(T value) <Vector grex::Vector::expanded_zero(T)>`
 
-   * - Load (unaligned)
+   * - :ref:`Load (unaligned) <operations-load>`
      - :cpp:func:`Vector::load(const T* ptr) <Vector grex::Vector::load(const T*)>`
 
-   * - Load (aligned)
+   * - :ref:`Load (aligned) <operations-load-aligned>`
      - :cpp:func:`Vector::load_aligned(const T* ptr) <Vector grex::Vector::load_aligned(const T*)>`
 
-   * - Load partial
-     - | :cpp:func:`Vector::load_part(const T* ptr, std::size_t num) <Vector grex::Vector::load_part(const T*, std::size_t)>`
-       | :cpp:func:`Vector::load_part(const T* ptr, AnyIndexTag auto num) <Vector grex::Vector::load_part(const T*, AnyIndexTag)>`
+   * - :ref:`Load partial (runtime) <operations-load-part-runtime>`
+     - :cpp:func:`Vector::load_part(const T* ptr, std::size_t num) <Vector grex::Vector::load_part(const T*, std::size_t)>`
+
+   * - :ref:`Load partial (compile-time) <operations-load-part-ct>`
+     - :cpp:func:`Vector::load_part(const T* ptr, AnyIndexTag auto num) <Vector grex::Vector::load_part(const T*, AnyIndexTag)>`
 
    * - Load multibyte
      - | :cpp:func:`Vector::load_multibyte(const std::byte* data, AnyIndexTag auto src_bytes) <template<std::size_t tSrcBytes> Vector grex::Vector::load_multibyte(const std::byte*, IndexTag<tSrcBytes>)>`
@@ -172,23 +178,32 @@ Similarly, ``Mask<T, N>`` denotes any backend mask type for value type ``T`` and
      - | :cpp:func:`Vector::backend() const <Backend grex::Vector::backend() const>`
        | :cpp:func:`Vector::as_array() const <std::array grex::Vector::as_array() const>`
 
+########################
+Mask-Specific Operations
+########################
 
-   * - Construct mask (all-false)
+.. list-table::
+   :header-rows: 1
+
+   * - Operation
+     - Signature/Description
+
+   * - :ref:`Construct all-false mask <operations-zeros-mask>`
      - :cpp:func:`Mask::Mask() <Mask grex::Mask::Mask()>`
 
-   * - Broadcast ``bool``
+   * - :ref:`Broadcast Boolean <operations-broadcast-mask>`
      - :cpp:func:`Mask::Mask(bool value) <Mask grex::Mask::Mask(bool)>`
 
-   * - Construct from per-lane values
+   * - :ref:`Construct from per-lane values <operations-set-mask>`
      - :cpp:func:`Mask::Mask(bool... values) <template<typename... Ts> Mask grex::Mask::Mask(Ts...)>`
 
    * - Construct from backend
      - :cpp:func:`Mask::Mask(Backend v) <Mask grex::Mask::Mask(Backend)>`
 
-   * - All-false mask
+   * - :ref:`All-false mask <operations-zeros-mask>`
      - :cpp:func:`Mask::zeros() <Mask grex::Mask::zeros()>`
 
-   * - All-true mask
+   * - :ref:`All-true mask <operations-ones-mask>`
      - :cpp:func:`Mask::ones() <Mask grex::Mask::ones()>`
 
    * - Cut-off mask
@@ -223,6 +238,15 @@ Similarly, ``Mask<T, N>`` denotes any backend mask type for value type ``T`` and
      - | :cpp:func:`Mask::backend() const <Backend grex::Mask::backend() const>`
        | :cpp:func:`Mask::as_array() const <std::array grex::Mask::as_array() const>`
 
+#######################
+Free-Function Utilities
+#######################
+
+.. list-table::
+   :header-rows: 1
+
+   * - Operation
+     - Signature/Description
 
    * - :ref:`Logical AND NOT <operations-logical-andnot>`
      - :cpp:func:`grex::andnot(Mask a, Mask b) <template<Vectorizable T, std::size_t tSize> Mask<T, tSize> grex::andnot(Mask<T, tSize>, Mask<T, tSize>)>`
