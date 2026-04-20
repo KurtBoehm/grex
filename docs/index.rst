@@ -7,8 +7,9 @@ See the `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructur
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
    :hidden:
 
    operations
    simd
+   backend

@@ -1,6 +1,6 @@
-###################
-Operations Overview
-###################
+##########
+Operations
+##########
 
 The name of most operations links to the documentation of that operation and some notes on its implementation in the different backends.
 
@@ -146,11 +146,17 @@ Vector-Specific Operations
        | :cpp:func:`Vector::insert(std::size_t i, T value) const <Vector grex::Vector::insert(std::size_t, T) const>`
        | :cpp:func:`Vector::insert(AnyIndexTag auto i, T value) const <Vector grex::Vector::insert(AnyIndexTag, T) const>`
 
-   * - Store
-     - | :cpp:func:`Vector::store(T* ptr) const <void grex::Vector::store(T*) const>`
-       | :cpp:func:`Vector::store_aligned(T* ptr) const <void grex::Vector::store_aligned(T*) const>`
-       | :cpp:func:`Vector::store_part(T* ptr, std::size_t num) const <void grex::Vector::store_part(T*, std::size_t) const>`
-       | :cpp:func:`Vector::store_part(T* ptr, AnyIndexTag auto num) const <void grex::Vector::store_part(T*, AnyIndexTag) const>`
+   * - :ref:`Store (unaligned) <operations-store>`
+     - :cpp:func:`Vector::store(T* ptr) const <void grex::Vector::store(T*) const>`
+
+   * - :ref:`Store (aligned) <operations-store-aligned>`
+     - :cpp:func:`Vector::store_aligned(T* ptr) const <void grex::Vector::store_aligned(T*) const>`
+
+   * - :ref:`Store partial (runtime) <operations-store-part-runtime>`
+     - :cpp:func:`Vector::store_part(T* ptr, std::size_t num) const <void grex::Vector::store_part(T*, std::size_t) const>`
+
+   * - :ref:`Store partial (compile-time) <operations-store-part-ct>`
+     - :cpp:func:`Vector::store_part(T* ptr, AnyIndexTag auto num) const <void grex::Vector::store_part(T*, AnyIndexTag) const>`
 
    * - Comparison
      - | :cpp:func:`operator==(Vector, Vector) <Mask grex::Vector::operator==(Vector, Vector)>`
