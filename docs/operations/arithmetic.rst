@@ -66,24 +66,24 @@ Multiplication
    x86-64
    ======
 
-   - Floating point: uses the corresponding intrinsic.
-   - 8-bit integers: emulated via 16-bit products, shifting, and blending.
-   - 16-bit integers: uses ``mullo_epi16`` intrinsics.
-   - 32-bit integers:
+   - **Floating point**: uses the corresponding intrinsic.
+   - **8-bit integers**: emulated via 16-bit products, shifting, and blending.
+   - **16-bit integers**: uses ``mullo_epi16`` intrinsics.
+   - **32-bit integers**:
 
-     - x86-64-v2 and newer: uses ``mullo_epi32`` intrinsics.
-     - Otherwise: emulated via two 32×32→64-bit multiplies, additions, and shuffles.
+     - **x86-64-v2 and newer**: uses ``mullo_epi32`` intrinsics.
+     - **Otherwise**: emulated via two 32×32→64-bit multiplies, additions, and shuffles.
 
-   - 64-bit integers:
+   - **64-bit integers**:
 
-     - x86-64-v4: uses ``mullo_epi64`` intrinsics.
-     - Otherwise: emulated via three 32×32→64-bit multiplies, shifts, and adds.
+     - **x86-64-v4**: uses ``mullo_epi64`` intrinsics.
+     - **Otherwise**: emulated via three 32×32→64-bit multiplies, shifts, and adds.
 
    Neon
    ====
 
-   - Floating point and integers up to 32 bits: uses the corresponding intrinsic.
-   - 64-bit integers: emulated via a 32-bit multiplication, a 32-bit fused multiply-add, additions, and shuffling.
+   - **Floating point and integers up to 32 bits**: uses the corresponding intrinsic.
+   - **64-bit integers**: emulated via a 32-bit multiplication, a 32-bit fused multiply-add, additions, and shuffling.
 
 .. _operations-division:
 

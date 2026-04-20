@@ -17,11 +17,11 @@ Bitwise NOT
 
    Element-wise bitwise complement :math:`\neg v` of integer elements.
 
-   - x86-64: implemented as XOR with an all-ones vector.
-   - Neon:
+   - **x86-64**: implemented as XOR with an all-ones vector.
+   - **Neon**:
 
-     - 8–32-bit: ``vmvnq``.
-     - 64-bit: 32-bit ``vmvnq`` followed by reinterpretation.
+     - **8/16/32-bit**: ``vmvnq``.
+     - **64-bit**: 32-bit ``vmvnq`` followed by reinterpretation.
 
 .. _operations-bitwise-and:
 

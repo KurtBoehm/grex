@@ -20,8 +20,8 @@ Left Shift
    x86-64
    ======
 
-   - 8-bit integers: emulated via 16-bit left shifts plus masking.
-   - 16/32/64-bit integers: uses ``slli_epi{16,32,64}`` intrinsics.
+   - **8-bit integers**: emulated via 16-bit left shifts plus masking.
+   - **16/32/64-bit integers**: uses ``slli_epi{16,32,64}`` intrinsics.
 
    Neon
    ====
@@ -43,19 +43,19 @@ Right Shift
    x86-64
    ======
 
-   - Unsigned (logical shift):
+   - **Unsigned (logical shift)**:
 
-     - 8-bit: emulated via 16-bit logical shifts plus masking.
-     - 16/32/64-bit: uses ``srli_epi{16,32,64}`` intrinsics.
+     - **8-bit**: emulated via 16-bit logical shifts plus masking.
+     - **16/32/64-bit**: uses ``srli_epi{16,32,64}`` intrinsics.
 
-   - Signed (arithmetic shift):
+   - **Signed (arithmetic shift)**:
 
-     - 8-bit: emulated via a 16-bit logical shift, masking, sign-bit reconstruction, and subtraction.
-     - 16/32-bit: uses ``srai_epi{16,32}`` intrinsics.
-     - 64-bit:
+     - **8-bit**: emulated via a 16-bit logical shift, masking, sign-bit reconstruction, and subtraction.
+     - **16/32-bit**: uses ``srai_epi{16,32}`` intrinsics.
+     - **64-bit**:
 
-       - x86-64-v4: uses ``srai_epi64`` intrinsics.
-       - Otherwise: emulated via 32-bit arithmetic/logical shifts, shuffles, and unpacking.
+       - **x86-64-v4**: uses ``srai_epi64`` intrinsics.
+       - **Otherwise**: emulated via 32-bit arithmetic/logical shifts, shuffles, and unpacking.
 
    Neon
    ====

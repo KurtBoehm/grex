@@ -158,12 +158,18 @@ Vector-Specific Operations
    * - :ref:`Store partial (compile-time) <operations-store-part-ct>`
      - :cpp:func:`Vector::store_part(T* ptr, AnyIndexTag auto num) const <void grex::Vector::store_part(T*, AnyIndexTag) const>`
 
-   * - Comparison
-     - | :cpp:func:`operator==(Vector, Vector) <Mask grex::Vector::operator==(Vector, Vector)>`
-       | :cpp:func:`operator!=(Vector, Vector) <Mask grex::Vector::operator!=(Vector, Vector)>`
-       | :cpp:func:`operator\<(Vector, Vector) <Mask grex::Vector::operator<(Vector, Vector)>`
+   * - :ref:`Equality <operations-compare-eq>`
+     - :cpp:func:`operator==(Vector, Vector) <Mask grex::Vector::operator==(Vector, Vector)>`
+
+   * - :ref:`Inequality <operations-compare-neq>`
+     - :cpp:func:`operator!=(Vector, Vector) <Mask grex::Vector::operator!=(Vector, Vector)>`
+
+   * - :ref:`Strict inequality <operations-compare-lt>`
+     - | :cpp:func:`operator\<(Vector, Vector) <Mask grex::Vector::operator<(Vector, Vector)>`
        | :cpp:func:`operator>(Vector, Vector) <Mask grex::Vector::operator>(Vector, Vector)>`
-       | :cpp:func:`operator\<=(Vector, Vector) <Mask grex::Vector::operator<=(Vector, Vector)>`
+
+   * - :ref:`Non-strict inequality <operations-compare-ge>`
+     - | :cpp:func:`operator\<=(Vector, Vector) <Mask grex::Vector::operator<=(Vector, Vector)>`
        | :cpp:func:`operator>=(Vector, Vector) <Mask grex::Vector::operator>=(Vector, Vector)>`
 
    * - Expand (undefined upper)
@@ -230,7 +236,7 @@ Mask-Specific Operations
    * - :ref:`Logical XOR <operations-logical-xor>`
      - :cpp:func:`operator!=(Mask, Mask) <Mask grex::Mask::operator!=(Mask, Mask)>`
 
-   * - Mask equality
+   * - :ref:`Mask equality <operations-compare-eq-mask>`
      - :cpp:func:`operator==(Mask, Mask) <Mask grex::Mask::operator==(Mask, Mask)>`
 
    * - Element access

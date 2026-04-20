@@ -23,14 +23,14 @@ Store Full
    x86-64
    ======
 
-   - Native vectors: use ``storeu``/``store`` intrinsics at the appropriate width.
-   - Sub-native vectors: use minimal-width stores (e.g. ``_mm_storeu_si16``, ``_mm_storeu_si32``) on the backing register so that exactly :math:`N` elements are written.
+   - **Native vectors**: use ``storeu``/``store`` intrinsics at the appropriate width.
+   - **Sub-native vectors**: use minimal-width stores (e.g. ``_mm_storeu_si16``, ``_mm_storeu_si32``) on the backing register so that exactly :math:`N` elements are written.
 
    Neon
    ====
 
-   - Native vectors: use ``vst1q`` intrinsics.
-   - Sub-native vectors: implemented via :cpp:func:`backend::store_part` on the backing native vector.
+   - **Native vectors**: use ``vst1q`` intrinsics.
+   - **Sub-native vectors**: implemented via :cpp:func:`backend::store_part` on the backing native vector.
 
    Super-native vectors (shared)
    =============================
@@ -69,27 +69,27 @@ Store Partial (Runtime Length)
    Native vectors
    --------------
 
-   - x86-64-v4: use ``mask_storeu`` intrinsics with a mask produced by :cpp:func:`backend::cutoff_mask`.
-   - Earlier:
+   - **x86-64-v4**: use ``mask_storeu`` intrinsics with a mask produced by :cpp:func:`backend::cutoff_mask`.
+   - **Earlier**:
 
-     - 128-bit, 32/64-bit elements:
+     - **128-bit, 32/64-bit elements**:
 
-       - x86-64-v3: use ``maskstore`` intrinsics with integer masks.
-       - Earlier: small case distinctions with 32/64-bit stores and ``std::memcpy``.
+       - **x86-64-v3**: use ``maskstore`` intrinsics with integer masks.
+       - **Earlier**: small case distinctions with 32/64-bit stores and ``std::memcpy``.
 
-     - 128-bit, 8/16-bit elements:
+     - **128-bit, 8/16-bit elements**:
 
        - Store the lower 64 bits using ``_mm_storeu_si64`` if ``size >= N / 2``, then handle the remaining 64 bits (transferred to a GP register) using ``std::memcpy`` of 4/2/1-byte chunks.
 
-     - 256/512-bit vectors:
+     - **256/512-bit vectors**:
 
-       - Split across halves: fully store the lower half if applicable and partially store the remaining half.
+       - **Split across halves**: fully store the lower half if applicable and partially store the remaining half.
 
    Sub-native vectors
    ------------------
 
-   - x86-64-v4: forward to the corresponding native :cpp:func:`backend::store_part` on the backing register.
-   - Earlier: use specialized small-width sequences using ``std::memcpy`` and narrow stores (e.g. ``_mm_storeu_si32``, ``_mm_storeu_si64``).
+   - **x86-64-v4**: forward to the corresponding native :cpp:func:`backend::store_part` on the backing register.
+   - **Earlier**: use specialized small-width sequences using ``std::memcpy`` and narrow stores (e.g. ``_mm_storeu_si32``, ``_mm_storeu_si64``).
 
    Neon
    ====
@@ -111,8 +111,8 @@ Store Partial (Runtime Length)
    Super-native vectors (shared)
    =============================
 
-   - If ``size <= N / 2``: partial store of the lower half.
-   - Otherwise: fully store the lower half and partially store the upper half for the remainder.
+   - **If ``size <= N / 2``**: partial store of the lower half.
+   - **Otherwise**: fully store the lower half and partially store the upper half for the remainder.
 
 .. _operations-store-part-ct:
 

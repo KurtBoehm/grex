@@ -17,12 +17,12 @@ Logical NOT
 
    Element-wise logical NOT :math:`\neg m` of mask lanes.
 
-   - x86-64:
+   - **x86-64**:
 
-     - x86-64-v4: uses mask negation (bitwise complement of the mask register).
-     - Otherwise: implemented via XOR with an all-ones mask.
+     - **x86-64-v4**: uses mask negation (bitwise complement of the mask register).
+     - **Otherwise**: implemented via XOR with an all-ones mask.
 
-   - Neon: implemented via bitwise NOT (``vmvnq``) on the underlying integer mask type.
+   - **Neon**: implemented via bitwise NOT (``vmvnq``) on the underlying integer mask type.
 
 .. _operations-logical-and:
 
@@ -34,12 +34,12 @@ Logical AND
 
    Element-wise logical AND :math:`a \land b` of mask lanes.
 
-   - x86-64:
+   - **x86-64**:
 
-     - x86-64-v4: uses ``kand_mask`` intrinsics.
-     - Otherwise: uses ``and`` intrinsics on the underlying integer vector.
+     - **x86-64-v4**: uses ``kand_mask`` intrinsics.
+     - **Otherwise**: uses ``and`` intrinsics on the underlying integer vector.
 
-   - Neon: uses ``vandq`` on the underlying integer mask type.
+   - **Neon**: uses ``vandq`` on the underlying integer mask type.
 
 .. _operations-logical-andnot:
 
@@ -51,12 +51,12 @@ Logical ANDNOT
 
    Element-wise logical :math:`\neg a \land b` of mask lanes.
 
-   - x86-64:
+   - **x86-64**:
 
-     - x86-64-v4: uses ``kandn_mask`` intrinsics.
-     - Otherwise: uses ``andn`` intrinsics on the underlying integer vector.
+     - **x86-64-v4**: uses ``kandn_mask`` intrinsics.
+     - **Otherwise**: uses ``andn`` intrinsics on the underlying integer vector.
 
-   - Neon: uses ``vbicq(b, a)``.
+   - **Neon**: uses ``vbicq(b, a)``.
 
 .. _operations-logical-or:
 
@@ -68,12 +68,12 @@ Logical OR
 
    Element-wise logical OR :math:`a \lor b` of mask lanes.
 
-   - x86-64:
+   - **x86-64**:
 
-     - x86-64-v4: uses ``kor_mask`` intrinsics.
-     - Otherwise: uses ``or`` intrinsics on the underlying integer vector.
+     - **x86-64-v4**: uses ``kor_mask`` intrinsics.
+     - **Otherwise**: uses ``or`` intrinsics on the underlying integer vector.
 
-   - Neon: uses ``vorrq`` on the underlying integer mask type.
+   - **Neon**: uses ``vorrq`` on the underlying integer mask type.
 
 .. _operations-logical-xor:
 
@@ -85,9 +85,9 @@ Logical XOR
 
    Element-wise logical XOR :math:`a \oplus b` of mask lanes.
 
-   - x86-64:
+   - **x86-64**:
 
-     - x86-64-v4: uses ``_kxor_mask*`` intrinsics.
-     - Otherwise: uses ``xor`` intrinsics on the underlying integer vector.
+     - **x86-64-v4**: uses ``_kxor_mask*`` intrinsics.
+     - **Otherwise**: uses ``xor`` intrinsics on the underlying integer vector.
 
-   - Neon: uses ``veorq`` on the underlying integer mask type.
+   - **Neon**: uses ``veorq`` on the underlying integer mask type.

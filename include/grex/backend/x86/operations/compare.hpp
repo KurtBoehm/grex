@@ -35,12 +35,10 @@ namespace grex::backend {
               GREX_CAT(BITPREFIX##_cmp_, GREX_EPU_SUFFIX(KIND, BITS), _mask)(a.r, b.r, CMPIDX)}; \
   }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+// compare_eq: cmpeq apart from i64/u64 on level 1, unsigned fall back to signed //
+///////////////////////////////////////////////////////////////////////////////////
 
-// This is the base case (limited support for integers),
-// which applies to the SSE family and integer AVX2
-
-// Equality: All kinds have cmpeq apart from i64/u64 on level 1, unsigned fall back to signed
 #define GREX_CMP_IMPL_BASE_CMPEQ_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return {.r = \
             GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, \
@@ -50,7 +48,7 @@ namespace grex::backend {
   const __m128i eq32 = _mm_cmpeq_epi32(a.r, b.r); \
   const __m128i eq32s = _mm_shuffle_epi32(eq32, 0b10110001); \
   return {.r = _mm_and_si128(eq32, eq32s)};
-// case distinctions
+
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_CMP_IMPL_BASE_CMPEQ_INT64x2 GREX_CMP_IMPL_BASE_CMPEQ_BASE
 #else
@@ -70,7 +68,10 @@ namespace grex::backend {
 #define GREX_CMP_IMPL_BASE_CMPEQ_u GREX_CMP_IMPL_BASE_CMPEQ_INT
 #define GREX_CMP_IMPL_BASE_cmpeq(KIND, ...) GREX_CMP_IMPL_BASE_CMPEQ_##KIND(KIND, __VA_ARGS__)
 
-// Inequality: Separate cmpneq intrinsic only for f, negated equality for i and u
+/////////////////////////////////////////////////////////////////////////////////////
+// compare_neq: separate cmpneq intrinsic only for f, negated equality for i and u //
+/////////////////////////////////////////////////////////////////////////////////////
+
 #define GREX_CMPNEQ_f(BITS, BITPREFIX, REGISTERBITS) \
   return {.r = GREX_KINDCAST(f, i, BITS, REGISTERBITS, \
                              GREX_CAT(BITPREFIX##_cmpneq_, GREX_FP_SUFFIX(BITS))(a.r, b.r))};
@@ -79,7 +80,10 @@ namespace grex::backend {
 #define GREX_CMP_IMPL_BASE_cmpneq(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   GREX_CMPNEQ_##KIND(BITS, BITPREFIX, REGISTERBITS)
 
-// Less
+////////////////////////////////////////////////////////
+// Less: cmpgt for f/i apart from i64, trickery for u //
+////////////////////////////////////////////////////////
+
 // f, i other than i64 on level 1: Separate cmpgt intrinsics
 #define GREX_CMPLT_INTRINSIC(KIND, BITS, BITPREFIX, REGISTERBITS) \
   return {.r = \
@@ -147,7 +151,10 @@ namespace grex::backend {
 // base
 #define GREX_CMP_IMPL_BASE_cmplt(KIND, ...) GREX_CMPLT_##KIND(__VA_ARGS__)
 
-// Greater or equal
+//////////////////////
+// Greater or equal //
+//////////////////////
+
 // f: Separate cmpgt intrinsics
 #define GREX_CMPGE_INTRINSIC(KIND, BITS, BITPREFIX, REGISTERBITS) \
   return {.r = \
@@ -188,7 +195,9 @@ namespace grex::backend {
 #define GREX_CMP_IMPL_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
   GREX_CMP_IMPL_BASE_##CMPNAME(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////
+// Case distinctions between register sizes //
+//////////////////////////////////////////////
 
 // SSE family definitions
 #define GREX_CMP_IMPL_128 GREX_CMP_IMPL_BASE
@@ -203,7 +212,9 @@ namespace grex::backend {
 #define GREX_CMP_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
   GREX_CMP_IMPL_##REGISTERBITS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX)
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+// Instantiate for each type, with AVX-512 case distinction //
+//////////////////////////////////////////////////////////////
 
 #define GREX_CMP_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
   inline NativeMask<KIND##BITS, SIZE> compare_##OPNAME(NativeVector<KIND##BITS, SIZE> a, \
@@ -245,7 +256,9 @@ GREX_CMP_SUPER(compare_neq)
 GREX_CMP_SUPER(compare_lt)
 GREX_CMP_SUPER(compare_ge)
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////
+// Mask equality //
+///////////////////
 
 // Mask equality
 // Broad masks: Compare 8-bit chunks
