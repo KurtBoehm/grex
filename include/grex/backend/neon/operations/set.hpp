@@ -115,7 +115,7 @@ GREX_ALWAYS_INLINE inline f32x4 set32(f32 v0, f32 v1, f32 v2, f32 v3) {
 GREX_ALWAYS_INLINE inline f64x2 set64(f64 v0, f64 v1) {
   auto vec0 = expand_any(Scalar{v0}, index_tag<2>);
   auto vec1 = expand_any(Scalar{v1}, index_tag<2>);
-  return f64x2{.r = vuzp1q_f64(vec0.r, vec1.r)};
+  return f64x2{.r = vzip1q_f64(vec0.r, vec1.r)};
 }
 
 #define GREX_SET_i(KIND, BITS, SIZE) GREX_SET_I##BITS(KIND, BITS, SIZE)
