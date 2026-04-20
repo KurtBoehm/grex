@@ -10,16 +10,13 @@
 #include <arm_neon.h>
 
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
-#include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/cast.hpp"
 #include "grex/backend/macros/conditional.hpp"
-#include "grex/backend/macros/equals.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/repeat.hpp"
 #include "grex/backend/neon/instructions.hpp"
 #include "grex/backend/neon/macros/cast.hpp"
 #include "grex/backend/neon/operations/arithmetic.hpp"
-#include "grex/backend/neon/operations/expand-register.hpp"
 #include "grex/backend/neon/operations/expand.hpp"
 #include "grex/backend/neon/operations/undefined.hpp"
 #include "grex/backend/neon/types.hpp"
@@ -27,112 +24,99 @@
 
 namespace grex::backend {
 #define GREX_SET_ARG(CNT, IDX, TYPE) GREX_COMMA_IF(IDX) TYPE v##IDX
-#define GREX_SET_VAL(CNT, IDX) GREX_COMMA_IF(IDX) v##IDX
 #define GREX_BSET_VAL(CNT, IDX, TYPE) GREX_COMMA_IF(IDX) TYPE(v##IDX)
 
-#define GREX_SET_LANE_0(CNT, IDX, KIND, BITS) \
-  out = GREX_ISUFFIXED(vsetq_lane, KIND, BITS)(v##IDX, out, IDX);
-#define GREX_SET_LANE_1(...)
-#define GREX_SET_LANE(CNT, IDX, KIND, BITS) \
-  GREX_CAT(GREX_SET_LANE_, GREX_EQUALS(IDX, 0))(CNT, IDX, KIND, BITS)
+#define GREX_SET_KINDCAST_f f
+#define GREX_SET_KINDCAST_i u
+#define GREX_SET_KINDCAST_u u
+#define GREX_SET_KINDCAST(CNT, IDX, KIND, BITS) \
+  GREX_COMMA_IF(IDX) GREX_KINDCAST(GREX_SET_KINDCAST_##KIND, KIND, BITS, v##IDX)
 
-#define GREX_SET_BOOLLANE_0(CNT, IDX, BITS) \
-  ext = GREX_ISUFFIXED(vsetq_lane, i, BITS)(i##BITS(v##IDX), ext, IDX);
-#define GREX_SET_BOOLLANE_1(...)
-#define GREX_SET_BOOLLANE(CNT, IDX, BITS) \
-  GREX_CAT(GREX_SET_BOOLLANE_, GREX_EQUALS(IDX, 0))(CNT, IDX, BITS)
+// u64
+GREX_ALWAYS_INLINE inline u64x2 set64(u64x2 v0, u64x2 v1) {
+  return u64x2{.r = vzip1q_u64(v0.r, v1.r)};
+}
+GREX_ALWAYS_INLINE inline u64x2 set64(u64 v0, u64 v1) {
+  return set64(expand_any(Scalar{v0}, index_tag<2>), expand_any(Scalar{v1}, index_tag<2>));
+}
 
-// 16×[iu]8
-#define GREX_SET_I8(KIND, BITS, SIZE) \
-  const u32 a0 = \
-    isa::orr32(GREX_KINDCAST(u, KIND, BITS, v0), GREX_KINDCAST(u, KIND, BITS, v1), isa::lsl<8>); \
-  const u32 a1 = \
-    isa::orr32(GREX_KINDCAST(u, KIND, BITS, v2), GREX_KINDCAST(u, KIND, BITS, v3), isa::lsl<8>); \
-  const u64 b0 = isa::orr64(u32{a0}, u32{a1}, isa::lsl<16>); \
-\
-  const u32 a2 = \
-    isa::orr32(GREX_KINDCAST(u, KIND, BITS, v4), GREX_KINDCAST(u, KIND, BITS, v5), isa::lsl<8>); \
-  const u32 a3 = \
-    isa::orr32(GREX_KINDCAST(u, KIND, BITS, v6), GREX_KINDCAST(u, KIND, BITS, v7), isa::lsl<8>); \
-  const u64 b1 = isa::orr64(u32{a2}, u32{a3}, isa::lsl<16>); \
-\
-  const u64 c0 = isa::orr64(b0, b1, isa::lsl<32>); \
-  auto vec0 = expand_any(Scalar{c0}, grex::index_tag<2>); \
-\
-  const u32 a4 = \
-    isa::orr32(GREX_KINDCAST(u, KIND, BITS, v8), GREX_KINDCAST(u, KIND, BITS, v9), isa::lsl<8>); \
-  const u32 a5 = \
-    isa::orr32(GREX_KINDCAST(u, KIND, BITS, v10), GREX_KINDCAST(u, KIND, BITS, v11), isa::lsl<8>); \
-  const u64 b2 = isa::orr64(u32{a4}, u32{a5}, isa::lsl<16>); \
-\
-  const u32 a6 = \
-    isa::orr32(GREX_KINDCAST(u, KIND, BITS, v12), GREX_KINDCAST(u, KIND, BITS, v13), isa::lsl<8>); \
-  const u32 a7 = \
-    isa::orr32(GREX_KINDCAST(u, KIND, BITS, v14), GREX_KINDCAST(u, KIND, BITS, v15), isa::lsl<8>); \
-  const u64 b3 = isa::orr64(u32{a6}, u32{a7}, isa::lsl<16>); \
-\
-  const u64 c1 = isa::orr64(b2, b3, isa::lsl<32>); \
-  auto vec1 = expand_any(Scalar{c1}, grex::index_tag<2>); \
-\
-  return as<KIND##BITS>(u64x2{.r = vzip1q_u64(vec0.r, vec1.r)});
-// 8×[iu]16
-#define GREX_SET_I16(KIND, BITS, SIZE) \
-  const u64 a0 = isa::orr64(u32{GREX_KINDCAST(u, KIND, BITS, v0)}, \
-                            u32{GREX_KINDCAST(u, KIND, BITS, v1)}, isa::lsl<16>); \
-  const u64 a1 = isa::orr64(u32{GREX_KINDCAST(u, KIND, BITS, v2)}, \
-                            u32{GREX_KINDCAST(u, KIND, BITS, v3)}, isa::lsl<16>); \
-  const u64 b0 = isa::orr64(a0, a1, isa::lsl<32>); \
-  auto vec0 = expand_any(Scalar{b0}, grex::index_tag<2>); \
-\
-  const u64 a2 = isa::orr64(u32{GREX_KINDCAST(u, KIND, BITS, v4)}, \
-                            u32{GREX_KINDCAST(u, KIND, BITS, v5)}, isa::lsl<16>); \
-  const u64 a3 = isa::orr64(u32{GREX_KINDCAST(u, KIND, BITS, v6)}, \
-                            u32{GREX_KINDCAST(u, KIND, BITS, v7)}, isa::lsl<16>); \
-  const u64 b1 = isa::orr64(a2, a3, isa::lsl<32>); \
-  auto vec1 = expand_any(Scalar{b1}, grex::index_tag<2>); \
-\
-  return as<KIND##BITS>(u64x2{.r = vzip1q_u64(vec0.r, vec1.r)});
+// u32
 #if GREX_GCC
-// 4×[iu]32: uses BFI
-#define GREX_SET_I32(KIND, BITS, SIZE) \
-  const u64 a0 = isa::bfi<32, 32>(expand_bits<u64>(GREX_KINDCAST(u, KIND, BITS, v0)), \
-                                  expand_bits<u64>(GREX_KINDCAST(u, KIND, BITS, v1))); \
-  auto vec0 = expand_any(Scalar{a0}, grex::index_tag<2>); \
-\
-  const u64 a1 = isa::bfi<32, 32>(expand_bits<u64>(GREX_KINDCAST(u, KIND, BITS, v2)), \
-                                  expand_bits<u64>(GREX_KINDCAST(u, KIND, BITS, v3))); \
-  auto vec1 = expand_any(Scalar{a1}, grex::index_tag<2>); \
-\
-  return as<KIND##BITS>(u64x2{.r = vzip1q_u64(vec0.r, vec1.r)});
+// 2×[iu]32: uses BFI
+GREX_ALWAYS_INLINE inline u64x2 set32(u32 v0, u32 v1) {
+  const u64 a0 = isa::bfi<32, 32>(expand_bits<u64>(v0), expand_bits<u64>(v1));
+  return expand_any(Scalar{a0}, index_tag<2>);
+}
 #else
-// 4×[iu]32: fallback packing
-#define GREX_SET_I32(KIND, BITS, SIZE) \
-  const u64 a0 = GREX_KINDCAST(u, KIND, BITS, v0) | (u64{GREX_KINDCAST(u, KIND, BITS, v1)} << 32); \
-  auto vec0 = expand_any(Scalar{a0}, grex::index_tag<2>); \
-\
-  const u64 a1 = GREX_KINDCAST(u, KIND, BITS, v2) | (u64{GREX_KINDCAST(u, KIND, BITS, v3)} << 32); \
-  auto vec1 = expand_any(Scalar{a1}, grex::index_tag<2>); \
-\
-  return as<KIND##BITS>(u64x2{.r = vzip1q_u64(vec0.r, vec1.r)});
+// 2×[iu]32: fallback packing
+GREX_ALWAYS_INLINE inline u64x2 set32(u32 v0, u32 v1) {
+  return expand_any(Scalar{v0 | (u64{v1} << 32)}, index_tag<2>);
+}
 #endif
-// 2×[iu]64
-#define GREX_SET_I64(KIND, BITS, SIZE) \
-  auto vec0 = expand_any(Scalar{v0}, grex::index_tag<2>); \
-  auto vec1 = expand_any(Scalar{v1}, grex::index_tag<2>); \
-  return NativeVector<KIND##BITS, 2>{.r = GREX_ISUFFIXED(vzip1q, KIND, BITS)(vec0.r, vec1.r)};
+GREX_ALWAYS_INLINE inline u32x4 set32(u32 v0, u32 v1, u32 v2, u32 v3) {
+  return as<u32>(set64(set32(v0, v1), set32(v2, v3)));
+}
 
-// 4×f32
-#define GREX_SET_F32(KIND, BITS, SIZE) \
-  auto vec0 = expand_any(Scalar{v0}, grex::index_tag<4>); \
-  auto vec1 = expand_any(Scalar{v1}, grex::index_tag<4>); \
-  auto vec2 = expand_any(Scalar{v2}, grex::index_tag<4>); \
-  auto vec3 = expand_any(Scalar{v3}, grex::index_tag<4>); \
-  return f32x4{.r = vuzp1q_f32(vuzp1q_f32(vec0.r, vec1.r), vuzp1q_f32(vec2.r, vec3.r))};
-// 2×f64
-#define GREX_SET_F64(KIND, BITS, SIZE) \
-  auto vec0 = expand_any(Scalar{v0}, grex::index_tag<2>); \
-  auto vec1 = expand_any(Scalar{v1}, grex::index_tag<2>); \
+// u16
+GREX_ALWAYS_INLINE inline u16x8 set16(u32 v0, u32 v1) {
+  return as<u16>(expand_any(Scalar{isa::orr32(v0, v1, isa::lsl<16>)}, index_tag<4>));
+}
+GREX_ALWAYS_INLINE inline u16x8 set16(u32 v0, u32 v1, u32 v2, u32 v3) {
+  const u64 a0 = isa::orr64(v0, v1, isa::lsl<16>);
+  const u64 a1 = isa::orr64(v2, v3, isa::lsl<16>);
+  const u64 b0 = isa::orr64(a0, a1, isa::lsl<32>);
+  return as<u16>(expand_any(Scalar{b0}, index_tag<2>));
+}
+GREX_ALWAYS_INLINE inline u16x8 set16(u32 v0, u32 v1, u32 v2, u32 v3, u32 v4, u32 v5, u32 v6,
+                                      u32 v7) {
+  return as<u16>(set64(as<u64>(set16(v0, v1, v2, v3)), as<u64>(set16(v4, v5, v6, v7))));
+}
+
+// u8
+GREX_ALWAYS_INLINE inline u8x16 set8(u32 v0, u32 v1) {
+  return as<u8>(expand_any(Scalar{isa::orr32(v0, v1, isa::lsl<8>)}, index_tag<4>));
+}
+GREX_ALWAYS_INLINE inline u8x16 set8(u32 v0, u32 v1, u32 v2, u32 v3) {
+  return as<u8>(set16(isa::orr32(v0, v1, isa::lsl<8>), isa::orr32(v2, v3, isa::lsl<8>)));
+}
+GREX_ALWAYS_INLINE inline u8x16 set8(u32 v0, u32 v1, u32 v2, u32 v3, u32 v4, u32 v5, u32 v6,
+                                     u32 v7) {
+  const u32 a0 = isa::orr32(v0, v1, isa::lsl<8>);
+  const u32 a1 = isa::orr32(v2, v3, isa::lsl<8>);
+  const u32 a2 = isa::orr32(v4, v5, isa::lsl<8>);
+  const u32 a3 = isa::orr32(v6, v7, isa::lsl<8>);
+  return as<u8>(set16(a0, a1, a2, a3));
+}
+GREX_ALWAYS_INLINE inline u8x16 set8(u32 v0, u32 v1, u32 v2, u32 v3, u32 v4, u32 v5, u32 v6, u32 v7,
+                                     u32 v8, u32 v9, u32 v10, u32 v11, u32 v12, u32 v13, u32 v14,
+                                     u32 v15) {
+  const u32 a0 = isa::orr32(v0, v1, isa::lsl<8>);
+  const u32 a1 = isa::orr32(v2, v3, isa::lsl<8>);
+  const u32 a2 = isa::orr32(v4, v5, isa::lsl<8>);
+  const u32 a3 = isa::orr32(v6, v7, isa::lsl<8>);
+  const u32 a4 = isa::orr32(v8, v9, isa::lsl<8>);
+  const u32 a5 = isa::orr32(v10, v11, isa::lsl<8>);
+  const u32 a6 = isa::orr32(v12, v13, isa::lsl<8>);
+  const u32 a7 = isa::orr32(v14, v15, isa::lsl<8>);
+  return as<u8>(set16(a0, a1, a2, a3, a4, a5, a6, a7));
+}
+
+// f32
+GREX_ALWAYS_INLINE inline f32x4 set32(f32 v0, f32 v1) {
+  auto a0 = expand_any(Scalar{v0}, index_tag<4>);
+  auto a1 = expand_any(Scalar{v1}, index_tag<4>);
+  return f32x4{.r = vzip1q_f32(a0.r, a1.r)};
+}
+GREX_ALWAYS_INLINE inline f32x4 set32(f32 v0, f32 v1, f32 v2, f32 v3) {
+  return f32x4{.r = vzip1q_f32(set32(v0, v2).r, set32(v1, v3).r)};
+}
+
+// f64
+GREX_ALWAYS_INLINE inline f64x2 set64(f64 v0, f64 v1) {
+  auto vec0 = expand_any(Scalar{v0}, index_tag<2>);
+  auto vec1 = expand_any(Scalar{v1}, index_tag<2>);
   return f64x2{.r = vuzp1q_f64(vec0.r, vec1.r)};
+}
 
 #define GREX_SET_i(KIND, BITS, SIZE) GREX_SET_I##BITS(KIND, BITS, SIZE)
 #define GREX_SET_u(KIND, BITS, SIZE) GREX_SET_I##BITS(KIND, BITS, SIZE)
@@ -141,7 +125,7 @@ namespace grex::backend {
 #define GREX_SET(KIND, BITS, SIZE) \
   inline NativeVector<KIND##BITS, SIZE> set(TypeTag<NativeVector<KIND##BITS, SIZE>>, \
                                             GREX_REPEAT(SIZE, GREX_SET_ARG, KIND##BITS)) { \
-    GREX_SET_##KIND(KIND, BITS, SIZE) \
+    return as<KIND##BITS>(set##BITS(GREX_REPEAT(SIZE, GREX_SET_KINDCAST, KIND, BITS))); \
   }
 
 GREX_FOREACH_TYPE(GREX_SET, 128)
@@ -181,9 +165,8 @@ GREX_FOREACH_TYPE(GREX_CREATE, 128)
 #define GREX_SET_SUB(KIND, BITS, PART, SIZE) \
   inline SubVector<KIND##BITS, PART, SIZE> set(TypeTag<SubVector<KIND##BITS, PART, SIZE>>, \
                                                GREX_REPEAT(PART, GREX_SET_ARG, KIND##BITS)) { \
-    GREX_REGISTER(KIND, BITS, SIZE) out = expand_register(Scalar{v0}); \
-    GREX_RREPEAT(PART, GREX_SET_LANE, KIND, BITS) \
-    return SubVector<KIND##BITS, PART, SIZE>{out}; \
+    const auto m = set##BITS(GREX_REPEAT(PART, GREX_SET_KINDCAST, KIND, BITS)); \
+    return SubVector<KIND##BITS, PART, SIZE>{as<KIND##BITS>(m)}; \
   }
 GREX_FOREACH_SUB(GREX_SET_SUB)
 } // namespace grex::backend
