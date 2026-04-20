@@ -2,19 +2,33 @@
 Operations Overview
 ###################
 
+The name of most operations links to the documentation of that operation and some notes on its implementation in the different backends.
+
+Throughout this documentation, ``Vector<T, N>`` denotes any backend vector type with value type ``T`` and lane count ``N``, i.e. one of:
+
+- ``backend::NativeVector<T, N>``
+- ``backend::SubVector<T, N, M>`` with some ``M`` for which ``backend::NativeVector<T, M>`` is defined.
+- ``backend::SuperVector<THalf>`` where ``THalf::Value == T`` and ``2 * THalf::size == N``.
+
+Similarly, ``Mask<T, N>`` denotes any backend mask type for value type ``T`` and lane count ``N``, i.e. one of:
+
+- ``backend::NativeMask<T, N>``
+- ``backend::SubMask<T, N, M>`` with some ``M`` for which ``backend::NativeMask<T, M>`` is defined.
+- ``backend::SuperMask<THalf>`` where ``THalf::Value == T`` and ``2 * THalf::size == N``.
+
 .. list-table::
    :header-rows: 1
 
    * - Operation
      - Signature/Description
 
-   * - Construct zero vector
+   * - :ref:`Construct zero vector <operations-zeros-vector>`
      - :cpp:func:`Vector::Vector() <Vector grex::Vector::Vector()>`
 
-   * - Broadcast scalar
+   * - :ref:`Broadcast scalar <operations-broadcast-vector>`
      - :cpp:func:`Vector::Vector(T value) <Vector grex::Vector::Vector(T)>`
 
-   * - Construct from per-lane values
+   * - :ref:`Construct from per-lane values <operations-set-vector>`
      - ``Vector::Vector(T... values)``
 
    * - Construct from backend
@@ -40,10 +54,10 @@ Operations Overview
      - | :cpp:func:`Vector::load_multibyte(const std::byte* data, AnyIndexTag auto src_bytes) <template<std::size_t tSrcBytes> Vector grex::Vector::load_multibyte(const std::byte*, IndexTag<tSrcBytes>)>`
        | :cpp:func:`Vector::load_multibyte(TIt it) <template<MultiByteIterator TIt> Vector grex::Vector::load_multibyte(TIt)>`
 
-   * - Undefined vector
+   * - :ref:`Undefined vector <operations-undefined-vector>`
      - :cpp:func:`Vector::undefined() <Vector grex::Vector::undefined()>`
 
-   * - Zero vector
+   * - :ref:`Zero vector <operations-zeros-vector>`
      - :cpp:func:`Vector::zeros() <Vector grex::Vector::zeros()>`
 
    * - Lane indices
@@ -105,11 +119,11 @@ Operations Overview
        | :cpp:func:`operator^=(Vector b) <Vector& grex::Vector::operator^=(Vector)>`
        | :cpp:func:`operator^=(Value b) <Vector& grex::Vector::operator^=(Value)>`
 
-   * - Shift left
+   * - :ref:`Shift left <operations-shift-left>`
      - | :cpp:func:`operator\<\<(Vector, AnyIndexTag auto) <Vector grex::Vector::operator<<(Vector, AnyIndexTag)>`
        | :cpp:func:`operator\<\<=(AnyIndexTag auto) <Vector& grex::Vector::operator<<=(AnyIndexTag)>`
 
-   * - Shift right
+   * - :ref:`Shift right <operations-shift-right>`
      - | :cpp:func:`operator>>(Vector, AnyIndexTag auto) <Vector grex::Vector::operator>>(Vector, AnyIndexTag)>`
        | :cpp:func:`operator>>=(AnyIndexTag auto) <Vector& grex::Vector::operator>>=(AnyIndexTag)>`
 

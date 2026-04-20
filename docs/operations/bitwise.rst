@@ -5,7 +5,7 @@ Bitwise Operations
 ##################
 
 Element-wise bitwise operations on vectors.
-Sub-native vectors are extended to full native vectors, and all vectors in a super-native vector are processed independently.
+Sub-native vectors are embedded in a full native vector; each native lane of a super-native vector is processed independently.
 
 .. _operations-bitwise-not:
 
@@ -13,15 +13,15 @@ Sub-native vectors are extended to full native vectors, and all vectors in a sup
 Bitwise NOT
 ***********
 
-.. cpp:function:: backend::Vector<T, N> backend::bitwise_not(backend::Vector<T, N> v)
+.. cpp:function:: Vector<T, N> backend::bitwise_not(Vector<T, N> v)
 
    Element-wise bitwise complement :math:`\neg v` of integer elements.
 
-   - x86-64: implemented as XOR with all-ones.
-   - NEON:
+   - x86-64: implemented as XOR with an all-ones vector.
+   - Neon:
 
      - 8–32-bit: ``vmvnq``.
-     - 64-bit: 32-bit ``vmvnq`` and reinterpretation.
+     - 64-bit: 32-bit ``vmvnq`` followed by reinterpretation.
 
 .. _operations-bitwise-and:
 
@@ -29,11 +29,11 @@ Bitwise NOT
 Bitwise AND
 ***********
 
-.. cpp:function:: backend::Vector<T, N> backend::bitwise_and(backend::Vector<T, N> a, backend::Vector<T, N> b)
+.. cpp:function:: Vector<T, N> backend::bitwise_and(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise bitwise AND :math:`a_i \land b_i` for integer element types.
 
-   Implemented using ``and``/``vandq`` intrinsics (x86-64/NEON).
+   Implemented using ``and``/``vandq`` intrinsics (x86-64/Neon).
 
 .. _operations-bitwise-or:
 
@@ -41,11 +41,11 @@ Bitwise AND
 Bitwise OR
 **********
 
-.. cpp:function:: backend::Vector<T, N> backend::bitwise_or(backend::Vector<T, N> a, backend::Vector<T, N> b)
+.. cpp:function:: Vector<T, N> backend::bitwise_or(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise bitwise OR :math:`a_i \lor b_i` for integer element types.
 
-   Implemented using ``or``/``vorrq`` intrinsics (x86-64/NEON).
+   Implemented using ``or``/``vorrq`` intrinsics (x86-64/Neon).
 
 .. _operations-bitwise-xor:
 
@@ -53,8 +53,8 @@ Bitwise OR
 Bitwise XOR
 ***********
 
-.. cpp:function:: backend::Vector<T, N> backend::bitwise_xor(backend::Vector<T, N> a, backend::Vector<T, N> b)
+.. cpp:function:: Vector<T, N> backend::bitwise_xor(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise bitwise XOR :math:`a_i \oplus b_i` for integer element types.
 
-   Implemented using ``xor``/``veorq`` intrinsics (x86-64/NEON).
+   Implemented using ``xor``/``veorq`` intrinsics (x86-64/Neon).

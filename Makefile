@@ -16,5 +16,6 @@ setup-debug: clear
 doxy:
 	DOXY_INC=include DOXY_OUT=build/doxy doxygen docs/Doxyfile
 sphinx: doxy
+	rm -rf build/sphinx
 	sphinx-build -b html -Dbreathe_projects.grex=../build/doxy docs build/sphinx
 	python3 docs/fix_sphinx.py build/sphinx

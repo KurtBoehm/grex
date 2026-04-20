@@ -56,8 +56,8 @@ def main() -> None:
         # Remove template parameter spaces in navigation links
         for code in soup.select(
             "li.toc-h2.nav-item.toc-entry "
-            "> a.reference.internal.nav-link "
-            "> code.docutils.literal.notranslate"
+            + "> a.reference.internal.nav-link "
+            + "> code.docutils.literal.notranslate"
         ):
             for child in code.children:
                 if not isinstance(child, NavigableString) or child != " ":
@@ -68,6 +68,28 @@ def main() -> None:
                 assert ante and post
                 if ante[-1] in "<>" or post[-1] in "<>":
                     child.decompose()
+
+        if changed:
+            p.write_text(str(soup))
+
+    for p in (doxy_path / "operations").iterdir():
+        if p.suffix != ".html":
+            continue
+
+        print(p)
+
+        soup = BeautifulSoup(p.read_text(), "lxml")
+        changed = False
+
+        for ref in soup.select("a.reference.internal"):
+            content = ref.string
+            if content not in {"Mask", "Vector"}:
+                continue
+
+            tag = soup.new_tag("span", class_="n")
+            tag.append(soup.new_tag("span", class_="pre", string=content))
+            ref.replace_with(tag)
+            changed = True
 
         if changed:
             p.write_text(str(soup))
