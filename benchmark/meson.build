@@ -13,8 +13,19 @@ pcg_dep = dependency('pcg-cpp')
 if backend == 'neon'
   foreach name : ['load-part', 'store-part']
     executable(
-      name,
+      f'bm-@name@',
       f'neon/@name@.cpp',
+      cpp_args: args,
+      dependencies: [benchmark_dep, grex_dep, pcg_dep],
+    )
+  endforeach
+endif
+
+if backend == 'x86_64'
+  foreach name : ['multibyte']
+    executable(
+      f'bm-@name@',
+      f'x86/@name@.cpp',
       cpp_args: args,
       dependencies: [benchmark_dep, grex_dep, pcg_dep],
     )

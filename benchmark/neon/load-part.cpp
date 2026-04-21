@@ -1,10 +1,10 @@
 #include <cstddef>
 #include <random>
+#include <vector>
 
 #include <benchmark/benchmark.h>
 #include <pcg_extras.hpp>
 #include <pcg_random.hpp>
-#include <vector>
 
 #include "grex/grex.hpp"
 

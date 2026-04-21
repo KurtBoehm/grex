@@ -23,7 +23,7 @@
 #endif
 
 // Shared definitions.
-#include "grex/backend/shared/operations/multibyte.hpp" // IWYU pragma: keep
+#include "grex/backend/shared/operations/multibyte.hpp" // IWYU pragma: export
 
 // Load integers consisting of M bytes into integers consisting of N = 2^B bytes,
 // assuming N = std::bitceil(M).

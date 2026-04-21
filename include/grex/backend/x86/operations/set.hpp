@@ -7,8 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_SET_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SET_HPP
 
-#include <cstddef>
-
 #include <immintrin.h>
 
 #include "grex/backend/macros/base.hpp"
@@ -16,7 +14,7 @@
 #include "grex/backend/macros/conditional.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/repeat.hpp"
-#include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/instruction-sets.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/types.hpp"
@@ -40,13 +38,23 @@ namespace grex::backend {
 #define GREX_SET_SUFFIX_i(BITS, REGISTERBITS) GREX_SET_EPI(BITS, REGISTERBITS)
 #define GREX_SET_SUFFIX_u(BITS, REGISTERBITS) GREX_SET_EPI(BITS, REGISTERBITS)
 #define GREX_SET_SUFFIX(KIND, BITS, REGISTERBITS) GREX_SET_SUFFIX_##KIND(BITS, REGISTERBITS)
+
 // Helpers to define function arguments for the set-based operations
 #define GREX_SET_ARG(CNT, IDX, TYPE) GREX_COMMA_IF(IDX) TYPE v##IDX
 #define GREX_SET_VAL(CNT, IDX, KIND, BITS) GREX_SIGNED_CAST(KIND, BITS, v##IDX) GREX_COMMA_IF(IDX)
 #define GREX_SET_NEGVAL(CNT, IDX, BITS) GREX_OPCAST(i, BITS, -i##BITS(v##IDX)) GREX_COMMA_IF(IDX)
+
 // Define the messy undefined macros
-#define GREX_UNDEF(KIND, BITS, BITPREFIX, REGISTERBITS) \
-  GREX_CAT(BITPREFIX##_undefined_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))
+#define GREX_UNDEF_BASE(KIND, BITS, BITPREFIX, REGISTERBITS) \
+  GREX_CAT(BITPREFIX##_setzero_, GREX_SI_SUFFIX(KIND, BITS, REGISTERBITS))
+#define GREX_UNDEF_I128 _mm_undefined_si128
+#define GREX_UNDEF_I256 _mm256_undefined_si256
+#define GREX_UNDEF_I512 _mm512_undefined_epi32
+#define GREX_UNDEF_INT(KIND, BITS, BITPREFIX, REGISTERBITS) GREX_UNDEF_I##REGISTERBITS
+#define GREX_UNDEF_f GREX_UNDEF_BASE
+#define GREX_UNDEF_i GREX_UNDEF_INT
+#define GREX_UNDEF_u GREX_UNDEF_INT
+#define GREX_UNDEF(KIND, ...) GREX_UNDEF_##KIND(KIND, __VA_ARGS__)
 
 #define GREX_CMASK_SET_OP(CNT, IDX, TYPE) \
   GREX_IF(IDX, |, GREX_EMPTY()) \
