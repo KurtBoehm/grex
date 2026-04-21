@@ -67,17 +67,17 @@ Multiplication
    ======
 
    - **Floating point**: uses the corresponding intrinsic.
-   - **8-bit integers**: emulated via 16-bit products, shifting, and blending.
+   - **8-bit integers**: emulated via two 16-bit products of the elements at even/uneven indices, shifting, and blending (based on VCL).
    - **16-bit integers**: uses ``mullo_epi16`` intrinsics.
    - **32-bit integers**:
 
      - **x86-64-v2 and newer**: uses ``mullo_epi32`` intrinsics.
-     - **Otherwise**: emulated via two 32×32→64-bit multiplies, additions, and shuffles.
+     - **Otherwise**: emulated via two 32×32→64-bit multiplies, additions, and shuffles (based on Clang-generated assembly with GCC vector extensions).
 
    - **64-bit integers**:
 
      - **x86-64-v4**: uses ``mullo_epi64`` intrinsics.
-     - **Otherwise**: emulated via three 32×32→64-bit multiplies, shifts, and adds.
+     - **Otherwise**: emulated via three 32×32→64-bit multiplies, shifts, and adds (based on Clang-generated assembly with GCC vector extensions).
 
    Neon
    ====

@@ -4,8 +4,8 @@
 Comparisons
 ###########
 
-Element-wise comparison operations on vectors, producing Boolean masks per lane.
-Sub-native vectors are compared via their embedding in a full native vector; each native lane of a super-native vector is processed independently and the results reassembled into a super-mask.
+Element-wise comparison operations on vectors, producing a Boolean mask.
+Sub-native vectors are compared by embedding them into a full native vector; each native lane of a super-native vector is processed independently and the results are reassembled into a super-mask.
 
 .. _operations-compare-eq:
 
@@ -20,7 +20,7 @@ Equality (Vectors)
    x86-64
    ======
 
-   - **x86-64-v4**: Uses ``cmp_*_mask`` intrinsics.
+   - **x86-64-v4**: uses ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
      - **64-bit integers**:
@@ -64,12 +64,12 @@ Inequality (Vectors)
 
 .. cpp:function:: Mask<T, N> backend::compare_neq(Vector<T, N> a, Vector<T, N> b)
 
-   Element-wise inequality comparison :math:`(a_i \ne b_i)`.
+   Element-wise inequality comparison :math:`a_i \ne b_i`.
 
    x86-64
    ======
 
-   - **x86-64-v4**: Uses ``cmp_*_mask`` intrinsics.
+   - **x86-64-v4**: uses ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
      - **Floating-point**: uses ``cmpneq`` intrinsics.
@@ -93,7 +93,7 @@ Less Than
    x86-64
    ======
 
-   - **x86-64-v4**: Uses ``cmp_*_mask`` intrinsics.
+   - **x86-64-v4**: uses ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
      - **Floating-point**: uses ``cmpgt`` intrinsics with operands swapped.
@@ -102,15 +102,15 @@ Less Than
        - **8/16/32-bit**: use ``cmpgt`` intrinsics with operands swapped.
        - **64-bit**:
 
-         - **x86-64-v2** and later: uses ``cmpgt_epi64``.
-         - **x86-64-v1**: emulated via two 32-bit comparisons, bit manipulations, and shuffles to determine 64-bit ordering from 32-bit pieces.
+         - **x86-64-v2 and later**: uses ``cmpgt_epi64``.
+         - **x86-64-v1**: emulated via two 32-bit comparisons, bit manipulations, and shuffles to reconstruct the 64-bit ordering from 32-bit pieces.
 
      - **Unsigned integers**:
 
-       - **8/16/32-bit starting on x86-64-v2**: Inequality with unsigned maximum, i.e. :math:`a < b \iff a \neq \max\{a, b\}`.
-       - **8/16-bit on x86-64-v1**: Saturated subtraction and a non-zero test.
-       - **32-bit on x86-64-v1, 64-bit starting on x86-64-v2**: Use sign-bit flipping to reinterpret as signed and then compare.
-       - **64-bit on x86-64-v1**: emulated via two sign-bit flips, two 32-bit signed comparisons, shuffles, and logic.
+       - **8/16/32-bit starting on x86-64-v2**: inequality with the unsigned maximum, i.e. :math:`a < b \iff a \ne \max\{a, b\}`.
+       - **8/16-bit on x86-64-v1**: compares the saturated difference with zero, i.e. :math:`a < b \iff \max\{b - a, 0\} \ne 0`.
+       - **32-bit on x86-64-v1, 64-bit starting on x86-64-v2**: flips sign bits and performs a signed comparison.
+       - **64-bit on x86-64-v1**: emulated by flipping both sign bits, performing 32-bit “less than” and “equals” comparisons, shuffling to extend the result to 64 bits, and combining the intermediate results.
 
    Neon
    ====
@@ -130,15 +130,15 @@ Greater or Equal
    x86-64
    ======
 
-   - **x86-64-v4**: Uses ``cmp_*_mask`` intrinsics.
+   - **x86-64-v4**: uses ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
-     - **Floating-point**: use ``cmpge`` intrinsics.
+     - **Floating-point**: uses ``cmpge`` intrinsics.
      - **Signed integers**: :cpp:func:`~backend::logical_not` of :cpp:func:`~backend::compare_lt`.
      - **Unsigned integers**:
 
-       - **8/16/32-bit starting on x86-64-v2**: Equality with unsigned maximum, i.e. :math:`a \ge b \iff a = \max\{a, b\}`.
-       - **8/16-bit on x86-64-v1**: Saturated subtraction and comparison with zero.
+       - **8/16/32-bit starting on x86-64-v2**: equality with the unsigned maximum, i.e. :math:`a \ge b \iff a = \max\{a, b\}`.
+       - **8/16-bit on x86-64-v1**: compares the saturated difference with zero, i.e. :math:`a \ge b \iff \max\{b - a, 0\} = 0`.
        - **32-bit on x86-64-v1, 64-bit**: :cpp:func:`~backend::logical_not` of :cpp:func:`~backend::compare_lt`.
 
    Neon
