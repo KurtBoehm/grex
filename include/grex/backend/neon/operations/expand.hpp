@@ -21,8 +21,7 @@
 #include "grex/backend/neon/operations/subnative.hpp"
 #include "grex/backend/neon/operations/undefined.hpp"
 #include "grex/backend/neon/sizes.hpp"
-#include "grex/backend/shared/operations/expand-scalar.hpp" // IWYU pragma: export
-#include "grex/backend/shared/operations/expand-vector.hpp" // IWYU pragma: export
+#include "grex/backend/shared/operations/expand.hpp" // IWYU pragma: export
 #include "grex/base.hpp"
 
 namespace grex::backend {
