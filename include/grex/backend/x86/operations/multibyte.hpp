@@ -13,7 +13,7 @@
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/choosers.hpp"
-#include "grex/backend/x86/instruction-sets.hpp" // IWYU pragma: keep
+#include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/operations/load.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"

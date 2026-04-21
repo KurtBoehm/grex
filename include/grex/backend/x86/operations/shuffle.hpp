@@ -7,7 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHUFFLE_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHUFFLE_HPP
 
-#include <concepts>
 #include <cstddef>
 
 #include <immintrin.h>
@@ -37,10 +36,12 @@
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/types.hpp"
 #include "grex/backend/x86/operations/arithmetic.hpp"
-#include "grex/backend/x86/operations/expand-vector.hpp"
+#include "grex/backend/x86/operations/expand.hpp"
 #include "grex/backend/x86/operations/load.hpp"
 #include "grex/backend/x86/types.hpp"
 #else
+#include <concepts>
+
 #include "grex/backend/x86/operations/blend.hpp"
 #endif
 

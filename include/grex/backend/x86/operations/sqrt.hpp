@@ -15,7 +15,7 @@
 #include "grex/backend/macros/types.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
-#include "grex/backend/x86/operations/expand-scalar.hpp"
+#include "grex/backend/x86/operations/expand.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
 
@@ -31,8 +31,7 @@ namespace grex::backend {
   GREX_FOREACH_FP_TYPE(GREX_SQRT, REGISTERBITS, BITPREFIX)
 
 GREX_FOREACH_X86_64_LEVEL(GREX_SQRT_ALL)
-GREX_SUBVECTOR_UNARY(sqrt)
-GREX_SUPERVECTOR_UNARY(sqrt)
+GREX_NNVECTOR_UNARY(sqrt)
 
 // scalar implementations
 inline Scalar<f32> sqrt(Scalar<f32> v) {

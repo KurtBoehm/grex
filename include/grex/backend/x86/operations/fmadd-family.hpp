@@ -20,7 +20,7 @@
 #if GREX_X86_64_LEVEL >= 3
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
-#include "grex/backend/x86/operations/expand-scalar.hpp"
+#include "grex/backend/x86/operations/expand.hpp"
 #else
 #include "grex/backend/x86/operations/arithmetic.hpp"
 #endif
@@ -66,15 +66,10 @@ GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fmsub)
 GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fnmadd)
 GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fnmsub)
 
-GREX_SUBVECTOR_TERNARY(fmadd)
-GREX_SUBVECTOR_TERNARY(fmsub)
-GREX_SUBVECTOR_TERNARY(fnmadd)
-GREX_SUBVECTOR_TERNARY(fnmsub)
-
-GREX_SUPERVECTOR_TERNARY(fmadd)
-GREX_SUPERVECTOR_TERNARY(fmsub)
-GREX_SUPERVECTOR_TERNARY(fnmadd)
-GREX_SUPERVECTOR_TERNARY(fnmsub)
+GREX_NNVECTOR_TERNARY(fmadd)
+GREX_NNVECTOR_TERNARY(fmsub)
+GREX_NNVECTOR_TERNARY(fnmadd)
+GREX_NNVECTOR_TERNARY(fnmsub)
 
 #define GREX_FMADDS(KIND, BITS, SIZE, NAME) \
   inline Scalar<KIND##BITS> NAME(Scalar<KIND##BITS> a, Scalar<KIND##BITS> b, \

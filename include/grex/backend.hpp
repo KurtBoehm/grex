@@ -7,11 +7,7 @@
 #include "backend/choosers.hpp"
 #include "backend/defs.hpp"
 #include "backend/macros.hpp"
-#include "backend/neon.hpp"
 #include "backend/operations.hpp"
-#include "backend/scalar.hpp"
-#include "backend/shared.hpp"
-#include "backend/x86.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_BACKEND_HPP

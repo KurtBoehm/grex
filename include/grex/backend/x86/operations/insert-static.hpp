@@ -9,13 +9,12 @@
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/macros/base.hpp"
-#include "grex/backend/macros/cast.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
-#include "grex/backend/x86/operations/expand-scalar.hpp"
+#include "grex/backend/x86/operations/expand.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
 
