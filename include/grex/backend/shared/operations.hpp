@@ -6,6 +6,7 @@
 #include "operations/blend-static.hpp"
 #include "operations/blend-zero-static.hpp"
 #include "operations/blend.hpp"
+#include "operations/expand-scalar.hpp"
 #include "operations/extract.hpp"
 #include "operations/gather.hpp"
 #include "operations/insert-static.hpp"

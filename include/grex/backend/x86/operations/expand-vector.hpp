@@ -15,11 +15,11 @@
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/math.hpp"
+#include "grex/backend/shared/operations/expand-vector.hpp" // IWYU pragma: export
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/merge.hpp"
 #include "grex/backend/x86/operations/set.hpp"
-#include "grex/backend/x86/operations/subnative.hpp"
 #include "grex/base.hpp"
 
 #if GREX_X86_64_LEVEL >= 3
@@ -28,12 +28,6 @@
 #endif
 
 namespace grex::backend {
-// unchanged size: no-op
-template<AnyVector TVec, bool tZero>
-inline TVec expand(TVec v, IndexTag<TVec::size> /*size*/, BoolTag<tZero> /*zero*/) {
-  return v;
-}
-
 // native → native: use cast/zext intrinsics
 #define GREX_EXPANDV_INTRINSIC(KIND, BITS, DSTSIZE, SRCRBITS, DSTRBITS) \
   inline NativeVector<KIND##BITS, DSTSIZE> expand( \
@@ -67,43 +61,6 @@ inline VectorFor<typename TVec::Value, tDstSize> expand(TVec v, IndexTag<tDstSiz
   } else {
     return merge(expand(v, index_tag<Half::size>, zero_tag), undefined(type_tag<Half>));
   }
-}
-
-// sub-native → sub-native/native
-template<typename T, std::size_t tPart, std::size_t tSize, std::size_t tDstSize, bool tZero>
-inline VectorFor<T, tDstSize> expand(SubVector<T, tPart, tSize> v, IndexTag<tDstSize> size_tag,
-                                     BoolTag<tZero> zero_tag) {
-  using Work = VectorFor<T, std::min(tDstSize, min_native_size<T>)>;
-  Work work = [&] {
-    if constexpr (tZero) {
-      return Work{full_cutoff(v).r};
-    } else {
-      return Work{v.registr()};
-    }
-  }();
-  if constexpr (tDstSize <= min_native_size<T>) {
-    return work;
-  } else {
-    return expand(work, size_tag, zero_tag);
-  }
-}
-
-template<AnyVector TVec, std::size_t tSize>
-inline VectorFor<typename TVec::Value, tSize> expand_any(TVec v, IndexTag<tSize> size) {
-  return expand(v, size, false_tag);
-}
-template<std::size_t tSize, AnyVector TVec>
-inline VectorFor<typename TVec::Value, tSize> expand_any(TVec v) {
-  return expand(v, index_tag<tSize>, false_tag);
-}
-
-template<AnyVector TVec, std::size_t tSize>
-inline VectorFor<typename TVec::Value, tSize> expand_zero(TVec v, IndexTag<tSize> size) {
-  return expand(v, size, true_tag);
-}
-template<std::size_t tSize, AnyVector TVec>
-inline VectorFor<typename TVec::Value, tSize> expand_zero(TVec v) {
-  return expand(v, index_tag<tSize>, true_tag);
 }
 } // namespace grex::backend
 

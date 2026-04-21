@@ -7,13 +7,10 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_EXPAND_SCALAR_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_EXPAND_SCALAR_HPP
 
-#include <cstddef>
-
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"
-#include "grex/backend/choosers.hpp"
-#include "grex/backend/x86/operations/expand-vector.hpp"
+#include "grex/backend/shared/operations/expand-scalar.hpp" // IWYU pragma: export
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
 
@@ -62,30 +59,6 @@ template<IntVectorizable T, bool tZero>
 requires(sizeof(T) == 8)
 inline NativeVector<T, 2> expand(Scalar<T> x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
   return {.r = _mm_cvtsi64_si128(i64(x.value))};
-}
-
-// Sub-native: Delegate to the native version
-template<Vectorizable T, std::size_t tSize, bool tZero>
-requires(tSize < min_native_size<T>)
-inline VectorFor<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
-  return VectorFor<T, tSize>{expand(x, index_tag<min_native_size<T>>, zero)};
-}
-
-// Larger than the smallest native size: Merge with zero/undefined
-template<Vectorizable T, std::size_t tSize, bool tZero>
-requires(tSize > min_native_size<T>)
-inline VectorFor<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
-  constexpr std::size_t half = tSize / 2;
-  return expand(expand(x, index_tag<half>, zero), index_tag<tSize>, zero);
-}
-
-template<Vectorizable T, std::size_t tSize>
-inline VectorFor<T, tSize> expand_any(Scalar<T> x, IndexTag<tSize> size) {
-  return expand(x, size, false_tag);
-}
-template<Vectorizable T, std::size_t tSize>
-inline VectorFor<T, tSize> expand_zero(Scalar<T> x, IndexTag<tSize> size) {
-  return expand(x, size, true_tag);
 }
 } // namespace grex::backend
 

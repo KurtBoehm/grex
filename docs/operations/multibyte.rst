@@ -120,6 +120,7 @@ Sub-native vectors are embedded in a full native vector; super-native vectors ar
        - Otherwise, it is set to :math:`-1` to zero-fill padding bytes.
 
      - Applies ``_mm512_shuffle_epi8`` (within 128-bit lanes) using this index vector to gather the :math:`M` data bytes per lane and zero the remaining :math:`O` bytes.
+     - Using ``vpermb`` or ``vpermi2b``/``vpermt2b`` to cut down on the intermediate permutation performs worse on Tigerlake and the same on Zen 5 and is therefore not implemented (see benchmarks).
 
    ****
    Neon

@@ -38,10 +38,10 @@ Vector-Specific Operations
    * - Construct from backend
      - ``Vector::Vector(Backend v)``
 
-   * - Expand scalar (undefined upper lanes)
+   * - :ref:`Expand scalar (undefined upper) <operations-expand-scalar-any>`
      - :cpp:func:`Vector::expanded_any(T value) <Vector grex::Vector::expanded_any(T)>`
 
-   * - Expand scalar (zero upper lanes)
+   * - :ref:`Expand scalar (zero upper) <operations-expand-scalar-zero>`
      - :cpp:func:`Vector::expanded_zero(T value) <Vector grex::Vector::expanded_zero(T)>`
 
    * - :ref:`Load (unaligned) <operations-load>`
@@ -172,10 +172,10 @@ Vector-Specific Operations
      - | :cpp:func:`operator\<=(Vector, Vector) <Mask grex::Vector::operator<=(Vector, Vector)>`
        | :cpp:func:`operator>=(Vector, Vector) <Mask grex::Vector::operator>=(Vector, Vector)>`
 
-   * - Expand (undefined upper)
+   * - :ref:`Expand (undefined upper) <operations-expand-vector-any>`
      - :cpp:func:`Vector::expand_any(AnyIndexTag) const <template<std::size_t tDstSize> Vector<T, tDstSize> grex::Vector::expand_any(IndexTag<tDstSize>) const>`
 
-   * - Expand (zero upper)
+   * - :ref:`Expand (zero upper) <operations-expand-vector-zero>`
      - :cpp:func:`Vector::expand_zero(AnyIndexTag) const <template<std::size_t tDstSize> Vector<T, tDstSize> grex::Vector::expand_zero(IndexTag<tDstSize>) const>`
 
    * - Shingle up
