@@ -56,7 +56,7 @@ Vector-Specific Operations
    * - :ref:`Load partial (compile-time) <operations-load-part-ct>`
      - :cpp:func:`Vector::load_part(const T* ptr, AnyIndexTag auto num) <Vector grex::Vector::load_part(const T*, AnyIndexTag)>`
 
-   * - Load multibyte
+   * - :ref:`Load multibyte <operations-load-multibyte>`
      - | :cpp:func:`Vector::load_multibyte(const std::byte* data, AnyIndexTag auto src_bytes) <template<std::size_t tSrcBytes> Vector grex::Vector::load_multibyte(const std::byte*, IndexTag<tSrcBytes>)>`
        | :cpp:func:`Vector::load_multibyte(TIt it) <template<MultiByteIterator TIt> Vector grex::Vector::load_multibyte(TIt)>`
 

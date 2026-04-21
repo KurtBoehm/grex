@@ -7,6 +7,7 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_MULTIBYTE_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_MULTIBYTE_HPP
 
+#include <array>
 #include <cstddef>
 
 #include <arm_neon.h>
@@ -25,7 +26,7 @@
 // We call M the `src_bytes` and N the `dst_bytes`, while `size` denotes the number of values
 // being converted.
 // One basic assumption is that the underlying memory is padded at the beginning and end
-// by the numnber of bytes in the largest supported SIMD register
+// by the number of bytes in the largest supported SIMD register
 
 namespace grex::backend {
 // N == M: simply load
