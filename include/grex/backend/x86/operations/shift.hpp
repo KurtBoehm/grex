@@ -7,13 +7,12 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHIFT_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHIFT_HPP
 
-#include <cstddef>
-
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
+#include "grex/backend/shared/operations/shift.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
@@ -96,19 +95,6 @@ GREX_FOREACH_X86_64_LEVEL(GREX_LSHIFT_ALL)
 #define GREX_RSHIFT_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_INT_TYPE(GREX_RSHIFT, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_RSHIFT_ALL)
-
-#define GREX_SUBSUPER(NAME) \
-  template<typename THalf> \
-  inline SuperVector<THalf> NAME(SuperVector<THalf> v, AnyIndexTag auto offset) { \
-    return {.lower = NAME(v.lower, offset), .upper = NAME(v.upper, offset)}; \
-  } \
-  template<IntVectorizable T, std::size_t tPart, std::size_t tSize> \
-  inline SubVector<T, tPart, tSize> NAME(SubVector<T, tPart, tSize> v, AnyIndexTag auto offset) { \
-    return SubVector<T, tPart, tSize>{NAME(v.full, offset)}; \
-  }
-
-GREX_SUBSUPER(shift_left)
-GREX_SUBSUPER(shift_right)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHIFT_HPP

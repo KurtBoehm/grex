@@ -7,8 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP
 
-#include <cstddef>
-
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"
@@ -16,6 +14,7 @@
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
 #include "grex/backend/macros/types.hpp"
+#include "grex/backend/shared/operations/compare.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
@@ -234,27 +233,6 @@ GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, eq, cmpeq, 0)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, neq, cmpneq, 4)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, lt, cmplt, 1)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, ge, cmpge, 5)
-
-#define GREX_CMP_SUB(NAME) \
-  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
-  inline SubMask<T, tPart, tSize> NAME(SubVector<T, tPart, tSize> a, \
-                                       SubVector<T, tPart, tSize> b) { \
-    return SubMask<T, tPart, tSize>{NAME(a.full, b.full)}; \
-  }
-GREX_CMP_SUB(compare_eq)
-GREX_CMP_SUB(compare_neq)
-GREX_CMP_SUB(compare_lt)
-GREX_CMP_SUB(compare_ge)
-
-#define GREX_CMP_SUPER(NAME) \
-  template<typename THalf> \
-  inline auto NAME(SuperVector<THalf> a, SuperVector<THalf> b) { \
-    return SuperMask{.lower = NAME(a.lower, b.lower), .upper = NAME(a.upper, b.upper)}; \
-  }
-GREX_CMP_SUPER(compare_eq)
-GREX_CMP_SUPER(compare_neq)
-GREX_CMP_SUPER(compare_lt)
-GREX_CMP_SUPER(compare_ge)
 
 ///////////////////
 // Mask equality //

@@ -76,7 +76,7 @@ inline u64x2 load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/, TypeTag<u64x2
   const __m128i raw = load(ptr - offset, type_tag<u8x16>).r;
 
   const __m128i v0 = raw;
-  // ···...00|···11111| (shift each 64-bit lane left so that the lower integer becomes top-aligned)
+  // ···...00|···11111 (shift each 64-bit lane left so that the lower integer becomes top-aligned)
   const __m128i v1 = _mm_slli_epi64(raw, 8 * offset);
 
   // ...00000|···11111 (move low 64-bit from v1 to high 64-bit of v0)

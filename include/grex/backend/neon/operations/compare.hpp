@@ -18,6 +18,7 @@
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/bitwise.hpp"
 #include "grex/backend/neon/types.hpp"
+#include "grex/backend/shared/operations/compare.hpp" // IWYU pragma: keep
 #include "grex/base.hpp"
 
 namespace grex::backend {
@@ -43,27 +44,6 @@ template<Vectorizable T, std::size_t tSize>
 inline NativeMask<T, tSize> compare_neq(NativeVector<T, tSize> a, NativeVector<T, tSize> b) {
   return logical_not(compare_eq(a, b));
 }
-
-#define GREX_CMP_SUB(NAME) \
-  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
-  inline SubMask<T, tPart, tSize> NAME(SubVector<T, tPart, tSize> a, \
-                                       SubVector<T, tPart, tSize> b) { \
-    return SubMask<T, tPart, tSize>{NAME(a.full, b.full)}; \
-  }
-GREX_CMP_SUB(compare_eq)
-GREX_CMP_SUB(compare_neq)
-GREX_CMP_SUB(compare_lt)
-GREX_CMP_SUB(compare_ge)
-
-#define GREX_CMP_SUPER(NAME) \
-  template<typename THalf> \
-  inline auto NAME(SuperVector<THalf> a, SuperVector<THalf> b) { \
-    return SuperMask{.lower = NAME(a.lower, b.lower), .upper = NAME(a.upper, b.upper)}; \
-  }
-GREX_CMP_SUPER(compare_eq)
-GREX_CMP_SUPER(compare_neq)
-GREX_CMP_SUPER(compare_lt)
-GREX_CMP_SUPER(compare_ge)
 
 GREX_SUBMASK_BINARY(compare_eq)
 GREX_SUPERMASK_BINARY(compare_eq)
