@@ -123,3 +123,15 @@ Set
      - **Earlier**: forms a broad mask via ``set1`` and sign/bit casts.
 
    - **Neon**: builds an unsigned integer vector with :cpp:func:`backend::set`, then negates lanes to obtain all-ones/all-zeros mask lanes.
+
+.. _operations-indices:
+
+*******
+Indices
+*******
+
+.. cpp:function:: Vector<T, N> backend::indices(TypeTag<Vector<T, N>>)
+
+   Constructs a vector whose lanes contain their zero-based indices: ``[0, 1, ..., N-1]``.
+
+   - Implemented in a backend-agnostic way using :cpp:func:`backend::set`.

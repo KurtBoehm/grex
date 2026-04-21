@@ -35,14 +35,14 @@ namespace grex::backend {
   }
 
 ///////////////////////////////////////////////////////////////////////////////////
-// compare_eq: cmpeq apart from i64/u64 on level 1, unsigned fall back to signed //
+// compare_eq: use cmpeq except for i64/u64 on level 1; unsigned uses signed cmp //
 ///////////////////////////////////////////////////////////////////////////////////
 
 #define GREX_CMP_IMPL_BASE_CMPEQ_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return {.r = \
             GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, \
                           GREX_CAT(BITPREFIX##_cmpeq_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r))};
-// i64/u64: 32 bit comparison, swap 32 bit pairs, and perform “and”
+// i64/u64 on level 1: compare as two 32-bit lanes, swap 32-bit pairs, then AND
 #define GREX_CMP_IMPL_BASE_CMPEQ_SSE64 \
   const __m128i eq32 = _mm_cmpeq_epi32(a.r, b.r); \
   const __m128i eq32s = _mm_shuffle_epi32(eq32, 0b10110001); \
@@ -67,9 +67,9 @@ namespace grex::backend {
 #define GREX_CMP_IMPL_BASE_CMPEQ_u GREX_CMP_IMPL_BASE_CMPEQ_INT
 #define GREX_CMP_IMPL_BASE_cmpeq(KIND, ...) GREX_CMP_IMPL_BASE_CMPEQ_##KIND(KIND, __VA_ARGS__)
 
-/////////////////////////////////////////////////////////////////////////////////////
-// compare_neq: separate cmpneq intrinsic only for f, negated equality for i and u //
-/////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
+// compare_neq: dedicated cmpneq intrinsic only for floating-point; integers use !equal //
+//////////////////////////////////////////////////////////////////////////////////////////
 
 #define GREX_CMPNEQ_f(BITS, BITPREFIX, REGISTERBITS) \
   return {.r = GREX_KINDCAST(f, i, BITS, REGISTERBITS, \
@@ -79,23 +79,23 @@ namespace grex::backend {
 #define GREX_CMP_IMPL_BASE_cmpneq(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   GREX_CMPNEQ_##KIND(BITS, BITPREFIX, REGISTERBITS)
 
-////////////////////////////////////////////////////////
-// Less: cmpgt for f/i apart from i64, trickery for u //
-////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+// Less-than: cmpgt for f/i (except i64 on level 1), tricks for u //
+////////////////////////////////////////////////////////////////////
 
-// f, i other than i64 on level 1: Separate cmpgt intrinsics
+// f, i other than i64 on level 1: dedicated cmpgt intrinsics (cmpgt(b, a) == cmplt(a, b))
 #define GREX_CMPLT_INTRINSIC(KIND, BITS, BITPREFIX, REGISTERBITS) \
   return {.r = \
             GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, \
                           GREX_CAT(BITPREFIX##_cmpgt_, GREX_EPI_SUFFIX(KIND, BITS))(b.r, a.r))};
-// u8/16/32 on level 1, u64 on level 2 and 3: Flip the “sign” bit and use the signed comparison.
+// u8/16/32 on level 1, u64 on levels 2 and 3: flip the sign bit and reuse the signed comparison.
 #define GREX_CMPLT_UFLIP(KIND, BITS, SIZE, BITPREFIX) \
   const auto signbits = \
     broadcast(u##BITS{1} << u##BITS{GREX_DECR(BITS)}, type_tag<NativeVector<KIND##BITS, SIZE>>); \
   const auto a1 = bitwise_xor(a, signbits); \
   const auto b1 = bitwise_xor(b, signbits); \
   return {.r = GREX_CAT(BITPREFIX##_cmpgt_, GREX_EPI_SUFFIX(KIND, BITS))(b1.r, a1.r)};
-// u8/16/32 on levels 2 and 3: Inequality with unsigned minimum for u.
+// u8/16/32 on levels 2 and 3: inequality against the unsigned maximum of a and b
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_CMPLT_UMAX(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return compare_neq(a, {.r = GREX_CAT(BITPREFIX##_max_, GREX_EPU_SUFFIX(KIND, BITS))(a.r, b.r)});
@@ -103,11 +103,11 @@ namespace grex::backend {
 #define GREX_CMPLT_UMAX(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   GREX_CMPLT_UFLIP(KIND, BITS, SIZE, BITPREFIX)
 #endif
-// u8/u16 on level 1: saturated difference different from zero
+// u8/u16 on level 1: saturated (unsigned) difference b - a is non-zero iff a < b
 #define GREX_CMPLT_SUBS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return compare_neq({.r = GREX_CAT(BITPREFIX##_subs_, GREX_EPU_SUFFIX(KIND, BITS))(b.r, a.r)}, \
                      zeros(type_tag<NativeVector<KIND##BITS, SIZE>>));
-// i64/u64 on level 1: Two 32 bit comparisons
+// i64/u64 on level 1: emulate 64-bit < using two 32-bit comparisons
 #define GREX_CMPLT_U32X2_u (u64{1} << u64{31}) | (u64{1} << u64{63})
 #define GREX_CMPLT_U32X2_i u64{1} << u64{31}
 #define GREX_CMPLT_U32X2(KIND) \
@@ -154,21 +154,21 @@ namespace grex::backend {
 // Greater or equal //
 //////////////////////
 
-// f: Separate cmpgt intrinsics
+// f: dedicated cmpge intrinsics
 #define GREX_CMPGE_INTRINSIC(KIND, BITS, BITPREFIX, REGISTERBITS) \
   return {.r = \
             GREX_KINDCAST(KIND, i, BITS, REGISTERBITS, \
                           GREX_CAT(BITPREFIX##_cmpge_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r))};
-// Negated less than
+// i, u (fallback): logical negation of less-than
 #define GREX_CMPGE_NEGATED return logical_not(compare_lt(a, b));
-// u8/16/32 on levels 2 and 3: Equality with unsigned minimum for u.
+// u8/16/32 on levels 2 and 3: equality against the unsigned maximum of a and b
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_CMPGE_UMAX(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return compare_eq(a, {.r = GREX_CAT(BITPREFIX##_max_, GREX_EPU_SUFFIX(KIND, BITS))(a.r, b.r)});
 #else
 #define GREX_CMPGE_UMAX(...) GREX_CMPGE_NEGATED
 #endif
-// u8/u16 on level 1: saturated difference is from zero
+// u8/u16 on level 1: saturated (unsigned) difference b - a is zero iff a >= b
 #define GREX_CMPGE_SUBS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return compare_eq({.r = GREX_CAT(BITPREFIX##_subs_, GREX_EPU_SUFFIX(KIND, BITS))(b.r, a.r)}, \
                     zeros(type_tag<NativeVector<KIND##BITS, SIZE>>));
@@ -190,7 +190,7 @@ namespace grex::backend {
 // base
 #define GREX_CMP_IMPL_BASE_cmpge(KIND, ...) GREX_CMPGE_##KIND(__VA_ARGS__)
 
-// Base: Case distinction based on comparison type
+// Base: case distinction based on comparison type (eq, neq, lt, ge, …)
 #define GREX_CMP_IMPL_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
   GREX_CMP_IMPL_BASE_##CMPNAME(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)
 
@@ -238,10 +238,9 @@ GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, ge, cmpge, 5)
 // Mask equality //
 ///////////////////
 
-// Mask equality
-// Broad masks: Compare 8-bit chunks
-
+// Compact masks: use kxnor on the native mask type
 #define GREX_MASKEQ_COMPACT(SIZE, BITPREFIX) GREX_CAT(_kxnor_mask, GREX_MAX(SIZE, 8))(a.r, b.r)
+// Broad masks: compare 8-bit lanes for equality
 #define GREX_MASKEQ_BROAD(SIZE, BITPREFIX) BITPREFIX##_cmpeq_epi8(a.r, b.r)
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_MASKEQ_IMPL GREX_MASKEQ_COMPACT

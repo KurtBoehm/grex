@@ -66,7 +66,7 @@ Vector-Specific Operations
    * - :ref:`Zero vector <operations-zeros-vector>`
      - :cpp:func:`Vector::zeros() <Vector grex::Vector::zeros()>`
 
-   * - Lane indices
+   * - :ref:`Lane indices <operations-indices>`
      - | :cpp:func:`Vector::indices() <Vector grex::Vector::indices()>`
        | :cpp:func:`Vector::indices(T start) <Vector grex::Vector::indices(T)>`
 
