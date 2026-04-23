@@ -8,6 +8,7 @@
 #include <random>
 
 #include <fmt/base.h>
+#include <fmt/format.h>
 #include <pcg_extras.hpp>
 
 #include "grex/grex.hpp"
@@ -110,6 +111,12 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         for (std::size_t j = 0; j <= tSize; ++j) {
           MC v{Mask::cutoff_mask(j), std::array{(tIdxs < j)...}};
           v.check("mask cutoff_mask", false);
+        }
+      }
+      {
+        for (std::size_t j = 0; j < tSize; ++j) {
+          MC v{Mask::single_mask(j), std::array{(tIdxs == j)...}};
+          v.check("mask single_mask", false);
         }
       }
     }

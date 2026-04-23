@@ -18,7 +18,7 @@
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/bitwise.hpp"
 #include "grex/backend/neon/types.hpp"
-#include "grex/backend/shared/operations/compare.hpp" // IWYU pragma: keep
+#include "grex/backend/shared/operations/compare.hpp" // IWYU pragma: export
 #include "grex/base.hpp"
 
 namespace grex::backend {

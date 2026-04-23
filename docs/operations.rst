@@ -133,7 +133,7 @@ Vector-Specific Operations
      - | :cpp:func:`operator>>(Vector, AnyIndexTag auto) <Vector grex::Vector::operator>>(Vector, AnyIndexTag)>`
        | :cpp:func:`operator>>=(AnyIndexTag auto) <Vector& grex::Vector::operator>>=(AnyIndexTag)>`
 
-   * - Cut off lanes
+   * - :ref:`Cut off lanes <operations-cutoff>`
      - :cpp:func:`Vector::cutoff(std::size_t i) const <Vector grex::Vector::cutoff(std::size_t) const>`
 
    * - Convert type
@@ -218,8 +218,11 @@ Mask-Specific Operations
    * - :ref:`All-true mask <operations-ones-mask>`
      - :cpp:func:`Mask::ones() <Mask grex::Mask::ones()>`
 
-   * - Cut-off mask
+   * - :ref:`Cut-off mask <operations-cutoff-mask>`
      - :cpp:func:`Mask::cutoff_mask(std::size_t i) <Mask grex::Mask::cutoff_mask(std::size_t)>`
+
+   * - :ref:`Single-lane mask <operations-single-mask>`
+     - :cpp:func:`Mask::single_mask(std::size_t i) <Mask grex::Mask::single_mask(std::size_t)>`
 
    * - Convert to different scalar type
      - :cpp:func:`Mask::convert(AnyTypeTag) const <template<Vectorizable TDst> Mask<TDst, tSize> grex::Mask::convert(TypeTag<TDst>) const>`

@@ -171,6 +171,6 @@ GREX_FOREACH_TYPE(GREX_CREATE, 128)
 GREX_FOREACH_SUB(GREX_SET_SUB)
 } // namespace grex::backend
 
-#include "grex/backend/shared/operations/set.hpp"
+#include "grex/backend/shared/operations/set.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SET_HPP

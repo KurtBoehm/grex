@@ -1,0 +1,7 @@
+skip_meson: true
+license: MPL-2.0
+ignore_parent_header:
+  - include/grex/backend/active/operations
+  - include/grex/backend/active
+  - include/grex/backend
+  - include/grex/format

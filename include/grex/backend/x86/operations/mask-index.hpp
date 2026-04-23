@@ -15,7 +15,6 @@
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
-#include "grex/backend/x86/operations/blend.hpp"
 #include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
@@ -65,15 +64,7 @@ namespace grex::backend {
   }
 #define GREX_INDEX_MASK_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_INDEX_MASK, REGISTERBITS, BITPREFIX, REGISTERBITS)
-
-#define GREX_CUTOFF_VEC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  inline NativeVector<KIND##BITS, SIZE> cutoff(std::size_t i, NativeVector<KIND##BITS, SIZE> v) { \
-    return blend_zero(cutoff_mask(i, type_tag<NativeMask<KIND##BITS, SIZE>>), v); \
-  }
-#define GREX_CUTOFF_VEC_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_TYPE(GREX_CUTOFF_VEC, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_INDEX_MASK_ALL)
-GREX_FOREACH_X86_64_LEVEL(GREX_CUTOFF_VEC_ALL)
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/mask-index.hpp" // IWYU pragma: export

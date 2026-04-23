@@ -83,6 +83,11 @@ struct Mask {
     return Mask{backend::cutoff_mask(i, type_tag<Backend>)};
   }
 
+  /** Returns a mask with lane `i` set and the rest cleared. */
+  GREX_ALWAYS_INLINE static Mask single_mask(std::size_t i) {
+    return Mask{backend::single_mask(i, type_tag<Backend>)};
+  }
+
   /** Converts mask to a mask for another type with the same lane count. */
   template<Vectorizable TDst>
   GREX_ALWAYS_INLINE Mask<TDst, tSize> convert(TypeTag<TDst> /*tag*/ = {}) const {

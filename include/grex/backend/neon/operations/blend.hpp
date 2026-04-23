@@ -35,6 +35,6 @@ namespace grex::backend {
 GREX_FOREACH_TYPE(GREX_BLEND, 128)
 } // namespace grex::backend
 
-#include "grex/backend/shared/operations/blend.hpp"
+#include "grex/backend/shared/operations/blend.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_BLEND_HPP

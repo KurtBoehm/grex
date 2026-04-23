@@ -9,6 +9,8 @@
 
 #include <cstddef>
 
+#include "grex/backend/active/operations/blend.hpp"
+#include "grex/backend/active/operations/set.hpp"
 #include "grex/backend/base.hpp"
 #include "grex/base.hpp"
 
@@ -18,20 +20,34 @@ inline SubMask<T, tPart, tSize> cutoff_mask(std::size_t i,
                                             TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
   return SubMask<T, tPart, tSize>{cutoff_mask(i, type_tag<NativeMask<T, tSize>>)};
 }
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubVector<T, tPart, tSize> cutoff(std::size_t i, SubVector<T, tPart, tSize> v) {
-  return SubVector<T, tPart, tSize>{cutoff(i, v.full)};
-}
-
 template<typename THalf>
 inline SuperMask<THalf> cutoff_mask(std::size_t i, TypeTag<SuperMask<THalf>> /*tag*/) {
   if (i <= THalf::size) {
     return {.lower = cutoff_mask(i, type_tag<THalf>), .upper = zeros(type_tag<THalf>)};
   }
-  return {
-    .lower = ones(type_tag<THalf>),
-    .upper = cutoff_mask(i - THalf::size, type_tag<THalf>),
-  };
+  return {.lower = ones(type_tag<THalf>), .upper = cutoff_mask(i - THalf::size, type_tag<THalf>)};
+}
+
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubMask<T, tPart, tSize> single_mask(std::size_t i,
+                                            TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
+  return SubMask<T, tPart, tSize>{single_mask(i, type_tag<NativeMask<T, tSize>>)};
+}
+template<typename THalf>
+inline SuperMask<THalf> single_mask(std::size_t i, TypeTag<SuperMask<THalf>> /*tag*/) {
+  if (i < THalf::size) {
+    return {.lower = single_mask(i, type_tag<THalf>), .upper = zeros(type_tag<THalf>)};
+  }
+  return {.lower = zeros(type_tag<THalf>), .upper = single_mask(i - THalf::size, type_tag<THalf>)};
+}
+
+template<Vectorizable T, std::size_t tSize>
+inline NativeVector<T, tSize> cutoff(std::size_t i, NativeVector<T, tSize> v) {
+  return blend_zero(cutoff_mask(i, type_tag<NativeMask<T, tSize>>), v);
+}
+template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+inline SubVector<T, tPart, tSize> cutoff(std::size_t i, SubVector<T, tPart, tSize> v) {
+  return SubVector<T, tPart, tSize>{cutoff(i, v.full)};
 }
 template<typename THalf>
 inline SuperVector<THalf> cutoff(std::size_t i, SuperVector<THalf> v) {

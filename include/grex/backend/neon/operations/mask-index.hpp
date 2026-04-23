@@ -13,28 +13,27 @@
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
-#include "grex/backend/macros/for-each.hpp"
-#include "grex/backend/neon/operations/blend.hpp"
 #include "grex/backend/neon/operations/compare.hpp"
 #include "grex/backend/neon/operations/set.hpp"
-#include "grex/backend/neon/types.hpp"
+#include "grex/backend/neon/types.hpp" // IWYU pragma: keep
 #include "grex/base.hpp"
 
 namespace grex::backend {
-#define GREX_INDEX_MASK(KIND, BITS, SIZE) \
-  inline NativeMask<KIND##BITS, SIZE> cutoff_mask(std::size_t i, \
-                                                  TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
-    const auto idxs = indices(type_tag<NativeVector<u##BITS, SIZE>>); \
-    const auto ref = broadcast(u##BITS(i), type_tag<NativeVector<u##BITS, SIZE>>); \
-    return {.r = compare_lt(idxs, ref).r}; \
-  }
-GREX_FOREACH_TYPE(GREX_INDEX_MASK, 128)
+template<Vectorizable T, std::size_t tSize>
+inline NativeMask<T, tSize> cutoff_mask(std::size_t i, TypeTag<NativeMask<T, tSize>>) {
+  using U = UnsignedInt<sizeof(T)>;
+  const auto idxs = indices(type_tag<NativeVector<U, tSize>>);
+  const auto ref = broadcast(U(i), type_tag<NativeVector<U, tSize>>);
+  return {.r = compare_lt(idxs, ref).r};
+}
 
-#define GREX_CUTOFF(KIND, BITS, SIZE) \
-  inline NativeVector<KIND##BITS, SIZE> cutoff(std::size_t i, NativeVector<KIND##BITS, SIZE> v) { \
-    return blend_zero(cutoff_mask(i, type_tag<NativeMask<KIND##BITS, SIZE>>), v); \
-  }
-GREX_FOREACH_TYPE(GREX_CUTOFF, 128)
+template<Vectorizable T, std::size_t tSize>
+inline NativeMask<T, tSize> single_mask(std::size_t i, TypeTag<NativeMask<T, tSize>>) {
+  using U = UnsignedInt<sizeof(T)>;
+  const auto idxs = indices(type_tag<NativeVector<U, tSize>>);
+  const auto ref = broadcast(U(i), type_tag<NativeVector<U, tSize>>);
+  return {.r = compare_eq(idxs, ref).r};
+}
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/mask-index.hpp" // IWYU pragma: export
