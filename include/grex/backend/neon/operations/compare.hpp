@@ -45,8 +45,7 @@ inline NativeMask<T, tSize> compare_neq(NativeVector<T, tSize> a, NativeVector<T
   return logical_not(compare_eq(a, b));
 }
 
-GREX_SUBMASK_BINARY(compare_eq)
-GREX_SUPERMASK_BINARY(compare_eq)
+GREX_NNMASK_BINARY(compare_eq)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_COMPARE_HPP
