@@ -7,8 +7,7 @@
 #ifndef INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SHINGLE_HPP
 #define INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SHINGLE_HPP
 
-#include <cstddef>
-
+#include "grex/backend/active/operations/extract.hpp"
 #include "grex/backend/base.hpp"
 
 namespace grex::backend {

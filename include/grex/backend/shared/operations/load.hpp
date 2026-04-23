@@ -9,6 +9,7 @@
 
 #include <cstddef>
 
+#include "grex/backend/active/operations/set.hpp"
 #include "grex/backend/base.hpp"
 #include "grex/base.hpp"
 

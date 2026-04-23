@@ -10,6 +10,7 @@
 #include <cstddef>
 
 #include "grex/backend/base.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 #define GREX_MASKARITH_SUB(NAME) \

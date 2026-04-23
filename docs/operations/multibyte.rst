@@ -142,5 +142,6 @@ Sub-native vectors are embedded in a full native vector; super-native vectors ar
           - ``...00000|···11111``
         * - 64-bit logical right shift by :math:`O` bytes to bottom-align and zero-fill
           - ``00000···|11111···``
+
    - :math:`N = 4`, :math:`M = 3`, 128-bit output: single unaligned 128-bit load followed by a table lookup with ``vqtbl1q_u8`` using a compile-time index vector.
    - :math:`N = 4`, :math:`M = 3`, 64-bit output: forwards to the 128-bit implementation and wraps the result as a sub-vector.

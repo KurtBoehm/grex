@@ -10,6 +10,10 @@
 #include <cstddef>
 #include <span>
 
+#include "grex/backend/active/operations/extract.hpp"
+#include "grex/backend/active/operations/merge.hpp"
+#include "grex/backend/active/operations/set.hpp"
+#include "grex/backend/active/operations/split.hpp"
 #include "grex/backend/base.hpp"
 #include "grex/backend/choosers.hpp"
 #include "grex/base.hpp"

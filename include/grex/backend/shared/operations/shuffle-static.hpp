@@ -11,7 +11,6 @@
 #include <cstddef>
 #include <optional>
 #include <type_traits>
-#include <utility>
 
 #include "grex/backend/active/sizes.hpp"
 #include "grex/backend/base.hpp"
