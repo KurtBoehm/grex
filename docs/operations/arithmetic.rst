@@ -4,7 +4,7 @@
 Arithmetic Operations
 #####################
 
-Most arithmetic operations are implemented directly with SIMD intrinsics, with special handling for negation and integer multiplication.
+Element-wise arithmetic operations on vectors.
 Sub-native vectors are embedded in a full native vector; each native lane of a super-native vector is processed independently.
 
 .. _operations-addition:
@@ -16,7 +16,8 @@ Addition
 .. cpp:function:: Vector<T, N> backend::add(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise addition :math:`a_i + b_i`.
-   Implemented using ``add``/``vaddq`` intrinsics (x86-64/Neon).
+
+   - **x86-64/Neon**: uses ``add``/``vaddq`` intrinsics.
 
 .. _operations-subtraction:
 
@@ -27,7 +28,8 @@ Subtraction
 .. cpp:function:: Vector<T, N> backend::subtract(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise subtraction :math:`a_i - b_i`.
-   Implemented using ``sub``/``vsubq`` intrinsics (x86-64/Neon).
+
+   - **x86-64/Neon**: uses ``sub``/``vsubq`` intrinsics.
 
 .. _operations-negation:
 
@@ -49,7 +51,7 @@ Negation
       * - Integers
         - :math:`0 - v`
         - ``vnegq``
-      * - Floating Point
+      * - Floating point
         - Flip sign bit
         - ``vnegq``
 
@@ -66,24 +68,24 @@ Multiplication
    x86-64
    ======
 
-   - **Floating point**: uses the corresponding intrinsic.
-   - **8-bit integers**: emulated via two 16-bit products of the elements at even/uneven indices, shifting, and blending (based on VCL).
-   - **16-bit integers**: uses ``mullo_epi16`` intrinsics.
+   - **Floating point**: corresponding intrinsic.
+   - **8-bit integers**: emulated via two 16-bit products of even/odd indices, then shifting and blending (based on VCL).
+   - **16-bit integers**: ``mullo_epi16``.
    - **32-bit integers**:
 
-     - **x86-64-v2 and newer**: uses ``mullo_epi32`` intrinsics.
-     - **Otherwise**: emulated via two 32×32→64-bit multiplies, additions, and shuffles (based on Clang-generated assembly with GCC vector extensions).
+     - **x86-64-v2+**: ``mullo_epi32``.
+     - **Earlier**: emulated via two 32×32→64-bit multiplies, additions, and shuffles (from Clang-generated assembly using GCC vector extensions).
 
    - **64-bit integers**:
 
-     - **x86-64-v4**: uses ``mullo_epi64`` intrinsics.
-     - **Otherwise**: emulated via three 32×32→64-bit multiplies, shifts, and adds (based on Clang-generated assembly with GCC vector extensions).
+     - **x86-64-v4**: ``mullo_epi64``.
+     - **Earlier**: emulated via three 32×32→64-bit multiplies, shifts, and adds (from Clang-generated assembly using GCC vector extensions).
 
    Neon
    ====
 
-   - **Floating point and integers up to 32 bits**: uses the corresponding intrinsic.
-   - **64-bit integers**: emulated via a 32-bit multiplication, a 32-bit fused multiply-add, additions, and shuffling.
+   - **Floating point and integers ≤ 32 bits**: corresponding intrinsic.
+   - **64-bit integers**: emulated via a 32-bit multiply, 32-bit fused multiply-add, additions, and shuffling.
 
 .. _operations-division:
 

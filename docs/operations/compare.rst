@@ -4,8 +4,8 @@
 Comparisons
 ###########
 
-Element-wise comparison operations on vectors, producing a Boolean mask.
-Sub-native vectors are compared by embedding them into a full native vector; each native lane of a super-native vector is processed independently and the results are reassembled into a super-mask.
+Element-wise comparisons on vectors, producing a Boolean mask.
+Sub-native vectors are compared by embedding into a full native vector; each native lane of a super-native vector is processed independently and results are reassembled into a super-mask.
 
 .. _operations-compare-eq:
 
@@ -15,25 +15,25 @@ Equality (Vectors)
 
 .. cpp:function:: Mask<T, N> backend::compare_eq(Vector<T, N> a, Vector<T, N> b)
 
-   Element-wise equality comparison :math:`a_i = b_i`.
+   Element-wise equality :math:`a_i = b_i`.
 
    x86-64
    ======
 
-   - **x86-64-v4**: uses ``cmp_*_mask`` intrinsics.
+   - **x86-64-v4**: ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
      - **64-bit integers**:
 
-       - **x86-64-v2 and later**: uses ``cmpeq_epi64``.
-       - **x86-64-v1**: emulated via two 32-bit equality comparisons, shuffles, and an AND to ensure both 32-bit halves are equal.
+       - **x86-64-v2+**: ``cmpeq_epi64``.
+       - **x86-64-v1**: emulated via two 32-bit equality comparisons, shuffles, and AND to ensure both 32-bit halves match.
 
-     - **Other integer and floating-point**: uses ``cmpeq`` intrinsics.
+     - **Other integer and floating-point**: ``cmpeq`` intrinsics.
 
    Neon
    ====
 
-   - Uses ``vceqq`` intrinsics.
+   - ``vceqq`` intrinsics.
 
 .. _operations-compare-eq-mask:
 
@@ -43,18 +43,18 @@ Equality (Masks)
 
 .. cpp:function:: Mask<T, N> backend::compare_eq(Mask<T, N> a, Mask<T, N> b)
 
-   Element-wise equality comparison :math:`a_i = b_i` between masks.
+   Element-wise mask equality :math:`a_i = b_i`.
 
    x86-64
    ======
 
-   - **x86-64-v4**: uses ``kxnor_mask`` intrinsics to detect bitwise equality.
-   - **Earlier**: compares the underlying 8-bit chunks with ``cmpeq_epi8``.
+   - **x86-64-v4**: ``kxnor_mask`` on compressed masks.
+   - **Earlier**: ``cmpeq_epi8`` on the underlying 8-bit mask representation.
 
    Neon
    ====
 
-   - Uses ``vceqq`` intrinsics on the underlying unsigned integer mask representation.
+   - ``vceqq`` on the underlying unsigned mask vector.
 
 .. _operations-compare-neq:
 
@@ -64,15 +64,15 @@ Inequality (Vectors)
 
 .. cpp:function:: Mask<T, N> backend::compare_neq(Vector<T, N> a, Vector<T, N> b)
 
-   Element-wise inequality comparison :math:`a_i \ne b_i`.
+   Element-wise inequality :math:`a_i \ne b_i`.
 
    x86-64
    ======
 
-   - **x86-64-v4**: uses ``cmp_*_mask`` intrinsics.
+   - **x86-64-v4**: ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
-     - **Floating-point**: uses ``cmpneq`` intrinsics.
+     - **Floating point**: ``cmpneq`` intrinsics.
      - **Integer**: :cpp:func:`~backend::logical_not` of :cpp:func:`~backend::compare_eq`.
 
    Neon
@@ -88,34 +88,34 @@ Less Than
 
 .. cpp:function:: Mask<T, N> backend::compare_lt(Vector<T, N> a, Vector<T, N> b)
 
-   Element-wise strict less-than comparison :math:`a_i < b_i`.
+   Element-wise strict less-than :math:`a_i < b_i`.
 
    x86-64
    ======
 
-   - **x86-64-v4**: uses ``cmp_*_mask`` intrinsics.
+   - **x86-64-v4**: ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
-     - **Floating-point**: uses ``cmpgt`` intrinsics with operands swapped.
+     - **Floating point**: ``cmpgt`` intrinsics with operands swapped.
      - **Signed integers**:
 
-       - **8/16/32-bit**: use ``cmpgt`` intrinsics with operands swapped.
+       - **8/16/32-bit**: ``cmpgt`` intrinsics with operands swapped.
        - **64-bit**:
 
-         - **x86-64-v2 and later**: uses ``cmpgt_epi64``.
-         - **x86-64-v1**: emulated via two 32-bit comparisons, bit manipulations, and shuffles to reconstruct the 64-bit ordering from 32-bit pieces.
+         - **x86-64-v2+**: ``cmpgt_epi64``.
+         - **x86-64-v1**: emulated via two 32-bit comparisons, bit manipulations, and shuffles to reconstruct 64-bit ordering.
 
      - **Unsigned integers**:
 
-       - **8/16/32-bit starting on x86-64-v2**: inequality with the unsigned maximum, i.e. :math:`a < b \iff a \ne \max\{a, b\}`.
-       - **8/16-bit on x86-64-v1**: compares the saturated difference with zero, i.e. :math:`a < b \iff \max\{b - a, 0\} \ne 0`.
-       - **32-bit on x86-64-v1, 64-bit starting on x86-64-v2**: flips sign bits and performs a signed comparison.
-       - **64-bit on x86-64-v1**: emulated by flipping both sign bits, performing 32-bit “less than” and “equals” comparisons, shuffling to extend the result to 64 bits, and combining the intermediate results.
+       - **8/16/32-bit, x86-64-v2+**: inequality with unsigned maximum, :math:`a < b \iff a \ne \max\{a, b\}`.
+       - **8/16-bit, x86-64-v1**: compares saturated difference with zero, :math:`a < b \iff \max\{b - a, 0\} \ne 0`.
+       - **32-bit, x86-64-v1; 64-bit, x86-64-v2+**: flip sign bits and perform signed comparison.
+       - **64-bit, x86-64-v1**: flip sign bits, perform 32-bit :cpp:func:`~backend::compare_lt` and :cpp:func:`~backend::compare_eq`, shuffle to extend to 64-bit, and combine.
 
    Neon
    ====
 
-   - Uses ``vcltq`` intrinsics.
+   - ``vcltq`` intrinsics.
 
 .. _operations-compare-ge:
 
@@ -125,23 +125,23 @@ Greater or Equal
 
 .. cpp:function:: Mask<T, N> backend::compare_ge(Vector<T, N> a, Vector<T, N> b)
 
-   Element-wise greater-or-equal comparison :math:`a_i \ge b_i`.
+   Element-wise greater-or-equal :math:`a_i \ge b_i`.
 
    x86-64
    ======
 
-   - **x86-64-v4**: uses ``cmp_*_mask`` intrinsics.
+   - **x86-64-v4**: ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
-     - **Floating-point**: uses ``cmpge`` intrinsics.
+     - **Floating point**: ``cmpge`` intrinsics.
      - **Signed integers**: :cpp:func:`~backend::logical_not` of :cpp:func:`~backend::compare_lt`.
      - **Unsigned integers**:
 
-       - **8/16/32-bit starting on x86-64-v2**: equality with the unsigned maximum, i.e. :math:`a \ge b \iff a = \max\{a, b\}`.
-       - **8/16-bit on x86-64-v1**: compares the saturated difference with zero, i.e. :math:`a \ge b \iff \max\{b - a, 0\} = 0`.
-       - **32-bit on x86-64-v1, 64-bit**: :cpp:func:`~backend::logical_not` of :cpp:func:`~backend::compare_lt`.
+       - **8/16/32-bit, x86-64-v2+**: equality with unsigned maximum, :math:`a \ge b \iff a = \max\{a, b\}`.
+       - **8/16-bit, x86-64-v1**: compares saturated difference with zero, :math:`a \ge b \iff \max\{b - a, 0\} = 0`.
+       - **32-bit, x86-64-v1; 64-bit**: :cpp:func:`~backend::logical_not` of :cpp:func:`~backend::compare_lt`.
 
    Neon
    ====
 
-   - Uses ``vcgeq`` intrinsics.
+   - ``vcgeq`` intrinsics.
