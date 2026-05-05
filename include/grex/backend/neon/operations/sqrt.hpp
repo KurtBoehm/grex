@@ -25,8 +25,7 @@ namespace grex::backend {
     return {.r = GREX_ISUFFIXED(vsqrtq, KIND, BITS)(v.r)}; \
   }
 GREX_FOREACH_FP_TYPE(GREX_SQRT, 128)
-GREX_SUBVECTOR_UNARY(sqrt)
-GREX_SUPERVECTOR_UNARY(sqrt)
+GREX_NNVECTOR_UNARY(sqrt)
 
 // scalar implementations
 inline Scalar<f32> sqrt(Scalar<f32> v) {

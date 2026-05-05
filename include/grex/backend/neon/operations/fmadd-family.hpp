@@ -49,15 +49,10 @@ inline NativeVector<T, tSize> fnmsub(NativeVector<T, tSize> a, NativeVector<T, t
   return negate(fmadd(a, b, c));
 }
 
-GREX_SUBVECTOR_TERNARY(fmadd)
-GREX_SUBVECTOR_TERNARY(fmsub)
-GREX_SUBVECTOR_TERNARY(fnmadd)
-GREX_SUBVECTOR_TERNARY(fnmsub)
-
-GREX_SUPERVECTOR_TERNARY(fmadd)
-GREX_SUPERVECTOR_TERNARY(fmsub)
-GREX_SUPERVECTOR_TERNARY(fnmadd)
-GREX_SUPERVECTOR_TERNARY(fnmsub)
+GREX_NNVECTOR_TERNARY(fmadd)
+GREX_NNVECTOR_TERNARY(fmsub)
+GREX_NNVECTOR_TERNARY(fnmadd)
+GREX_NNVECTOR_TERNARY(fnmsub)
 
 template<typename T>
 inline Scalar<T> fmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
