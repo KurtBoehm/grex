@@ -34,12 +34,12 @@ namespace grex::backend {
 #define GREX_EXTRINGLE_CVT_i(KIND, BITS) GREX_EXTRINGLE_CVT_i##BITS(KIND)
 #define GREX_EXTRINGLE_CVT_u(KIND, BITS) GREX_EXTRINGLE_CVT_i##BITS(KIND)
 
-#define GREX_EXTRINGLE_128(KIND, BITS, SIZE) {.value = GREX_EXTRINGLE_CVT_##KIND(KIND, BITS)}
+#define GREX_EXTRINGLE_128(KIND, BITS, SIZE) GREX_EXTRINGLE_CVT_##KIND(KIND, BITS)
 #define GREX_EXTRINGLE_256(...) extract_single(split(v, index_tag<0>))
 #define GREX_EXTRINGLE_512(...) extract_single(split(v, index_tag<0>))
 
 #define GREX_EXTRINGLE(KIND, BITS, SIZE, REGISTERBITS) \
-  inline Scalar<KIND##BITS> extract_single(NativeVector<KIND##BITS, SIZE> v) { \
+  inline KIND##BITS extract_single(NativeVector<KIND##BITS, SIZE> v) { \
     return GREX_EXTRINGLE_##REGISTERBITS(KIND, BITS, SIZE); \
   }
 
@@ -48,11 +48,11 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_EXTRINGLE_ALL)
 
 template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline Scalar<T> extract_single(SubVector<T, tPart, tSize> v) {
+inline T extract_single(SubVector<T, tPart, tSize> v) {
   return extract_single(v.full);
 }
 template<typename THalf>
-inline Scalar<typename THalf::Value> extract_single(SuperVector<THalf> v) {
+inline typename THalf::Value extract_single(SuperVector<THalf> v) {
   return extract_single(v.lower);
 }
 } // namespace grex::backend

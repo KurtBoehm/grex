@@ -629,7 +629,7 @@ GREX_ALWAYS_INLINE inline Vector<T, tSize> fnmsub(Vector<T, tSize> a, Vector<T, 
 /** Extracts `v[0]`. */
 template<Vectorizable T, std::size_t tSize>
 GREX_ALWAYS_INLINE inline T extract_single(Vector<T, tSize> v) {
-  return backend::extract_single(v.backend()).value;
+  return backend::extract_single(v.backend());
 }
 
 /** Blends `v1` with zeros: `result[i] = mask[i] ? v1[i] : 0`. */

@@ -139,11 +139,15 @@ Vector-Specific Operations
    * - Convert type
      - :cpp:func:`Vector::convert(AnyTypeTag) const <template<Vectorizable TDst> Vector<TDst, size> grex::Vector::convert(TypeTag<TDst>) const>`
 
-   * - Element access
-     - | :cpp:func:`Vector::operator[](std::size_t i) const <T grex::Vector::operator[](std::size_t) const>`
-       | :cpp:func:`Vector::operator[](AnyIndexTag auto i) const <T grex::Vector::operator[](AnyIndexTag) const>`
+   * - :ref:`Extract element (runtime index) <operations-extract-value-runtime>`
+     - :cpp:func:`Vector::operator[](std::size_t i) const <T grex::Vector::operator[](std::size_t) const>`
+
+   * - :ref:`Extract element (compile-time index) <operations-extract-value-ct>`
+     - | :cpp:func:`Vector::operator[](AnyIndexTag auto i) const <T grex::Vector::operator[](AnyIndexTag) const>`
        | :cpp:func:`get\<index>(const Vector&) <template<std::size_t tIdx> T grex::Vector::get(const Vector&)>`
-       | :cpp:func:`Vector::insert(std::size_t i, T value) const <Vector grex::Vector::insert(std::size_t, T) const>`
+
+   * - Insert element
+     - | :cpp:func:`Vector::insert(std::size_t i, T value) const <Vector grex::Vector::insert(std::size_t, T) const>`
        | :cpp:func:`Vector::insert(AnyIndexTag auto i, T value) const <Vector grex::Vector::insert(AnyIndexTag, T) const>`
 
    * - :ref:`Store (unaligned) <operations-store>`
@@ -242,11 +246,15 @@ Mask-Specific Operations
    * - :ref:`Mask equality <operations-compare-eq-mask>`
      - :cpp:func:`operator==(Mask, Mask) <Mask grex::Mask::operator==(Mask, Mask)>`
 
-   * - Element access
-     - | :cpp:func:`Mask::operator[](std::size_t i) const <bool grex::Mask::operator[](std::size_t) const>`
-       | :cpp:func:`Mask::operator[](AnyIndexTag auto i) const <bool grex::Mask::operator[](AnyIndexTag) const>`
+   * - :ref:`Extract element (runtime index) <operations-extract-mask-runtime>`
+     - :cpp:func:`Mask::operator[](std::size_t i) const <bool grex::Mask::operator[](std::size_t) const>`
+
+   * - :ref:`Extract element (compile-time index) <operations-extract-mask-ct>`
+     - | :cpp:func:`Mask::operator[](AnyIndexTag auto i) const <bool grex::Mask::operator[](AnyIndexTag) const>`
        | :cpp:func:`get\<index>(const Mask&) <template<std::size_t tIdx> bool grex::Mask::get(const Mask&)>`
-       | :cpp:func:`Mask::insert(std::size_t i, bool value) const <Mask grex::Mask::insert(std::size_t, bool) const>`
+
+   * - Insert element
+     - | :cpp:func:`Mask::insert(std::size_t i, bool value) const <Mask grex::Mask::insert(std::size_t, bool) const>`
        | :cpp:func:`Mask::insert(AnyIndexTag auto i, bool value) const <Mask grex::Mask::insert(AnyIndexTag, bool) const>`
 
    * - Backend access
@@ -294,7 +302,7 @@ Free-Function Utilities
        | :cpp:func:`grex::fnmadd(Vector a, Vector b, Vector c) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::fnmadd(Vector<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
        | :cpp:func:`grex::fnmsub(Vector a, Vector b, Vector c) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::fnmsub(Vector<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
 
-   * - Extract single value
+   * - :ref:`Extract single value <operations-extract-single>`
      - :cpp:func:`grex::extract_single(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::extract_single(Vector<T, tSize>)>`
 
    * - Blend zeros (masked)

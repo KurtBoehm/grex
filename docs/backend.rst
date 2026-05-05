@@ -8,6 +8,7 @@ These pages give an overview over the operations that a backend needs to impleme
    :maxdepth: 1
 
    operations/set
+   operations/extract
    operations/load
    operations/store
    operations/expand

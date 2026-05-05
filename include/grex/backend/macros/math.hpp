@@ -52,12 +52,16 @@
 #define GREX_DIVIDE_2_2 1
 #define GREX_DIVIDE_4_2 2
 #define GREX_DIVIDE_8_2 4
+#define GREX_DIVIDE_8_4 2
 #define GREX_DIVIDE_8_8 1
 #define GREX_DIVIDE_16_2 8
+#define GREX_DIVIDE_16_4 4
 #define GREX_DIVIDE_16_8 2
 #define GREX_DIVIDE_32_2 16
+#define GREX_DIVIDE_32_4 8
 #define GREX_DIVIDE_32_8 4
 #define GREX_DIVIDE_64_2 32
+#define GREX_DIVIDE_64_4 16
 #define GREX_DIVIDE_64_8 8
 #define GREX_DIVIDE_128_2 64
 #define GREX_DIVIDE_128_8 16
