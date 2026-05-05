@@ -2,19 +2,19 @@
 Operations
 ##########
 
-The name of most operations links to the documentation of that operation and some notes on its implementation in the different backends.
+Most operation names below link to their dedicated documentation, which also describes backend-specific implementation details.
 
 Throughout this documentation, ``Vector<T, N>`` denotes any backend vector type with value type ``T`` and lane count ``N``, i.e. one of:
 
 - ``backend::NativeVector<T, N>``
-- ``backend::SubVector<T, N, M>`` with some ``M`` for which ``backend::NativeVector<T, M>`` is defined.
-- ``backend::SuperVector<THalf>`` where ``THalf::Value == T`` and ``2 * THalf::size == N``.
+- ``backend::SubVector<T, N, M>`` for some ``M`` for which ``backend::NativeVector<T, M>`` is defined
+- ``backend::SuperVector<THalf>`` where ``THalf::Value == T`` and ``2 * THalf::size == N``
 
-Similarly, ``Mask<T, N>`` denotes any backend mask type for value type ``T`` and lane count ``N``, i.e. one of:
+Similarly, ``Mask<T, N>`` denotes any backend mask type with value type ``T`` and lane count ``N``, i.e. one of:
 
 - ``backend::NativeMask<T, N>``
-- ``backend::SubMask<T, N, M>`` with some ``M`` for which ``backend::NativeMask<T, M>`` is defined.
-- ``backend::SuperMask<THalf>`` where ``THalf::Value == T`` and ``2 * THalf::size == N``.
+- ``backend::SubMask<T, N, M>`` for some ``M`` for which ``backend::NativeMask<T, M>`` is defined
+- ``backend::SuperMask<THalf>`` where ``THalf::Value == T`` and ``2 * THalf::size == N``
 
 ##########################
 Vector-Specific Operations
@@ -35,13 +35,13 @@ Vector-Specific Operations
    * - :ref:`Construct from per-lane values <operations-set-vector>`
      - ``Vector::Vector(T... values)``
 
-   * - Construct from backend
+   * - Construct from backend vector
      - ``Vector::Vector(Backend v)``
 
-   * - :ref:`Expand scalar (undefined upper) <operations-expand-scalar-any>`
+   * - :ref:`Expand scalar (undefined upper lanes) <operations-expand-scalar-any>`
      - :cpp:func:`Vector::expanded_any(T value) <Vector grex::Vector::expanded_any(T)>`
 
-   * - :ref:`Expand scalar (zero upper) <operations-expand-scalar-zero>`
+   * - :ref:`Expand scalar (zero upper lanes) <operations-expand-scalar-zero>`
      - :cpp:func:`Vector::expanded_zero(T value) <Vector grex::Vector::expanded_zero(T)>`
 
    * - :ref:`Load (unaligned) <operations-load>`
@@ -50,10 +50,10 @@ Vector-Specific Operations
    * - :ref:`Load (aligned) <operations-load-aligned>`
      - :cpp:func:`Vector::load_aligned(const T* ptr) <Vector grex::Vector::load_aligned(const T*)>`
 
-   * - :ref:`Load partial (runtime) <operations-load-part-runtime>`
+   * - :ref:`Load partial (runtime count) <operations-load-part-runtime>`
      - :cpp:func:`Vector::load_part(const T* ptr, std::size_t num) <Vector grex::Vector::load_part(const T*, std::size_t)>`
 
-   * - :ref:`Load partial (compile-time) <operations-load-part-ct>`
+   * - :ref:`Load partial (compile-time count) <operations-load-part-ct>`
      - :cpp:func:`Vector::load_part(const T* ptr, AnyIndexTag auto num) <Vector grex::Vector::load_part(const T*, AnyIndexTag)>`
 
    * - :ref:`Load multibyte <operations-load-multibyte>`
@@ -136,7 +136,7 @@ Vector-Specific Operations
    * - :ref:`Cut off lanes <operations-cutoff>`
      - :cpp:func:`Vector::cutoff(std::size_t i) const <Vector grex::Vector::cutoff(std::size_t) const>`
 
-   * - Convert type
+   * - Convert element type
      - :cpp:func:`Vector::convert(AnyTypeTag) const <template<Vectorizable TDst> Vector<TDst, size> grex::Vector::convert(TypeTag<TDst>) const>`
 
    * - :ref:`Extract element (runtime index) <operations-extract-value-runtime>`
@@ -156,10 +156,10 @@ Vector-Specific Operations
    * - :ref:`Store (aligned) <operations-store-aligned>`
      - :cpp:func:`Vector::store_aligned(T* ptr) const <void grex::Vector::store_aligned(T*) const>`
 
-   * - :ref:`Store partial (runtime) <operations-store-part-runtime>`
+   * - :ref:`Store partial (runtime count) <operations-store-part-runtime>`
      - :cpp:func:`Vector::store_part(T* ptr, std::size_t num) const <void grex::Vector::store_part(T*, std::size_t) const>`
 
-   * - :ref:`Store partial (compile-time) <operations-store-part-ct>`
+   * - :ref:`Store partial (compile-time count) <operations-store-part-ct>`
      - :cpp:func:`Vector::store_part(T* ptr, AnyIndexTag auto num) const <void grex::Vector::store_part(T*, AnyIndexTag) const>`
 
    * - :ref:`Equality <operations-compare-eq>`
@@ -176,10 +176,10 @@ Vector-Specific Operations
      - | :cpp:func:`operator\<=(Vector, Vector) <Mask grex::Vector::operator<=(Vector, Vector)>`
        | :cpp:func:`operator>=(Vector, Vector) <Mask grex::Vector::operator>=(Vector, Vector)>`
 
-   * - :ref:`Expand (undefined upper) <operations-expand-vector-any>`
+   * - :ref:`Expand (undefined upper lanes) <operations-expand-vector-any>`
      - :cpp:func:`Vector::expand_any(AnyIndexTag) const <template<std::size_t tDstSize> Vector<T, tDstSize> grex::Vector::expand_any(IndexTag<tDstSize>) const>`
 
-   * - :ref:`Expand (zero upper) <operations-expand-vector-zero>`
+   * - :ref:`Expand (zero upper lanes) <operations-expand-vector-zero>`
      - :cpp:func:`Vector::expand_zero(AnyIndexTag) const <template<std::size_t tDstSize> Vector<T, tDstSize> grex::Vector::expand_zero(IndexTag<tDstSize>) const>`
 
    * - Shingle up
@@ -213,7 +213,7 @@ Mask-Specific Operations
    * - :ref:`Construct from per-lane values <operations-set-mask>`
      - :cpp:func:`Mask::Mask(bool... values) <template<typename... Ts> Mask grex::Mask::Mask(Ts...)>`
 
-   * - Construct from backend
+   * - Construct from backend mask
      - :cpp:func:`Mask::Mask(Backend v) <Mask grex::Mask::Mask(Backend)>`
 
    * - :ref:`All-false mask <operations-zeros-mask>`
@@ -330,7 +330,7 @@ Free-Function Utilities
        | :cpp:func:`grex::mask_divide(Mask mask, Vector a, Vector b) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::mask_divide(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
 
    * - Gather
-     - :cpp:func:`grex::gather(std::span\<const T, extend> data, Vector indices) <template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize> Vector<TValue, tSize> grex::gather(std::span<const TValue, tExtent>, Vector<TIndex, tSize>)>`
+     - :cpp:func:`grex::gather(std::span\<const T, extent> data, Vector indices) <template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize> Vector<TValue, tSize> grex::gather(std::span<const TValue, tExtent>, Vector<TIndex, tSize>)>`
 
    * - Masked gather
-     - :cpp:func:`grex::mask_gather(std::span\<const T, extend> data, Mask mask, Vector indices) <template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize> Vector<TValue, tSize> grex::mask_gather(std::span<const TValue, tExtent>, Mask<TValue, tSize>, Vector<TIndex, tSize>)>`
+     - :cpp:func:`grex::mask_gather(std::span\<const T, extent> data, Mask mask, Vector indices) <template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize> Vector<TValue, tSize> grex::mask_gather(std::span<const TValue, tExtent>, Mask<TValue, tSize>, Vector<TIndex, tSize>)>`
