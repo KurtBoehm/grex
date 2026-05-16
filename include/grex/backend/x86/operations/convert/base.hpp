@@ -47,18 +47,18 @@ namespace grex::backend {
                           SIZE){GREX_CAT(BITPREFIX##_cvtt, GREX_EPU_SUFFIX(SRCKIND, SRCBITS), _, \
                                          GREX_EPU_SUFFIX(DSTKIND, DSTBITS))(v.registr())};
 
-// Floating-point → integer with less than 32 bits: Convert to i32 and go from there
+// Floating-point → small integer (< 32 bits): first convert to i32, then narrow.
 #define GREX_CVT_IMPL_F2SMALLI(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
   const auto vi32 = convert(v, type_tag<i32>).registr(); \
   return convert(GREX_VECTOR_TYPE(i, 32, SIZE){vi32}, type_tag<DSTKIND##DSTBITS>);
 
-// Integer with less than 32 bits → floating-point: Convert to i32 and go from there
+// Small integer (< 32 bits) → floating-point: first widen to i32, then convert to floating-point.
 #define GREX_CVT_IMPL_SMALLI2F(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, BITPREFIX, REGISTERBITS) \
   const GREX_VECTOR_TYPE(SRCKIND, SRCBITS, GREX_MAX(SIZE, 4)) full{v.registr()}; \
   const auto vi32 = convert(full, type_tag<i32>).r; \
   return convert(GREX_VECTOR_TYPE(i, 32, SIZE){vi32}, type_tag<DSTKIND##DSTBITS>);
 
-// Base macros
+// Base macros that dispatch to the (Dst, Src, Size) specialization
 // Vector
 #define GREX_CVT_IMPL(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, ...) \
   GREX_CVT_IMPL_##DSTKIND##DSTBITS##_##SRCKIND##SRCBITS##_##SIZE( \
@@ -89,35 +89,35 @@ namespace grex::backend {
   }
 
 #define GREX_CVT_DEF_ALL_BASE(MACRO, BITPREFIX, REGISTERBITS) \
-  /* Double integer size */ \
+  /* Integer widening: 2× element width (same signedness). */ \
   MACRO(i, 16, i, 8, GREX_DIVIDE(REGISTERBITS, 16), BITPREFIX, REGISTERBITS) \
   MACRO(u, 16, u, 8, GREX_DIVIDE(REGISTERBITS, 16), BITPREFIX, REGISTERBITS) \
   MACRO(i, 32, i, 16, GREX_DIVIDE(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
   MACRO(u, 32, u, 16, GREX_DIVIDE(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
   MACRO(i, 64, i, 32, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(u, 64, u, 32, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  /* Quadruple size */ \
+  /* Integer widening: 4× element width (same signedness). */ \
   MACRO(i, 32, i, 8, GREX_DIVIDE(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
   MACRO(u, 32, u, 8, GREX_DIVIDE(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
   MACRO(i, 64, i, 16, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(u, 64, u, 16, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  /* Octuple size */ \
+  /* Integer widening: 8× element width (same signedness). */ \
   MACRO(i, 64, i, 8, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(u, 64, u, 8, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  /* Halve integer size */ \
+  /* Unsigned narrowing: 1/2 element width. */ \
   MACRO(u, 8, u, 16, GREX_DIVIDE(REGISTERBITS, 16), BITPREFIX, REGISTERBITS) \
   MACRO(u, 16, u, 32, GREX_DIVIDE(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
   MACRO(u, 32, u, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  /* Quarter integer size */ \
+  /* Unsigned narrowing: 1/4 element width. */ \
   MACRO(u, 8, u, 32, GREX_DIVIDE(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
   MACRO(u, 16, u, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  /* Divide integer size by eight */ \
+  /* Unsigned narrowing: 1/8 element width. */ \
   MACRO(u, 8, u, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  /* Floating-point conversions */ \
+  /* Floating-point ↔ floating-point (same register width). */ \
   MACRO(f, 64, f, 32, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(f, 32, f, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   /* Integer → floating-point */ \
-  /* f64 */ \
+  /* integer → f64. */ \
   MACRO(f, 64, i, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(f, 64, u, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(f, 64, i, 32, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
@@ -126,7 +126,7 @@ namespace grex::backend {
   MACRO(f, 64, u, 16, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(f, 64, i, 8, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(f, 64, u, 8, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  /* f32 */ \
+  /* integer → f32. */ \
   MACRO(f, 32, i, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(f, 32, u, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(f, 32, i, 32, GREX_DIVIDE(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
@@ -136,7 +136,7 @@ namespace grex::backend {
   MACRO(f, 32, i, 8, GREX_DIVIDE(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
   MACRO(f, 32, u, 8, GREX_DIVIDE(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
   /* Floating-point → integer */ \
-  /* f64 */ \
+  /* f64 → integer */ \
   MACRO(i, 64, f, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(u, 64, f, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(i, 32, f, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
@@ -145,7 +145,7 @@ namespace grex::backend {
   MACRO(u, 16, f, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(i, 8, f, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(u, 8, f, 64, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
-  /* f32 */ \
+  /* f32 → integer */ \
   MACRO(i, 64, f, 32, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(u, 64, f, 32, GREX_DIVIDE(REGISTERBITS, 64), BITPREFIX, REGISTERBITS) \
   MACRO(i, 32, f, 32, GREX_DIVIDE(REGISTERBITS, 32), BITPREFIX, REGISTERBITS) \
@@ -160,12 +160,13 @@ namespace grex::backend {
   GREX_CVT_DEF_ALL_BASE(GREX_CVTMSK, BITPREFIX, REGISTERBITS)
 
 // Trivial no-op cases
-// Source and destination type identical
+// Source and destination scalar type are identical: keep the vector as-is.
 template<Vectorizable T, std::size_t tSize>
 inline NativeVector<T, tSize> convert(NativeVector<T, tSize> v, TypeTag<T> /*tag*/) {
   return v;
 }
-// Integers with the same number of bits
+// Integer vectors with the same bit-width but different signedness:
+// just reinterpret the register (no data transformation).
 template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
 requires(sizeof(TDst) == sizeof(TSrc))
 inline NativeVector<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
@@ -173,7 +174,9 @@ inline NativeVector<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TD
 }
 
 #if GREX_X86_64_LEVEL >= 4
-// Baseline for compact masks: Reinterpret
+// Baseline for compact masks:
+// If converting to a super-native mask, process lower/upper halves recursively;
+// otherwise, just reinterpret the underlying mask register.
 template<AnyMask TMask, typename TDst>
 requires(!AnySuperNativeMask<TMask>)
 inline MaskFor<TDst, TMask::size> convert(TMask mask, TypeTag<TDst> tag) {
@@ -188,21 +191,24 @@ inline MaskFor<TDst, TMask::size> convert(TMask mask, TypeTag<TDst> tag) {
     return Out{OutRegister(mask.registr())};
   }
 }
-// Super-native to native/sub-native
+// Super-native mask → native/sub-native mask: convert each half and then merge.
 template<AnySuperNativeMask TMask, typename TDst>
 inline MaskFor<TDst, TMask::size> convert(TMask mask, TypeTag<TDst> tag) {
   return merge(convert(mask.lower, tag), convert(mask.upper, tag));
 }
 #else
-// Baseline for broad masks: Convert as signed integer
+// Baseline for broad masks:
+// Reinterpret mask as a signed integer vector, convert that, then reinterpret as a mask
+// of the desired element type.
 template<AnyMask TMask, typename TDst>
 inline auto convert(TMask mask, TypeTag<TDst> /*tag*/) {
   return vector2mask(convert(mask2vector(mask), type_tag<SignedInt<sizeof(TDst)>>), type_tag<TDst>);
 }
 #endif
 
-// Integer to larger integer with different signedness: Increase size while retaining signedness,
-// main condition: mixed signedness, increasing size
+// Integer to larger integer with different signedness:
+// widen while preserving source signedness, then reinterpret to destination type.
+// Main condition: mixed signedness, increasing element size.
 template<typename TDst, typename TSrc>
 concept ConvertIntegralUp = (std::is_signed_v<TDst> != std::is_signed_v<TSrc>) &&
                             sizeof(TDst) > sizeof(TSrc);
@@ -213,7 +219,7 @@ inline NativeVector<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TD
   using Tmp = std::conditional_t<std::is_signed_v<TSrc>, SignedOf<TDst>, UnsignedOf<TDst>>;
   return {.r = convert(v, type_tag<Tmp>).r};
 }
-// sub-native → native (sub-native → sub-native: covered by the base case)
+// sub-native → native (sub-native → sub-native is handled by the base case below)
 template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tPart, std::size_t tSize>
 requires(ConvertIntegralUp<TDst, TSrc> && is_native<TDst, tPart>)
 inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
@@ -221,8 +227,9 @@ inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<T
   return {.r = convert(v, type_tag<Temp>).r};
 }
 
-// Integer to smaller integer where one is signed: Truncation → use unsigned version
-// main condition: at least one signed, decreasing size
+// Integer to smaller integer where at least one type is signed:
+// perform truncation via an unsigned path.
+// Main condition: at least one signed, decreasing element size.
 template<typename TDst, typename TSrc>
 concept ConvertIntegralDown =
   (std::is_signed_v<TDst> || std::is_signed_v<TSrc>) && sizeof(TDst) < sizeof(TSrc);
@@ -233,9 +240,11 @@ inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst>
   const auto s = convert(NativeVector<UnsignedOf<TSrc>, tSize>{v.r}, type_tag<UnsignedOf<TDst>>);
   return VectorFor<TDst, tSize>{s.registr()};
 }
-// sub-native → sub-native: Covered by the base case
+// sub-native → sub-native: covered by the base case below
 
-// Conversion between sub-native vectors: Increase size so that the larger is/both are native
+// Sub-native vector → sub-native vector:
+// expand to the smallest size at which the source or the destination (non-exclusive) is native,
+// perform at that size, then shrink back.
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
 requires(is_subnative<TDst, tPart>)
 inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
@@ -246,7 +255,8 @@ inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<T
   return Out{s.registr()};
 }
 
-// Conversion between super-native vectors/masks: Work on the halves separately
+// Conversion between super-native vectors/masks: operate on each half independently
+// and then stitch them back together.
 template<typename TDst, typename THalf>
 requires(is_supernative<TDst, THalf::size * 2>)
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
@@ -261,7 +271,8 @@ inline MaskFor<TDst, THalf::size * 2> convert(SuperMask<THalf> v, TypeTag<TDst> 
 #endif
 
 // Conversion between super-native and non-super-native
-// native → super-native: Split into halves and convert separately
+// native → super-native: split into two halves, convert each half recursively,
+// then assemble a super-native result.
 // TODO Separate implementations for four-fold and eight-fold super-native vectors?!
 template<typename TDst, typename TSrc, std::size_t tSize>
 requires(is_supernative<TDst, tSize>)
@@ -271,7 +282,7 @@ inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst>
     .upper = convert(split(v, index_tag<1>), type_tag<TDst>),
   };
 }
-// sub-native → super-native: Split into halves and convert separately
+// sub-native → super-native: same idea, but starting from sub-native input.
 // TODO Separate implementations for four-fold and eight-fold super-native vectors?!
 template<typename TDst, typename TSrc, std::size_t tPart, std::size_t tSize>
 requires(is_supernative<TDst, tPart>)
@@ -281,8 +292,9 @@ inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<T
     .upper = convert(split(v, index_tag<1>), type_tag<TDst>),
   };
 }
-// Super-native → sub-native/native for integers: Convert to next-smaller integer type, merge,
-// and continue
+// Super-native → sub-native/native for integers:
+// convert each half to the next-smaller integer type, merge halves,
+// then continue converting to the final destination type.
 // TODO Separate implementations for four-fold and eight-fold super-native vectors?
 template<typename TDst, typename THalf>
 requires(IntVectorizable<TDst> && IntVectorizable<typename THalf::Value> &&
@@ -295,7 +307,9 @@ inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TD
   const auto tmp = merge(convert(v.lower, type_tag<Tmp>), convert(v.upper, type_tag<Tmp>));
   return convert(tmp, type_tag<TDst>);
 }
-// Super-native → sub-native/native for non-integers: Convert halves separately and merge
+// Super-native → sub-native/native for non-integers:
+// there is no “next smaller integer” trick, so convert halves independently to the final type
+// and then merge them.
 // TODO Separate implementations for four-fold and eight-fold super-native vectors?
 template<typename TDst, typename THalf>
 requires((!IntVectorizable<TDst> || !IntVectorizable<typename THalf::Value>) &&
@@ -304,6 +318,7 @@ inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TD
   return merge(convert(v.lower, type_tag<TDst>), convert(v.upper, type_tag<TDst>));
 }
 
+// Helpers taking only the destination element type.
 template<Vectorizable TDst, AnyVector TSrc>
 inline VectorFor<TDst, TSrc::size> convert(TSrc v) {
   return convert(v, type_tag<TDst>);

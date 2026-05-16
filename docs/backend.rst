@@ -12,10 +12,11 @@ These pages give an overview over the operations that a backend needs to impleme
    operations/store
    operations/extract
    operations/expand
+   operations/convert
    operations/arithmetic
    operations/bitwise
    operations/shift
-   operations/logical
    operations/compare
+   operations/logical
    operations/mask-index
    operations/multibyte

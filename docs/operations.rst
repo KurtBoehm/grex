@@ -136,7 +136,7 @@ Vector-Specific Operations
    * - :ref:`Cut off lanes <operations-cutoff>`
      - :cpp:func:`Vector::cutoff(std::size_t i) const <Vector grex::Vector::cutoff(std::size_t) const>`
 
-   * - Convert element type
+   * - :ref:`Convert element type <operations-convert-vector>`
      - :cpp:func:`Vector::convert(AnyTypeTag) const <template<Vectorizable TDst> Vector<TDst, size> grex::Vector::convert(TypeTag<TDst>) const>`
 
    * - :ref:`Extract element (runtime index) <operations-extract-value-runtime>`
@@ -228,7 +228,7 @@ Mask-Specific Operations
    * - :ref:`Single-lane mask <operations-single-mask>`
      - :cpp:func:`Mask::single_mask(std::size_t i) <Mask grex::Mask::single_mask(std::size_t)>`
 
-   * - Convert to different scalar type
+   * - :ref:`Convert scalar type <operations-convert-mask>`
      - :cpp:func:`Mask::convert(AnyTypeTag) const <template<Vectorizable TDst> Mask<TDst, tSize> grex::Mask::convert(TypeTag<TDst>) const>`
 
    * - :ref:`Logical NOT <operations-logical-not>`
