@@ -18,14 +18,22 @@ Vector Conversion
 
    Element-wise conversion from ``Src`` to ``Dst``.
 
-x86-64
+Shared
 ======
-
-Native and sub-native vectors
------------------------------
 
 - **Identical source/destination type**: returns ``v`` unchanged.
 - **Same-width integers**: bitwise reinterpretation; values are unchanged.
+- **Sub-native → sub-native**:
+
+  - Expand the sub-vector to the smallest size at which at least one of the source or the destination is native.
+  - Convert this temporary vector to ``Dst`` using one of the above paths.
+  - Reinterpret the low :math:`N` lanes of the converted temporary as a sub-native vector of ``Dst``.
+
+- **Super-native → super-native**: convert each half separately and recombine.
+
+x86-64
+======
+
 - **Integer widening (same signedness)**:
 
   - **x86-64-v2+**: integer-extend intrinsics for all factors (×2/×4/×8).
@@ -131,41 +139,17 @@ Native and sub-native vectors
 
   - **Small integers (< 32 bits)**: convert to ``i32`` with truncation, then narrow using the integer paths above.
 
-Other cases
------------
-
-- **Sub-native → sub-native**:
-
-  - Expand the sub-vector to the smallest size at which at least one of the source or the destination is native.
-  - Convert this temporary vector to ``Dst`` using one of the above paths.
-  - Reinterpret the low :math:`N` lanes of the converted temporary as a sub-native vector of ``Dst``.
-
-- **Native/sub-native → super-native**:
+- **Sub-native → super-native**:
 
   - Split the source (native or sub-native) into two halves.
   - Convert each half independently to the super-native element type.
   - Assemble a super-native vector from the converted halves.
 
-- **Super-native → super-native**: convert each half of the super-native vector (each possibly super-native itself) recursively to the destination element type and recombine.
-- **Super-native → native/sub-native (integer)**:
-
-  - If the destination is not itself super-native, integer conversions go via a smaller intermediate integer width:
-
-    - Convert each half of the super-vector to an integer type whose width is half of the original (preserving signedness).
-    - Merge the halves into a single wider native (or less super) vector of the intermediate type.
-    - Continue conversion from that intermediate integer type to ``Dst`` using the narrowing rules above.
-
-- **Super-native → native/sub-native (non-integer)**:
-
-  - Convert lower and upper halves directly to ``Dst`` and merge.
 
 Neon
 ====
 
-Native and sub-native vectors
------------------------------
-
-- **Floating-point ↔ floating-point**: ``vcvt`` intrinsics.
+- **Floating-point ↔ floating-point**: ``vcvt``/``vcvt_high`` intrinsics
 - **Integer ↔ floating-point**:
 
   - **Same bit count**: ``vcvt`` intrinsics.
@@ -185,18 +169,6 @@ Native and sub-native vectors
   - **Factor 4/8**: multiple factor-2 narrowing steps.
 
 - **Same-width integers with different signedness**: bitwise reinterpretation between signed and unsigned types.
-
-Other cases
------------
-
-- **Sub-native → sub-native**:
-
-  - Expand the sub-vector to the smallest size at which at least one of the source or the destination is native.
-  - Convert this temporary vector to ``Dst`` using one of the above paths.
-  - Reinterpret the low :math:`N` lanes of the converted temporary as a sub-native vector of ``Dst``.
-
-- **Super-native → any**: convert each half independently and merge the results.
-- **Native → super-native**: split into halves, convert each, and merge into a super-native vector.
 
 .. _operations-convert-mask:
 

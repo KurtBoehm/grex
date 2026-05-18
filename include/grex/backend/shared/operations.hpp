@@ -7,6 +7,7 @@
 #include "operations/blend-zero-static.hpp"
 #include "operations/blend.hpp"
 #include "operations/compare.hpp"
+#include "operations/convert.hpp"
 #include "operations/expand.hpp"
 #include "operations/extract.hpp"
 #include "operations/gather.hpp"

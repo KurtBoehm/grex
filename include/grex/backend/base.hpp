@@ -48,8 +48,6 @@ struct SuperVector {
   THalf lower;
   THalf upper;
 };
-template<Vectorizable T, std::size_t tSize>
-using VectorPair = SuperVector<NativeVector<T, tSize>>;
 
 enum struct SimdKind : u8 { none, native, subnative, supernative };
 template<typename T>
@@ -84,6 +82,16 @@ template<typename T>
 concept AnySubNativeVector = AnyVectorTrait<T>::kind == SimdKind::subnative;
 template<typename T>
 concept AnySuperNativeVector = AnyVectorTrait<T>::kind == SimdKind::supernative;
+
+template<AnyVector TVec>
+using ValueOf = TVec::Value;
+template<AnyVector TVec>
+inline constexpr std::size_t size_of = TVec::size;
+
+template<typename T>
+concept IntVector = AnyVector<T> && IntVectorizable<ValueOf<T>>;
+template<typename T>
+concept FloatVector = AnyVector<T> && FloatVectorizable<ValueOf<T>>;
 
 template<Vectorizable T, std::size_t tSize>
 struct NativeMask;

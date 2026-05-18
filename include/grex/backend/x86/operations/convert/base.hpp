@@ -159,20 +159,6 @@ namespace grex::backend {
 #define GREX_CVTMSK_DEF_ALL(BITPREFIX, REGISTERBITS) \
   GREX_CVT_DEF_ALL_BASE(GREX_CVTMSK, BITPREFIX, REGISTERBITS)
 
-// Trivial no-op cases
-// Source and destination scalar type are identical: keep the vector as-is.
-template<Vectorizable T, std::size_t tSize>
-inline NativeVector<T, tSize> convert(NativeVector<T, tSize> v, TypeTag<T> /*tag*/) {
-  return v;
-}
-// Integer vectors with the same bit-width but different signedness:
-// just reinterpret the register (no data transformation).
-template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
-requires(sizeof(TDst) == sizeof(TSrc))
-inline NativeVector<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
-  return {.r = v.r};
-}
-
 #if GREX_X86_64_LEVEL >= 4
 // Baseline for compact masks:
 // If converting to a super-native mask, process lower/upper halves recursively;
@@ -242,26 +228,6 @@ inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst>
 }
 // sub-native → sub-native: covered by the base case below
 
-// Sub-native vector → sub-native vector:
-// expand to the smallest size at which the source or the destination (non-exclusive) is native,
-// perform at that size, then shrink back.
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
-requires(is_subnative<TDst, tPart>)
-inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
-  using Out = VectorFor<TDst, tPart>;
-  constexpr std::size_t work_size = std::min(tSize, Out::Full::size);
-  static_assert(work_size > tPart);
-  const auto s = convert(VectorFor<TSrc, work_size>{v.registr()}, type_tag<TDst>);
-  return Out{s.registr()};
-}
-
-// Conversion between super-native vectors/masks: operate on each half independently
-// and then stitch them back together.
-template<typename TDst, typename THalf>
-requires(is_supernative<TDst, THalf::size * 2>)
-inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
-  return {.lower = convert(v.lower, type_tag<TDst>), .upper = convert(v.upper, type_tag<TDst>)};
-}
 #if GREX_X86_64_LEVEL < 4
 template<typename TDst, typename THalf>
 requires(is_supernative<TDst, THalf::size * 2>)
@@ -270,52 +236,18 @@ inline MaskFor<TDst, THalf::size * 2> convert(SuperMask<THalf> v, TypeTag<TDst> 
 }
 #endif
 
-// Conversion between super-native and non-super-native
-// native → super-native: split into two halves, convert each half recursively,
-// then assemble a super-native result.
-// TODO Separate implementations for four-fold and eight-fold super-native vectors?!
-template<typename TDst, typename TSrc, std::size_t tSize>
+// Native → super-native: Split native
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
 requires(is_supernative<TDst, tSize>)
-inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
-  return {
-    .lower = convert(split(v, index_tag<0>), type_tag<TDst>),
-    .upper = convert(split(v, index_tag<1>), type_tag<TDst>),
-  };
+inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> tag) {
+  return merge(convert(get_low(v), tag), convert(get_high(v), tag));
 }
-// sub-native → super-native: same idea, but starting from sub-native input.
+// Sub-native → super-native: same idea.
 // TODO Separate implementations for four-fold and eight-fold super-native vectors?!
 template<typename TDst, typename TSrc, std::size_t tPart, std::size_t tSize>
 requires(is_supernative<TDst, tPart>)
-inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
-  return {
-    .lower = convert(split(v, index_tag<0>), type_tag<TDst>),
-    .upper = convert(split(v, index_tag<1>), type_tag<TDst>),
-  };
-}
-// Super-native → sub-native/native for integers:
-// convert each half to the next-smaller integer type, merge halves,
-// then continue converting to the final destination type.
-// TODO Separate implementations for four-fold and eight-fold super-native vectors?
-template<typename TDst, typename THalf>
-requires(IntVectorizable<TDst> && IntVectorizable<typename THalf::Value> &&
-         !is_supernative<TDst, THalf::size * 2>)
-inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
-  using Src = THalf::Value;
-  static constexpr std::size_t tmp_bytes = sizeof(Src) / 2;
-  static constexpr bool tmp_signed = std::is_signed_v<Src>;
-  using Tmp = std::conditional_t<tmp_signed, SignedInt<tmp_bytes>, UnsignedInt<tmp_bytes>>;
-  const auto tmp = merge(convert(v.lower, type_tag<Tmp>), convert(v.upper, type_tag<Tmp>));
-  return convert(tmp, type_tag<TDst>);
-}
-// Super-native → sub-native/native for non-integers:
-// there is no “next smaller integer” trick, so convert halves independently to the final type
-// and then merge them.
-// TODO Separate implementations for four-fold and eight-fold super-native vectors?
-template<typename TDst, typename THalf>
-requires((!IntVectorizable<TDst> || !IntVectorizable<typename THalf::Value>) &&
-         !is_supernative<TDst, THalf::size * 2>)
-inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
-  return merge(convert(v.lower, type_tag<TDst>), convert(v.upper, type_tag<TDst>));
+inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
+  return merge(convert(get_low(v), tag), convert(get_high(v), tag));
 }
 
 // Helpers taking only the destination element type.
@@ -328,5 +260,7 @@ inline MaskFor<TDst, TSrc::size> convert(TSrc v) {
   return convert(v, type_tag<TDst>);
 }
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/convert.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_BASE_HPP

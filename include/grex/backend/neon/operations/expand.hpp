@@ -18,8 +18,6 @@
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/expand-register.hpp"
 #include "grex/backend/neon/operations/insert-static.hpp"
-#include "grex/backend/neon/operations/subnative.hpp"
-#include "grex/backend/neon/operations/undefined.hpp"
 #include "grex/backend/neon/sizes.hpp"
 #include "grex/backend/shared/operations/expand.hpp" // IWYU pragma: export
 #include "grex/base.hpp"
@@ -71,20 +69,24 @@ inline VectorFor<typename TVec::Value, tDstSize> expand(TVec v, IndexTag<tDstSiz
 #define GREX_EXPAND_64(KIND, BITS, SIZE) \
   inline GREX_REGISTER(KIND, BITS, GREX_MULTIPLY(SIZE, 2)) \
     expand64(GREX_REGISTER(KIND, BITS, SIZE) v) { \
-    const auto undef = make_undefined<GREX_REGISTER(KIND, BITS, SIZE)>(); \
-    return GREX_ISUFFIXED(vcombine, KIND, BITS)(v, undef); \
+    union Uni { \
+      GREX_REGISTER(KIND, BITS, SIZE) v64; \
+      GREX_REGISTER(KIND, BITS, GREX_MULTIPLY(SIZE, 2)) v128; \
+    }; \
+    Uni uni{.v64 = v}; \
+    return uni.v128; \
   }
 #endif
-GREX_EXPAND_64(f, 64, 1)
-GREX_EXPAND_64(i, 64, 1)
-GREX_EXPAND_64(u, 64, 1)
-GREX_EXPAND_64(f, 32, 2)
-GREX_EXPAND_64(i, 32, 2)
-GREX_EXPAND_64(u, 32, 2)
-GREX_EXPAND_64(i, 16, 4)
-GREX_EXPAND_64(u, 16, 4)
-GREX_EXPAND_64(i, 8, 8)
-GREX_EXPAND_64(u, 8, 8)
+GREX_EXPAND_64(f, 64, 1) // NOLINT
+GREX_EXPAND_64(i, 64, 1) // NOLINT
+GREX_EXPAND_64(u, 64, 1) // NOLINT
+GREX_EXPAND_64(f, 32, 2) // NOLINT
+GREX_EXPAND_64(i, 32, 2) // NOLINT
+GREX_EXPAND_64(u, 32, 2) // NOLINT
+GREX_EXPAND_64(i, 16, 4) // NOLINT
+GREX_EXPAND_64(u, 16, 4) // NOLINT
+GREX_EXPAND_64(i, 8, 8) // NOLINT
+GREX_EXPAND_64(u, 8, 8) // NOLINT
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXPAND_HPP
