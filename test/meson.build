@@ -84,6 +84,7 @@ foreach name, conf : {
     if not parallel
       deps += [omp_dep]
     endif
+    targets = []
     foreach type : ['f64', 'f32', 'i64', 'i32', 'i16', 'i8', 'u64', 'u32', 'u16', 'u8']
       foreach arch_name, arch_args : test_arches
         space_name = name.replace('-', ' ')
@@ -100,8 +101,10 @@ foreach name, conf : {
           is_parallel: parallel,
           timeout: -1,
         )
+        targets += [exe]
       endforeach
     endforeach
+    alias_target(f'@name@', targets)
   endif
 endforeach
 

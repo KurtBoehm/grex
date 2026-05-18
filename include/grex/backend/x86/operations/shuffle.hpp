@@ -166,46 +166,44 @@ inline u32x8 shuffle_indices(SubVector<u8, 4, 16> idxs, IndexTag<4> /*dst_bytes*
   if constexpr (index_ub * BITS > 128) { \
     idxs8 = _mm_and_si128(idxs8, _mm_set1_epi8(127)); \
   } \
-  const auto shuf8 = _mm_shuffle_epi8(reinterpret<u8>(table).r, idxs8); \
-  return reinterpret<KIND##BITS>(GREX_VECTOR_TYPE(u, 8, GREX_DIVIDE(REGISTERBITS, 8)){shuf8});
+  const auto shuf8 = _mm_shuffle_epi8(as<u8>(table).r, idxs8); \
+  return as<KIND##BITS>(GREX_VECTOR_TYPE(u, 8, GREX_DIVIDE(REGISTERBITS, 8)){shuf8});
 // AVX2 64×2: Use vpermilpd
 #define GREX_SHFL_VPERMILPD(KIND, BITS, IDXBITS, SIZE, REGISTERBITS, BITPREFIX) \
   const auto idxs64 = shuffle_indices(idxs, index_tag<8>, index_tag<GREX_DIVIDE(BITS, 8)>); \
-  const auto shuf64 = \
-    _mm_permutevar_pd(reinterpret<f64>(table).r, shift_left(idxs64, index_tag<1>).r); \
-  return reinterpret<KIND##BITS>(f64x2{shuf64});
+  const auto shuf64 = _mm_permutevar_pd(as<f64>(table).r, shift_left(idxs64, index_tag<1>).r); \
+  return as<KIND##BITS>(f64x2{shuf64});
 // AVX2 32×4: Use vpermilps
 #define GREX_SHFL_VPERMILPS(KIND, BITS, IDXBITS, SIZE, REGISTERBITS, BITPREFIX) \
   const auto idxs32 = shuffle_indices(idxs, index_tag<4>, index_tag<GREX_DIVIDE(BITS, 8)>).r; \
-  const auto shuf32 = _mm_permutevar_ps(reinterpret<f32>(table).r, idxs32); \
-  return reinterpret<KIND##BITS>(f32x4{shuf32});
+  const auto shuf32 = _mm_permutevar_ps(as<f32>(table).r, idxs32); \
+  return as<KIND##BITS>(f32x4{shuf32});
 // AVX2 32×8: Use vpermd
 #define GREX_SHFL_VPERMD(KIND, BITS, IDXBITS, SIZE, REGISTERBITS, BITPREFIX) \
   const auto idxs32 = shuffle_indices(idxs, index_tag<4>, index_tag<GREX_DIVIDE(BITS, 8)>).r; \
-  const auto shuf32 = _mm256_permutevar8x32_epi32(reinterpret<u32>(table).r, idxs32); \
-  return reinterpret<KIND##BITS>(u32x8{shuf32});
+  const auto shuf32 = _mm256_permutevar8x32_epi32(as<u32>(table).r, idxs32); \
+  return as<KIND##BITS>(u32x8{shuf32});
 // AVX2: Two 128-bit shuffles (original and lane-flipped) and blending
 #define GREX_SHFL_PSHUFBx2(KIND, BITS, IDXBITS, SIZE, REGISTERBITS, BITPREFIX) \
   auto idxs8 = shuffle_indices(idxs, index_tag<1>, index_tag<GREX_DIVIDE(BITS, 8)>).r; \
   if constexpr (index_ub * BITS > 128) { \
     idxs8 = _mm256_and_si256(idxs8, _mm256_set1_epi8(127)); \
   } \
-  const u8x32 rtable{_mm256_permute4x64_epi64(reinterpret<u8>(table).r, 0x4E)}; \
-  const auto shuf0 = _mm256_shuffle_epi8(reinterpret<u8>(table).r, idxs8); \
-  const auto shuf1 = _mm256_shuffle_epi8(reinterpret<u8>(rtable).r, idxs8); \
+  const u8x32 rtable{_mm256_permute4x64_epi64(as<u8>(table).r, 0x4E)}; \
+  const auto shuf0 = _mm256_shuffle_epi8(as<u8>(table).r, idxs8); \
+  const auto shuf1 = _mm256_shuffle_epi8(as<u8>(rtable).r, idxs8); \
   const auto bitmask = _mm256_set1_epi8(16); \
   const auto bitref = _mm256_setr_epi8(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 16, 16, \
                                        16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16); \
   const auto blendmask = _mm256_cmpeq_epi8(_mm256_and_si256(idxs8, bitmask), bitref); \
   const auto shuf8 = _mm256_blendv_epi8(shuf1, shuf0, blendmask); \
-  return reinterpret<KIND##BITS>(GREX_VECTOR_TYPE(u, 8, GREX_DIVIDE(REGISTERBITS, 8)){shuf8});
+  return as<KIND##BITS>(GREX_VECTOR_TYPE(u, 8, GREX_DIVIDE(REGISTERBITS, 8)){shuf8});
 // AVX-512: Plentiful intrinsics
 #define GREX_SHFL_AVX512(KIND, BITS, IDXBITS, SIZE, REGISTERBITS, BITPREFIX) \
   const auto vidxs = \
     shuffle_indices(idxs, index_tag<GREX_DIVIDE(BITS, 8)>, index_tag<GREX_DIVIDE(BITS, 8)>).r; \
-  const auto shuf = \
-    BITPREFIX##_permutexvar_epi##BITS(vidxs, reinterpret<u##BITS>(table).registr()); \
-  return reinterpret<KIND##BITS>(GREX_VECTOR_TYPE(u, BITS, SIZE){shuf});
+  const auto shuf = BITPREFIX##_permutexvar_epi##BITS(vidxs, as<u##BITS>(table).registr()); \
+  return as<KIND##BITS>(GREX_VECTOR_TYPE(u, BITS, SIZE){shuf});
 // AVX-512 2×native table, native indices: Use the vermi2 instruction family
 #define GREX_SHFL2_AVX512(KIND, BITS, IDXBITS, SIZE) \
   inline VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> shuffle( \
@@ -214,9 +212,9 @@ inline u32x8 shuffle_indices(SubVector<u8, 4, 16> idxs, IndexTag<4> /*dst_bytes*
     using UnIntVec = VectorFor<u##BITS, GREX_DIVIDE(SIZE, 2)>; \
     const auto itag = index_tag<GREX_DIVIDE(BITS, 8)>; \
     const auto vidxs = shuffle_indices(idxs, itag, itag).r; \
-    const auto tbllo = reinterpret<u##BITS>(table).lower.r; \
-    const auto tblhi = reinterpret<u##BITS>(table).upper.r; \
-    return reinterpret<KIND##BITS>(UnIntVec{_mm512_permutex2var_epi##BITS(tbllo, vidxs, tblhi)}); \
+    const auto tbllo = as<u##BITS>(table).lower.r; \
+    const auto tblhi = as<u##BITS>(table).upper.r; \
+    return as<KIND##BITS>(UnIntVec{_mm512_permutex2var_epi##BITS(tbllo, vidxs, tblhi)}); \
   }
 
 #if GREX_X86_64_LEVEL >= 4
@@ -319,9 +317,9 @@ GREX_FOREACH_X86_64_LEVEL(GREX_SHFL_ALL)
     [[maybe_unused]] AnyIndexTag auto index_ub, [[maybe_unused]] AnyIndexTag auto index_offset) { \
     constexpr auto tag = index_tag<GREX_DIVIDE(BITS, 8)>; \
     const auto vidxs = shuffle_indices(idxs, tag, tag).r; \
-    const auto xtable = reinterpret<WORKKIND##BITS>(repeat<REPS>(table)).r; \
+    const auto xtable = as<WORKKIND##BITS>(repeat<REPS>(table)).r; \
     const auto shuf = IMPL; \
-    return reinterpret<KIND##BITS>(WORKKIND##BITS##x##DSTSIZE{shuf}); \
+    return as<KIND##BITS>(WORKKIND##BITS##x##DSTSIZE{shuf}); \
   }
 
 #define GREX_SHFL_FPERMUTE_f32(REGISTERBITS) _mm##REGISTERBITS##_permutevar_ps(xtable, vidxs)
@@ -384,25 +382,25 @@ GREX_SHFL_MULTI(GREX_SHFL_MULTI_8, u, 8)
     VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> table, VectorFor<u##IDXBITS, SIZE> idxs, \
     AnyIndexTag auto /*index_ub*/, AnyIndexTag auto /*index_offset*/) { \
     const auto idxs64 = shuffle_indices(idxs, index_tag<8>, index_tag<GREX_DIVIDE(BITS, 8)>); \
-    const auto xtable = repeat<2>(reinterpret<f64>(table)); \
+    const auto xtable = repeat<2>(as<f64>(table)); \
     const auto shuf64 = _mm256_permutevar_pd(xtable.r, shift_left(idxs64, index_tag<1>).r); \
-    return reinterpret<KIND##BITS>(f64x4{shuf64}); \
+    return as<KIND##BITS>(f64x4{shuf64}); \
   }
 #define GREX_SHFL_MULTI_VPERMILPS(KIND, BITS, IDXBITS, SIZE) \
   inline VectorFor<KIND##BITS, SIZE> shuffle( \
     VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> table, VectorFor<u##IDXBITS, SIZE> idxs, \
     AnyIndexTag auto /*index_ub*/, AnyIndexTag auto /*index_offset*/) { \
     const auto idxs32 = shuffle_indices(idxs, index_tag<4>, index_tag<GREX_DIVIDE(BITS, 8)>).r; \
-    const auto shuf32 = _mm256_permutevar_ps(repeat<2>(reinterpret<f32>(table)).r, idxs32); \
-    return reinterpret<KIND##BITS>(f32x8{shuf32}); \
+    const auto shuf32 = _mm256_permutevar_ps(repeat<2>(as<f32>(table)).r, idxs32); \
+    return as<KIND##BITS>(f32x8{shuf32}); \
   }
 #define GREX_SHFL_MULTI_PSHUFB(KIND, BITS, IDXBITS, SIZE) \
   inline VectorFor<KIND##BITS, SIZE> shuffle( \
     VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> table, VectorFor<u##IDXBITS, SIZE> idxs, \
     AnyIndexTag auto /*index_ub*/, AnyIndexTag auto /*index_offset*/) { \
     const auto idxs8 = shuffle_indices(idxs, index_tag<1>, index_tag<GREX_DIVIDE(BITS, 8)>).r; \
-    const auto shuf8 = _mm256_shuffle_epi8(repeat<2>(reinterpret<u8>(table)).r, idxs8); \
-    return reinterpret<KIND##BITS>(u8x32{shuf8}); \
+    const auto shuf8 = _mm256_shuffle_epi8(repeat<2>(as<u8>(table)).r, idxs8); \
+    return as<KIND##BITS>(u8x32{shuf8}); \
   }
 
 #define GREX_SHFL_MULTI(MACRO, KIND, BITS, SIZE) \
@@ -481,10 +479,10 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
   inline KIND##64x2 shuffle(KIND##64x2 table, u64x2 idxs, AnyIndexTag auto /*index_offset*/) { \
     const auto select0 = \
       bf64x2{.r = compare_eq(shift_left(idxs, index_tag<63>), zeros<u64x2>()).r}; \
-    const auto tab = reinterpret<f64>(table).r; \
+    const auto tab = as<f64>(table).r; \
     const auto bc0 = f64x2{.r = _mm_unpacklo_pd(tab, tab)}; \
     const auto bc1 = f64x2{.r = _mm_unpackhi_pd(tab, tab)}; \
-    return reinterpret<KIND##64>(blend(select0, bc1, bc0)); \
+    return as<KIND##64>(blend(select0, bc1, bc0)); \
   }
 #define GREX_SHFL_32(KIND) \
   inline KIND##32x4 shuffle(KIND##32x4 table, u32x4 idxs, AnyIndexTag auto /*index_offset*/) { \
@@ -493,23 +491,23 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
     const auto bit1 = shift_right(shift_left(idxs, index_tag<30>), index_tag<31>); \
     const auto select1 = bf32x4{.r = compare_eq(bit1, zeros<u32x4>()).r}; \
 \
-    const auto tab = reinterpret<f32>(table).r; \
+    const auto tab = as<f32>(table).r; \
     const auto bc0 = f32x4{.r = _mm_shuffle_ps(tab, tab, 0b00000000)}; \
     const auto bc1 = f32x4{.r = _mm_shuffle_ps(tab, tab, 0b01010101)}; \
     const auto bc01 = blend(select0, bc1, bc0); \
     const auto bc2 = f32x4{.r = _mm_shuffle_ps(tab, tab, 0b10101010)}; \
     const auto bc3 = f32x4{.r = _mm_shuffle_ps(tab, tab, 0b11111111)}; \
     const auto bc23 = blend(select0, bc3, bc2); \
-    return reinterpret<KIND##32>(blend(select1, bc23, bc01)); \
+    return as<KIND##32>(blend(select1, bc23, bc01)); \
   } \
   inline KIND##32x4 shuffle(SubVector<KIND##32, 2, 4> table, u32x4 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
     const auto select0 = \
       bf32x4{.r = compare_eq(shift_left(idxs, index_tag<31>), zeros<u32x4>()).r}; \
-    const auto tab = reinterpret<f32>(table.full).r; \
+    const auto tab = as<f32>(table.full).r; \
     const auto bc0 = f32x4{.r = _mm_shuffle_ps(tab, tab, 0b00000000)}; \
     const auto bc1 = f32x4{.r = _mm_shuffle_ps(tab, tab, 0b01010101)}; \
-    return reinterpret<KIND##32>(blend(select0, bc1, bc0)); \
+    return as<KIND##32>(blend(select0, bc1, bc0)); \
   }
 #define GREX_SHFL_16(KIND) \
   inline KIND##16x8 shuffle(KIND##16x8 table, u16x8 idxs, AnyIndexTag auto /*index_offset*/) { \

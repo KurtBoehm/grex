@@ -74,7 +74,7 @@ namespace grex::backend {
   if (size == 0) [[unlikely]] { \
     return; \
   } \
-  const auto ru64 = reinterpret<u64>(src).r; \
+  const auto ru64 = as<u64>(src).r; \
   if ((size & GREX_DIVIDE(SIZE, 2)) != 0) { \
     _mm_storeu_si64(dst, ru64); \
   } \
@@ -82,7 +82,7 @@ namespace grex::backend {
   const u64 hi64 = std::bit_cast<u64>(_mm_cvtsi128_si64(_mm_shuffle_epi32(ru64, 0b11101110))); \
   u64 r64 = (size >= GREX_DIVIDE(SIZE, 2)) ? hi64 : lo64;
 #define GREX_PARTSTORE_FALLBACK_SUB_INIT(BITS, PART) \
-  const __m128i reg = reinterpret<u##BITS>(src).full.r; \
+  const __m128i reg = as<u##BITS>(src).full.r; \
   if (size >= PART) [[unlikely]] { \
     _mm_storeu_si##BITS(dst, reg); \
     return; \

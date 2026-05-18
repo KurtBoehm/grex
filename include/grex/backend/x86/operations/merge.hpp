@@ -115,9 +115,9 @@ inline auto quadruple(TVector v) {
 template<typename TValue, std::size_t tSize>
 requires(sizeof(TValue) * tSize == 16)
 inline NativeVector<TValue, tSize * 4> quadruple(NativeVector<TValue, tSize> v) {
-  const __m512i v512 = _mm512_castsi128_si512(reinterpret<u8>(v).r);
+  const __m512i v512 = _mm512_castsi128_si512(as<u8>(v).r);
   const __m512i shuf = _mm512_shuffle_i64x2(v512, v512, 0);
-  return reinterpret<TValue>(u8x64{shuf});
+  return as<TValue>(u8x64{shuf});
 }
 #endif
 

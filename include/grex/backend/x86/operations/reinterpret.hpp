@@ -46,7 +46,7 @@ reinterpret(SuperVector<THalf> v, TypeTag<TDst> tag) {
 }
 
 template<Vectorizable TDst, typename TSrc>
-inline auto reinterpret(TSrc src) {
+inline auto as(TSrc src) {
   return reinterpret(src, type_tag<TDst>);
 }
 } // namespace grex::backend

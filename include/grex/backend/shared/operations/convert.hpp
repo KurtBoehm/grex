@@ -7,9 +7,12 @@
 #ifndef INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_CONVERT_HPP
 #define INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_CONVERT_HPP
 
+#include <concepts>
+
 #include "grex/backend/active/operations/merge.hpp"
 #include "grex/backend/active/operations/reinterpret.hpp"
 #include "grex/backend/base.hpp"
+#include "grex/backend/choosers.hpp"
 #include "grex/base.hpp"
 
 namespace grex::backend {

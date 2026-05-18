@@ -137,9 +137,7 @@ requires(sizeof(TDst) < sizeof(ValueOf<TSrc>))
 inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<TDst, sizeof(ValueOf<TSrc>)>>), tag);
 }
-} // namespace grex::backend
 
-namespace grex::backend {
 template<AnyMask TMask, typename TDst>
 inline auto convert(TMask mask, TypeTag<TDst> /*tag*/) {
   return vector2mask(convert(mask2vector(mask), type_tag<SignedInt<sizeof(TDst)>>), type_tag<TDst>);
