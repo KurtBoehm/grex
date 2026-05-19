@@ -163,6 +163,13 @@ inline constexpr BoolTag<tValue> bool_tag{};
 inline constexpr BoolTag<true> true_tag{};
 inline constexpr BoolTag<false> false_tag{};
 
+template<bool tIsSafe>
+struct CastTag {
+  static constexpr bool is_safe = tIsSafe;
+};
+inline constexpr CastTag<true> safe_tag{};
+inline constexpr CastTag<false> unsafe_tag{};
+
 template<typename T, typename TRef>
 concept SameAsDecayed = std::same_as<std::decay_t<T>, std::decay_t<TRef>>;
 template<typename TTag>

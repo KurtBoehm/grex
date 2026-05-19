@@ -114,42 +114,44 @@ concept SafeConversion = (!FloatVectorizable<TSrc> || FloatVectorizable<TDst>) &
                          std::numeric_limits<TDst>::digits >= std::numeric_limits<TSrc>::digits;
 
 // convert
-template<Vectorizable TDst, Vectorizable TSrc, bool tSafe>
-requires(!tSafe || SafeConversion<TDst, TSrc>)
-inline TDst convert(TSrc src, BoolTag<tSafe> /*tag*/) {
+template<Vectorizable TDst, Vectorizable TSrc>
+inline TDst convert(TSrc src) {
   return TDst(src);
 }
+template<Vectorizable TDst, Vectorizable TSrc, bool tSafe>
+requires(!tSafe || SafeConversion<TDst, TSrc>)
+inline TDst convert(TSrc src, CastTag<tSafe> /*tag*/) {
+  return convert<TDst>(src);
+}
+
 #if !GREX_BACKEND_SCALAR
+template<Vectorizable TDst, AnyVector TSrc>
+inline Vector<TDst, TSrc::size> convert(TSrc src) {
+  return src.convert(type_tag<TDst>);
+}
 template<Vectorizable TDst, AnyVector TSrc, bool tSafe>
 requires(!tSafe || SafeConversion<TDst, typename TSrc::Value>)
-inline Vector<TDst, TSrc::size> convert(TSrc src, BoolTag<tSafe> /*tag*/) {
+inline Vector<TDst, TSrc::size> convert(TSrc src, CastTag<tSafe> /*tag*/) {
   return src.convert(type_tag<TDst>);
 }
+
 // Mask conversions are always safe if each entry is filled with 0 or 1
 // (which the provided operations ensure)
-template<Vectorizable TDst, AnyMask TSrc>
-inline Mask<TDst, TSrc::size> convert(TSrc src, AnyBoolTag auto /*tag*/) {
-  return src.convert(type_tag<TDst>);
-}
-#endif
-
-template<Vectorizable TDst, typename TSrc>
-inline auto convert_unsafe(TSrc src) {
-  return convert<TDst>(src, false_tag);
-}
-template<Vectorizable TDst, typename TSrc>
-inline auto convert_safe(TSrc src) {
-  return convert<TDst>(src, true_tag);
-}
-
-// mask conversions are always safe
 template<Vectorizable TDst>
 inline bool convert(bool src) {
   return src;
 }
-#if !GREX_BACKEND_SCALAR
+template<Vectorizable TDst>
+inline bool convert(bool src, AnyBoolTag auto /*tag*/) {
+  return src;
+}
+
 template<Vectorizable TDst, AnyMask TSrc>
 inline Mask<TDst, TSrc::size> convert(TSrc src) {
+  return src.convert(type_tag<TDst>);
+}
+template<Vectorizable TDst, AnyMask TSrc>
+inline Mask<TDst, TSrc::size> convert(TSrc src, AnyBoolTag auto /*tag*/) {
   return src.convert(type_tag<TDst>);
 }
 #endif

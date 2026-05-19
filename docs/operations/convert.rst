@@ -5,7 +5,6 @@ Conversion
 ##########
 
 Element-wise type conversion between vectors and masks.
-Sub-native objects are embedded in a full native register; each native lane of a super-native object is processed independently.
 
 .. _operations-convert-vector:
 
@@ -30,6 +29,9 @@ Shared
   - Reinterpret the low :math:`N` lanes of the converted temporary as a sub-native vector of ``Dst``.
 
 - **Super-native → super-native**: convert each half separately and recombine.
+
+Only this limited subset of generic conversion operations is shared because the two backends have different instructions to make use of:
+Arm Neon only provides integer widening/narrowing instructions which double/halve the size of the input elements, whereas x86-64 provides instructions for larger increases/decreases (starting on level 2).
 
 x86-64
 ======

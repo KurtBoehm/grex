@@ -77,13 +77,13 @@ void run_simd(Rng& rng) {
             };
             dst.check([&] { return fmt::format("vector/scalar {}", src); }, false);
 
-            grex::Vector<TDst, tSize> dstvec = grex::convert_unsafe<TDst>(src.vec);
+            grex::Vector<TDst, tSize> dstvec = grex::convert<TDst>(src.vec);
             test::check([&] { return fmt::format("vector/tagged vector {}", src); }, dst.vec,
                         dstvec, false);
 
             test::VectorChecker<TDst, tSize> dstsca{
               src.vec.convert(grex::type_tag<TDst>),
-              std::array{grex::convert_unsafe<TDst>(src.ref[tIdxs])...},
+              std::array{grex::convert<TDst>(src.ref[tIdxs])...},
             };
             dstsca.check([&] { return fmt::format("vector/tagged scalar {}", src); }, false);
           }
@@ -133,7 +133,7 @@ void run_scalar(Rng& rng) {
     for (std::size_t i = 0; i < repetitions; ++i) {
       const Src src = dist(rng);
       const TDst dst_ref = TDst(src);
-      const TDst dst_cvt = grex::convert_unsafe<TDst>(src);
+      const TDst dst_cvt = grex::convert<TDst>(src);
       test::check([&] { return fmt::format("{}", src); }, dst_cvt, dst_ref, false);
     }
   };

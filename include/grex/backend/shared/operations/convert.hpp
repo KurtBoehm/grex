@@ -59,6 +59,16 @@ requires(is_supernative<TDst, THalf::size * 2>)
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
   return merge(convert(v.lower, type_tag<TDst>), convert(v.upper, type_tag<TDst>));
 }
+
+// Convenience functions taking the destination element type as a template parameter, not a tag.
+template<Vectorizable TDst, AnyVector TSrc>
+inline VectorFor<TDst, TSrc::size> convert(TSrc v) {
+  return convert(v, type_tag<TDst>);
+}
+template<Vectorizable TDst, AnyMask TSrc>
+inline MaskFor<TDst, TSrc::size> convert(TSrc v) {
+  return convert(v, type_tag<TDst>);
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_CONVERT_HPP

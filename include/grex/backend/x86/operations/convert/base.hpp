@@ -268,16 +268,6 @@ inline MaskFor<TDst, THalf::size * 2> convert(SuperMask<THalf> v, TypeTag<TDst> 
   return {.lower = convert(v.lower, type_tag<TDst>), .upper = convert(v.upper, type_tag<TDst>)};
 }
 #endif
-
-// Helpers taking only the destination element type.
-template<Vectorizable TDst, AnyVector TSrc>
-inline VectorFor<TDst, TSrc::size> convert(TSrc v) {
-  return convert(v, type_tag<TDst>);
-}
-template<Vectorizable TDst, AnyMask TSrc>
-inline MaskFor<TDst, TSrc::size> convert(TSrc v) {
-  return convert(v, type_tag<TDst>);
-}
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/convert.hpp" // IWYU pragma: export

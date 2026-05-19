@@ -139,7 +139,7 @@ struct TypedMaskedTag {
 
   template<Vectorizable TOther>
   [[nodiscard]] TypedMaskedTag<TOther, tSize> cast(TypeTag<TOther> /*tag*/) const {
-    return TypedMaskedTag<TOther, tSize>{convert_unsafe<TOther>(mask_)};
+    return TypedMaskedTag<TOther, tSize>{convert<TOther>(mask_)};
   }
 
   [[nodiscard]] Vector<T, tSize> mask(Vector<T, tSize> v) const {
