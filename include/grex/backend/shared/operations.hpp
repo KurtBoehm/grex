@@ -23,6 +23,7 @@
 #include "operations/shrink.hpp"
 #include "operations/shuffle-static.hpp"
 #include "operations/store.hpp"
+#include "operations/to-array.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_HPP

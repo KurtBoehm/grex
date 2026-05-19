@@ -12,6 +12,7 @@ These pages give an overview over the operations that a backend needs to impleme
    operations/store
    operations/insert
    operations/extract
+   operations/to-array
    operations/expand
    operations/convert
    operations/arithmetic

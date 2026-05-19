@@ -192,9 +192,11 @@ Vector-Specific Operations
      - | :cpp:func:`Vector::shingle_down() const <Vector grex::Vector::shingle_down() const>`
        | :cpp:func:`Vector::shingle_down(Value back) const <Vector grex::Vector::shingle_down(Value) const>`
 
+   * - :ref:`Conversion to Array <operations-to-array-mask-std-array>`
+     - :cpp:func:`Vector::as_array() const <std::array grex::Vector::as_array() const>`
+
    * - Backend access
-     - | :cpp:func:`Vector::backend() const <Backend grex::Vector::backend() const>`
-       | :cpp:func:`Vector::as_array() const <std::array grex::Vector::as_array() const>`
+     - :cpp:func:`Vector::backend() const <Backend grex::Vector::backend() const>`
 
 ########################
 Mask-Specific Operations
@@ -261,9 +263,11 @@ Mask-Specific Operations
    * - :ref:`Insert element (compile-time index) <operations-insert-mask-ct>`
      - :cpp:func:`Mask::insert(AnyIndexTag auto i, bool value) const <Mask grex::Mask::insert(AnyIndexTag, bool) const>`
 
+   * - :ref:`Conversion to Array <operations-to-array-vector-std-array>`
+     - :cpp:func:`Mask::as_array() const <std::array grex::Mask::as_array() const>`
+
    * - Backend access
-     - | :cpp:func:`Mask::backend() const <Backend grex::Mask::backend() const>`
-       | :cpp:func:`Mask::as_array() const <std::array grex::Mask::as_array() const>`
+     - :cpp:func:`Mask::backend() const <Backend grex::Mask::backend() const>`
 
 #######################
 Free-Function Utilities

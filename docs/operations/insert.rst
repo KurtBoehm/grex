@@ -21,7 +21,6 @@ Vector Insertion (Compile-Time Index)
    ======
 
    - **Sub-native**: forwards to the backing native vector.
-
    - **Super-native**:
 
      - If :math:`\text{index} < N / 2`: insert into ``lower`` at ``index``; ``upper`` unchanged.

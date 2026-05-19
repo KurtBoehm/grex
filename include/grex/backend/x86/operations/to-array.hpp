@@ -7,23 +7,12 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_TO_ARRAY_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_TO_ARRAY_HPP
 
-#include <array>
-#include <concepts>
-#include <cstddef>
-#include <utility>
-
 #include "grex/backend/base.hpp"
-#include "grex/backend/x86/operations/convert.hpp"
 #include "grex/backend/x86/operations/store.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<AnyVector TVec>
-inline void to_array(typename TVec::Value* dst, TVec v) {
-  store(dst, v);
-}
-
 #if GREX_X86_64_LEVEL >= 4
 inline void to_array(bool* dst, NativeMask<u8, 16> m) {
   const auto masked = _mm_maskz_mov_epi8(m.r, _mm_set1_epi8(1));
@@ -73,37 +62,8 @@ inline void to_array(bool* dst, NativeMask<u8, 32> m) {
 }
 #endif
 #endif
-
-template<AnyMask TMask>
-inline void to_array(bool* dst, TMask m) {
-  using VectorValue = TMask::VectorValue;
-  constexpr std::size_t size = TMask::size;
-
-  if constexpr (!std::same_as<VectorValue, u8>) {
-    // elements are bigger than 1 byte → convert to 1-byte mask
-    to_array(dst, convert<u8>(m));
-  } else if constexpr (is_supernative<VectorValue, size>) {
-    // super-native → store in halves
-    to_array(dst, m.lower);
-    to_array(dst + size / 2, m.upper);
-  } else {
-    static_assert(false, "Unsupported argument!");
-    std::unreachable();
-  }
-}
-
-template<AnyVector TVec>
-inline std::array<typename TVec::Value, TVec::size> to_array(TVec v) {
-  std::array<typename TVec::Value, TVec::size> buf{};
-  to_array(buf.data(), v);
-  return buf;
-}
-template<AnyMask TMask>
-inline std::array<bool, TMask::size> to_array(TMask m) {
-  std::array<bool, TMask::size> buf{};
-  to_array(buf.data(), m);
-  return buf;
-}
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/to-array.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_TO_ARRAY_HPP
