@@ -30,8 +30,7 @@ Shared
 
 - **Super-native → super-native**: convert each half separately and recombine.
 
-Only this limited subset of generic conversion operations is shared because the two backends have different instructions to make use of:
-Arm Neon only provides integer widening/narrowing instructions which double/halve the size of the input elements, whereas x86-64 provides instructions for larger increases/decreases (starting on level 2).
+Only this limited subset of generic conversion operations is shared because the two backends have different instructions to make use of: Arm Neon only provides integer widening/narrowing instructions which double/halve the size of the input elements, whereas x86-64 provides instructions for larger increases/decreases (starting on level 2).
 
 x86-64
 ======
@@ -204,7 +203,6 @@ x86-64
 - **Earlier (broad masks)**:
 
   - **Baseline**: convert the mask to its integer-vector form, convert that vector to a signed integer type whose width matches ``Dst``, then reinterpret this vector as a mask of element type ``Dst``.
-
   - **128-bit masks**:
 
     - **Widening**: replicate mask bits with ``unpack``-style operations; for larger ratios, widen in multiple doubling steps.

@@ -10,6 +10,7 @@ These pages give an overview over the operations that a backend needs to impleme
    operations/set
    operations/load
    operations/store
+   operations/insert
    operations/extract
    operations/expand
    operations/convert

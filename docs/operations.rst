@@ -146,9 +146,11 @@ Vector-Specific Operations
      - | :cpp:func:`Vector::operator[](AnyIndexTag auto i) const <T grex::Vector::operator[](AnyIndexTag) const>`
        | :cpp:func:`get\<index>(const Vector&) <template<std::size_t tIdx> T grex::Vector::get(const Vector&)>`
 
-   * - Insert element
-     - | :cpp:func:`Vector::insert(std::size_t i, T value) const <Vector grex::Vector::insert(std::size_t, T) const>`
-       | :cpp:func:`Vector::insert(AnyIndexTag auto i, T value) const <Vector grex::Vector::insert(AnyIndexTag, T) const>`
+   * - :ref:`Insert element (runtime index) <operations-insert-value-runtime>`
+     - :cpp:func:`Vector::insert(std::size_t i, T value) const <Vector grex::Vector::insert(std::size_t, T) const>`
+
+   * - :ref:`Insert element (compile-time index) <operations-insert-value-ct>`
+     - :cpp:func:`Vector::insert(AnyIndexTag auto i, T value) const <Vector grex::Vector::insert(AnyIndexTag, T) const>`
 
    * - :ref:`Store (unaligned) <operations-store>`
      - :cpp:func:`Vector::store(T* ptr) const <void grex::Vector::store(T*) const>`
@@ -253,9 +255,11 @@ Mask-Specific Operations
      - | :cpp:func:`Mask::operator[](AnyIndexTag auto i) const <bool grex::Mask::operator[](AnyIndexTag) const>`
        | :cpp:func:`get\<index>(const Mask&) <template<std::size_t tIdx> bool grex::Mask::get(const Mask&)>`
 
-   * - Insert element
-     - | :cpp:func:`Mask::insert(std::size_t i, bool value) const <Mask grex::Mask::insert(std::size_t, bool) const>`
-       | :cpp:func:`Mask::insert(AnyIndexTag auto i, bool value) const <Mask grex::Mask::insert(AnyIndexTag, bool) const>`
+   * - :ref:`Insert element (runtime index) <operations-insert-mask-runtime>`
+     - :cpp:func:`Mask::insert(std::size_t i, bool value) const <Mask grex::Mask::insert(std::size_t, bool) const>`
+
+   * - :ref:`Insert element (compile-time index) <operations-insert-mask-ct>`
+     - :cpp:func:`Mask::insert(AnyIndexTag auto i, bool value) const <Mask grex::Mask::insert(AnyIndexTag, bool) const>`
 
    * - Backend access
      - | :cpp:func:`Mask::backend() const <Backend grex::Mask::backend() const>`
