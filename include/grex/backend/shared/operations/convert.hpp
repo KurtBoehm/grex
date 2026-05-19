@@ -8,6 +8,7 @@
 #define INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_CONVERT_HPP
 
 #include <concepts>
+#include <cstddef>
 
 #include "grex/backend/active/operations/merge.hpp"
 #include "grex/backend/active/operations/reinterpret.hpp"
@@ -20,13 +21,14 @@ namespace grex::backend {
 // Trivial no-op cases //
 /////////////////////////
 
-// Source and destination scalar type are identical: keep the vector as-is.
+// Source and destination scalar types are identical: return the vector unchanged.
 template<AnyVector TVec>
 inline TVec convert(TVec v, TypeTag<ValueOf<TVec>> /*tag*/) {
   return v;
 }
-// Integer vectors with the same bit-width but different signedness:
-// just reinterpret the register (no data transformation).
+
+// Integer vectors with the same element width but different signedness:
+// reinterpret the register without modifying the bits.
 template<IntVectorizable TDst, IntVector TSrc>
 requires(!std::same_as<ValueOf<TSrc>, TDst> && sizeof(TDst) == sizeof(ValueOf<TSrc>))
 inline NativeVector<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> /*tag*/) {
@@ -38,8 +40,8 @@ inline NativeVector<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> /*tag*/) 
 ///////////////////
 
 // Sub-native vector → sub-native vector:
-// expand to the smallest size at which the source or the destination (non-exclusive) is native,
-// perform at that size, then shrink back.
+// expand to the smallest size where the source or destination element type becomes native,
+// perform the conversion there, then wrap back into a sub-vector.
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
 requires(is_subnative<TDst, tPart>)
 inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
@@ -50,7 +52,8 @@ inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<T
   return Out{s.registr()};
 }
 
-// Super-native → super-native: convert halves independently to the final type and then merge them.
+// Super-native vector → super-native vector:
+// convert both halves to the destination type independently and merge.
 template<typename THalf, Vectorizable TDst>
 requires(is_supernative<TDst, THalf::size * 2>)
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {

@@ -192,19 +192,24 @@ inline auto convert(TMask mask, TypeTag<TDst> /*tag*/) {
 }
 #endif
 
-// Integer to larger integer with different signedness:
+// Native → super-native: Split native
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
+requires(is_supernative<TDst, tSize>)
+inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> tag) {
+  return merge(convert(get_low(v), tag), convert(get_high(v), tag));
+}
+
+// Integer → larger integer (native) with different signedness:
 // widen while preserving source signedness, then reinterpret to destination type.
-// Main condition: mixed signedness, increasing element size.
-template<typename TDst, typename TSrc>
-concept ConvertIntegralUp = (std::is_signed_v<TDst> != std::is_signed_v<TSrc>) &&
-                            sizeof(TDst) > sizeof(TSrc);
 template<IntVectorizable TDst, IntVector TSrc>
-requires(ConvertIntegralUp<TDst, ValueOf<TSrc>> && is_native<TDst, size_of<TSrc>>)
+requires(sizeof(TDst) > sizeof(ValueOf<TSrc>) &&
+         (std::is_signed_v<TDst> != std::is_signed_v<ValueOf<TSrc>>) &&
+         is_native<TDst, size_of<TSrc>>)
 inline NativeVector<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> /*tag*/) {
   return {.r = convert(v, type_tag<CopySignInt<ValueOf<TSrc>, sizeof(TDst)>>).r};
 }
 
-// Integer to smaller integer where at least one type is signed:
+// Integer (native) → smaller integer where at least one type is signed:
 // perform truncation via an unsigned path.
 template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
 requires((std::is_signed_v<TDst> || std::is_signed_v<TSrc>) && sizeof(TDst) < sizeof(TSrc))
@@ -214,7 +219,7 @@ inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst>
 }
 
 // Sub-native to super-native, integer → any: convert to the smallest integer type for which
-// the vector with `tPart` lanes is native and go from there
+// the vector with tPart lanes is native and go from there
 template<Vectorizable TDst, IntVectorizable TSrc, std::size_t tPart, std::size_t tSize>
 requires(is_supernative<TDst, tPart>)
 inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
@@ -263,13 +268,6 @@ inline MaskFor<TDst, THalf::size * 2> convert(SuperMask<THalf> v, TypeTag<TDst> 
   return {.lower = convert(v.lower, type_tag<TDst>), .upper = convert(v.upper, type_tag<TDst>)};
 }
 #endif
-
-// Native → super-native: Split native
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-requires(is_supernative<TDst, tSize>)
-inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> tag) {
-  return merge(convert(get_low(v), tag), convert(get_high(v), tag));
-}
 
 // Helpers taking only the destination element type.
 template<Vectorizable TDst, AnyVector TSrc>

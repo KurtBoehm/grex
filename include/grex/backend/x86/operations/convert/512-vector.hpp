@@ -17,28 +17,29 @@
 #include "grex/backend/x86/operations/convert/base.hpp"
 #endif
 
-// AVX-512 includes intrinsics for everything except for small integers ↔ floating-point values
+// AVX-512 provides conversion intrinsics for all integer and floating-point combinations
+// except for small integers ↔ floating-point, which are handled by generic helpers.
 
 namespace grex::backend {
 #if GREX_X86_64_LEVEL >= 4
 // Increasing integer size
-// Double integer size
+// Double integer size.
 #define GREX_CVT_IMPL_i16_i8_32 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_u16_u8_32 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_i32_i16_16 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_u32_u16_16 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_i64_i32_8 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_u64_u32_8 GREX_CVT_INTRINSIC_EPUI
-// Quadruple integer size
+// Quadruple integer size.
 #define GREX_CVT_IMPL_i32_i8_16 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_u32_u8_16 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_i64_i16_8 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_u64_u16_8 GREX_CVT_INTRINSIC_EPUI
-// Octuple integer size
+// Octuple integer size.
 #define GREX_CVT_IMPL_i64_i8_8 GREX_CVT_INTRINSIC_EPUI
 #define GREX_CVT_IMPL_u64_u8_8 GREX_CVT_INTRINSIC_EPUI
 
-// Decreasing integer size
+// Decreasing integer size (truncation).
 #define GREX_CVT_IMPL_u8_u16_32 GREX_CVT_INTRINSIC_EPI
 #define GREX_CVT_IMPL_u16_u32_16 GREX_CVT_INTRINSIC_EPI
 #define GREX_CVT_IMPL_u32_u64_8 GREX_CVT_INTRINSIC_EPI
@@ -46,7 +47,7 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_u16_u64_8 GREX_CVT_INTRINSIC_EPI
 #define GREX_CVT_IMPL_u8_u64_8 GREX_CVT_INTRINSIC_EPI
 
-// Floating-point conversion
+// Floating-point conversion.
 #define GREX_CVT_IMPL_f64_f32_8 GREX_CVT_INTRINSIC_EPU
 #define GREX_CVT_IMPL_f32_f64_8 GREX_CVT_INTRINSIC_EPU
 

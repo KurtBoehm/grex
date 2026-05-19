@@ -46,6 +46,9 @@ namespace grex::backend {
 #define GREX_CVT_f32_f64x2(...) return VectorFor<f32, 2>{expand64(vcvt_f32_f64(v.r))};
 #define GREX_CVT_f32_f64x4(...) return {.r = vcvt_high_f32_f64(vcvt_f32_f64(v.lower.r), v.upper.r)};
 
+// Backend entry point for Neon conversions.
+// The INTRINSIC macro encodes the implementation strategy (single intrinsic, widening/narrowing
+// via movl/movn, structure-of-halves expansion, etc.).
 #define GREX_CVT(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, INTRINSIC, ...) \
   inline VectorFor<DSTKIND##DSTBITS, SIZE> convert(VectorFor<SRCKIND##SRCBITS, SIZE> v, \
                                                    TypeTag<DSTKIND##DSTBITS>) { \
@@ -99,55 +102,67 @@ GREX_CVT(i, 8, i, 16, 8, GREX_CVT_MOVN)
 GREX_CVT(u, 8, u, 16, 16, GREX_CVT_UZP1)
 GREX_CVT(u, 8, u, 16, 8, GREX_CVT_MOVN)
 
-// Integer → smaller integer: convert to half-size and go on from there.
+// Integer → smaller integer (factor other than two):
+// narrow to the next smaller integer type with preserved signedness, then recurse.
 template<IntVectorizable TDst, IntVector TSrc>
 requires(sizeof(TDst) < sizeof(ValueOf<TSrc>))
 inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<ValueOf<TSrc>, sizeof(ValueOf<TSrc>) / 2>>), tag);
 }
-// Integer → bigger integer:
-// convert to double-size while retaining signedness and go on from there.
+
+// Integer → larger integer (factor other than two):
+// widen to the next larger integer type with preserved signedness, then recurse.
 template<IntVectorizable TDst, IntVector TSrc>
 requires(sizeof(ValueOf<TSrc>) < sizeof(TDst))
 inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<ValueOf<TSrc>, sizeof(ValueOf<TSrc>) * 2>>), tag);
 }
 
-// Integer → bigger floating-point: Convert to destination-sized integer and then cast.
+// Integer → larger floating-point:
+// first convert to an integer with the destination element size, then cast to floating-point.
 template<FloatVectorizable TDst, IntVector TSrc>
 requires(sizeof(ValueOf<TSrc>) < sizeof(TDst))
 inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<ValueOf<TSrc>, sizeof(TDst)>>), tag);
 }
-// Floating-point → bigger integer: Convert to destination-sized floating-point and then cast.
+
+// Floating-point → larger integer:
+// first convert to a floating-point type with the destination element size, then cast to integer.
 template<IntVectorizable TDst, FloatVector TSrc>
 requires(sizeof(ValueOf<TSrc>) < sizeof(TDst))
 inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<Float<sizeof(TDst)>>), tag);
 }
-// Integer → smaller floating-point: Convert to source-sized floating-point and then cast.
+
+// Integer → smaller floating-point:
+// first convert to a floating-point type matching the source element size, then cast down.
 template<FloatVectorizable TDst, IntVector TSrc>
 requires(sizeof(TDst) < sizeof(ValueOf<TSrc>))
 inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<Float<sizeof(ValueOf<TSrc>)>>), tag);
 }
-// Floating-point → smaller integer: Convert to destination-sized integer and then cast.
+
+// Floating-point → smaller integer:
+// first convert to an integer type matching the destination element size, then cast down.
 template<IntVectorizable TDst, FloatVector TSrc>
 requires(sizeof(TDst) < sizeof(ValueOf<TSrc>))
 inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<TDst, sizeof(ValueOf<TSrc>)>>), tag);
 }
 
+// Mask → mask: convert via the corresponding signed integer vector.
 template<AnyMask TMask, typename TDst>
 inline auto convert(TMask mask, TypeTag<TDst> /*tag*/) {
   return vector2mask(convert(mask2vector(mask), type_tag<SignedInt<sizeof(TDst)>>), type_tag<TDst>);
 }
 
+// Super-mask → mask: convert both halves and merge.
 template<Vectorizable TDst, typename THalf>
 inline MaskFor<TDst, 2 * THalf::size> convert(SuperMask<THalf> m, TypeTag<TDst> tag) {
   return merge(convert(m.lower, tag), convert(m.upper, tag));
 }
 
+// Convenience functions taking the destination element type as a template parameter, not a tag.
 template<Vectorizable TDst, AnyVector TSrc>
 inline VectorFor<TDst, TSrc::size> convert(TSrc v) {
   return convert(v, type_tag<TDst>);

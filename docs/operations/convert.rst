@@ -41,7 +41,7 @@ x86-64
 
     - Unsigned ×2: unpack with zeros in the high half.
     - Signed ×2: unpack plus arithmetic shift to propagate the sign.
-    - ×4/×8: multiple ×2 steps.
+    - ×4/×8: multiple ×2 widening steps.
 
 - **Integer widening (mixed signedness)**: first widen to a temporary integer whose signedness matches the source and whose width matches the destination, then reinterpret that temporary as ``Dst``.
 - **Integer narrowing** (always truncating low bits):
@@ -92,7 +92,11 @@ x86-64
     - **x86-64-v4**: direct conversion intrinsics.
     - **Earlier**:
 
-      - ``i64`` → ``f32``/``f64``: extract each lane to a scalar register, perform scalar ``i64`` → ``f32``/``f64``, then repack.
+      - ``i64`` → ``f32``/``f64``:
+
+        - **x86-64-v4**: direct packed conversion intrinsics.
+        - **Earlier**: extract each lane to a scalar register, perform scalar ``i64`` → ``f32``/``f64``, then repack.
+
       - ``u64`` → ``f64``:
 
         - Decompose :math:`n = \text{lo} + 2^{32} \cdot \text{hi}` with 32-bit ``lo``/``hi``.
@@ -139,17 +143,23 @@ x86-64
 
   - **Small integers (< 32 bits)**: convert to ``i32`` with truncation, then narrow using the integer paths above.
 
-- **Sub-native → super-native**:
+- **Conversions involving super-native vectors**:
 
-  - Split the source (native or sub-native) into two halves.
-  - Convert each half independently to the super-native element type.
-  - Assemble a super-native vector from the converted halves.
+  - **Native → super-native**:
 
+    - Split the native source vector into low and high halves.
+    - Convert each half independently to the destination element type.
+    - Merge the converted halves into the super-native result.
+
+  - **Sub-native → super-native (integer sources)**:
+
+    - First widen the integer element type so that an :math:`N`-lane vector fits exactly into one native register (i.e. use an integer type of size :math:`16 / N` bytes on SSE/AVX).
+    - Convert this native-width integer vector to the destination type (which may itself be super-native) using the rules above.
 
 Neon
 ====
 
-- **Floating-point ↔ floating-point**: ``vcvt``/``vcvt_high`` intrinsics
+- **Floating-point ↔ floating-point**: ``vcvt``/``vcvt_high`` intrinsics.
 - **Integer ↔ floating-point**:
 
   - **Same bit count**: ``vcvt`` intrinsics.
@@ -160,12 +170,12 @@ Neon
 
 - **Integer widening**:
 
-  - **Factor 2**: ``vmovl`` intrinsics.
+  - **Factor 2**: ``vmovl``/``vmovl_high`` intrinsics.
   - **Factor 4/8**: multiple factor-2 widening steps.
 
 - **Integer narrowing**:
 
-  - **Factor 2**: ``vmovn`` intrinsics.
+  - **Factor 2**: implemented with ``vmovn`` for native-width vectors; super-native 64→32-bit narrowing uses ``vuzp1q`` on the two native halves to select the low halves.
   - **Factor 4/8**: multiple factor-2 narrowing steps.
 
 - **Same-width integers with different signedness**: bitwise reinterpretation between signed and unsigned types.
