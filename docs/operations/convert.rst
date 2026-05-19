@@ -24,7 +24,7 @@ Shared
 - **Same-width integers**: bitwise reinterpretation; values are unchanged.
 - **Sub-native → sub-native**:
 
-  - Expand the sub-vector to the smallest size at which at least one of the source or the destination is native.
+  - Expand the sub-native vector to the smallest size at which at least one of the source or the destination is native.
   - Convert this temporary vector to ``Dst`` using one of the above paths.
   - Reinterpret the low :math:`N` lanes of the converted temporary as a sub-native vector of ``Dst``.
 

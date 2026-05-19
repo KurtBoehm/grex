@@ -5,7 +5,7 @@ Comparisons
 ###########
 
 Element-wise comparisons on vectors, producing a Boolean mask.
-Sub-native vectors are compared by embedding into a full native vector; each native lane of a super-native vector is processed independently and results are reassembled into a super-mask.
+Sub-native vectors are processed by applying the given operation to their underlying native vectors, while each native lane of a super-native vector is processed independently and results are reassembled into a super-native mask.
 
 .. _operations-compare-eq:
 

@@ -50,7 +50,7 @@ Expand (Any)
    ------
 
    - **Larger sizes**: recursively expand to half size, then expand that result to ``N`` (see :ref:`operations-expand-vector-any`).
-   - **Sub-native**: expand to the smallest native size and wrap as a sub-vector.
+   - **Sub-native**: expand to the smallest native size and wrap as a sub-native vector.
 
 .. _operations-expand-scalar-zero:
 
@@ -76,8 +76,8 @@ Expand (Zeros)
    Shared
    ------
 
-   - **Larger sizes**: recursively expand to half size, then build a super-vector whose upper half is :cpp:func:`~backend::zeros`.
-   - **Sub-native**: expand to the smallest native size (upper lanes zero) and wrap as a sub-vector.
+   - **Larger sizes**: recursively expand to half size, then build a super-native vector whose upper half is :cpp:func:`~backend::zeros`.
+   - **Sub-native**: expand to the smallest native size (upper lanes zero) and wrap as a sub-native vector.
 
 ****************
 Vector Expansion
@@ -104,7 +104,7 @@ Expand (Any)
    Neon
    ----
 
-   - **Native → super-native**: recursively expand to :math:`N / 2` and build a super-vector with an :cpp:func:`~backend::undefined` upper half.
+   - **Native → super-native**: recursively expand to :math:`N / 2` and build a super-native vector with an :cpp:func:`~backend::undefined` upper half.
 
    Shared
    ------

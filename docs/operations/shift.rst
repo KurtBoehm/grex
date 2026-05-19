@@ -5,7 +5,7 @@ Shift Operations
 ################
 
 Element-wise bitwise left and right shifts of integer vectors by a compile-time constant number of bits.
-Sub-native vectors are embedded in a full native vector; each native lane of a super-native vector is processed independently.
+Sub-native vectors are processed by applying the given operation to their underlying native vectors, while each native lane of a super-native vector is processed independently.
 
 .. _operations-shift-left:
 

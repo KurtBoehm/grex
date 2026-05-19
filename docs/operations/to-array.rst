@@ -70,7 +70,7 @@ Mask → Boolean Array
    ====
 
    - Isolate the low bit in each byte via a bitwise AND with an all-ones ``u8`` vector, using only the low 64 bits if applicable.
-   - Store the appropriate bytes via ``vst1q_u8`` (16 bytes), ``vst1_u8`` (8 bytes), or by delegating to :cpp:func:`~backend::store` with a appropriately-sized sub-native argument (4/2 bytes).
+   - Store the appropriate bytes via ``vst1q_u8`` (16 bytes), ``vst1_u8`` (8 bytes), or by delegating to :cpp:func:`~backend::store` with an appropriately sized sub-native argument (4/2 bytes).
 
 .. _operations-to-array-vector-std-array:
 

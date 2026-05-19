@@ -7,7 +7,7 @@ Multibyte Integer Loading
 Loading of packed integers whose logical value spans :math:`M` bytes into SIMD vectors with element width :math:`N = 2^B` bytes, where :math:`N = \text{bitceil}(M)`.
 The input memory is padded on both sides by at least one full SIMD register.
 
-Sub-native vectors are embedded in a full native vector; super-native vectors are assembled from native halves.
+Each native lane of a super-native vector is processed independently.
 
 .. _operations-load-multibyte:
 
@@ -143,4 +143,4 @@ Sub-native vectors are embedded in a full native vector; super-native vectors ar
           - ``00000···|11111···``
 
    - :math:`N = 4`, :math:`M = 3`, 128-bit output: unaligned 128-bit load and table lookup via ``vqtbl1q_u8`` with a compile-time index vector.
-   - :math:`N = 4`, :math:`M = 3`, 64-bit output: forward to the 128-bit implementation and wrap as a sub-vector.
+   - :math:`N = 4`, :math:`M = 3`, 64-bit output: forward to the 128-bit implementation and wrap as a sub-native vector.

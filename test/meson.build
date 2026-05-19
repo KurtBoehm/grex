@@ -104,7 +104,7 @@ foreach name, conf : {
         targets += [exe]
       endforeach
     endforeach
-    alias_target(f'@name@', targets)
+    alias_target(name, targets)
   endif
 endforeach
 
@@ -129,6 +129,7 @@ foreach name, conf : {
     if not parallel
       deps += [omp_dep]
     endif
+    targets = []
     foreach arch_name, arch_args : test_arches
       space_name = name.replace('-', ' ')
       exe = executable(
@@ -144,6 +145,10 @@ foreach name, conf : {
         is_parallel: parallel,
         timeout: -1,
       )
+      targets += [exe]
     endforeach
+    if targets.length() > 1
+      alias_target(name, targets)
+    endif
   endif
 endforeach

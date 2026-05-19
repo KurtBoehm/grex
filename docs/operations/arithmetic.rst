@@ -5,7 +5,7 @@ Arithmetic Operations
 #####################
 
 Element-wise arithmetic operations on vectors.
-Sub-native vectors are embedded in a full native vector; each native lane of a super-native vector is processed independently.
+Sub-native vectors are processed by applying the given operation to their underlying native vectors, while each native lane of a super-native vector is processed independently.
 
 .. _operations-addition:
 

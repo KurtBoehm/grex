@@ -5,7 +5,6 @@ Extraction
 ##########
 
 Extraction operations read individual lanes from vectors and masks.
-Sub-native vectors/masks are embedded in a full native object; super-native vectors/masks are traversed via the appropriate native half.
 
 *****************
 Single-Lane Value

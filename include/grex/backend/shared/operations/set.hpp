@@ -10,6 +10,7 @@
 #include <array>
 #include <bit>
 #include <cstddef>
+#include <cstring>
 
 #include "grex/backend/base.hpp"
 #include "grex/base.hpp"
@@ -35,14 +36,6 @@ inline SubVector<T, tPart, tSize> broadcast(T value, TypeTag<SubVector<T, tPart,
   return SubVector<T, tPart, tSize>{broadcast(value, type_tag<NativeVector<T, tSize>>)};
 }
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
-inline SubVector<T, tPart, tSize> set(TypeTag<SubVector<T, tPart, tSize>> /*tag*/, Ts... values) {
-  std::array<T, tSize> elements{values...};
-  const auto full = static_apply<tSize>([&]<std::size_t... tIdxs> {
-    return set(type_tag<NativeVector<T, tSize>>, std::get<tIdxs>(elements)...);
-  });
-  return SubVector<T, tPart, tSize>{full};
-}
-template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubVector<T, tPart, tSize> indices(TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
   return SubVector<T, tPart, tSize>{indices(type_tag<NativeVector<T, tSize>>)};
 }
@@ -59,13 +52,6 @@ inline SubMask<T, tPart, tSize> ones(TypeTag<SubMask<T, tPart, tSize>> /*tag*/) 
 template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
 inline SubMask<T, tPart, tSize> broadcast(bool value, TypeTag<SubMask<T, tPart, tSize>> /*tag*/) {
   return SubMask<T, tPart, tSize>{broadcast(value, type_tag<NativeMask<T, tSize>>)};
-}
-template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
-inline SubMask<T, tPart, tSize> set(TypeTag<SubMask<T, tPart, tSize>> /*tag*/, Ts... values) {
-  std::array<bool, tSize> buf{values...};
-  const auto full = static_apply<tSize>(
-    [&]<std::size_t... tIdxs>() { return set(type_tag<NativeMask<T, tSize>>, buf[tIdxs]...); });
-  return SubMask<T, tPart, tSize>{full};
 }
 
 // SuperVector
@@ -98,8 +84,8 @@ inline SuperVector<THalf> indices(TypeTag<SuperVector<THalf>> /*tag*/) {
   using Vec = SuperVector<THalf>;
   using Value = Vec::Value;
   constexpr std::size_t size = Vec::size;
-  auto op = []<std::size_t... tIdxs>() { return set(type_tag<THalf>, Value(tIdxs)...); };
-  return {.lower = static_apply<0, size / 2>(op), .upper = static_apply<size / 2, size>(op)};
+  auto op = []<std::size_t... tIdxs>() { return set(type_tag<Vec>, Value(tIdxs)...); };
+  return static_apply<0, size>(op);
 }
 
 // SuperMask

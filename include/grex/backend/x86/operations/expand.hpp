@@ -8,6 +8,7 @@
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_EXPAND_HPP
 
 #include <cstddef>
+#include <cstring>
 
 #include <immintrin.h>
 
@@ -19,7 +20,6 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/merge.hpp"
-#include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
 
@@ -28,6 +28,20 @@
 #endif
 
 namespace grex::backend {
+//////////
+// Bits //
+//////////
+// Cast TSrc to TDst with arbitrary values in the upper bits
+template<IntVectorizable TDst, IntVectorizable TSrc>
+inline TDst expand_bits(TSrc src) {
+  if (__builtin_constant_p(src)) {
+    return TDst(src);
+  }
+  TDst dst;
+  asm("" : "=r"(dst) : "0"(src)); // NOLINT
+  return dst;
+}
+
 ////////////
 // Scalar //
 ////////////
@@ -69,7 +83,17 @@ inline NativeVector<T, min_native_size<T>> expand(Scalar<T> x, IndexTag<min_nati
                                                   BoolTag<tZero> /*tag*/) {
   // force zero extension
   using Unsigned = UnsignedOf<T>;
-  return {.r = _mm_cvtsi32_si128(i32(Unsigned(x.value)))};
+  if constexpr (tZero) {
+    return {.r = _mm_cvtsi32_si128(i32(Unsigned(x.value)))};
+  } else {
+#if GREX_GCC
+    return {.r = _mm_cvtsi32_si128(expand_bits<i32>(x.value))};
+#else
+    __m128i dst;
+    std::memcpy(&dst, &x.value, sizeof(x.value));
+    return {.r = dst};
+#endif
+  }
 }
 // Integers with 64 bits: Cast to i64
 template<IntVectorizable T, bool tZero>

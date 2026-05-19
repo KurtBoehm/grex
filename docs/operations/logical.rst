@@ -5,7 +5,7 @@ Logical Operations
 ##################
 
 Element-wise logical operations on masks.
-Sub-native masks are embedded in a full native mask; each native lane of a super-native mask is processed independently.
+Sub-native masks are processed by applying the given operation to their underlying native masks, while each native lane of a super-native mask is processed independently.
 
 .. _operations-logical-not:
 

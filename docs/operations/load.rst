@@ -5,7 +5,6 @@ Loading
 #######
 
 Vector loading operations read elements from contiguous scalar memory into SIMD vectors.
-Sub-native vectors are embedded in a full native vector; super-native vectors are assembled from native halves.
 Partial loads handle a prefix without touching memory beyond the requested number of elements.
 
 .. _operations-load:
@@ -30,7 +29,7 @@ Load Unaligned
    ====
 
    - **Native**: ``vld1q`` intrinsics.
-   - **Sub-native**: implemented via :cpp:func:`~backend::load_part` on the corresponding sub-vector type.
+   - **Sub-native**: implemented via :cpp:func:`~backend::load_part` on the corresponding sub-native vector type.
 
    Super-native (shared)
    =====================
@@ -108,7 +107,7 @@ Load Partial (Runtime Length)
    Sub-native vectors
    ------------------
 
-   - Delegate to the native partial loader and wrap as a sub-vector.
+   - Delegate to the native partial loader and wrap as a sub-native vector.
 
    Super-native (shared)
    =====================

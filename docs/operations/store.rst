@@ -5,7 +5,6 @@ Storing
 #######
 
 Vector storing operations write elements from SIMD vectors to contiguous scalar memory.
-Sub-native vectors are embedded in a full native vector; super-native vectors are split into native halves.
 Partial stores write a prefix without touching memory beyond the requested number of elements.
 
 .. _operations-store:
