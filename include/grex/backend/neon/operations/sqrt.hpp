@@ -7,8 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SQRT_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SQRT_HPP
 
-#include <cmath>
-
 #include <arm_neon.h>
 
 #include "grex/backend/base.hpp"
@@ -29,10 +27,24 @@ GREX_NNVECTOR_UNARY(sqrt)
 
 // scalar implementations
 inline Scalar<f32> sqrt(Scalar<f32> v) {
-  return {.value = std::sqrt(v.value)};
+#if GREX_GCC
+  if (__builtin_constant_p(v.value) == 0) {
+    f32 r{};
+    asm("fsqrt %s0, %s1" : "=w"(r) : "w"(v.value)); // NOLINT
+    return {.value = r};
+  }
+#endif
+  return {.value = __builtin_sqrtf(v.value)};
 }
 inline Scalar<f64> sqrt(Scalar<f64> v) {
-  return {.value = std::sqrt(v.value)};
+#if GREX_GCC
+  if (__builtin_constant_p(v.value) == 0) {
+    f32 r{};
+    asm("fsqrt %d0, %d1" : "=w"(r) : "w"(v.value)); // NOLINT
+    return {.value = r};
+  }
+#endif
+  return {.value = __builtin_sqrt(v.value)};
 }
 } // namespace grex::backend
 
