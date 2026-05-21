@@ -282,10 +282,10 @@ Free-Function Utilities
    * - :ref:`Logical AND NOT <operations-logical-andnot>`
      - :cpp:func:`grex::andnot(Mask a, Mask b) <template<Vectorizable T, std::size_t tSize> Mask<T, tSize> grex::andnot(Mask<T, tSize>, Mask<T, tSize>)>`
 
-   * - Absolute value
+   * - :ref:`Absolute value <operations-abs>`
      - :cpp:func:`grex::abs(Vector v) <template<SignedVectorizable T, std::size_t tSize> Vector<T, tSize> grex::abs(Vector<T, tSize>)>`
 
-   * - Square root
+   * - :ref:`Square root <operations-sqrt>`
      - :cpp:func:`grex::sqrt(Vector v) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::sqrt(Vector<T, tSize>)>`
 
    * - Minimum/maximum
@@ -313,13 +313,13 @@ Free-Function Utilities
    * - :ref:`Extract single value <operations-extract-single>`
      - :cpp:func:`grex::extract_single(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::extract_single(Vector<T, tSize>)>`
 
-   * - Blend zeros (masked)
+   * - :ref:`Blend zeros (masked) <operations-blend-zero>`
      - :cpp:func:`grex::blend_zero(Mask mask, Vector v1) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend_zero(Mask<T, tSize>, Vector<T, tSize>)>`
 
    * - Blend zeros (compile-time selectors)
      - :cpp:func:`grex::blend_zero\<selectors>(Vector v1) <template<BlendZeroSelector... tBzs, Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend_zero(Vector<T, tSize>)>`
 
-   * - Blend (masked)
+   * - :ref:`Blend (masked) <operations-blend>`
      - :cpp:func:`grex::blend(Mask mask, Vector v0, Vector v1) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
 
    * - Blend (compile-time selectors)

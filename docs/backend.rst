@@ -7,18 +7,21 @@ These pages give an overview over the operations that a backend needs to impleme
 .. toctree::
    :maxdepth: 1
 
-   operations/set
    operations/load
    operations/store
+   operations/set
    operations/insert
    operations/extract
    operations/to-array
    operations/expand
    operations/convert
    operations/arithmetic
+   operations/abs
+   operations/sqrt
    operations/bitwise
    operations/shift
-   operations/compare
    operations/logical
+   operations/compare
+   operations/blend
    operations/mask-index
    operations/multibyte
