@@ -67,6 +67,15 @@ template<typename T>
 concept Vectorizable = IntVectorizable<T> || FloatVectorizable<T>;
 
 template<typename T>
+concept Int8 = std::same_as<T, u8> || std::same_as<T, i8>;
+template<typename T>
+concept Int16 = std::same_as<T, u16> || std::same_as<T, i16>;
+template<typename T>
+concept Int32 = std::same_as<T, u32> || std::same_as<T, i32>;
+template<typename T>
+concept Int64 = std::same_as<T, u64> || std::same_as<T, i64>;
+
+template<typename T>
 struct SignednessTrait;
 #define GREX_DEF_SIGNEDNESS(U, S) \
   template<> \
