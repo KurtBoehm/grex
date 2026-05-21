@@ -188,15 +188,8 @@ GREX_FOREACH_X86_64_LEVEL(GREX_HMINMAX_ALL)
   GREX_HMINMAX_SUB(KIND, BITS, PART, SIZE, min) \
   GREX_HMINMAX_SUB(KIND, BITS, PART, SIZE, max)
 GREX_FOREACH_SUB(GREX_HMINMAX_SUB_ALL)
-
-template<typename THalf>
-inline THalf::Value horizontal_min(SuperVector<THalf> v) {
-  return horizontal_min(min(v.lower, v.upper));
-}
-template<typename THalf>
-inline THalf::Value horizontal_max(SuperVector<THalf> v) {
-  return horizontal_max(max(v.lower, v.upper));
-}
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/horizontal-minmax.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_MINMAX_HPP

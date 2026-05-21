@@ -21,6 +21,7 @@ These pages give an overview over the operations that a backend needs to impleme
    operations/sqrt
    operations/bitwise
    operations/shift
+   operations/horizontal
    operations/logical
    operations/compare
    operations/classification

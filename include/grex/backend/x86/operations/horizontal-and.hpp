@@ -67,13 +67,8 @@ GREX_FOREACH_X86_64_LEVEL(GREX_HAND_ALL)
     return GREX_HAND_SUB_IMPL(KIND, BITS, PART, SIZE); \
   }
 GREX_FOREACH_SUB(GREX_HAND_SUB)
-
-template<typename THalf>
-inline bool horizontal_and(SuperMask<THalf> m) {
-  const bool lower = horizontal_and(m.lower);
-  const bool upper = horizontal_and(m.upper);
-  return lower && upper;
-}
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/horizontal-and.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_AND_HPP

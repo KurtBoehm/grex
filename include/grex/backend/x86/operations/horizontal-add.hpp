@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_ADD_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_ADD_HPP
 
+#include <cstddef>
+
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"
@@ -15,6 +17,7 @@
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/arithmetic.hpp"
+#include "grex/backend/x86/operations/blend-zero-static.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp" // IWYU pragma: keep
 
@@ -50,15 +53,16 @@ namespace grex::backend {
 #define GREX_HADD_f64x4 GREX_HADD_HALVES
 #define GREX_HADD_f64x8 GREX_HADD_HALVES
 // i8/u8
-#define GREX_HADD_i8_SUB(PART, KIND, BITS, ...) \
+#define GREX_HADD_i8_SUB(KIND, BITS, PART, SIZE) \
   /* mask out all components above PART */ \
-  const __m128i masked = _mm_and_si128(vf.r, _mm_set1_epi64x((1ULL << (BITS * PART)) - 1)); \
+  const __m128i masked = static_apply<SIZE>( \
+    [&]<std::size_t... tI>() { return blend_zero<((tI < PART) ? keep_bz : zero_bz)...>(vf).r; }); \
   /* [v0 + … + v7, -, -, -, -, -, -, -] as u16x8 */ \
   const __m128i sad = _mm_sad_epu8(masked, _mm_setzero_si128()); \
   /* extract low 32 bits and cast the upper 24 bits away */ \
   return KIND##BITS(_mm_cvtsi128_si32(sad));
-#define GREX_HADD_i8x2(...) GREX_HADD_i8_SUB(2, __VA_ARGS__)
-#define GREX_HADD_i8x4(...) GREX_HADD_i8_SUB(4, __VA_ARGS__)
+#define GREX_HADD_i8x2 GREX_HADD_i8_SUB
+#define GREX_HADD_i8x4 GREX_HADD_i8_SUB
 #define GREX_HADD_i8x8(KIND, BITS, ...) \
   /* [v0 + … + v7, -, -, -, -, -, -, -] as u16x8 */ \
   const __m128i sad = _mm_sad_epu8(vf.r, _mm_setzero_si128()); \
@@ -138,12 +142,12 @@ namespace grex::backend {
 // Wrapper macros
 #define GREX_HADD(KIND, BITS, SIZE) \
   inline KIND##BITS horizontal_add(NativeVector<KIND##BITS, SIZE> v) { \
-    GREX_HADD_##KIND(KIND, BITS, SIZE) \
+    GREX_HADD_##KIND(KIND, BITS, SIZE, SIZE) \
   }
 #define GREX_HADD_SUB(KIND, BITS, PART, SIZE) \
   inline KIND##BITS horizontal_add(SubVector<KIND##BITS, PART, SIZE> v) { \
     const auto vf = v.full; \
-    GREX_HADD_##KIND(KIND, BITS, PART) \
+    GREX_HADD_##KIND(KIND, BITS, PART, SIZE) \
   }
 
 #define GREX_HADD_ALL(REGISTERBITS, BITPREFIX) GREX_FOREACH_TYPE(GREX_HADD, REGISTERBITS)
@@ -151,12 +155,8 @@ GREX_FOREACH_X86_64_LEVEL(GREX_HADD_ALL)
 
 // SubVector
 GREX_FOREACH_SUB(GREX_HADD_SUB)
-
-// SuperVector
-template<typename THalf>
-inline THalf::Value horizontal_add(SuperVector<THalf> v) {
-  return horizontal_add(add(v.lower, v.upper));
-}
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/horizontal-add.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_HORIZONTAL_ADD_HPP

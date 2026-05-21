@@ -51,12 +51,8 @@ GREX_FOREACH_TYPE(GREX_HADD, 128)
     GREX_CAT(GREX_HADD_, GREX_MULTIPLY(BITS, PART), _##BITS)(KIND, BITS, PART, SIZE) \
   }
 GREX_FOREACH_SUB(GREX_HADD_SUB)
-
-// super-native: Compute the horizontal sum of the sum of the two halves
-template<typename THalf>
-inline THalf::Value horizontal_add(SuperVector<THalf> v) {
-  return horizontal_add(add(v.lower, v.upper));
-}
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/horizontal-add.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_HORIZONTAL_ADD_HPP

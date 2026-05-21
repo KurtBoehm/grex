@@ -44,29 +44,6 @@ struct ZeroBlenderMovq : public BaseExpensiveOp {
   }
 };
 
-// TODO insertps is slightly more efficient than blendps on AMD,
-//      but slightly less efficient on Intel
-struct ZeroBlenderInsert32 : public BaseExpensiveOp {
-  template<AnyBlendZeroSelectors auto tBzs>
-  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
-#if GREX_X86_64_LEVEL >= 2
-    return convert<4>(tBzs).has_value();
-#else
-    return false;
-#endif
-  }
-  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
-  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr int imm8 = convert<4>(tBzs).value().imm8();
-    const f32x4 fvec = reinterpret(vec, type_tag<f32>);
-    return reinterpret(f32x4{_mm_insert_ps(fvec.r, fvec.r, ~imm8 & 0xF)}, type_tag<Value>);
-  }
-  static constexpr Cost cost(auto /*bzs*/) {
-    return {.inv_throughput = 0.5, .latency = 1};
-  }
-};
-
 struct ZeroBlenderBlend32x4 : public BaseExpensiveOp {
   template<AnyBlendZeroSelectors auto tBzs>
   static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
@@ -84,7 +61,7 @@ struct ZeroBlenderBlend32x4 : public BaseExpensiveOp {
     return reinterpret(f32x4{_mm_blend_ps(_mm_setzero_ps(), fvec.r, imm8)}, type_tag<Value>);
   }
   static constexpr Cost cost(auto /*bzs*/) {
-    return {.inv_throughput = 0.5, .latency = 2};
+    return {.inv_throughput = 0.25, .latency = 2};
   }
 };
 
@@ -105,16 +82,15 @@ struct ZeroBlenderBlend16x8 : public BaseExpensiveOp {
     return reinterpret(i16x8{_mm_blend_epi16(_mm_setzero_si128(), ivec.r, imm8)}, type_tag<Value>);
   }
   static constexpr Cost cost(auto /*bzs*/) {
-    return {.inv_throughput = 0.5, .latency = 2};
+    return {.inv_throughput = 0.25, .latency = 2};
   }
 };
 
 template<AnyBlendZeroSelectors auto tBzs>
 requires((tBzs.value_size * tBzs.size == 16))
 struct ZeroBlenderTrait<tBzs> {
-  using Type =
-    CheapestType<tBzs, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderMovq, ZeroBlenderInsert32,
-                 ZeroBlenderBlend32x4, ZeroBlenderBlend16x8, ZeroBlenderAnd>;
+  using Type = CheapestType<tBzs, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderMovq,
+                            ZeroBlenderBlend32x4, ZeroBlenderBlend16x8, ZeroBlenderAnd>;
 };
 } // namespace grex::backend
 

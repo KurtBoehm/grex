@@ -300,12 +300,14 @@ Free-Function Utilities
    * - :ref:`Make finite <operations-make-finite-vector>`
      - :cpp:func:`grex::make_finite(Vector v) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::make_finite(Vector<T, tSize>)>`
 
-   * - Horizontal addition/minimum/maximum
-     - | :cpp:func:`grex::horizontal_add(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_add(Vector<T, tSize>)>`
-       | :cpp:func:`grex::horizontal_min(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_min(Vector<T, tSize>)>`
+   * - :ref:`Horizontal addition <operations-horizontal-add>`
+     - :cpp:func:`grex::horizontal_add(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_add(Vector<T, tSize>)>`
+
+   * - :ref:`Horizontal minimum/maximum <operations-horizontal-minmax>`
+     - | :cpp:func:`grex::horizontal_min(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_min(Vector<T, tSize>)>`
        | :cpp:func:`grex::horizontal_max(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_max(Vector<T, tSize>)>`
 
-   * - Horizontal AND
+   * - :ref:`Horizontal AND <operations-horizontal-and>`
      - :cpp:func:`grex::horizontal_and(Mask m) <template<Vectorizable T, std::size_t tSize> bool grex::horizontal_and(Mask<T, tSize>)>`
 
    * - Fused multiply-add family
