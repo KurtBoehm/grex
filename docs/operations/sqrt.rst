@@ -2,9 +2,9 @@
 
 .. _operations-sqrt:
 
-***********
+###########
 Square Root
-***********
+###########
 
 .. cpp:function:: Vector<T, N> backend::sqrt(Vector<T, N> v)
 

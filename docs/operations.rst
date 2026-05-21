@@ -288,13 +288,17 @@ Free-Function Utilities
    * - :ref:`Square root <operations-sqrt>`
      - :cpp:func:`grex::sqrt(Vector v) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::sqrt(Vector<T, tSize>)>`
 
-   * - Minimum/maximum
-     - | :cpp:func:`grex::min(Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::min(Vector<T, tSize>, Vector<T, tSize>)>`
-       | :cpp:func:`grex::max(Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::max(Vector<T, tSize>, Vector<T, tSize>)>`
+   * - :ref:`Minimum <operations-min>`
+     - :cpp:func:`grex::min(Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::min(Vector<T, tSize>, Vector<T, tSize>)>`
 
-   * - Is/make finite
-     - | :cpp:func:`grex::is_finite(Vector v) <template<FloatVectorizable T, std::size_t tSize> Mask<T, tSize> grex::is_finite(Vector<T, tSize>)>`
-       | :cpp:func:`grex::make_finite(Vector v) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::make_finite(Vector<T, tSize>)>`
+   * - :ref:`Maximum <operations-max>`
+     - :cpp:func:`grex::max(Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::max(Vector<T, tSize>, Vector<T, tSize>)>`
+
+   * - :ref:`Is finite <operations-is-finite>`
+     - :cpp:func:`grex::is_finite(Vector v) <template<FloatVectorizable T, std::size_t tSize> Mask<T, tSize> grex::is_finite(Vector<T, tSize>)>`
+
+   * - :ref:`Make finite <operations-make-finite-vector>`
+     - :cpp:func:`grex::make_finite(Vector v) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::make_finite(Vector<T, tSize>)>`
 
    * - Horizontal addition/minimum/maximum
      - | :cpp:func:`grex::horizontal_add(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_add(Vector<T, tSize>)>`

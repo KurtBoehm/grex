@@ -6,6 +6,7 @@
 #include "operations/blend-static.hpp"
 #include "operations/blend-zero-static.hpp"
 #include "operations/blend.hpp"
+#include "operations/classification.hpp"
 #include "operations/compare.hpp"
 #include "operations/convert.hpp"
 #include "operations/expand.hpp"

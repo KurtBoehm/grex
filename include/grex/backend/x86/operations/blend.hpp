@@ -86,6 +86,6 @@ GREX_FOREACH_X86_64_LEVEL(GREX_BLEND_ALL, GREX_BLENDZ)
 GREX_FOREACH_X86_64_LEVEL(GREX_BLEND_ALL, GREX_BLEND)
 } // namespace grex::backend
 
-#include "grex/backend/shared/operations/blend.hpp"
+#include "grex/backend/shared/operations/blend.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_HPP

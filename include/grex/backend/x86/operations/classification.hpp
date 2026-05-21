@@ -7,8 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_CLASSIFICATION_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_CLASSIFICATION_HPP
 
-#include <cstddef>
-
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"
@@ -16,9 +14,6 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
-#include "grex/backend/x86/operations/blend.hpp"
-#include "grex/backend/x86/operations/expand.hpp"
-#include "grex/backend/x86/operations/extract-single.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
 
@@ -66,25 +61,8 @@ namespace grex::backend {
 #define GREX_ISFIN_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_FP_TYPE(GREX_ISFIN, REGISTERBITS, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_ISFIN_ALL)
-
-template<FloatVectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubMask<T, tPart, tSize> is_finite(SubVector<T, tPart, tSize> v) {
-  return SubMask<T, tPart, tSize>{is_finite(v.full)};
-}
-template<typename THalf>
-inline auto is_finite(SuperVector<THalf> v) {
-  return SuperMask{.lower = is_finite(v.lower), .upper = is_finite(v.upper)};
-}
-
-template<AnyVector TVec>
-inline TVec make_finite(TVec v) {
-  return blend_zero(is_finite(v), v);
-}
-template<FloatVectorizable T>
-inline Scalar<T> make_finite(Scalar<T> v) {
-  const auto vec = expand_any(v, index_tag<16 / sizeof(T)>);
-  return extract_single(blend_zero(is_finite(vec), vec));
-}
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/classification.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CLASSIFICATION_HPP

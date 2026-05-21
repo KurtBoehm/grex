@@ -17,11 +17,13 @@ These pages give an overview over the operations that a backend needs to impleme
    operations/convert
    operations/arithmetic
    operations/abs
+   operations/minmax
    operations/sqrt
    operations/bitwise
    operations/shift
    operations/logical
    operations/compare
+   operations/classification
    operations/blend
    operations/mask-index
    operations/multibyte
