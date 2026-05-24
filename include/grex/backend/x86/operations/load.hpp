@@ -17,9 +17,10 @@
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
-#include "grex/backend/x86/instruction-sets.hpp"
+#include "grex/backend/x86/instruction-sets.hpp" // IWYU pragma: keep
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/operations/reinterpret.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
 
@@ -373,19 +374,24 @@ alignas(16) inline constexpr ShuffleTable<2> idxs2 = make_shuffle_table_block<2>
 // recursively split into two half-width vectors, partial-load the tail,
 // and merge with a full/zeroed head.
 #define GREX_PARTLOAD_SPLIT(KIND, BITS, SIZE, ...) \
+  using Value = KIND##BITS; \
+  using Half = VectorFor<Value, GREX_DIVIDE(SIZE, 2)>; \
+\
+  if (size <= GREX_DIVIDE(SIZE, 2)) { \
+    return merge(load_part(ptr, size, type_tag<Half>), zeros(type_tag<Half>)); \
+  } \
+\
   if (size >= SIZE) [[unlikely]] { \
-    return load(ptr, type_tag<NativeVector<KIND##BITS, SIZE>>); \
+    return load(ptr, type_tag<VectorFor<Value, SIZE>>); \
   } \
-  if (size == 0) [[unlikely]] { \
-    return zeros(type_tag<NativeVector<KIND##BITS, SIZE>>); \
-  } \
-  if (size >= GREX_DIVIDE(SIZE, 2)) { \
-    return merge(load(ptr, type_tag<NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>), \
-                 load_part(ptr + GREX_DIVIDE(SIZE, 2), size - GREX_DIVIDE(SIZE, 2), \
-                           type_tag<NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>)); \
-  } \
-  return merge(load_part(ptr, size, type_tag<NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>), \
-               zeros(type_tag<NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)>>));
+\
+  /* 16-byte block path: len ∈ [SIZE/2, SIZE] */ \
+  const auto lo = load(ptr, type_tag<Half>); \
+  const auto hi = as<u8>(load(ptr + (size - GREX_DIVIDE(SIZE, 2)), type_tag<Half>)).r; \
+\
+  __m128i mask = load(shld::idxs16[sizeof(Value) * size - 16].data(), type_tag<u8x16>).r; \
+  return merge(lo, as<Value>(u8x16{_mm_shuffle_epi8(hi, mask)}));
+
 #define GREX_PARTLOAD_256_16 GREX_PARTLOAD_SPLIT
 #define GREX_PARTLOAD_256_8 GREX_PARTLOAD_SPLIT
 
@@ -401,11 +407,8 @@ alignas(16) inline constexpr ShuffleTable<2> idxs2 = make_shuffle_table_block<2>
 #elif GREX_X86_64_LEVEL == 3
 #define GREX_PARTLOAD_128(KIND, BITS, ...) GREX_PARTLOAD_128_##BITS(KIND, BITS, __VA_ARGS__)
 #define GREX_PARTLOAD_256(KIND, BITS, ...) GREX_PARTLOAD_256_##BITS(KIND, BITS, __VA_ARGS__)
-#define GREX_PARTLOAD_512 GREX_PARTLOAD_SPLIT
 #else
 #define GREX_PARTLOAD_128(KIND, BITS, ...) GREX_PARTLOAD_128_##BITS(KIND)
-#define GREX_PARTLOAD_256 GREX_PARTLOAD_SPLIT
-#define GREX_PARTLOAD_512 GREX_PARTLOAD_SPLIT
 #endif
 
 // Public partial-load entry point for a full native vector.
@@ -590,6 +593,30 @@ GREX_FOREACH_SUB(GREX_LOAD_SUB)
 #define GREX_PARTLOAD_SUB_IMPL(KIND, BITS, PART, SIZE) \
   return SubVector<KIND##BITS, PART, SIZE>{ \
     load_part(ptr, size, type_tag<NativeVector<KIND##BITS, SIZE>>)};
+#endif
+
+#if GREX_X86_64_LEVEL == 2
+template<AnyNativeVector THalf>
+GREX_ALWAYS_INLINE inline SuperVector<THalf> load_part(const ValueOf<THalf>* ptr, std::size_t size,
+                                                       grex::TypeTag<SuperVector<THalf>> tag) {
+  using Value = ValueOf<THalf>;
+  constexpr std::size_t vsize = 2 * size_of<THalf>;
+
+  if (size <= vsize / 2) {
+    return merge(load_part(ptr, size, grex::type_tag<THalf>), zeros(type_tag<THalf>));
+  }
+
+  if (size >= vsize) [[unlikely]] {
+    return load(ptr, tag);
+  }
+
+  // 16-byte block path: len ∈ [vsize/2, vsize]
+  const auto lo = load(ptr, type_tag<THalf>);
+  const auto hi = as<u8>(load(ptr + (size - vsize / 2), type_tag<THalf>)).r;
+
+  __m128i mask = load(shld::idxs16[sizeof(Value) * size - 16].data(), type_tag<u8x16>).r;
+  return merge(lo, as<Value>(u8x16{_mm_shuffle_epi8(hi, mask)}));
+}
 #endif
 
 // Entry point for sub-vector partial loads.

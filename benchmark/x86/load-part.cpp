@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <array>
 #include <bit>
 #include <concepts>
 #include <cstddef>
@@ -90,34 +89,40 @@ GREX_ALWAYS_INLINE inline __m128i load_part_sse(const i32* ptr, std::size_t size
 #endif
 
 #if GREX_X86_64_LEVEL == 2
-be::VectorFor<u16, 16> load_part_overlap(const u16* src, std::size_t len,
-                                         grex::TypeTag<be::VectorFor<u16, 16>> /*tag*/) {
-  if (len == 0) [[unlikely]] {
-    return {.lower = {.r = _mm_setzero_si128()}, .upper = {.r = _mm_setzero_si128()}};
+GREX_ALWAYS_INLINE inline be::VectorFor<u16, 16>
+load_part_overlap(const u16* ptr, std::size_t size, grex::TypeTag<be::VectorFor<u16, 16>> tag) {
+  if (size <= 8) {
+    return be::merge(be::load_part(ptr, size, grex::type_tag<be::u16x8>),
+                     be::zeros(grex::type_tag<be::u16x8>));
   }
-  if (len >= 16) [[unlikely]] {
-    return {
-      .lower = {.r = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src))},
-      .upper = {.r = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + 8))},
-    };
+
+  if (size >= 16) [[unlikely]] {
+    return be::load(ptr, tag);
   }
 
   // 16-byte block path: len ∈ [8,16]
-  if (len >= 8) {
-    __m128i lo = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src));
-    __m128i hi = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + (len - 8)));
+  const auto lo = be::load(ptr, grex::type_tag<be::u16x8>);
+  const auto hi = be::load(ptr + (size - 8), grex::type_tag<be::u16x8>);
 
-    const auto& row = be::shld::idxs16[2 * len - 16];
-    __m128i mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(row.data()));
-    return {.lower = {.r = lo}, .upper = {.r = _mm_shuffle_epi8(hi, mask)}};
-  }
-
-  return {
-    .lower = be::load_part(src, len, grex::type_tag<be::u16x8>),
-    .upper = {.r = _mm_setzero_si128()},
-  };
+  const auto mask = be::load(be::shld::idxs16[2 * size - 16].data(), grex::type_tag<be::u8x16>);
+  return {.lower = lo, .upper = {.r = _mm_shuffle_epi8(hi.r, mask.r)}};
 }
 #endif
+
+template<be::AnyVector TVec>
+GREX_ALWAYS_INLINE inline TVec load_part_split(const be::ValueOf<TVec>* ptr, std::size_t size,
+                                               grex::TypeTag<TVec> /*tag*/) {
+  using Value = be::ValueOf<TVec>;
+  constexpr std::size_t vsize = be::size_of<TVec>;
+  using Half = be::VectorFor<Value, vsize / 2>;
+
+  if (size <= vsize / 2) {
+    return be::merge(be::load_part(ptr, size, grex::type_tag<Half>),
+                     be::zeros(grex::type_tag<Half>));
+  }
+  return be::merge(be::load(ptr, grex::type_tag<Half>),
+                   be::load_part(ptr + vsize / 2, size - vsize / 2, grex::type_tag<Half>));
+}
 
 #define DIST_full std::uniform_int_distribution<u64> uniform_dist(0, Vec::size);
 #define DIST_redu std::uniform_int_distribution<u64> uniform_dist(1, Vec::size - 1);
@@ -162,6 +167,7 @@ auto value_distribution() {
 
 #define BM_OP_grex BM_OP_I
 #define BM_OP_xgrex BM_OP_I
+#define BM_OP_split BM_OP_I
 #if GREX_X86_64_LEVEL >= 2
 #define BM_OP_sse BM_OP_I
 #else
@@ -203,7 +209,7 @@ BM_OPS_WRAP(f, 32, 2, grex, xgrex)
 BM_OPS_WRAP(i, 32, 4, grex, sse, table)
 BM_OPS_WRAP(i, 32, 2, grex, xgrex)
 // u16
-BM_OPS_WRAP(u, 16, 16, grex, overlap)
+BM_OPS_WRAP(u, 16, 16, grex, overlap, split)
 BM_OPS_WRAP(u, 16, 8, grex)
 BM_OPS_WRAP(u, 16, 4, grex, xgrex)
 BM_OPS_WRAP(u, 16, 2, grex, xgrex)
