@@ -310,7 +310,7 @@ Free-Function Utilities
    * - :ref:`Horizontal AND <operations-horizontal-and>`
      - :cpp:func:`grex::horizontal_and(Mask m) <template<Vectorizable T, std::size_t tSize> bool grex::horizontal_and(Mask<T, tSize>)>`
 
-   * - Fused multiply-add family
+   * - :ref:`Fused multiply-add family <operations-fmadd-family>`
      - | :cpp:func:`grex::fmadd(Vector a, Vector b, Vector c) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::fmadd(Vector<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
        | :cpp:func:`grex::fmsub(Vector a, Vector b, Vector c) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::fmsub(Vector<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
        | :cpp:func:`grex::fnmadd(Vector a, Vector b, Vector c) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::fnmadd(Vector<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`

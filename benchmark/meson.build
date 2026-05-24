@@ -5,7 +5,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 options_sub = subproject('options')
-args = options_sub.get_variable('all_args')
+args = options_sub.get_variable('basic_args')
 
 benchmark_dep = dependency('benchmark')
 pcg_dep = dependency('pcg-cpp')
@@ -22,12 +22,25 @@ if backend == 'neon'
 endif
 
 if backend == 'x86_64'
-  foreach name : ['multibyte']
-    executable(
-      f'bm-@name@',
-      f'x86/@name@.cpp',
-      cpp_args: args,
-      dependencies: [benchmark_dep, grex_dep, pcg_dep],
-    )
+  bm_arches = {}
+  foreach arch : arches
+    bm_arches += {arch: [f'-march=@arch@']}
+  endforeach
+  bm_arches += {'native': options_sub.get_variable('optimization_args')}
+
+  foreach name : ['load-part', 'multibyte']
+    targets = []
+    foreach arch_name, arch_args : test_arches
+      exe = executable(
+        f'bm-@name@-@arch_name@',
+        f'x86/@name@.cpp',
+        cpp_args: args + arch_args,
+        dependencies: [benchmark_dep, grex_dep, pcg_dep],
+      )
+      targets += exe
+    endforeach
+    if targets.length() > 1
+      alias_target(f'bm-@name@', targets)
+    endif
   endforeach
 endif

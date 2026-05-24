@@ -16,6 +16,7 @@ These pages give an overview over the operations that a backend needs to impleme
    operations/expand
    operations/convert
    operations/arithmetic
+   operations/fmadd-family
    operations/abs
    operations/minmax
    operations/sqrt

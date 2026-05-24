@@ -7,8 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_MASK_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_MASK_HPP
 
-#include <cstddef>
-
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"

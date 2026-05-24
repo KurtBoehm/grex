@@ -7,8 +7,6 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_STATIC_128_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_STATIC_128_HPP
 
-#include <utility>
-
 #include "grex/backend/base.hpp"
 #include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/blend-static.hpp"

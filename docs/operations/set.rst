@@ -73,10 +73,11 @@ Set
 
    - **Neon**:
 
-     - **64-bit**: expand scalars with :cpp:func:`~backend::expand_any` and combine with ``vzip1q``.
-     - **32-bit**: pack pairs into 64-bit temporaries (``bfi`` on GCC, shift and OR otherwise), then merge/interleave and reinterpret as ``u32``/``f32``.
-     - **8/16-bit**: pack into wider temporaries with shifts and ``orr``, then expand and reinterpret.
-     - **Sub-native**: use dedicated sub-vector overloads.
+     - **64-bit entries**: expand scalars with :cpp:func:`~backend::expand_any` to 2-lane vectors and interleave with ``vzip1q`` intrinsics.
+     - **32-bit floating point**: expand scalars with :cpp:func:`~backend::expand_any` and interleave with ``vzip1q_f32``; 4-lane vectors are built by zipping two 2-lane temporaries.
+     - **32-bit integers**: merge scalar pairs into 64-bit temporaries (``bfi`` or ``std::memcpy``), expand with :cpp:func:`~backend::expand_any`, then reinterpret as ``i32``/``u32`` and combine via 64-bit interleaving.
+     - **8/16-bit integers**: merge scalar pairs into wider integer temporaries (``bfi`` or ``std::memcpy``), expand with :cpp:func:`~backend::expand_any`, and recursively combine into 8/16-lane vectors.
+     - **Sub-native**: dedicated sub-vector overloads that use the same approach as the native version, but with fewer merging steps.
 
    - **Super-native (shared implementation)**: the scalar arguments are split into lower and upper halves, each half is passed to :cpp:func:`~backend::set` on the corresponding half type, and the results are combined.
 
@@ -152,7 +153,7 @@ Set
      - **x86-64-v4**: builds a compressed mask bitfield through shifting and bitwise OR.
      - **Earlier**: delegates to vector :cpp:func:`set() <Vector\<T, N\> backend::set(TypeTag\<Vector\<T, N\>\>, T... values)>` with cast/negated lanes.
 
-   - **Neon**: build an unsigned integer vector with vector :cpp:func:`set() <Vector\<T, N\> backend::set(TypeTag\<Vector\<T, N\>\>, T... values)>` on the corresponding unsigned type, then negate lanes to obtain all-one (true) or all-zero (false) elements.
+   - **Neon**: build an unsigned integer vector with vector :cpp:func:`set() <Vector\<T, N\> backend::set(TypeTag\<Vector\<T, N\>\>, T... values)>` on the corresponding unsigned type using Boolean values ``0``/``1``, then apply arithmetic negation so that ``true`` becomes all-one and ``false`` becomes all-zero in each lane.
    - **Super-native (shared implementation)**: the scalar arguments are split into lower and upper halves, each half is passed to :cpp:func:`set() <Mask\<T, N\> backend::set(TypeTag\<Mask\<T, N\>\>, bool... values)>` on the corresponding half type, and the results are combined.
 
 .. _operations-indices:
