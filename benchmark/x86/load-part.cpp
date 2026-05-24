@@ -80,7 +80,8 @@ auto value_distribution() {
       if (j >= nvec.size()) { \
         j = 0; \
       } \
-      load_part_##SUFFIX(src_vec.data() + i, nvec[j], grex::type_tag<Vec>); \
+      auto v = load_part_##SUFFIX(src_vec.data() + i, nvec[j], grex::type_tag<Vec>); \
+      benchmark::DoNotOptimize(v); \
       i += SIZE; \
       ++j; \
     } \
