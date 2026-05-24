@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <bit>
 #include <concepts>
 #include <cstddef>
 #include <random>
@@ -47,6 +48,44 @@ GREX_ALWAYS_INLINE inline __m128i load_part_table(const i32* ptr, std::size_t si
 }
 #endif
 
+#if GREX_X86_64_LEVEL >= 2
+GREX_ALWAYS_INLINE inline __m128d load_part_sse(const f64* ptr, std::size_t size,
+                                                grex::TypeTag<be::f64x2> /*tag*/) {
+  __m128d v = _mm_undefined_pd();
+  switch (size) {
+    case 2: return _mm_loadu_pd(ptr); // full vector
+    case 1:
+      v = __m128d(_mm_insert_epi64(__m128i(v), std::bit_cast<i64>(ptr[0]), 0));
+      [[fallthrough]];
+    case 0:
+    default: return v;
+  }
+}
+
+GREX_ALWAYS_INLINE inline __m128i load_part_sse(const i32* ptr, std::size_t size,
+                                                grex::TypeTag<be::i32x4> /*tag*/) {
+  __m128i v = _mm_undefined_si128();
+  switch (size) {
+    case 4: return _mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr)); // full vector
+    case 3:
+      v = _mm_insert_epi32(v, ptr[2], 2); // element 2
+      [[fallthrough]];
+    case 2:
+      v = _mm_insert_epi32(v, ptr[1], 1); // element 1
+      [[fallthrough]];
+    case 1:
+      v = _mm_insert_epi32(v, ptr[0], 0); // element 0
+      [[fallthrough]];
+    case 0:
+    default: return v;
+  }
+}
+GREX_ALWAYS_INLINE inline __m128i load_part_sse(const f32* ptr, std::size_t size,
+                                                grex::TypeTag<be::f32x4> /*tag*/) {
+  return load_part_sse(reinterpret_cast<const i32*>(ptr), size, grex::type_tag<be::i32x4>);
+}
+#endif
+
 #define DIST_full std::uniform_int_distribution<u64> uniform_dist(0, Vec::size);
 #define DIST_redu std::uniform_int_distribution<u64> uniform_dist(1, Vec::size - 1);
 #define DISTN(i) std::uniform_int_distribution<u64> uniform_dist(i, i);
@@ -91,7 +130,12 @@ auto value_distribution() {
 #if GREX_X86_64_LEVEL >= 3
 #define BM_OPS(VALUE, SIZE, DISTNAME, DIST) \
   BM_OP(VALUE, SIZE, grex, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, table, DISTNAME, DIST)
+  BM_OP(VALUE, SIZE, table, DISTNAME, DIST) \
+  BM_OP(VALUE, SIZE, sse, DISTNAME, DIST)
+#elif GREX_X86_64_LEVEL >= 2
+#define BM_OPS(VALUE, SIZE, DISTNAME, DIST) \
+  BM_OP(VALUE, SIZE, grex, DISTNAME, DIST) \
+  BM_OP(VALUE, SIZE, sse, DISTNAME, DIST)
 #else
 #define BM_OPS(VALUE, SIZE, DISTNAME, DIST) BM_OP(VALUE, SIZE, grex, DISTNAME, DIST)
 #endif
