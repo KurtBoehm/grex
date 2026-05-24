@@ -116,11 +116,12 @@ foreach name, conf : {
   'gather': [['scalar', 'x86_64', 'neon'], false],
   'general': [['scalar', 'x86_64', 'neon'], true],
   'horizontal': [['scalar', 'x86_64', 'neon'], true],
-  'mem': [['scalar', 'x86_64', 'neon'], true],
+  'load': [['scalar', 'x86_64', 'neon'], true],
   'multibyte': [['scalar', 'x86_64', 'neon'], true],
   'nary': [['scalar', 'x86_64', 'neon'], true],
   'set': [['scalar', 'x86_64', 'neon'], true],
   'shingle': [['scalar', 'x86_64', 'neon'], true],
+  'store': [['scalar', 'x86_64', 'neon'], true],
 }
   backends = conf[0]
   parallel = conf[1]

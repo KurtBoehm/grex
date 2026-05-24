@@ -23,6 +23,12 @@ GREX_ALWAYS_INLINE inline TVec load_part_grex(const be::ValueOf<TVec>* ptr, std:
   return be::load_part(ptr, size, tag);
 }
 
+template<be::AnySubNativeVector TVec>
+GREX_ALWAYS_INLINE inline TVec load_part_xgrex(const be::ValueOf<TVec>* ptr, std::size_t size,
+                                               grex::TypeTag<TVec> /*tag*/) {
+  return TVec{be::load_part(ptr, size, grex::type_tag<typename TVec::Full>)};
+}
+
 alignas(16) inline constexpr i32 mask_table[5][4] = {
   {0, 0, 0, 0}, // 0 elements
   {-1, 0, 0, 0}, // 1 element
@@ -81,10 +87,6 @@ GREX_ALWAYS_INLINE inline __m128i load_part_sse(const i32* ptr, std::size_t size
     case 0:
     default: return v;
   }
-}
-GREX_ALWAYS_INLINE inline __m128i load_part_sse(const f32* ptr, std::size_t size,
-                                                grex::TypeTag<be::f32x4> /*tag*/) {
-  return load_part_sse(reinterpret_cast<const i32*>(ptr), size, grex::type_tag<be::i32x4>);
 }
 
 namespace shuffle_u8 {
@@ -261,7 +263,7 @@ __m128i load_part_overlap(const i32* src, std::size_t len, grex::TypeTag<be::i32
 
 #define DIST_full std::uniform_int_distribution<u64> uniform_dist(0, Vec::size);
 #define DIST_redu std::uniform_int_distribution<u64> uniform_dist(1, Vec::size - 1);
-#define DISTN(i) std::uniform_int_distribution<u64> uniform_dist(i, i);
+#define DIST_N(i) std::uniform_int_distribution<u64> uniform_dist(i, i);
 
 template<typename T>
 auto value_distribution() {
@@ -272,12 +274,12 @@ auto value_distribution() {
   }
 }
 
-#define BM_OP(VALUE, SIZE, SUFFIX, DISTNAME, DIST) \
+#define BM_OP_I(VALUE, SIZE, SUFFIX, DISTNAME, DIST) \
   void bm_load_part_##SUFFIX##_##VALUE##x##SIZE##_##DISTNAME(benchmark::State& state) { \
-    using Vec = be::NativeVector<VALUE, SIZE>; \
+    using Vec = be::VectorFor<VALUE, SIZE>; \
     pcg_extras::seed_seq_from<std::random_device> seed_source; \
     pcg32 rng(seed_source); \
-    DIST; \
+    GREX_CAT(DIST_, DIST); \
     std::vector<VALUE> src_vec(1UZ << 28UZ); \
     std::generate(src_vec.begin(), src_vec.end(), \
                   [&] { return value_distribution<VALUE>()(rng); }); \
@@ -300,47 +302,54 @@ auto value_distribution() {
   } \
   BENCHMARK(bm_load_part_##SUFFIX##_##VALUE##x##SIZE##_##DISTNAME);
 
-#if GREX_X86_64_LEVEL >= 3
-#define BM_OPS_EXT(VALUE, SIZE, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, grex, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, table, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, sse, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, overlap, DISTNAME, DIST)
-#define BM_OPS_RED(VALUE, SIZE, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, grex, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, overlap, DISTNAME, DIST)
-#elif GREX_X86_64_LEVEL >= 2
-#define BM_OPS_EXT(VALUE, SIZE, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, grex, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, sse, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, overlap, DISTNAME, DIST)
-#define BM_OPS_RED(VALUE, SIZE, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, grex, DISTNAME, DIST) \
-  BM_OP(VALUE, SIZE, overlap, DISTNAME, DIST)
+#define BM_OP_grex BM_OP_I
+#define BM_OP_xgrex BM_OP_I
+#if GREX_X86_64_LEVEL >= 2
+#define BM_OP_sse BM_OP_I
+#define BM_OP_overlap BM_OP_I
 #else
-#define BM_OPS_EXT(VALUE, SIZE, DISTNAME, DIST) BM_OP(VALUE, SIZE, grex, DISTNAME, DIST)
-#define BM_OPS_RET BM_OPS_EXT
+#define BM_OP_sse(...)
+#define BM_OP_overlap(...)
+#endif
+#if GREX_X86_64_LEVEL >= 3
+#define BM_OP_table BM_OP_I
+#else
+#define BM_OP_table(...)
 #endif
 
-#define BM_OPS_16 BM_OPS_RED
-#define BM_OPS_8 BM_OPS_RED
-#define BM_OPS_4 BM_OPS_EXT
-#define BM_OPS_2 BM_OPS_EXT
-#define BM_OPS(VALUE, SIZE, DISTNAME, DIST) BM_OPS_##SIZE(VALUE, SIZE, DISTNAME, DIST)
+#define BM_OP(VALUE, SIZE, SUFFIX, DISTNAME, DIST) \
+  GREX_CAT(BM_OP_, SUFFIX)(VALUE, SIZE, SUFFIX, DISTNAME, DIST)
+#define BM_OP_WRAP(OPSIZE, OPINDEX, VALUE, SIZE, DISTNAME, DIST, ...) \
+  BM_OP(VALUE, SIZE, GREX_AT(OPINDEX, __VA_ARGS__), DISTNAME, DIST)
+#define BM_OPS(KIND, BITS, SIZE, DISTNAME, DIST, ...) \
+  GREX_NREPEAT(GREX_VARIADIC_SIZE(__VA_ARGS__), BM_OP_WRAP, KIND##BITS, SIZE, DISTNAME, DIST, \
+               __VA_ARGS__)
 
-#define BM_OPSN(SIZE, PART, VALUE) BM_OPS(VALUE, SIZE, PART, DISTN(PART))
-#define BM_OPS_WRAP(VALUE, SIZE) \
-  BM_OPS(VALUE, SIZE, full, DIST_full) \
-  BM_OPS(VALUE, SIZE, redu, DIST_redu) \
-  GREX_REPEAT(SIZE, BM_OPSN, VALUE) \
-  BM_OPS(VALUE, SIZE, SIZE, DISTN(SIZE))
+#define BM_OPSN(SIZE, PART, KIND, BITS, ...) BM_OPS(KIND, BITS, SIZE, PART, N(PART), __VA_ARGS__)
+#define BM_OPS_WRAP(KIND, BITS, SIZE, ...) \
+  BM_OPS(KIND, BITS, SIZE, full, full, __VA_ARGS__) \
+  BM_OPS(KIND, BITS, SIZE, redu, redu, __VA_ARGS__) \
+  GREX_REPEAT(SIZE, BM_OPSN, KIND, BITS, __VA_ARGS__) \
+  BM_OPS(KIND, BITS, SIZE, SIZE, N(SIZE), __VA_ARGS__)
 
 // NOLINTBEGIN
-// BM_OPS_WRAP(f64, 2)
-// BM_OPS_WRAP(f32, 4)
-BM_OPS_WRAP(i32, 4)
-// BM_OPS_WRAP(u16, 8)
-// BM_OPS_WRAP(u8, 16)
+// f64
+BM_OPS_WRAP(f, 64, 2, grex, sse, table)
+// f32
+BM_OPS_WRAP(f, 32, 4, grex, table)
+BM_OPS_WRAP(f, 32, 2, grex, xgrex)
+// i32
+BM_OPS_WRAP(i, 32, 4, grex, sse, overlap, table)
+BM_OPS_WRAP(i, 32, 2, grex, xgrex)
+// u16
+BM_OPS_WRAP(u, 16, 8, grex, overlap)
+BM_OPS_WRAP(u, 16, 4, grex, xgrex)
+BM_OPS_WRAP(u, 16, 2, grex, xgrex)
+// u8
+BM_OPS_WRAP(u, 8, 16, grex, overlap)
+BM_OPS_WRAP(u, 8, 8, grex, xgrex)
+BM_OPS_WRAP(u, 8, 4, grex, xgrex)
+BM_OPS_WRAP(u, 8, 2, grex, xgrex)
 // NOLINTEND
 
 BENCHMARK_MAIN();

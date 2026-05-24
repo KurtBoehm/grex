@@ -28,4 +28,10 @@
 #define GREX_CAT_I(SIZE, ...) GREX_CAT_II(SIZE __VA_OPT__(, ) __VA_ARGS__)
 #define GREX_CAT(...) GREX_CAT_I(GREX_VARIADIC_SIZE(__VA_ARGS__), __VA_ARGS__)
 
+#define GREX_AT_0(V0, ...) V0
+#define GREX_AT_1(V0, V1, ...) V1
+#define GREX_AT_2(V0, V1, V2, ...) V2
+#define GREX_AT_3(V0, V1, V2, V3, ...) V3
+#define GREX_AT(INDEX, ...) GREX_AT_##INDEX(__VA_ARGS__)
+
 #endif // INCLUDE_GREX_BACKEND_MACROS_BASE_HPP
