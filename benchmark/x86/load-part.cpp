@@ -198,7 +198,40 @@ __m128i load_part_sse(const u8* src, std::size_t len, grex::TypeTag<be::u8x16> /
   return _mm_cvtsi32_si128(static_cast<unsigned char>(*src));
 }
 __m128i load_part_sse(const u16* src, std::size_t len, grex::TypeTag<be::u16x8> /*tag*/) {
-  return load_part_sse(reinterpret_cast<const u8*>(src), 2 * len, grex::type_tag<be::u8x16>);
+  if (len == 0) [[unlikely]] {
+    return _mm_setzero_si128();
+  }
+  if (len >= 8) [[unlikely]] {
+    return _mm_loadu_si128(reinterpret_cast<const __m128i*>(src));
+  }
+
+  // 8-byte block path: len ∈ [4,8]
+  if (len >= 8) {
+    __m128i lo = _mm_loadu_si64(src);
+    __m128i hi = _mm_loadu_si64(src + len - 4);
+    // AB = [src[0..7], src[len-8..len-1]]
+    __m128i ab = _mm_unpacklo_epi64(lo, hi);
+
+    const shuffle_u8::ShuffleRow& row = shuffle_u8::shuf_masks_8[2 * len];
+    __m128i mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(row.data()));
+    return _mm_shuffle_epi8(ab, mask);
+  }
+
+  // 4-byte block path: len ∈ [2,3]
+  if (len >= 2) {
+    __m128i lo = _mm_loadu_si32(src);
+    __m128i hi = _mm_loadu_si32(src + (len - 2));
+    // AB = [src[0..3], src[len-4..len-1]] in bytes [0..7]
+    __m128i ab = _mm_unpacklo_epi32(lo, hi);
+
+    const shuffle_u8::ShuffleRow& row = shuffle_u8::shuf_masks_4[2 * len];
+    __m128i mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(row.data()));
+
+    return _mm_shuffle_epi8(ab, mask);
+  }
+
+  // len == 1
+  return _mm_loadu_si16(src);
 }
 #endif
 
