@@ -1,7 +1,9 @@
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <concepts>
 #include <cstddef>
+#include <cstring>
 #include <random>
 #include <vector>
 
@@ -84,6 +86,120 @@ GREX_ALWAYS_INLINE inline __m128i load_part_sse(const f32* ptr, std::size_t size
                                                 grex::TypeTag<be::f32x4> /*tag*/) {
   return load_part_sse(reinterpret_cast<const i32*>(ptr), size, grex::type_tag<be::i32x4>);
 }
+
+namespace shuffle_u8 {
+using ShuffleRow = std::array<u8, 16>;
+using ShuffleTable = std::array<ShuffleRow, 17>;
+
+// Generic compile-time shuffle-table generator for a given block size B.
+//
+// Conceptually we form AB = [ src[0 .. B-1], src[n-B .. n-1] ] (2*B bytes),
+// sitting in the low bytes of a __m128i, then pshufb(AB, mask[n]) gives:
+//
+//   result[0 .. n-1] = src[0 .. n-1]
+//   result[n .. 15]  = 0
+//
+// Valid n for a given B:   B <= n <= min(2*B, 16).
+// Other rows are filled with 0x80 (zero everything if used by mistake).
+template<std::size_t tBlockBytes>
+consteval ShuffleTable make_shuffle_table_block() {
+  static_assert(tBlockBytes == 8 || tBlockBytes == 4 || tBlockBytes == 2);
+
+  ShuffleTable table{};
+
+  for (std::size_t n = 0; n <= 16; ++n) {
+    auto& row = table[n];
+    row.fill(0x80); // default: zero all bytes
+
+    if (n < tBlockBytes || n > 2 * tBlockBytes) {
+      continue;
+    }
+
+    for (std::size_t i = 0; i < 16; ++i) {
+      u8 idx = 0x80; // default: zero this output byte
+
+      if (i < tBlockBytes) {
+        // First block: src[0 .. B-1] -> AB[0 .. B-1]
+        idx = u8(i);
+      } else if (i < n) {
+        // Second block: src[n-B .. n-1] -> AB[B .. 2B-1]
+        // For i in [B, n-1], map to AB index:
+        //   idx = i + 2B - n
+        idx = u8(i + 2 * tBlockBytes - n);
+      }
+
+      row[i] = idx;
+    }
+  }
+
+  return table;
+}
+
+// Three tables, one per block size.
+alignas(16) inline constexpr ShuffleTable shuf_masks_8 = make_shuffle_table_block<8>();
+alignas(16) inline constexpr ShuffleTable shuf_masks_4 = make_shuffle_table_block<4>();
+alignas(16) inline constexpr ShuffleTable shuf_masks_2 = make_shuffle_table_block<2>();
+} // namespace shuffle_u8
+
+// Load up to 16 bytes from src without reading past src+len, zero-padding.
+//
+// Returns a __m128i where:
+//   bytes [0 .. len-1] = src[0 .. len-1],
+//   bytes [len .. 15]  = 0.
+//
+// Requires: 0 <= len <= 16, SSSE3 for _mm_shuffle_epi8.
+__m128i load_part_sse(const u8* src, std::size_t len, grex::TypeTag<be::u8x16> /*tag*/) {
+  if (len == 0) [[unlikely]] {
+    return _mm_setzero_si128();
+  }
+  if (len >= 16) [[unlikely]] {
+    return _mm_loadu_si128(reinterpret_cast<const __m128i*>(src));
+  }
+
+  // 8-byte block path: len ∈ [8,16]
+  if (len >= 8) {
+    __m128i lo = _mm_loadu_si64(src);
+    __m128i hi = _mm_loadu_si64(src + len - 8);
+    // AB = [src[0..7], src[len-8..len-1]]
+    __m128i ab = _mm_unpacklo_epi64(lo, hi);
+
+    const shuffle_u8::ShuffleRow& row = shuffle_u8::shuf_masks_8[len];
+    __m128i mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(row.data()));
+    return _mm_shuffle_epi8(ab, mask);
+  }
+
+  // 4-byte block path: len ∈ [4,7]
+  if (len >= 4) {
+    __m128i lo = _mm_loadu_si32(src);
+    __m128i hi = _mm_loadu_si32(src + (len - 4));
+    // AB = [src[0..3], src[len-4..len-1]] in bytes [0..7]
+    __m128i ab = _mm_unpacklo_epi32(lo, hi);
+
+    const shuffle_u8::ShuffleRow& row = shuffle_u8::shuf_masks_4[len];
+    __m128i mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(row.data()));
+
+    return _mm_shuffle_epi8(ab, mask);
+  }
+
+  // 2-byte block path: len ∈ [2,3]
+  if (len >= 2) {
+    __m128i lo = _mm_loadu_si16(src);
+    __m128i hi = _mm_loadu_si16(src + (len - 2));
+    // AB = [src[0..1], src[len-2..len-1]] in bytes [0..3]
+    __m128i ab = _mm_unpacklo_epi16(lo, hi);
+
+    const shuffle_u8::ShuffleRow& row = shuffle_u8::shuf_masks_2[len];
+    __m128i mask = _mm_loadu_si128(reinterpret_cast<const __m128i*>(row.data()));
+
+    return _mm_shuffle_epi8(ab, mask);
+  }
+
+  // len == 1
+  return _mm_cvtsi32_si128(static_cast<unsigned char>(*src));
+}
+__m128i load_part_sse(const u16* src, std::size_t len, grex::TypeTag<be::u16x8> /*tag*/) {
+  return load_part_sse(reinterpret_cast<const u8*>(src), 2 * len, grex::type_tag<be::u8x16>);
+}
 #endif
 
 #define DIST_full std::uniform_int_distribution<u64> uniform_dist(0, Vec::size);
@@ -128,10 +244,20 @@ auto value_distribution() {
   BENCHMARK(bm_load_part_##SUFFIX##_##VALUE##x##SIZE##_##DISTNAME);
 
 #if GREX_X86_64_LEVEL >= 3
-#define BM_OPS(VALUE, SIZE, DISTNAME, DIST) \
+#define BM_OPS_EXT(VALUE, SIZE, DISTNAME, DIST) \
   BM_OP(VALUE, SIZE, grex, DISTNAME, DIST) \
   BM_OP(VALUE, SIZE, table, DISTNAME, DIST) \
   BM_OP(VALUE, SIZE, sse, DISTNAME, DIST)
+#define BM_OPS_RED(VALUE, SIZE, DISTNAME, DIST) \
+  BM_OP(VALUE, SIZE, grex, DISTNAME, DIST) \
+  BM_OP(VALUE, SIZE, sse, DISTNAME, DIST)
+
+#define BM_OPS_16 BM_OPS_RED
+#define BM_OPS_8 BM_OPS_RED
+#define BM_OPS_4 BM_OPS_EXT
+#define BM_OPS_2 BM_OPS_EXT
+
+#define BM_OPS(VALUE, SIZE, DISTNAME, DIST) BM_OPS_##SIZE(VALUE, SIZE, DISTNAME, DIST)
 #elif GREX_X86_64_LEVEL >= 2
 #define BM_OPS(VALUE, SIZE, DISTNAME, DIST) \
   BM_OP(VALUE, SIZE, grex, DISTNAME, DIST) \
@@ -150,9 +276,9 @@ auto value_distribution() {
 // NOLINTBEGIN
 BM_OPS_WRAP(f64, 2)
 BM_OPS_WRAP(f32, 4)
-// BM_OPS_WRAP(u16, 8)
-// BM_OPS_WRAP(u8, 16)
 BM_OPS_WRAP(i32, 4)
+BM_OPS_WRAP(u16, 8)
+BM_OPS_WRAP(u8, 16)
 // NOLINTEND
 
 BENCHMARK_MAIN();
