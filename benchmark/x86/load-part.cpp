@@ -203,7 +203,7 @@ BM_OPS_WRAP(f, 32, 2, grex, xgrex)
 BM_OPS_WRAP(i, 32, 4, grex, sse, table)
 BM_OPS_WRAP(i, 32, 2, grex, xgrex)
 // u16
-BM_OPS_WRAP(u, 16, 16, grex)
+BM_OPS_WRAP(u, 16, 16, grex, overlap)
 BM_OPS_WRAP(u, 16, 8, grex)
 BM_OPS_WRAP(u, 16, 4, grex, xgrex)
 BM_OPS_WRAP(u, 16, 2, grex, xgrex)
