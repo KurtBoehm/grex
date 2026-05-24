@@ -32,7 +32,8 @@
 #endif
 #if GREX_X86_64_LEVEL >= 3
 #include "grex/backend/x86/operations/mask-index.hpp"
-#else
+#endif
+#if GREX_X86_64_LEVEL == 1
 #include <bit>
 #endif
 
@@ -121,7 +122,22 @@ consteval ShuffleTable<tBlockBytes> make_shuffle_table_block() {
   return table;
 }
 
+consteval std::array<ShuffleRow, 17> make_shuffle_table_block_256hi() {
+  std::array<ShuffleRow, 17> table{};
+
+  for (std::size_t n = 0; n <= 16; ++n) {
+    auto& row = table[n];
+    row.fill(0x80); // default: zero all bytes
+    for (std::size_t i = 0; i < n; ++i) {
+      row[i] = u8(i + 16 - n); // shuffle low bytes
+    }
+  }
+
+  return table;
+}
+
 // Precomputed shuffle tables, block sizes 8/4/2 bytes.
+alignas(16) inline constexpr std::array<ShuffleRow, 17> idxs16 = make_shuffle_table_block_256hi();
 alignas(16) inline constexpr ShuffleTable<8> idxs8 = make_shuffle_table_block<8>();
 alignas(16) inline constexpr ShuffleTable<4> idxs4 = make_shuffle_table_block<4>();
 alignas(16) inline constexpr ShuffleTable<2> idxs2 = make_shuffle_table_block<2>();
