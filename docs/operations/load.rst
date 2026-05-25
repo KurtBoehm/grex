@@ -156,5 +156,4 @@ Load Partial (Compile-Time Length)
    - On x86-64, this lets the compiler select a single specialized shuffle/mask path.
    - On Neon, the chosen ``load_first`` + lane-insert pattern is fully constant-folded.
 
-   Super-native vectors use the same half-splitting strategy as the run-time overload, with
-   ``size`` tested at compile time.
+   Super-native vectors use the same half-splitting strategy as the run-time overload, with ``size`` tested at compile time.

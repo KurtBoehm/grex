@@ -30,12 +30,12 @@ Cutoff Mask
 
    - **x86-64-v4 (compressed masks)**:
 
-     - For native masks, builds a bitmask with the lowest :math:`i` bits set via shifts and complement, using the smallest appropriate ``__mmask`` type.
+     - Builds a bitmask with the lowest :math:`i` bits set via shifts and complement using the smallest appropriate ``__mmask`` type.
 
    - **Earlier (broad masks)**:
 
-     - Constructs an index vector via :cpp:func:`~backend::indices`, broadcasts ``i``, and performs :cpp:func:`~backend::compare_lt` to obtain the prefix mask.
-     - 64-bit elements use 32-bit index patterns and comparisons.
+     - Constructs an index vector via :cpp:func:`~backend::indices`, broadcasts ``i``, and uses a ``cmp_gt`` intrinsic to obtain the prefix mask.
+     - 64-bit elements use 32-bit index patterns and comparisons, as the latter are more efficient on AMD before Zen 3 and Intel before Arrow Lake (and just as efficient on newer processors).
 
    Neon
    ====
@@ -72,8 +72,14 @@ Single-Lane Mask
    x86-64
    ======
 
-   - **x86-64-v4 (compressed masks)**: bitfield with a single bit set at position ``i`` in the appropriate ``__mmask``.
-   - **Earlier (broad masks)**: :cpp:func:`~backend::indices` and :cpp:func:`~backend::compare_eq` with broadcast ``i``.
+   - **x86-64-v4 (compressed masks)**:
+
+     - Builds a bitmask with a single bit set at position :math:`i` via a shift using the smallest appropriate ``__mmask`` type.
+
+   - **Earlier (broad masks)**:
+
+     - Constructs an index vector via :cpp:func:`~backend::indices`, broadcasts ``i``, and uses a ``cmp_eq`` intrinsic to obtain the single-lane mask.
+     - 64-bit elements use 32-bit index patterns and comparisons, as the latter are more efficient on AMD Zen and just as fast on Intel.
 
    Neon
    ====

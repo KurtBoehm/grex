@@ -5,7 +5,7 @@ Multibyte Integer Loading
 #########################
 
 Loading of packed integers whose logical value spans :math:`M` bytes into SIMD vectors with element width :math:`N = 2^B` bytes, where :math:`N = \text{bitceil}(M)`.
-The input memory is padded on both sides by at least one full SIMD register.
+The input memory is padded on both sides by the number of bytes in the largest supported SIMD register.
 
 Each native lane of a super-native vector is processed independently.
 
@@ -32,7 +32,7 @@ Each native lane of a super-native vector is processed independently.
    - :math:`M = N`: direct :cpp:func:`~backend::load`.
    - **x86-64-v1**:
 
-     - :math:`N = 8`, :math:`M < 8`, 128-bit output: offset load, shift, merge, shift-back; for :math:`M = 5`:
+     - :math:`N = 8`, :math:`M < 8`, 128-bit output: offset load so that the values end at the end of the register, 64-bit shift of the low half to top-align, merge, then 64-bit shift-back; for :math:`M = 5`:
 
        .. list-table::
           :header-rows: 1
@@ -47,6 +47,8 @@ Each native lane of a super-native vector is processed independently.
             - ``...00000|···11111``
           * - 64-bit right shift by :math:`O` bytes
             - ``00000···|11111···``
+
+       Implemented with one unaligned load, two 64-bit shifts, and a single 64-bit-lane merge (e.g. ``_mm_move_sd``).
 
      - :math:`N = 4`, :math:`M = 3`, 128-bit output: offset load, then shifts/merges:
 
@@ -69,6 +71,8 @@ Each native lane of a super-native vector is processed independently.
           * - 32-bit right shift by 1 byte
             - ``000·|111·|222·|333·``
 
+       Uses mostly 64-bit shifts (faster than 128-bit shifts on AMD up to Zen 2) and unpack-style merges.
+
      - :math:`N = 4`, :math:`M = 3`, 64-bit output: simplified variant:
 
        .. list-table::
@@ -88,11 +92,12 @@ Each native lane of a super-native vector is processed independently.
    - **x86-64-v2+**:
 
      - 128-bit baseline: load packed bytes without offset and shuffle via ``_mm_shuffle_epi8`` with a compile-time table.
-     - :math:`N = 8`, :math:`M = 6`, 128-bit: load with offset 2, ``_mm_shufflelo_epi16`` to reorder the low half, then ``_mm_blend_epi16`` to clear unused high bytes per 64-bit lane.
+     - :math:`N = 8`, :math:`M = 6`, 128-bit: load with offset 2 so values are centred in the register, ``_mm_shufflelo_epi16`` to reorder the low half, then ``_mm_blend_epi16`` to clear unused high bytes per 64-bit lane.
+       This uses only immediate control masks and avoids any constant memory loads.
 
    - **x86-64-v3+ (native 256-bit output)**:
 
-     - Load 256 bits at offset :math:`(S / 2) \cdot O` so each :math:`M`-byte value resides within its 128-bit half after shuffling.
+     - Load 256 bits at offset :math:`(S / 2) \cdot O` so each :math:`M`-byte value resides within its 128-bit half and the useful bytes are centred around bit 128.
      - Build a compile-time ``pshufb`` index vector of length :math:`N \cdot S`.
        For each output byte index :math:`i`:
 
@@ -100,13 +105,28 @@ Each native lane of a super-native vector is processed independently.
        - Otherwise, set to :math:`-1` (``pshufb`` zero).
 
      - Apply ``_mm256_shuffle_epi8`` (within 128-bit lanes) to expand each :math:`M`-byte integer to :math:`N` bytes and zero-fill padding.
+       Each 128-bit lane is handled independently; no cross-lane permutations are used.
 
    - **x86-64-v4 (native 512-bit output)**:
 
-     - Load 512 bits at offset :math:`(S / 2) \cdot O` so each :math:`M`-byte value resides in its final 256-bit half.
+     - Load 512 bits at offset :math:`(S / 2) \cdot O` so each :math:`M`-byte value resides in its final 256-bit half and the payload is centred around bit 256.
+       There are :math:`P = O \cdot S` extra bytes in total, :math:`P / 2` before the first and :math:`P / 2` after the last element.
      - ``_mm512_permutexvar_epi32`` permutes 32-bit chunks (compile-time indices) so each :math:`M`-byte value resides in the target 128-bit lane.
        Bytes in first/last 128-bit lanes are shifted by :math:`\pm (S / 2) \cdot O`; middle lanes stay in place.
        After this, lanes 0 and 2 are bottom-aligned; lanes 1 and 3 are top-aligned.
+
+       Let :math:`P = O \cdot S` and index 32-bit elements by :math:`i \in \{0,\dots,15\}`.
+       The permutation indices :math:`\mathit{idx}_0(i)` for ``_mm512_permutexvar_epi32`` are:
+
+       .. math::
+
+          \mathit{idx}_0(i) =
+          \begin{cases}
+            i + P / 8 & \text{if } i < 4,\\
+            i - P / 8 & \text{if } i \ge 12,\\
+            i         & \text{otherwise.}
+          \end{cases}
+
      - Build a compile-time ``pshufb`` index vector of length :math:`N \cdot S`.
        For each output byte index :math:`i`:
 
@@ -117,6 +137,21 @@ Each native lane of a super-native vector is processed independently.
          - extra offset for top-aligned lanes.
 
        - Otherwise, set to :math:`-1`.
+
+       Equivalently, with :math:`P = O \cdot S` and :math:`i \in \{0,\dots,63\}` the byte index in the 512-bit register, the lane-local shuffle index :math:`\mathit{idx}_1(i)` is
+
+       .. math::
+
+          \mathit{idx}_1(i) =
+          \begin{cases}
+            i \bmod N
+              + \left\lfloor \dfrac{i \bmod 16}{N} \right\rfloor \cdot M
+              + \left(\left\lfloor \dfrac{i}{16} \right\rfloor \bmod 2\right) \cdot P / 4
+              & \text{if } i \bmod N < M,\\[4pt]
+            \mathtt{Zero} & \text{otherwise,}
+          \end{cases}
+
+       where ``Zero`` means a shuffle index of :math:`-1` (lane-local zeroing).
 
      - Apply ``_mm512_shuffle_epi8`` (within 128-bit lanes) to gather the :math:`M` data bytes and zero the :math:`O` padding bytes.
      - Variants using ``vpermb`` or ``vpermi2b``/``vpermt2b`` instead of the first permutation perform worse on Tigerlake and no better on Zen 5, and are not used.

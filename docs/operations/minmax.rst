@@ -23,8 +23,8 @@ Minimum
    - **Floating point**: ``min`` intrinsics.
    - **Integers**:
 
-     - **8-bit signed/16-bit unsigned (x86-64-v1)**: flip the sign bit to reuse unsigned/signed minimum, then flip back.
-     - **32-bit integers (x86-64-v1), 64-bit integers (before x86-64-v4)**: compare via :cpp:func:`~backend::compare_lt` and select with :cpp:func:`~backend::blend`.
+     - **8-bit signed/16-bit unsigned (x86-64-v1)**: flip the sign bit to reuse unsigned/signed minimum, then flip back (based on VCL).
+     - **32-bit integers (x86-64-v1), 64-bit integers (before x86-64-v4)**: compare via :cpp:func:`~backend::compare_lt` and select with :cpp:func:`~backend::blend` (inspired by VCL).
      - **Otherwise**: integer ``min`` intrinsics.
 
    Neon

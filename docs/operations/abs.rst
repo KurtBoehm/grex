@@ -23,22 +23,22 @@ Absolute Value
    - **Floating point**:
 
      - **x86-64-v4**: ``range`` intrinsics with an absolute-value control.
-     - **Earlier**: clear the sign bit via bitwise AND with a constant sign-mask vector.
+     - **Earlier**: clear the sign bit via bitwise AND with a constant sign-mask vector (based on VCL).
 
    - **Signed integers**:
 
      - **x86-64-v4**: ``abs`` intrinsics for all widths (8/16/32/64-bit).
      - **x86-64-v2/v3**:
 
-       - **64-bit**: compare with zero to form a sign mask, then conditionally negate via XOR and subtract.
+       - **64-bit**: compare with zero to form a sign mask, then conditionally negate via XOR and subtract (based on VCL).
        - **8/16/32-bit**: ``abs`` intrinsics.
 
      - **x86-64-v1**:
 
-       - **64-bit**: sign extraction with 32-bit shifts, XOR, and subtract.
-       - **32-bit**: sign extraction with shifts, XOR, and subtract.
-       - **16-bit**: per-lane :math:`\max(c, -c)`.
-       - **8-bit**: per-lane unsigned :math:`\min(c, -c)` exploiting the sign bit.
+       - **64-bit**: sign extraction with 32-bit shifts, XOR, and subtract (based on VCL).
+       - **32-bit**: sign extraction with arithmetic shifts, XOR, and subtract (based on VCL).
+       - **16-bit**: per-lane :math:`\max(c, -c)` (based on VCL).
+       - **8-bit**: per-lane unsigned :math:`\min(c, -c)` exploiting the sign bit (based on VCL).
 
    Neon
    ====
