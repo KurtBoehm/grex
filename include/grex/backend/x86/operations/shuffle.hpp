@@ -91,10 +91,10 @@ shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> /*dst_bytes*/,
   constexpr std::size_t dst_bytes = TIdxs::size * tValueBytes;
   constexpr std::size_t dst_size = dst_bytes / tDstBytes;
 
-  const auto shuf = grex::static_apply<dst_size>([]<std::size_t... tI>() {
+  constexpr auto shuf = grex::static_apply<dst_size>([]<std::size_t... tI>() {
     return std::array<u8, dst_size>{(tI / tValueBytes) * sizeof(Src)...};
   });
-  const auto offs = grex::static_apply<dst_size>(
+  constexpr auto offs = grex::static_apply<dst_size>(
     []<std::size_t... tI>() { return std::array<u8, dst_size>{tI % tValueBytes...}; });
 
   using UnIntVec = NativeVector<u8, dst_bytes>;
@@ -109,8 +109,7 @@ shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> /*dst_bytes*/,
       return rscaled;
     }
   }();
-  const auto shuffled = shuffle_epi8(scaled.registr(), vshuf.r);
-  return add(UnIntVec{shuffled}, voffs);
+  return add(UnIntVec{.r = shuffle_epi8(scaled.registr(), vshuf.r)}, voffs);
 }
 
 template<std::size_t tDstBytes, typename TIdxs, std::size_t tValueBytes>
@@ -151,11 +150,11 @@ inline u32x8 shuffle_indices(SubVector<u16, 4, 8> idxs, IndexTag<4> /*dst_bytes*
 }
 inline u32x8 shuffle_indices(SubVector<u8, 4, 16> idxs, IndexTag<4> /*dst_bytes*/,
                              IndexTag<8> /*value_bytes*/) {
-  const std::array<u8, 16> shuflo{0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
-  const std::array<u8, 16> shufhi{2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3};
-  const auto lo32 = _mm_shuffle_epi8(idxs.full.r, load(shuflo.data(), type_tag<u8x16>).r);
-  const auto hi32 = _mm_shuffle_epi8(idxs.full.r, load(shufhi.data(), type_tag<u8x16>).r);
-  const auto idxs32 = _mm256_slli_epi64(_mm256_setr_m128i(lo32, hi32), 1);
+  const __m256i bcidxs = _mm256_broadcastd_epi32(idxs.registr());
+  const std::array<u8, 32> shuf{0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
+                                2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3};
+  const auto shidxs = _mm256_shuffle_epi8(bcidxs, load(shuf.data(), type_tag<u8x32>).r);
+  const auto idxs32 = _mm256_add_epi64(shidxs, shidxs);
   return {.r = _mm256_add_epi32(idxs32, _mm256_setr_epi32(0, 1, 0, 1, 0, 1, 0, 1))};
 }
 #endif
@@ -350,6 +349,8 @@ GREX_FOREACH_X86_64_LEVEL(GREX_SHFL_ALL)
   GREX_SHFL2(KIND, BITS, GREX_DIVIDE(128, BITS), IDXBITS) \
   GREX_SHFL2(KIND, BITS, GREX_DIVIDE(256, BITS), IDXBITS) \
   GREX_SHFL4(KIND, BITS, GREX_DIVIDE(128, BITS), IDXBITS)
+#define GREX_SHFL_MULTI_64 GREX_SHFL_MULTI_BIG
+#define GREX_SHFL_MULTI_32 GREX_SHFL_MULTI_BIG
 #define GREX_SHFL_MULTI_16(KIND, BITS, IDXBITS) \
   GREX_SHFL_MULTI_BASE(2, KIND, KIND, 16, 16, 8, IDXBITS, _mm256_permutexvar_epi16(vidxs, xtable)) \
   GREX_SHFL_MULTI_BASE(2, KIND, KIND, 16, 32, 16, IDXBITS, \
@@ -366,16 +367,9 @@ GREX_FOREACH_X86_64_LEVEL(GREX_SHFL_ALL)
   MACRO(KIND, BITS, 32) \
   MACRO(KIND, BITS, 16) \
   MACRO(KIND, BITS, 8)
-GREX_SHFL_MULTI(GREX_SHFL_MULTI_BIG, f, 64)
-GREX_SHFL_MULTI(GREX_SHFL_MULTI_BIG, i, 64)
-GREX_SHFL_MULTI(GREX_SHFL_MULTI_BIG, u, 64)
-GREX_SHFL_MULTI(GREX_SHFL_MULTI_BIG, f, 32)
-GREX_SHFL_MULTI(GREX_SHFL_MULTI_BIG, i, 32)
-GREX_SHFL_MULTI(GREX_SHFL_MULTI_BIG, u, 32)
-GREX_SHFL_MULTI(GREX_SHFL_MULTI_16, i, 16)
-GREX_SHFL_MULTI(GREX_SHFL_MULTI_16, u, 16)
-GREX_SHFL_MULTI(GREX_SHFL_MULTI_8, i, 8)
-GREX_SHFL_MULTI(GREX_SHFL_MULTI_8, u, 8)
+#define GREX_SHFL_MULTI_RESOLVER(KIND, BITS, SIZE) \
+  GREX_SHFL_MULTI(GREX_SHFL_MULTI_##BITS, KIND, BITS)
+GREX_FOREACH_TYPE(GREX_SHFL_MULTI_RESOLVER, 128)
 #elif GREX_X86_64_LEVEL == 3
 #define GREX_SHFL_MULTI_VPERMILPD(KIND, BITS, IDXBITS, SIZE) \
   inline VectorFor<KIND##BITS, SIZE> shuffle( \
@@ -439,7 +433,16 @@ shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto in
     // the output is super-native → split the indices
     return merge(shuffle(table, get_low(idxs), index_ub, index_offset),
                  shuffle(table, get_high(idxs), index_ub, index_offset));
-  } else if constexpr (is_supernative<Value, table_size>) {
+  }
+#if GREX_X86_64_LEVEL >= 4
+  else if constexpr (sizeof(Value) * table_size == 128 && !is_supernative<Value, index_size>) {
+    // the size of the lookup table is 1024 bits, the output is at most native → delegate to a
+    // permutex2var implementation
+    const auto xidxs = expand_any(convert(idxs, type_tag<ValueIndex>), index_tag<table_size / 2>);
+    return shrink(shuffle(table, xidxs, index_ub, index_offset), index_tag<index_size>);
+  }
+#endif
+  else if constexpr (is_supernative<Value, table_size>) {
     // the table is super-native → split the table
     const auto lo = shuffle(table.lower, idxs, index_ub, index_offset);
     const auto hi = shuffle(table.upper, idxs, index_ub, index_tag<index_offset + table_size / 2>);

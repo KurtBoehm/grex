@@ -17,40 +17,40 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<Vectorizable T, std::size_t tSize, bool tIsSub = (tSize < backend::min_native_size<T>),
-         bool tIsSuper = (tSize > backend::max_native_size<T>)>
+template<Vectorizable T, std::size_t tSize, bool tIsSub = (tSize < min_native_size<T>),
+         bool tIsSuper = (tSize > max_native_size<T>)>
 struct VectorTrait;
 template<Vectorizable T, std::size_t tSize>
 struct VectorTrait<T, tSize, false, false> {
-  using Type = backend::NativeVector<T, tSize>;
+  using Type = NativeVector<T, tSize>;
 };
 template<Vectorizable T, std::size_t tSize>
 struct VectorTrait<T, tSize, true, false> {
-  using Type = backend::SubVector<T, tSize, backend::min_native_size<T>>;
+  using Type = SubVector<T, tSize, min_native_size<T>>;
 };
 template<Vectorizable T, std::size_t tSize>
 struct VectorTrait<T, tSize, false, true> {
   using Half = VectorTrait<T, tSize / 2>::Type;
-  using Type = backend::SuperVector<Half>;
+  using Type = SuperVector<Half>;
 };
 template<Vectorizable T, std::size_t tSize>
 using VectorFor = VectorTrait<T, tSize>::Type;
 
-template<Vectorizable T, std::size_t tSize, bool tIsSub = (tSize < backend::min_native_size<T>),
-         bool tIsSuper = (tSize > backend::max_native_size<T>)>
+template<Vectorizable T, std::size_t tSize, bool tIsSub = (tSize < min_native_size<T>),
+         bool tIsSuper = (tSize > max_native_size<T>)>
 struct MaskTrait;
 template<Vectorizable T, std::size_t tSize>
 struct MaskTrait<T, tSize, false, false> {
-  using Type = backend::NativeMask<T, tSize>;
+  using Type = NativeMask<T, tSize>;
 };
 template<Vectorizable T, std::size_t tSize>
 struct MaskTrait<T, tSize, true, false> {
-  using Type = backend::SubMask<T, tSize, backend::min_native_size<T>>;
+  using Type = SubMask<T, tSize, min_native_size<T>>;
 };
 template<Vectorizable T, std::size_t tSize>
 struct MaskTrait<T, tSize, false, true> {
   using Half = MaskTrait<T, tSize / 2>::Type;
-  using Type = backend::SuperMask<Half>;
+  using Type = SuperMask<Half>;
 };
 template<Vectorizable T, std::size_t tSize>
 using MaskFor = MaskTrait<T, tSize>::Type;
