@@ -20,7 +20,7 @@
 
 namespace grex::backend {
 template<Vectorizable T, std::size_t tSize>
-inline NativeMask<T, tSize> cutoff_mask(std::size_t i, TypeTag<NativeMask<T, tSize>>) {
+inline NativeMask<T, tSize> cutoff_mask(std::size_t i, TypeTag<NativeMask<T, tSize>> /*tag*/) {
   using U = UnsignedInt<sizeof(T)>;
   const auto idxs = indices(type_tag<NativeVector<U, tSize>>);
   const auto ref = broadcast(U(i), type_tag<NativeVector<U, tSize>>);
@@ -28,7 +28,7 @@ inline NativeMask<T, tSize> cutoff_mask(std::size_t i, TypeTag<NativeMask<T, tSi
 }
 
 template<Vectorizable T, std::size_t tSize>
-inline NativeMask<T, tSize> single_mask(std::size_t i, TypeTag<NativeMask<T, tSize>>) {
+inline NativeMask<T, tSize> single_mask(std::size_t i, TypeTag<NativeMask<T, tSize>> /*tag*/) {
   using U = UnsignedInt<sizeof(T)>;
   const auto idxs = indices(type_tag<NativeVector<U, tSize>>);
   const auto ref = broadcast(U(i), type_tag<NativeVector<U, tSize>>);

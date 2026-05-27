@@ -14,7 +14,6 @@
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
 #include "grex/backend/neon/macros/types.hpp"
-#include "grex/backend/neon/operations/arithmetic.hpp"
 #include "grex/backend/neon/types.hpp"
 
 namespace grex::backend {
@@ -48,7 +47,7 @@ GREX_FOREACH_TYPE(GREX_HADD, 128)
 
 #define GREX_HADD_SUB(KIND, BITS, PART, SIZE) \
   inline KIND##BITS horizontal_add(SubVector<KIND##BITS, PART> v) { \
-    GREX_CAT(GREX_HADD_, GREX_MULTIPLY(BITS, PART), _##BITS)(KIND, BITS, PART) \
+    GREX_CAT(GREX_HADD_, GREX_MULTIPLY(BITS, PART), _##BITS)(KIND, BITS, PART, SIZE) \
   }
 GREX_FOREACH_SUB(GREX_HADD_SUB)
 } // namespace grex::backend

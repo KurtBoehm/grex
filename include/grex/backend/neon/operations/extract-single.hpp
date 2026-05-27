@@ -20,17 +20,17 @@
 
 namespace grex::backend {
 #define GREX_EXTRINGLE(KIND, BITS, SIZE) \
-  inline Scalar<KIND##BITS> extract_single(NativeVector<KIND##BITS, SIZE> v) { \
-    return {.value = GREX_ISUFFIXED(vgetq_lane, KIND, BITS)(v.r, 0)}; \
+  inline KIND##BITS extract_single(NativeVector<KIND##BITS, SIZE> v) { \
+    return GREX_ISUFFIXED(vgetq_lane, KIND, BITS)(v.r, 0); \
   }
 GREX_FOREACH_TYPE(GREX_EXTRINGLE, 128)
 
 template<Vectorizable T, std::size_t tSize>
-inline Scalar<T> extract_single(SubVector<T, tSize> v) {
+inline T extract_single(SubVector<T, tSize> v) {
   return extract_single(v.full);
 }
 template<typename THalf>
-inline Scalar<typename THalf::Value> extract_single(SuperVector<THalf> v) {
+inline ValueOf<THalf> extract_single(SuperVector<THalf> v) {
   return extract_single(v.lower);
 }
 } // namespace grex::backend

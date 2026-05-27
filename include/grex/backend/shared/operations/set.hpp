@@ -23,19 +23,19 @@ inline NativeVector<T, tSize> indices(TypeTag<NativeVector<T, tSize>> /*tag*/) {
 }
 
 // SubVector
-template<Vectorizable T, std::size_t tSize, typename... Ts>
+template<Vectorizable T, std::size_t tSize>
 inline SubVector<T, tSize> zeros(TypeTag<SubVector<T, tSize>> /*tag*/) {
   return SubVector<T, tSize>{zeros(type_tag<NativeVector<T, min_native_size<T>>>)};
 }
-template<Vectorizable T, std::size_t tSize, typename... Ts>
+template<Vectorizable T, std::size_t tSize>
 inline SubVector<T, tSize> undefined(TypeTag<SubVector<T, tSize>> /*tag*/) {
   return SubVector<T, tSize>{undefined(type_tag<NativeVector<T, min_native_size<T>>>)};
 }
-template<Vectorizable T, std::size_t tSize, typename... Ts>
+template<Vectorizable T, std::size_t tSize>
 inline SubVector<T, tSize> broadcast(T value, TypeTag<SubVector<T, tSize>> /*tag*/) {
   return SubVector<T, tSize>{broadcast(value, type_tag<NativeVector<T, min_native_size<T>>>)};
 }
-template<Vectorizable T, std::size_t tSize, typename... Ts>
+template<Vectorizable T, std::size_t tSize>
 inline SubVector<T, tSize> indices(TypeTag<SubVector<T, tSize>> /*tag*/) {
   return SubVector<T, tSize>{indices(type_tag<NativeVector<T, min_native_size<T>>>)};
 }
@@ -49,7 +49,7 @@ template<Vectorizable T, std::size_t tSize>
 inline SubMask<T, tSize> ones(TypeTag<SubMask<T, tSize>> /*tag*/) {
   return SubMask<T, tSize>{ones(type_tag<NativeMask<T, min_native_size<T>>>)};
 }
-template<Vectorizable T, std::size_t tSize, typename... Ts>
+template<Vectorizable T, std::size_t tSize>
 inline SubMask<T, tSize> broadcast(bool value, TypeTag<SubMask<T, tSize>> /*tag*/) {
   return SubMask<T, tSize>{broadcast(value, type_tag<NativeMask<T, min_native_size<T>>>)};
 }

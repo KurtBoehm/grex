@@ -207,13 +207,22 @@ GREX_FOREACH_TYPE(GREX_SET, 128)
 
 GREX_FOREACH_TYPE(GREX_CREATE, 128)
 
-#define GREX_SET_SUB(KIND, BITS, PART, SIZE) \
+#define GREX_VSET_SUB(KIND, BITS, PART, SIZE) \
   inline SubVector<KIND##BITS, PART> set(TypeTag<SubVector<KIND##BITS, PART>>, \
                                          GREX_REPEAT(PART, GREX_SET_PARAM, KIND##BITS)) { \
     const auto m = set##BITS(GREX_REPEAT(PART, GREX_SET_ARG)); \
     return SubVector<KIND##BITS, PART>{as<KIND##BITS>(m)}; \
   }
-GREX_FOREACH_SUB(GREX_SET_SUB)
+GREX_FOREACH_SUB(GREX_VSET_SUB)
+
+#define GREX_MSET_SUB(KIND, BITS, PART, SIZE) \
+  inline SubMask<KIND##BITS, PART> set(TypeTag<SubMask<KIND##BITS, PART>>, \
+                                       GREX_REPEAT(PART, GREX_SET_PARAM, bool)) { \
+    using R = SubVector<u##BITS, PART>; \
+    return SubMask<KIND##BITS, PART>{ \
+      negate(set(type_tag<R>, GREX_REPEAT(PART, GREX_BSET_VAL, u##BITS))).registr()}; \
+  }
+GREX_FOREACH_SUB(GREX_MSET_SUB)
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/set.hpp" // IWYU pragma: export
