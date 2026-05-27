@@ -84,7 +84,7 @@ namespace grex::backend {
   /* [u8(v[4..7]), 0, …, 0] */ \
   const __m128i v1 = _mm_shuffle_epi8(_mm256_extracti128_si256(v.r, 1), idxs); \
   /* [u8(v[0..7]), 0, …, 0] */ \
-  return SubVector<u8, 8, 16>{_mm_unpacklo_epi32(v0, v1)};
+  return SubVector<u8, 8>{_mm_unpacklo_epi32(v0, v1)};
 
 #define GREX_CVT_IMPL_u16_u64_4(...) \
   /* [u16(v[0..3])] as u64x4, remaining lanes cleared */ \
@@ -94,7 +94,7 @@ namespace grex::backend {
   /* [u16(v[0..3])] as u32x4 */ \
   const __m128i vu32 = _mm_packus_epi32(_mm256_castsi256_si128(blended), hu128); \
   /* [u16(v[0..3]), 0, …, 0] */ \
-  return SubVector<u16, 4, 8>{_mm_packus_epi32(vu32, _mm_setzero_si128())};
+  return SubVector<u16, 4>{_mm_packus_epi32(vu32, _mm_setzero_si128())};
 
 // super-native variant: same idea across 512-bit logical vectors.
 #define GREX_CVT_IMPL_u16_u64_8(...) \
@@ -114,7 +114,7 @@ namespace grex::backend {
   /* [u8(v[2]), u8(v[3]), 0, …, 0] */ \
   const __m128i hshf = _mm_shuffle_epi8(_mm256_extracti128_si256(v.r, 1), idxs); \
   /* [u8(v[0..3]), 0, …, 0] */ \
-  return SubVector<u8, 4, 16>{_mm_unpacklo_epi16(lshf, hshf)};
+  return SubVector<u8, 4>{_mm_unpacklo_epi16(lshf, hshf)};
 #endif
 
 // Floating-point conversion: f32↔f64.

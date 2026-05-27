@@ -4,7 +4,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-
 #ifndef INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SHIFT_HPP
 #define INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SHIFT_HPP
 
@@ -19,9 +18,9 @@ namespace grex::backend {
   inline SuperVector<THalf> NAME(SuperVector<THalf> v, AnyIndexTag auto offset) { \
     return {.lower = NAME(v.lower, offset), .upper = NAME(v.upper, offset)}; \
   } \
-  template<IntVectorizable T, std::size_t tPart, std::size_t tSize> \
-  inline SubVector<T, tPart, tSize> NAME(SubVector<T, tPart, tSize> v, AnyIndexTag auto offset) { \
-    return SubVector<T, tPart, tSize>{NAME(v.full, offset)}; \
+  template<IntVectorizable T, std::size_t tSize> \
+  inline SubVector<T, tSize> NAME(SubVector<T, tSize> v, AnyIndexTag auto offset) { \
+    return SubVector<T, tSize>{NAME(v.full, offset)}; \
   }
 
 GREX_SUBSUPER(shift_left)

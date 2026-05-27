@@ -173,7 +173,7 @@ namespace grex::backend {
     GREX_HMINMAX_##KIND(OP, KIND, BITS, SIZE) \
   }
 #define GREX_HMINMAX_SUB(KIND, BITS, PART, SIZE, OP) \
-  inline KIND##BITS horizontal_##OP(SubVector<KIND##BITS, PART, SIZE> v) { \
+  inline KIND##BITS horizontal_##OP(SubVector<KIND##BITS, PART> v) { \
     const auto vf = v.full; \
     GREX_HMINMAX_##KIND(OP, KIND, BITS, PART) \
   }

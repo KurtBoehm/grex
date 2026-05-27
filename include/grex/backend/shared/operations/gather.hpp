@@ -30,7 +30,7 @@ inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
 template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tPart,
          std::size_t tSize>
 inline VectorFor<TValue, tPart> gather(std::span<const TValue, tExtent> data,
-                                       SubVector<TIndex, tPart, tSize> idxs) {
+                                       SubVector<TIndex, tSize> idxs) {
   return static_apply<tPart>([&]<std::size_t... tIdxs> {
     return set(type_tag<VectorFor<TValue, tPart>>,
                data[std::size_t(extract(idxs, index_tag<tIdxs>))]...);
@@ -56,7 +56,7 @@ template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::siz
          std::size_t tSize>
 inline VectorFor<TValue, tPart> mask_gather(std::span<const TValue, tExtent> data,
                                             MaskFor<TValue, tPart> m,
-                                            SubVector<TIndex, tPart, tSize> idxs) {
+                                            SubVector<TIndex, tSize> idxs) {
   return static_apply<tPart>([&]<std::size_t... tIdxs> {
     return set(type_tag<VectorFor<TValue, tPart>>,
                (extract(m, index_tag<tIdxs>) ? data[std::size_t(extract(idxs, index_tag<tIdxs>))]

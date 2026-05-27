@@ -20,6 +20,7 @@
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/expand.hpp"
 #include "grex/backend/x86/operations/intrinsics.hpp"
+#include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
 
@@ -193,32 +194,32 @@ namespace grex::backend {
   const __m128i ivec = GREX_KINDCAST(KIND, i, 32, 128, v.registr()); \
   const __m128i shuf = _mm_shuffle_epi32(ivec, 0b01'01'01'01); \
   const __m128 mvss = _mm_move_ss(_mm_setzero_ps(), _mm_castsi128_ps(shuf)); \
-  return SubVector<KIND##32, 2, 4>{GREX_KINDCAST(f, KIND, 32, 128, mvss)};
+  return SubVector<KIND##32, 2>{GREX_KINDCAST(f, KIND, 32, 128, mvss)};
 #define GREX_ZDSHINGLE_16_4(KIND, ...) \
   /* v[:4] * 2 */ \
   const __m128i shuf = _mm_shuffle_epi32(v.registr(), 0b01'00'01'00); \
   /* [v[1], v[2], v[3]] + [0] * 5 */ \
-  return SubVector<KIND##16, 4, 8>{_mm_bsrli_si128(shuf, 10)};
+  return SubVector<KIND##16, 4>{_mm_bsrli_si128(shuf, 10)};
 #define GREX_ZDSHINGLE_16_2(KIND, ...) \
   /* [v[0], v[1]] * 4 */ \
   const __m128i shuf = _mm_shuffle_epi32(v.registr(), 0); \
   /* [v[1]] + [0] * 7 */ \
-  return SubVector<KIND##16, 2, 8>{_mm_bsrli_si128(shuf, 14)};
+  return SubVector<KIND##16, 2>{_mm_bsrli_si128(shuf, 14)};
 #define GREX_ZDSHINGLE_8_2(KIND, ...) \
   /* [0]*15 + [v[1]] */ \
   const __m128i shuf = _mm_bslli_si128(v.registr(), 14); \
   /* [v[1]] + [0] * 15 */ \
-  return SubVector<KIND##8, 2, 16>{_mm_bsrli_si128(shuf, 15)};
+  return SubVector<KIND##8, 2>{_mm_bsrli_si128(shuf, 15)};
 #define GREX_ZDSHINGLE_8_4(KIND, ...) \
   /* v[:4] * 4 */ \
   const __m128i shuf = _mm_shuffle_epi32(v.registr(), 0); \
   /* v[1:4] + [0] * 13 */ \
-  return SubVector<KIND##8, 4, 16>{_mm_bsrli_si128(shuf, 13)};
+  return SubVector<KIND##8, 4>{_mm_bsrli_si128(shuf, 13)};
 #define GREX_ZDSHINGLE_8_8(KIND, ...) \
   /* v[:8] * 2 */ \
   const __m128i shuf = _mm_shuffle_epi32(v.registr(), 0b01'00'01'00); \
   /* v[1:8] + [0] * 9 */ \
-  return SubVector<KIND##8, 8, 16>{_mm_bsrli_si128(shuf, 9)};
+  return SubVector<KIND##8, 8>{_mm_bsrli_si128(shuf, 9)};
 // 128 bit
 #define GREX_ZDSHINGLE_64_2 GREX_ZDSHINGLE_SHIFT128
 #define GREX_ZDSHINGLE_32_4 GREX_ZDSHINGLE_SHIFT128
@@ -249,20 +250,20 @@ namespace grex::backend {
   const __m128i aval = GREX_KINDCAST(KIND, i, 32, 128, xval); \
   const __m128i unpk = _mm_unpacklo_epi64(ivec, aval); \
   const __m128i shif = _mm_shuffle_epi32(unpk, 0b11'11'10'01); \
-  return SubVector<KIND##32, 2, 4>{GREX_KINDCAST(i, KIND, 32, 128, shif)};
+  return SubVector<KIND##32, 2>{GREX_KINDCAST(i, KIND, 32, 128, shif)};
 #define GREX_VDSHINGLE_16_SUB(KIND, BITS, PART, ...) \
   const __m128i shif = _mm_bsrli_si128(v.registr(), 2); \
-  return SubVector<KIND##16, PART, 8>{mm::insert_epi16(shif, back.value, int_tag<GREX_DECR(PART)>)};
+  return SubVector<KIND##16, PART>{mm::insert_epi16(shif, back.value, int_tag<GREX_DECR(PART)>)};
 #define GREX_VDSHINGLE_16_4 GREX_VDSHINGLE_16_SUB
 #define GREX_VDSHINGLE_16_2 GREX_VDSHINGLE_16_SUB
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_VDSHINGLE_8_SUB(KIND, BITS, PART, ...) \
   const __m128i shif = _mm_bsrli_si128(v.registr(), 1); \
-  return SubVector<KIND##8, PART, 16>{mm::insert_epi8(shif, back.value, int_tag<GREX_DECR(PART)>)};
+  return SubVector<KIND##8, PART>{mm::insert_epi8(shif, back.value, int_tag<GREX_DECR(PART)>)};
 #else
 #define GREX_VDSHINGLE_8_SUB(KIND, BITS, PART, ...) \
   const __m128i ins = mm::insert_epi16(v.registr(), back.value, int_tag<GREX_DIVIDE(PART, 2)>); \
-  return SubVector<KIND##8, PART, 16>{_mm_bsrli_si128(ins, 1)};
+  return SubVector<KIND##8, PART>{_mm_bsrli_si128(ins, 1)};
 #endif
 #define GREX_VDSHINGLE_8_2 GREX_VDSHINGLE_8_SUB
 #define GREX_VDSHINGLE_8_4 GREX_VDSHINGLE_8_SUB
@@ -343,23 +344,23 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_SHINGLE_ALL)
 
 #define GREX_SHINGLE_SUB(KIND, BITS, PART, SIZE, BITPREFIX, REGISTERBITS) \
-  inline SubVector<KIND##BITS, PART, SIZE> shingle_down(SubVector<KIND##BITS, PART, SIZE> v) { \
+  inline SubVector<KIND##BITS, PART> shingle_down(SubVector<KIND##BITS, PART> v) { \
     GREX_CAT(GREX_ZDSHINGLE_, BITS, _, PART)(KIND, BITS, PART, SIZE, BITPREFIX, REGISTERBITS) \
   } \
-  inline SubVector<KIND##BITS, PART, SIZE> shingle_down(SubVector<KIND##BITS, PART, SIZE> v, \
-                                                        Scalar<KIND##BITS> back) { \
+  inline SubVector<KIND##BITS, PART> shingle_down(SubVector<KIND##BITS, PART> v, \
+                                                  Scalar<KIND##BITS> back) { \
     GREX_CAT(GREX_VDSHINGLE_, BITS, _, PART)(KIND, BITS, PART, SIZE, BITPREFIX, REGISTERBITS) \
   }
 GREX_FOREACH_SUB(GREX_SHINGLE_SUB, _mm, 128)
 
 // sub-native vectors: just use the native version
-template<typename T, std::size_t tPart, std::size_t tSize>
-inline SubVector<T, tPart, tSize> shingle_up(SubVector<T, tPart, tSize> v) {
-  return SubVector<T, tPart, tSize>{shingle_up(v.full)};
+template<typename T, std::size_t tSize>
+inline SubVector<T, tSize> shingle_up(SubVector<T, tSize> v) {
+  return SubVector<T, tSize>{shingle_up(v.full)};
 }
-template<typename T, std::size_t tPart, std::size_t tSize>
-inline SubVector<T, tPart, tSize> shingle_up(Scalar<T> front, SubVector<T, tPart, tSize> v) {
-  return SubVector<T, tPart, tSize>{shingle_up(front, v.full)};
+template<typename T, std::size_t tSize>
+inline SubVector<T, tSize> shingle_up(Scalar<T> front, SubVector<T, tSize> v) {
+  return SubVector<T, tSize>{shingle_up(front, v.full)};
 }
 } // namespace grex::backend
 

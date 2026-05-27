@@ -20,12 +20,13 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
-#include "grex/backend/x86/operations/reinterpret.hpp"
 #include "grex/backend/x86/types.hpp" // IWYU pragma: keep
 #include "grex/base.hpp"
 
 #if GREX_X86_64_LEVEL >= 4
 #include <climits>
+
+#include "grex/backend/x86/operations/reinterpret.hpp"
 #else
 #include "grex/backend/x86/operations/mask-convert.hpp"
 #endif
@@ -67,11 +68,9 @@ GREX_FOREACH_X86_64_LEVEL(GREX_MERGE_ALL)
   return {.r = _mm_castsi128_ps( \
             _mm_unpacklo_epi64(_mm_castps_si128(v0.registr()), _mm_castps_si128(v1.registr())))};
 #define GREX_MERGE_i32x2(KIND, BITS, SIZE) \
-  return SubVector<KIND##BITS, SIZE, GREX_DIVIDE(128, BITS)>{ \
-    _mm_unpacklo_epi32(v0.registr(), v1.registr())};
+  return SubVector<KIND##BITS, SIZE>{_mm_unpacklo_epi32(v0.registr(), v1.registr())};
 #define GREX_MERGE_i16x2(KIND, BITS, SIZE) \
-  return SubVector<KIND##BITS, SIZE, GREX_DIVIDE(128, BITS)>{ \
-    _mm_unpacklo_epi16(v0.registr(), v1.registr())};
+  return SubVector<KIND##BITS, SIZE>{_mm_unpacklo_epi16(v0.registr(), v1.registr())};
 #define GREX_MERGE_SUB(KIND, BITS, SIZE, IMPL) \
   inline VectorFor<KIND##BITS, SIZE> merge(VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v0, \
                                            VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v1) { \

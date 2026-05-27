@@ -30,7 +30,7 @@ GREX_FOREACH_TYPE(GREX_HAND, 128)
 
 // At most 64 bits: Extract as integer and compare with all ones
 #define GREX_HAND_SUB_II(KIND, BITS, PART, SIZE, TOTAL) \
-  inline bool horizontal_and(SubMask<KIND##BITS, PART, SIZE> m) { \
+  inline bool horizontal_and(SubMask<KIND##BITS, PART> m) { \
     const auto lo64 = vget_low_u##BITS(m.registr()); \
     const auto reindeer = vreinterpret_u##TOTAL##_u##BITS(lo64); \
     const auto value = vget_lane_u##TOTAL(reindeer, 0); \

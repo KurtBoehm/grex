@@ -35,11 +35,10 @@ inline VectorFor<typename THalf::Value, tDstSize> shrink(SuperVector<THalf> v,
   return shrink(v.lower, dst_size);
 }
 // Shrink sub-native: Change the wrapper class
-template<Vectorizable T, std::size_t tSrcPart, std::size_t tSrcSize, std::size_t tDstSize>
-requires(tDstSize < tSrcPart)
-inline VectorFor<T, tDstSize> shrink(SubVector<T, tSrcPart, tSrcSize> v,
-                                     IndexTag<tDstSize> /*dst_size*/) {
-  return SubVector<T, tDstSize, tSrcSize>{v.full};
+template<Vectorizable T, std::size_t tSrcSize, std::size_t tDstSize>
+requires(tDstSize < tSrcSize)
+inline VectorFor<T, tDstSize> shrink(SubVector<T, tSrcSize> v, IndexTag<tDstSize> /*dst_size*/) {
+  return SubVector<T, tDstSize>{v.full};
 }
 
 template<std::size_t tDstSize, AnyVector TVec>

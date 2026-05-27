@@ -26,17 +26,17 @@ inline void to_array(bool* dst, NativeMask<u8, 16> m) {
   const auto masked = vandq_u8(m.r, vdupq_n_u8(1));
   vst1q_u8(reinterpret_cast<u8*>(dst), masked);
 }
-inline void to_array(bool* dst, SubMask<u8, 8, 16> m) {
+inline void to_array(bool* dst, SubMask<u8, 8> m) {
   const auto masked = vand_u8(vget_low_u8(m.full.r), vdup_n_u8(1));
   vst1_u8(reinterpret_cast<u8*>(dst), masked);
 }
-inline void to_array(bool* dst, SubMask<u8, 4, 16> m) {
+inline void to_array(bool* dst, SubMask<u8, 4> m) {
   const auto masked = vand_u8(vget_low_u8(m.full.r), vdup_n_u8(1));
-  store(reinterpret_cast<u8*>(dst), SubVector<u8, 4, 16>{expand64(masked)});
+  store(reinterpret_cast<u8*>(dst), SubVector<u8, 4>{expand64(masked)});
 }
-inline void to_array(bool* dst, SubMask<u8, 2, 16> m) {
+inline void to_array(bool* dst, SubMask<u8, 2> m) {
   const auto masked = vand_u8(vget_low_u8(m.full.r), vdup_n_u8(1));
-  store(reinterpret_cast<u8*>(dst), SubVector<u8, 2, 16>{expand64(masked)});
+  store(reinterpret_cast<u8*>(dst), SubVector<u8, 2>{expand64(masked)});
 }
 } // namespace grex::backend
 

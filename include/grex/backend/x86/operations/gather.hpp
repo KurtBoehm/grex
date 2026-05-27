@@ -185,7 +185,7 @@ template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::siz
          std::size_t tSize>
 requires(sizeof(TValue) >= 4 && sizeof(TIndex) <= 2)
 inline VectorFor<TValue, tPart> gather(std::span<const TValue, tExtent> data,
-                                       SubVector<TIndex, tPart, tSize> idxs) {
+                                       SubVector<TIndex, tSize> idxs) {
   return gather(data, convert(idxs, type_tag<i32>));
 }
 

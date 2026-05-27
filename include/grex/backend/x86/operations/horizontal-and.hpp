@@ -63,7 +63,7 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_HAND_ALL)
 
 #define GREX_HAND_SUB(KIND, BITS, PART, SIZE) \
-  inline bool horizontal_and(SubMask<KIND##BITS, PART, SIZE> m) { \
+  inline bool horizontal_and(SubMask<KIND##BITS, PART> m) { \
     return GREX_HAND_SUB_IMPL(KIND, BITS, PART, SIZE); \
   }
 GREX_FOREACH_SUB(GREX_HAND_SUB)

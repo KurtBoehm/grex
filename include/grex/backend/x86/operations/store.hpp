@@ -197,7 +197,7 @@ GREX_FOREACH_X86_64_LEVEL(GREX_PARTSTORE_ALL)
 // Sub-native vectors: Separate implementations which ensure to the compiler
 // that only the given amount of memory is ever touched
 #define GREX_STORE_SUB_IMPL(NAME, KIND, BITS, PART, SIZE) \
-  inline void NAME(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src) { \
+  inline void NAME(KIND##BITS* dst, SubVector<KIND##BITS, PART> src) { \
     const __m128i r = GREX_KINDCAST(KIND, i, BITS, 128, src.full.r); \
     GREX_CAT(_mm_storeu_si, GREX_MULTIPLY(BITS, PART))(dst, r); \
   }
@@ -252,8 +252,7 @@ GREX_FOREACH_SUB(GREX_STORE_SUB)
 #define GREX_PARTSTORE_SUB_IMPL(...) return store_part(dst, src.full, size);
 #endif
 #define GREX_PARTSTORE_SUB(KIND, BITS, PART, SIZE) \
-  inline void store_part(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src, \
-                         std::size_t size) { \
+  inline void store_part(KIND##BITS* dst, SubVector<KIND##BITS, PART> src, std::size_t size) { \
     GREX_PARTSTORE_SUB_IMPL(KIND, BITS, PART, SIZE) \
   }
 GREX_FOREACH_SUB(GREX_PARTSTORE_SUB)

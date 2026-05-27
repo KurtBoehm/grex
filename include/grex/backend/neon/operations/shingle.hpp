@@ -88,30 +88,30 @@ GREX_FOREACH_TYPE(GREX_SHINGLE, 128)
 #define GREX_VDSHINGLE_8x2 GREX_VDSHINGLE_x2
 
 #define GREX_SHINGLE_SUB(KIND, BITS, PART, SIZE) \
-  inline SubVector<KIND##BITS, PART, SIZE> shingle_up(SubVector<KIND##BITS, PART, SIZE> v) { \
+  inline SubVector<KIND##BITS, PART> shingle_up(SubVector<KIND##BITS, PART> v) { \
     const auto low64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(v.full.r); \
     const auto ext = GREX_ISUFFIXED(vext, KIND, BITS)(GREX_ISUFFIXED(vdup_n, KIND, BITS)(0), \
                                                       low64, GREX_DECR(GREX_DIVIDE(SIZE, 2))); \
-    return SubVector<KIND##BITS, PART, SIZE>{expand64(ext)}; \
+    return SubVector<KIND##BITS, PART>{expand64(ext)}; \
   } \
-  inline SubVector<KIND##BITS, PART, SIZE> shingle_up(Scalar<KIND##BITS> front, \
-                                                      SubVector<KIND##BITS, PART, SIZE> v) { \
+  inline SubVector<KIND##BITS, PART> shingle_up(Scalar<KIND##BITS> front, \
+                                                SubVector<KIND##BITS, PART> v) { \
     const auto low64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(v.full.r); \
     const auto ext = \
       GREX_ISUFFIXED(vext, KIND, BITS)(low64, low64, GREX_DECR(GREX_DIVIDE(SIZE, 2))); \
     const auto set = GREX_ISUFFIXED(vset_lane, KIND, BITS)(front.value, ext, 0); \
-    return SubVector<KIND##BITS, PART, SIZE>{expand64(set)}; \
+    return SubVector<KIND##BITS, PART>{expand64(set)}; \
   } \
-  inline SubVector<KIND##BITS, PART, SIZE> shingle_down(SubVector<KIND##BITS, PART, SIZE> v) { \
+  inline SubVector<KIND##BITS, PART> shingle_down(SubVector<KIND##BITS, PART> v) { \
     const auto low64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(v.full.r); \
     GREX_CAT(GREX_ZDSHINGLE_, BITS, x, PART)(KIND, BITS); \
-    return SubVector<KIND##BITS, PART, SIZE>{expand64(dst)}; \
+    return SubVector<KIND##BITS, PART>{expand64(dst)}; \
   } \
-  inline SubVector<KIND##BITS, PART, SIZE> shingle_down(SubVector<KIND##BITS, PART, SIZE> v, \
-                                                        Scalar<KIND##BITS> back) { \
+  inline SubVector<KIND##BITS, PART> shingle_down(SubVector<KIND##BITS, PART> v, \
+                                                  Scalar<KIND##BITS> back) { \
     const auto low64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(v.full.r); \
     GREX_CAT(GREX_VDSHINGLE_, BITS, x, PART)(KIND, BITS, SIZE); \
-    return SubVector<KIND##BITS, PART, SIZE>{expand64(dst)}; \
+    return SubVector<KIND##BITS, PART>{expand64(dst)}; \
   }
 GREX_FOREACH_SUB(GREX_SHINGLE_SUB)
 } // namespace grex::backend

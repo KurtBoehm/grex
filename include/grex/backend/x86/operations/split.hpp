@@ -137,10 +137,10 @@ inline MaskFor<T, tSize / 2> split(NativeMask<T, tSize> m, IndexTag<tIdx> tag) {
   const auto r = split(VectorFor<SignedInt<sizeof(T)>, tSize>{m.registr()}, tag).registr();
   return MaskFor<T, tSize / 2>{r};
 }
-template<Vectorizable T, std::size_t tPart, std::size_t tSize, std::size_t tIdx>
-inline MaskFor<T, tPart / 2> split(SubMask<T, tPart, tSize> m, IndexTag<tIdx> tag) {
-  const auto r = split(VectorFor<SignedInt<sizeof(T)>, tPart>{m.registr()}, tag).registr();
-  return MaskFor<T, tPart / 2>{r};
+template<Vectorizable T, std::size_t tSize, std::size_t tIdx>
+inline MaskFor<T, tSize / 2> split(SubMask<T, tSize> m, IndexTag<tIdx> tag) {
+  const auto r = split(VectorFor<SignedInt<sizeof(T)>, tSize>{m.registr()}, tag).registr();
+  return MaskFor<T, tSize / 2>{r};
 }
 #endif
 

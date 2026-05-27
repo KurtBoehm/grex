@@ -145,7 +145,7 @@ namespace grex::backend {
     GREX_HADD_##KIND(KIND, BITS, SIZE, SIZE) \
   }
 #define GREX_HADD_SUB(KIND, BITS, PART, SIZE) \
-  inline KIND##BITS horizontal_add(SubVector<KIND##BITS, PART, SIZE> v) { \
+  inline KIND##BITS horizontal_add(SubVector<KIND##BITS, PART> v) { \
     const auto vf = v.full; \
     GREX_HADD_##KIND(KIND, BITS, PART, SIZE) \
   }

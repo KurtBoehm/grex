@@ -42,12 +42,12 @@ inline NativeVector<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> /*tag*/) 
 // Sub-native vector → sub-native vector:
 // expand to the smallest size where the source or destination element type becomes native,
 // perform the conversion there, then wrap back into a sub-vector.
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
-requires(is_subnative<TDst, tPart>)
-inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> /*tag*/) {
-  using Out = VectorFor<TDst, tPart>;
-  constexpr std::size_t work_size = std::min(tSize, Out::Full::size);
-  static_assert(work_size > tPart);
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
+requires(is_subnative<TDst, tSize>)
+inline VectorFor<TDst, tSize> convert(SubVector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
+  using Out = VectorFor<TDst, tSize>;
+  constexpr std::size_t work_size = std::min(min_native_size<TSrc>, Out::Full::size);
+  static_assert(work_size > tSize);
   const auto s = convert(VectorFor<TSrc, work_size>{v.registr()}, type_tag<TDst>);
   return Out{s.registr()};
 }

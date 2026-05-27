@@ -67,10 +67,10 @@ GREX_FOREACH_TYPE(GREX_HMINMAX, 128)
 #define GREX_HMINMAX_16_8 GREX_HMINMAX_PW
 
 #define GREX_HMINMAX_SUB(KIND, BITS, PART, SIZE) \
-  inline KIND##BITS horizontal_min(SubVector<KIND##BITS, PART, SIZE> v) { \
+  inline KIND##BITS horizontal_min(SubVector<KIND##BITS, PART> v) { \
     GREX_CAT(GREX_HMINMAX_, GREX_MULTIPLY(BITS, PART), _##BITS)(min, KIND, BITS, PART, SIZE) \
   } \
-  inline KIND##BITS horizontal_max(SubVector<KIND##BITS, PART, SIZE> v) { \
+  inline KIND##BITS horizontal_max(SubVector<KIND##BITS, PART> v) { \
     GREX_CAT(GREX_HMINMAX_, GREX_MULTIPLY(BITS, PART), _##BITS)(max, KIND, BITS, PART, SIZE) \
   }
 GREX_FOREACH_SUB(GREX_HMINMAX_SUB)

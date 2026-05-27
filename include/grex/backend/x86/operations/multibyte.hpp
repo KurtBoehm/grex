@@ -111,10 +111,10 @@ inline u32x4 load_multibyte(const u8* ptr, IndexTag<3> /*src*/, TypeTag<u32x4> /
 }
 
 // SSE2 version for partially filled u32x4 (only first 2 lanes valid).
-inline SubVector<u32, 2, 4> load_multibyte(const u8* ptr, IndexTag<3> /*src*/,
-                                           TypeTag<SubVector<u32, 2, 4>> /*dst*/) {
+inline SubVector<u32, 2> load_multibyte(const u8* ptr, IndexTag<3> /*src*/,
+                                        TypeTag<SubVector<u32, 2>> /*dst*/) {
   // .000|111.|....|....
-  const __m128i raw = load(ptr - 1, type_tag<SubVector<u8, 8, 16>>).registr();
+  const __m128i raw = load(ptr - 1, type_tag<SubVector<u8, 8>>).registr();
 
   const __m128i v0 = raw;
   // ·.00|·111|·...|·... (shift left so that the high byte of each element is in place)
@@ -122,7 +122,7 @@ inline SubVector<u32, 2, 4> load_multibyte(const u8* ptr, IndexTag<3> /*src*/,
 
   // .000|·111|·...|·... (move low 32 bits of v0 into high 32 bits of v1 to pack the two elements)
   const __m128 mix = _mm_move_ss(_mm_castsi128_ps(v1), _mm_castsi128_ps(v0));
-  return SubVector<u32, 2, 4>{_mm_srli_epi32(_mm_castps_si128(mix), 8)};
+  return SubVector<u32, 2>{_mm_srli_epi32(_mm_castps_si128(mix), 8)};
 }
 #endif
 

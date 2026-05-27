@@ -59,9 +59,9 @@ inline u32x4 load_multibyte(const u8* ptr, IndexTag<3> /*src*/, TypeTag<u32x4> /
   // 000·|111·|222·|333·
   return {.r = vreinterpretq_u32_u8(vqtbl1q_u8(raw, vld1q_u8(idxs.data())))};
 }
-inline SubVector<u32, 2, 4> load_multibyte(const u8* ptr, IndexTag<3> src,
-                                           TypeTag<SubVector<u32, 2, 4>> /*dst*/) {
-  return SubVector<u32, 2, 4>{load_multibyte(ptr, src, type_tag<u32x4>)};
+inline SubVector<u32, 2> load_multibyte(const u8* ptr, IndexTag<3> src,
+                                        TypeTag<SubVector<u32, 2>> /*dst*/) {
+  return SubVector<u32, 2>{load_multibyte(ptr, src, type_tag<u32x4>)};
 }
 } // namespace grex::backend
 

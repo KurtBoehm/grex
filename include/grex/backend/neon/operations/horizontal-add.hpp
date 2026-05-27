@@ -47,8 +47,8 @@ GREX_FOREACH_TYPE(GREX_HADD, 128)
 #define GREX_HADD_16_8 GREX_HADD_PW
 
 #define GREX_HADD_SUB(KIND, BITS, PART, SIZE) \
-  inline KIND##BITS horizontal_add(SubVector<KIND##BITS, PART, SIZE> v) { \
-    GREX_CAT(GREX_HADD_, GREX_MULTIPLY(BITS, PART), _##BITS)(KIND, BITS, PART, SIZE) \
+  inline KIND##BITS horizontal_add(SubVector<KIND##BITS, PART> v) { \
+    GREX_CAT(GREX_HADD_, GREX_MULTIPLY(BITS, PART), _##BITS)(KIND, BITS, PART) \
   }
 GREX_FOREACH_SUB(GREX_HADD_SUB)
 } // namespace grex::backend

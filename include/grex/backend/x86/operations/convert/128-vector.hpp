@@ -119,12 +119,12 @@ namespace grex::backend {
 // u16x8 → u8x8: keep every second byte of the low 8 elements.
 #define GREX_CVT_IMPL_u8_u16_8(...) \
   const auto m = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, -1, -1, -1, -1, -1, -1, -1, -1); \
-  return SubVector<u8, 8, 16>{_mm_shuffle_epi8(v.r, m)};
+  return SubVector<u8, 8>{_mm_shuffle_epi8(v.r, m)};
 
 // u32x4 → u16x4: select the low 2 bytes from each 32-bit lane.
 #define GREX_CVT_IMPL_u16_u32_4(DSTKIND, DSTBITS, SRCKIND, SRCBITS, SIZE, ...) \
   const auto m = _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1); \
-  return SubVector<u16, SIZE, 8>{_mm_shuffle_epi8(v.registr(), m)};
+  return SubVector<u16, SIZE>{_mm_shuffle_epi8(v.registr(), m)};
 
 // 2-lane variant reuses the same shuffle pattern.
 #define GREX_CVT_IMPL_u16_u32_2 GREX_CVT_IMPL_u16_u32_4
@@ -132,29 +132,29 @@ namespace grex::backend {
 // u64x2 → u32x2: keep the low 32 bits from each 64-bit lane via insertps.
 #define GREX_CVT_IMPL_u32_u64_2(...) \
   const __m128 i = _mm_insert_ps(_mm_castsi128_ps(v.r), _mm_castsi128_ps(v.r), 0b10011100); \
-  return SubVector<u32, 2, 4>{_mm_castps_si128(i)};
+  return SubVector<u32, 2>{_mm_castps_si128(i)};
 
 // u32x4 → u8x4: keep the lowest byte of each 32-bit element.
 #define GREX_CVT_IMPL_u8_u32_4(...) \
   const auto m = _mm_setr_epi8(0, 4, 8, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1); \
-  return SubVector<u8, 4, 16>{_mm_shuffle_epi8(v.r, m)};
+  return SubVector<u8, 4>{_mm_shuffle_epi8(v.r, m)};
 
 // u64x2 → u16x2: keep the low 16 bits of each 64-bit element.
 #define GREX_CVT_IMPL_u16_u64_2(...) \
   const auto m = _mm_setr_epi8(0, 1, 8, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1); \
-  return SubVector<u16, 2, 8>{_mm_shuffle_epi8(v.r, m)};
+  return SubVector<u16, 2>{_mm_shuffle_epi8(v.r, m)};
 
 // u64x2 → u8x2: keep the lowest byte from each 64-bit element.
 #define GREX_CVT_IMPL_u8_u64_2(...) \
   const auto m = _mm_setr_epi8(0, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1); \
-  return SubVector<u8, 2, 16>{_mm_shuffle_epi8(v.r, m)};
+  return SubVector<u8, 2>{_mm_shuffle_epi8(v.r, m)};
 #else
 // x86-64-v1: emulate truncation using older shuffle and pack instructions.
 
 // u16x8 → u8x8: mask out upper 8 bits and use saturated pack as a truncation helper.
 #define GREX_CVT_IMPL_u8_u16_8(...) \
   const auto r = _mm_packus_epi16(_mm_and_si128(v.r, _mm_set1_epi16(0xFF)), _mm_setzero_si128()); \
-  return SubVector<u8, 8, 16>{r};
+  return SubVector<u8, 8>{r};
 
 // super-native variant: u16x16 → u8x16 across both 128-bit halves.
 #define GREX_CVT_IMPL_u8_u16_16(...) \
@@ -169,18 +169,18 @@ namespace grex::backend {
   /* hi = [u16(v[0]), u16(v[1]), -, -, u16(v[2]), u16(v[3]), -, -] */ \
   const auto hi = _mm_shufflehi_epi16(lo, 0b1000); \
   /* sh = [u16(v[0]), u16(v[1]), u16(v[2]), u16(v[3]), -, -, -, -] */ \
-  return SubVector<u16, 4, 8>{_mm_shuffle_epi32(hi, 0b1000)};
+  return SubVector<u16, 4>{_mm_shuffle_epi32(hi, 0b1000)};
 
 // u32x2 → u16x2: same pattern restricted to the low two lanes.
 #define GREX_CVT_IMPL_u16_u32_2(...) \
   /* lo = [u16(v[0]), u16(v[1]), -, ...] */ \
-  return SubVector<u16, 2, 8>{_mm_shufflelo_epi16(v.registr(), 0b1000)};
+  return SubVector<u16, 2>{_mm_shufflelo_epi16(v.registr(), 0b1000)};
 
 // u64x2 → u32x2: cast via shufps, keeping the low 32 bits of each 64-bit lane.
 #define GREX_CVT_IMPL_u32_u64_2(...) \
   /* [u32(v[0]), u32(v[1]), 0, 0] */ \
   const __m128 sh = _mm_shuffle_ps(_mm_castsi128_ps(v.r), _mm_setzero_ps(), 0b1000); \
-  return SubVector<u32, 2, 4>{_mm_castps_si128(sh)};
+  return SubVector<u32, 2>{_mm_castps_si128(sh)};
 
 // u32x4 → u8x4 via intermediate u16/u8 packing.
 #define GREX_CVT_IMPL_u8_u32_4(...) \
@@ -190,7 +190,7 @@ namespace grex::backend {
   const __m128i vu16 = _mm_packus_epi16(vu32, _mm_setzero_si128()); \
   /* [u8(v[0..3]), 0, …, 0] as u8x16 */ \
   const auto r = _mm_packus_epi16(vu16, _mm_setzero_si128()); \
-  return SubVector<u8, 4, 16>{r};
+  return SubVector<u8, 4>{r};
 
 // super-native variants for u32 narrowing at level 1, using two or four 128-bit pieces.
 #define GREX_CVT_IMPL_u8_u32_8(...) \
@@ -199,7 +199,7 @@ namespace grex::backend {
   const __m128i hu32 = _mm_and_si128(v.upper.r, mask); \
   const __m128i vu16 = _mm_packus_epi16(lu32, hu32); \
   const auto r = _mm_packus_epi16(vu16, _mm_setzero_si128()); \
-  return SubVector<u8, 8, 16>{r};
+  return SubVector<u8, 8>{r};
 
 #define GREX_CVT_IMPL_u8_u32_16(...) \
   const __m128i mask = _mm_set1_epi32(0xFF); \
@@ -217,7 +217,7 @@ namespace grex::backend {
   /* lo = [u32(v0), u32(v1), -, -] as u32x4 */ \
   const auto lo = _mm_shuffle_epi32(v.r, 0b1000); \
   /* [u16(v0), u16(v1), -, …, -] */ \
-  return SubVector<u16, 2, 8>{_mm_shufflelo_epi16(lo, 0b1000)};
+  return SubVector<u16, 2>{_mm_shufflelo_epi16(lo, 0b1000)};
 
 // u64x2 → u8x2 via staged narrowing through 32- and 16-bit widths.
 #define GREX_CVT_IMPL_u8_u64_2(...) \
@@ -228,7 +228,7 @@ namespace grex::backend {
   /* [u8(v[0]), u8(v[1]), 0, …, 0] as u16x8 */ \
   const __m128i vu16 = _mm_shufflelo_epi16(vu32, 0b11011000); \
   /* final pack to u8x16, only first two bytes are used */ \
-  return SubVector<u8, 2, 16>{_mm_packus_epi16(vu16, _mm_setzero_si128())};
+  return SubVector<u8, 2>{_mm_packus_epi16(vu16, _mm_setzero_si128())};
 #endif
 
 #if GREX_X86_64_LEVEL < 3
@@ -321,7 +321,7 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_f32_i64_2(...) \
   const __m128 lf32 = _mm_cvtsi64_ss(_mm_undefined_ps(), _mm_cvtsi128_si64(v.r)); \
   const __m128 hf32 = _mm_cvtsi64_ss(_mm_undefined_ps(), extract(v, 1)); \
-  return SubVector<f32, 2, 4>{_mm_unpacklo_ps(lf32, hf32)};
+  return SubVector<f32, 2>{_mm_unpacklo_ps(lf32, hf32)};
 
 // u64 → f32: compute v/2 (rounded to even) as i64, convert to f32, then multiply by 2.
 #define GREX_CVT_IMPL_f32_u64_2(...) \
@@ -334,7 +334,7 @@ namespace grex::backend {
   /* (v / 2) as f32 */ \
   const __m128 fhalf = convert(i64x2{half}, type_tag<f32>).full.r; \
   /* restore v by multiplying by 2 in f32 */ \
-  return SubVector<f32, 2, 4>{_mm_add_ps(fhalf, fhalf)};
+  return SubVector<f32, 2>{_mm_add_ps(fhalf, fhalf)};
 #endif
 
 // u32→f32
@@ -431,7 +431,7 @@ namespace grex::backend {
   const __m128i mi32 = _mm_and_si128(oi32, sign); \
   /* i32(v[i]) = u32(v[i]) if 0 ≤ v[i] < 2^31 */ \
   /* i32(v[i] - 2^31) | 2^31 = u32(v[i]) if v[i] ≥ 2^31 */ \
-  return SubVector<u32, 2, 4>{_mm_or_si128(vi32, mi32)};
+  return SubVector<u32, 2>{_mm_or_si128(vi32, mi32)};
 #endif
 
 // Smaller integer destinations via a temporary i32 conversion.
@@ -459,7 +459,7 @@ namespace grex::backend {
   /* v - [2^63, 2^63] as f32x4, mapping u64→i64 domain */ \
   const __m128 voff = _mm_sub_ps(v.registr(), _mm_castsi128_ps(_mm_set1_epi32(0x5f000000))); \
   /* [i64(v[i] - 2^63)] */ \
-  const __m128i oi64 = convert(SubVector<f32, 2, 4>{voff}, type_tag<i64>).r; \
+  const __m128i oi64 = convert(SubVector<f32, 2>{voff}, type_tag<i64>).r; \
   /* [i64(v[i])] with 0x8000000000000000 = 2^63 in place of values ≥ 2^63 */ \
   const __m128i vi64 = convert(v, type_tag<i64>).r; \
   /* sign[i] is true if v[i] < 0 or v[i] ≥ 2^63 */ \

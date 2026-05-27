@@ -4,7 +4,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-
 #ifndef INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_COMPARE_HPP
 #define INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_COMPARE_HPP
 
@@ -15,10 +14,9 @@
 
 namespace grex::backend {
 #define GREX_NN_CMP(NAME) \
-  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
-  inline SubMask<T, tPart, tSize> NAME(SubVector<T, tPart, tSize> a, \
-                                       SubVector<T, tPart, tSize> b) { \
-    return SubMask<T, tPart, tSize>{NAME(a.full, b.full)}; \
+  template<Vectorizable T, std::size_t tSize> \
+  inline SubMask<T, tSize> NAME(SubVector<T, tSize> a, SubVector<T, tSize> b) { \
+    return SubMask<T, tSize>{NAME(a.full, b.full)}; \
   } \
   template<typename THalf> \
   inline auto NAME(SuperVector<THalf> a, SuperVector<THalf> b) { \

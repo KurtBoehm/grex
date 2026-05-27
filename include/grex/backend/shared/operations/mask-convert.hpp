@@ -15,9 +15,9 @@
 
 namespace grex::backend {
 // Convert a mask to signed integers
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubVector<SignedInt<sizeof(T)>, tPart, tSize> mask2vector(SubMask<T, tPart, tSize> m) {
-  return SubVector<SignedInt<sizeof(T)>, tPart, tSize>{mask2vector(m.full)};
+template<Vectorizable T, std::size_t tSize>
+inline SubVector<SignedInt<sizeof(T)>, tSize> mask2vector(SubMask<T, tSize> m) {
+  return SubVector<SignedInt<sizeof(T)>, tSize>{mask2vector(m.full)};
 }
 template<typename THalf>
 inline VectorFor<SignedInt<sizeof(typename THalf::VectorValue)>, 2 * THalf::size>
@@ -26,10 +26,10 @@ mask2vector(SuperMask<THalf> m) {
 }
 
 // Convert (signed) integers to a mask
-template<SignedIntVectorizable T, std::size_t tPart, std::size_t tSize, Vectorizable TDst>
+template<SignedIntVectorizable T, std::size_t tSize, Vectorizable TDst>
 requires(sizeof(T) == sizeof(TDst))
-inline SubMask<TDst, tPart, tSize> vector2mask(SubVector<T, tPart, tSize> m, TypeTag<TDst> tag) {
-  return SubMask<TDst, tPart, tSize>{vector2mask(m.full, tag)};
+inline SubMask<TDst, tSize> vector2mask(SubVector<T, tSize> m, TypeTag<TDst> tag) {
+  return SubMask<TDst, tSize>{vector2mask(m.full, tag)};
 }
 template<typename THalf, Vectorizable TDst>
 requires(SignedIntVectorizable<typename THalf::Value> &&

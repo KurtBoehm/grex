@@ -18,15 +18,15 @@ inline void to_array(bool* dst, NativeMask<u8, 16> m) {
   const auto masked = _mm_maskz_mov_epi8(m.r, _mm_set1_epi8(1));
   _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), masked);
 }
-inline void to_array(bool* dst, SubMask<u8, 8, 16> m) {
+inline void to_array(bool* dst, SubMask<u8, 8> m) {
   const auto masked = _mm_maskz_mov_epi8(m.full.r, _mm_set1_epi8(1));
   _mm_storeu_si64(static_cast<void*>(dst), masked);
 }
-inline void to_array(bool* dst, SubMask<u8, 4, 16> m) {
+inline void to_array(bool* dst, SubMask<u8, 4> m) {
   const auto masked = _mm_maskz_mov_epi8(m.full.r, _mm_set1_epi8(1));
   _mm_storeu_si32(static_cast<void*>(dst), masked);
 }
-inline void to_array(bool* dst, SubMask<u8, 2, 16> m) {
+inline void to_array(bool* dst, SubMask<u8, 2> m) {
   const auto masked = _mm_maskz_mov_epi8(m.full.r, _mm_set1_epi8(1));
   _mm_storeu_si16(static_cast<void*>(dst), masked);
 }
@@ -43,15 +43,15 @@ inline void to_array(bool* dst, NativeMask<u8, 16> m) {
   const auto masked = _mm_and_si128(m.r, _mm_set1_epi8(1));
   _mm_storeu_si128(reinterpret_cast<__m128i*>(dst), masked);
 }
-inline void to_array(bool* dst, SubMask<u8, 8, 16> m) {
+inline void to_array(bool* dst, SubMask<u8, 8> m) {
   const auto masked = _mm_and_si128(m.full.r, _mm_set1_epi8(1));
   _mm_storeu_si64(static_cast<void*>(dst), masked);
 }
-inline void to_array(bool* dst, SubMask<u8, 4, 16> m) {
+inline void to_array(bool* dst, SubMask<u8, 4> m) {
   const auto masked = _mm_and_si128(m.full.r, _mm_set1_epi8(1));
   _mm_storeu_si32(static_cast<void*>(dst), masked);
 }
-inline void to_array(bool* dst, SubMask<u8, 2, 16> m) {
+inline void to_array(bool* dst, SubMask<u8, 2> m) {
   const auto masked = _mm_and_si128(m.full.r, _mm_set1_epi8(1));
   _mm_storeu_si16(static_cast<void*>(dst), masked);
 }

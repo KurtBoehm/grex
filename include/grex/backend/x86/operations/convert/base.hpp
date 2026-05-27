@@ -220,10 +220,10 @@ inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst>
 
 // Sub-native to super-native, integer → any: convert to the smallest integer type for which
 // the vector with tPart lanes is native and go from there
-template<Vectorizable TDst, IntVectorizable TSrc, std::size_t tPart, std::size_t tSize>
-requires(is_supernative<TDst, tPart>)
-inline VectorFor<TDst, tPart> convert(SubVector<TSrc, tPart, tSize> v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<CopySignInt<TSrc, 16 / tPart>>), tag);
+template<Vectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
+requires(is_supernative<TDst, tSize>)
+inline VectorFor<TDst, tSize> convert(SubVector<TSrc, tSize> v, TypeTag<TDst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<TSrc, 16 / tSize>>), tag);
 }
 
 // Super-native → sub-native/native for integers:

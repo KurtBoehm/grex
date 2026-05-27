@@ -13,15 +13,14 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubVector<T, tPart, tSize> blend_zero(SubMask<T, tPart, tSize> m,
-                                             SubVector<T, tPart, tSize> v1) {
-  return SubVector<T, tPart, tSize>{blend_zero(m.full, v1.full)};
+template<Vectorizable T, std::size_t tSize>
+inline SubVector<T, tSize> blend_zero(SubMask<T, tSize> m, SubVector<T, tSize> v1) {
+  return SubVector<T, tSize>{blend_zero(m.full, v1.full)};
 }
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubVector<T, tPart, tSize> blend(SubMask<T, tPart, tSize> m, SubVector<T, tPart, tSize> v0,
-                                        SubVector<T, tPart, tSize> v1) {
-  return SubVector<T, tPart, tSize>{blend(m.full, v0.full, v1.full)};
+template<Vectorizable T, std::size_t tSize>
+inline SubVector<T, tSize> blend(SubMask<T, tSize> m, SubVector<T, tSize> v0,
+                                 SubVector<T, tSize> v1) {
+  return SubVector<T, tSize>{blend(m.full, v0.full, v1.full)};
 }
 
 template<typename TVecHalf, typename TMaskHalf>

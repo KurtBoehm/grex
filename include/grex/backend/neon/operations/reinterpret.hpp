@@ -153,8 +153,8 @@ template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
 inline NativeVector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)> as(NativeVector<TSrc, tSize> src) {
   return NativeVector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)>{as<TDst>(src.r)};
 }
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tPart, std::size_t tSize>
-inline VectorFor<TDst, tPart * sizeof(TSrc) / sizeof(TDst)> as(SubVector<TSrc, tPart, tSize> src) {
+template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
+inline VectorFor<TDst, tPart * sizeof(TSrc) / sizeof(TDst)> as(SubVector<TSrc, tSize> src) {
   using Out = VectorFor<TDst, tPart * sizeof(TSrc) / sizeof(TDst)>;
   return Out{as<TDst>(src.full)};
 }

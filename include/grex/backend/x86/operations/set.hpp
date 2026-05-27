@@ -91,10 +91,10 @@ namespace grex::backend {
   }
 
 #define GREX_SUBSET_MASK(KIND, BITS, PART, SIZE) \
-  inline SubMask<KIND##BITS, PART, SIZE> set(TypeTag<SubMask<KIND##BITS, PART, SIZE>>, \
-                                             GREX_REPEAT(PART, GREX_SET_ARG, bool)) { \
+  inline SubMask<KIND##BITS, PART> set(TypeTag<SubMask<KIND##BITS, PART>>, \
+                                       GREX_REPEAT(PART, GREX_SET_ARG, bool)) { \
     const auto r = GREX_MMASK_CAST(SIZE, GREX_CMASK_SET(PART, GREX_CAT(u, GREX_MAX(SIZE, 8)))); \
-    return SubMask<KIND##BITS, PART, SIZE>{r}; \
+    return SubMask<KIND##BITS, PART>{r}; \
   }
 GREX_FOREACH_SUB(GREX_SUBSET_MASK)
 #else
@@ -116,11 +116,11 @@ GREX_FOREACH_SUB(GREX_SUBSET_MASK)
     return {.r = set(type_tag<V>, GREX_REPEAT(SIZE, GREX_SET_NEGVAL, BITS)).r}; \
   }
 
-template<Vectorizable T, std::size_t tPart, std::size_t tSize, typename... Ts>
-inline SubMask<T, tPart, tSize> set(TypeTag<SubMask<T, tPart, tSize>> /*tag*/, Ts... values) {
+template<Vectorizable T, std::size_t tSize, typename... Ts>
+inline SubMask<T, tSize> set(TypeTag<SubMask<T, tSize>> /*tag*/, Ts... values) {
   using SV = SignedInt<sizeof(T)>;
-  const auto r = set(type_tag<SubVector<SV, tPart, tSize>>, -SV(values)...).registr();
-  return SubMask<T, tPart, tSize>{r};
+  const auto r = set(type_tag<SubVector<SV, tSize>>, -SV(values)...).registr();
+  return SubMask<T, tSize>{r};
 }
 #endif
 
@@ -153,8 +153,8 @@ GREX_FOREACH_X86_64_LEVEL(GREX_SET_ALL)
 ////////////////////
 
 #define GREX_SUBSET_HEAD(KIND, BITS, PART, SIZE) \
-  inline SubVector<KIND##BITS, PART, SIZE> set(TypeTag<SubVector<KIND##BITS, PART, SIZE>>, \
-                                               GREX_REPEAT(PART, GREX_SET_ARG, KIND##BITS))
+  inline SubVector<KIND##BITS, PART> set(TypeTag<SubVector<KIND##BITS, PART>>, \
+                                         GREX_REPEAT(PART, GREX_SET_ARG, KIND##BITS))
 
 // Basic integer strategy: convert every even-indexed value directly, insert every uneven-indexed
 // value, and unpack until everything is in place
@@ -162,23 +162,23 @@ GREX_FOREACH_X86_64_LEVEL(GREX_SET_ALL)
 #define GREX_SUBSET_INSERT(KIND, BITS, PART, SIZE) \
   const auto vv0 = expand(Scalar{v0}, grex::index_tag<SIZE>, grex::false_tag).r; \
   const auto vv1 = GREX_KINDCAST_SINGLE(KIND, i, BITS, v1); \
-  return SubVector<KIND##BITS, PART, SIZE>{_mm_insert_epi##BITS(vv0, vv1, 1)};
+  return SubVector<KIND##BITS, PART>{_mm_insert_epi##BITS(vv0, vv1, 1)};
 #define GREX_SUBSET_FALLBACK(KIND, BITS, PART, SIZE) \
   const auto vv0 = expand(Scalar{v0}, grex::index_tag<SIZE>, grex::false_tag).r; \
   const auto vv1 = expand(Scalar{v1}, grex::index_tag<SIZE>, grex::false_tag).r; \
-  return SubVector<KIND##BITS, PART, SIZE>{_mm_unpacklo_epi##BITS(vv0, vv1)};
+  return SubVector<KIND##BITS, PART>{_mm_unpacklo_epi##BITS(vv0, vv1)};
 #define GREX_SUBSET4(KIND, BITS, PART, SIZE) \
-  using Half = SubVector<KIND##BITS, GREX_DIVIDE(PART, 2), SIZE>; \
+  using Half = SubVector<KIND##BITS, GREX_DIVIDE(PART, 2)>; \
   const auto w0 = set(type_tag<Half>, v0, v1).registr(); \
   const auto w1 = set(type_tag<Half>, v2, v3).registr(); \
   const auto packed = GREX_CAT(_mm_unpacklo_epi, GREX_MULTIPLY(BITS, 2))(w0, w1); \
-  return SubVector<KIND##BITS, PART, SIZE>{packed};
+  return SubVector<KIND##BITS, PART>{packed};
 #define GREX_SUBSET8(KIND, BITS, PART, SIZE) \
-  using Half = SubVector<KIND##BITS, GREX_DIVIDE(PART, 2), SIZE>; \
+  using Half = SubVector<KIND##BITS, GREX_DIVIDE(PART, 2)>; \
   const auto w0 = set(type_tag<Half>, v0, v1, v2, v3).registr(); \
   const auto w1 = set(type_tag<Half>, v4, v5, v6, v7).registr(); \
   const auto packed = GREX_CAT(_mm_unpacklo_epi, GREX_MULTIPLY(BITS, 4))(w0, w1); \
-  return SubVector<KIND##BITS, PART, SIZE>{packed};
+  return SubVector<KIND##BITS, PART>{packed};
 
 #define GREX_SUBSET_INT(BITS, PART, SIZE, IMPL) \
   GREX_SUBSET_HEAD(i, BITS, PART, SIZE) { \
@@ -206,7 +206,7 @@ GREX_SUBSET_INT(8, 8, 16, GREX_SUBSET8)
 GREX_SUBSET_HEAD(f, 32, 2, 4) {
   const auto vv0 = expand(Scalar{v0}, grex::index_tag<4>, grex::false_tag).r;
   const auto vv1 = expand(Scalar{v1}, grex::index_tag<4>, grex::false_tag).r;
-  return SubVector<f32, 2, 4>{_mm_unpacklo_ps(vv0, vv1)};
+  return SubVector<f32, 2>{_mm_unpacklo_ps(vv0, vv1)};
 }
 } // namespace grex::backend
 

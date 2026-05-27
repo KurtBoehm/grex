@@ -14,6 +14,7 @@
 #include "grex/backend/macros/conditional.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/repeat.hpp"
+#include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/arithmetic.hpp"
 #include "grex/backend/neon/operations/expand.hpp"
 #include "grex/backend/neon/operations/undefined.hpp"
@@ -207,10 +208,10 @@ GREX_FOREACH_TYPE(GREX_SET, 128)
 GREX_FOREACH_TYPE(GREX_CREATE, 128)
 
 #define GREX_SET_SUB(KIND, BITS, PART, SIZE) \
-  inline SubVector<KIND##BITS, PART, SIZE> set(TypeTag<SubVector<KIND##BITS, PART, SIZE>>, \
-                                               GREX_REPEAT(PART, GREX_SET_PARAM, KIND##BITS)) { \
+  inline SubVector<KIND##BITS, PART> set(TypeTag<SubVector<KIND##BITS, PART>>, \
+                                         GREX_REPEAT(PART, GREX_SET_PARAM, KIND##BITS)) { \
     const auto m = set##BITS(GREX_REPEAT(PART, GREX_SET_ARG)); \
-    return SubVector<KIND##BITS, PART, SIZE>{as<KIND##BITS>(m)}; \
+    return SubVector<KIND##BITS, PART>{as<KIND##BITS>(m)}; \
   }
 GREX_FOREACH_SUB(GREX_SET_SUB)
 } // namespace grex::backend

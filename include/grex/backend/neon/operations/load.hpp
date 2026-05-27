@@ -147,16 +147,16 @@ GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, IndexT
   return TVec{as<Value>(out)};
 }
 
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-GREX_ALWAYS_INLINE inline SubVector<T, tPart, tSize>
-load(const T* src, TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
-  using Dst = SubVector<T, tPart, tSize>;
+template<Vectorizable T, std::size_t tSize>
+GREX_ALWAYS_INLINE inline SubVector<T, tSize> load(const T* src,
+                                                   TypeTag<SubVector<T, tSize>> /*tag*/) {
+  using Dst = SubVector<T, tSize>;
   return Dst{load_part(src, index_tag<tPart>, type_tag<Dst>)};
 }
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-GREX_ALWAYS_INLINE inline SubVector<T, tPart, tSize>
-load_aligned(const T* src, TypeTag<SubVector<T, tPart, tSize>> /*tag*/) {
-  using Dst = SubVector<T, tPart, tSize>;
+template<Vectorizable T, std::size_t tSize>
+GREX_ALWAYS_INLINE inline SubVector<T, tSize> load_aligned(const T* src,
+                                                           TypeTag<SubVector<T, tSize>> /*tag*/) {
+  using Dst = SubVector<T, tSize>;
   return Dst{load_part(src, index_tag<tPart>, type_tag<Dst>)};
 }
 

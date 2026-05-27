@@ -12,9 +12,9 @@
   inline Super##TYPE<THalf> NAME(Super##TYPE<THalf> v) { \
     return {.lower = NAME(v.lower), .upper = NAME(v.upper)}; \
   } \
-  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
-  inline Sub##TYPE<T, tPart, tSize> NAME(Sub##TYPE<T, tPart, tSize> v) { \
-    return Sub##TYPE<T, tPart, tSize>{NAME(v.full)}; \
+  template<Vectorizable T, std::size_t tSize> \
+  inline Sub##TYPE<T, tSize> NAME(Sub##TYPE<T, tSize> v) { \
+    return Sub##TYPE<T, tSize>{NAME(v.full)}; \
   }
 
 #define GREX_NN_BINARY(TYPE, NAME) \
@@ -22,10 +22,9 @@
   inline Super##TYPE<THalf> NAME(Super##TYPE<THalf> a, Super##TYPE<THalf> b) { \
     return {.lower = NAME(a.lower, b.lower), .upper = NAME(a.upper, b.upper)}; \
   } \
-  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
-  inline Sub##TYPE<T, tPart, tSize> NAME(Sub##TYPE<T, tPart, tSize> a, \
-                                         Sub##TYPE<T, tPart, tSize> b) { \
-    return Sub##TYPE<T, tPart, tSize>{NAME(a.full, b.full)}; \
+  template<Vectorizable T, std::size_t tSize> \
+  inline Sub##TYPE<T, tSize> NAME(Sub##TYPE<T, tSize> a, Sub##TYPE<T, tSize> b) { \
+    return Sub##TYPE<T, tSize>{NAME(a.full, b.full)}; \
   }
 
 #define GREX_NN_TERNARY(TYPE, NAME) \
@@ -34,10 +33,10 @@
                                  Super##TYPE<THalf> c) { \
     return {.lower = NAME(a.lower, b.lower, c.lower), .upper = NAME(a.upper, b.upper, c.upper)}; \
   } \
-  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
-  inline Sub##TYPE<T, tPart, tSize> NAME( \
-    Sub##TYPE<T, tPart, tSize> a, Sub##TYPE<T, tPart, tSize> b, Sub##TYPE<T, tPart, tSize> c) { \
-    return Sub##TYPE<T, tPart, tSize>{NAME(a.full, b.full, c.full)}; \
+  template<Vectorizable T, std::size_t tSize> \
+  inline Sub##TYPE<T, tSize> NAME(Sub##TYPE<T, tSize> a, Sub##TYPE<T, tSize> b, \
+                                  Sub##TYPE<T, tSize> c) { \
+    return Sub##TYPE<T, tSize>{NAME(a.full, b.full, c.full)}; \
   }
 
 #define GREX_NNVECTOR_UNARY(NAME) GREX_NN_UNARY(Vector, NAME)

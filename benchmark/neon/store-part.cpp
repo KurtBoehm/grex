@@ -1,10 +1,14 @@
+#include <algorithm>
+#include <array>
+#include <concepts>
 #include <cstddef>
 #include <random>
+#include <utility>
+#include <vector>
 
 #include <benchmark/benchmark.h>
 #include <pcg_extras.hpp>
 #include <pcg_random.hpp>
-#include <vector>
 
 #include "grex/grex.hpp"
 
@@ -82,8 +86,8 @@ requires(be::AnyNativeVector<TVec> || be::AnySubNativeVector<TVec>)
 GREX_FOREACH_TYPE(BM_PARTSTORE, 128)
 
 #define BM_SUBPARTSTORE(KIND, BITS, PART, SIZE) \
-  [[gnu::noinline]] void store_part_switch( \
-    KIND##BITS* dst, be::SubVector<KIND##BITS, PART, SIZE> src, std::size_t size) { \
+  [[gnu::noinline]] void store_part_switch(KIND##BITS* dst, be::SubVector<KIND##BITS, PART> src, \
+                                           std::size_t size) { \
     switch (size) { \
       GREX_REPEAT(PART, BM_PARTSTORE_CASE, KIND, BITS) \
       [[unlikely]] BM_PARTSTORE_CASE(PART, PART, KIND, BITS) default : std::unreachable(); \

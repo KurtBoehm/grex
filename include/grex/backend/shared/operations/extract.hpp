@@ -14,12 +14,12 @@
 
 namespace grex::backend {
 // SubVector/SubMask
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline T extract(SubVector<T, tPart, tSize> v, std::size_t index) {
+template<Vectorizable T, std::size_t tSize>
+inline T extract(SubVector<T, tSize> v, std::size_t index) {
   return extract(v.full, index);
 }
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline bool extract(SubMask<T, tPart, tSize> v, std::size_t index) {
+template<Vectorizable T, std::size_t tSize>
+inline bool extract(SubMask<T, tSize> v, std::size_t index) {
   return extract(v.full, index);
 }
 

@@ -22,23 +22,24 @@
 #include "grex/backend/neon/operations/split.hpp"
 #include "grex/backend/neon/types.hpp"
 #include "grex/backend/shared/operations/set.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
 inline u8x16 shuffle_indices(u8x16 idxs, IndexTag<1> /*value_bytes*/) {
   return idxs;
 }
-inline u8x16 shuffle_indices(SubVector<u8, 8, 16> idxs, IndexTag<2> /*value_bytes*/) {
+inline u8x16 shuffle_indices(SubVector<u8, 8> idxs, IndexTag<2> /*value_bytes*/) {
   const auto zip = vzip1q_u8(idxs.full.r, idxs.full.r);
   const auto shift = vaddq_u8(zip, zip);
   return {.r = vorrq_u8(shift, as<u8>(vdupq_n_u16(0x0100)))};
 }
-inline u8x16 shuffle_indices(SubVector<u8, 4, 16> idxs, IndexTag<4> /*value_bytes*/) {
+inline u8x16 shuffle_indices(SubVector<u8, 4> idxs, IndexTag<4> /*value_bytes*/) {
   constexpr std::array<u8, 16> shuf_arr{0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3};
   const auto shift = vshlq_n_u8(idxs.full.r, 2);
   const auto shuf = vqtbl1q_u8(shift, vld1q_u8(shuf_arr.data()));
   return {.r = vorrq_u8(shuf, as<u8>(vdupq_n_u32(0x03020100)))};
 }
-inline u8x16 shuffle_indices(SubVector<u8, 2, 16> idxs, IndexTag<8> /*value_bytes*/) {
+inline u8x16 shuffle_indices(SubVector<u8, 2> idxs, IndexTag<8> /*value_bytes*/) {
   constexpr std::array<u8, 16> shuf_arr{0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
   const auto shift = vshlq_n_u8(idxs.full.r, 3);
   const auto shuf = vqtbl1q_u8(shift, vld1q_u8(shuf_arr.data()));
@@ -48,20 +49,20 @@ inline u8x16 shuffle_indices(SubVector<u8, 2, 16> idxs, IndexTag<8> /*value_byte
 inline u8x16 shuffle_indices(VectorFor<u16, 16> idxs, IndexTag<1> /*value_bytes*/) {
   return {.r = vuzp1q_u8(as<u8>(idxs.lower.r), as<u8>(idxs.upper.r))};
 }
-inline SubVector<u8, 8, 16> shuffle_indices(u16x8 idxs, IndexTag<1> /*value_bytes*/) {
-  return SubVector<u8, 8, 16>{{.r = vuzp1q_u8(as<u8>(idxs.r), as<u8>(idxs.r))}};
+inline SubVector<u8, 8> shuffle_indices(u16x8 idxs, IndexTag<1> /*value_bytes*/) {
+  return SubVector<u8, 8>{{.r = vuzp1q_u8(as<u8>(idxs.r), as<u8>(idxs.r))}};
 }
 inline u8x16 shuffle_indices(u16x8 idxs, IndexTag<2> /*value_bytes*/) {
   const auto trn = vtrn1q_u8(as<u8>(idxs.r), as<u8>(idxs.r));
   const auto shift = vaddq_u8(trn, trn);
   return {.r = vorrq_u8(shift, as<u8>(vdupq_n_u16(0x0100)))};
 }
-inline u8x16 shuffle_indices(SubVector<u16, 4, 8> idxs, IndexTag<4> /*value_bytes*/) {
+inline u8x16 shuffle_indices(SubVector<u16, 4> idxs, IndexTag<4> /*value_bytes*/) {
   const auto idxs32 = vmovl_u16(vget_low_u16(idxs.full.r));
   const auto mul = as<u8>(vmulq_u32(idxs32, vdupq_n_u32(0x04040404)));
   return {.r = vorrq_u8(mul, as<u8>(vdupq_n_u32(0x03020100)))};
 }
-inline u8x16 shuffle_indices(SubVector<u16, 2, 8> idxs, IndexTag<8> /*value_bytes*/) {
+inline u8x16 shuffle_indices(SubVector<u16, 2> idxs, IndexTag<8> /*value_bytes*/) {
   constexpr std::array<u8, 16> shuf_arr{0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2};
   const auto shift = vshlq_n_u8(as<u8>(idxs.full.r), 3);
   const auto shuf = vqtbl1q_u8(shift, vld1q_u8(shuf_arr.data()));
@@ -76,35 +77,35 @@ inline u8x16 shuffle_indices(VectorFor<u32, 16> idxs, IndexTag<1> value_bytes) {
   };
   return shuffle_indices(uzp, value_bytes);
 }
-inline SubVector<u8, 8, 16> shuffle_indices(VectorFor<u32, 8> idxs, IndexTag<1> value_bytes) {
+inline SubVector<u8, 8> shuffle_indices(VectorFor<u32, 8> idxs, IndexTag<1> value_bytes) {
   const auto uzp = vuzp1q_u16(as<u16>(idxs.lower.r), as<u16>(idxs.upper.r));
   return shuffle_indices(u16x8{.r = uzp}, value_bytes);
 }
-inline SubVector<u8, 4, 16> shuffle_indices(u32x4 idxs, IndexTag<1> value_bytes) {
+inline SubVector<u8, 4> shuffle_indices(u32x4 idxs, IndexTag<1> value_bytes) {
   const auto uzp = vuzp1q_u16(as<u16>(idxs.r), as<u16>(idxs.r));
-  return SubVector<u8, 4, 16>{shuffle_indices(u16x8{.r = uzp}, value_bytes).full};
+  return SubVector<u8, 4>{shuffle_indices(u16x8{.r = uzp}, value_bytes).full};
 }
 inline u8x16 shuffle_indices(VectorFor<u32, 8> idxs, IndexTag<2> value_bytes) {
   const auto uzp = vuzp1q_u16(as<u16>(idxs.lower.r), as<u16>(idxs.upper.r));
   return shuffle_indices(u16x8{.r = uzp}, value_bytes);
 }
-inline SubVector<u8, 8, 16> shuffle_indices(u32x4 idxs, IndexTag<2> value_bytes) {
+inline SubVector<u8, 8> shuffle_indices(u32x4 idxs, IndexTag<2> value_bytes) {
   const auto uzp = vuzp1q_u16(as<u16>(idxs.r), as<u16>(idxs.r));
-  return SubVector<u8, 8, 16>{shuffle_indices(u16x8{.r = uzp}, value_bytes)};
+  return SubVector<u8, 8>{shuffle_indices(u16x8{.r = uzp}, value_bytes)};
 }
 inline u8x16 shuffle_indices(u32x4 idxs, IndexTag<4> /*value_bytes*/) {
   const auto mul = as<u8>(vmulq_u32(idxs.r, vdupq_n_u32(0x04040404)));
   return {.r = vorrq_u8(mul, as<u8>(vdupq_n_u32(0x03020100)))};
 }
-inline u8x16 shuffle_indices(SubVector<u32, 2, 4> idxs, IndexTag<8> /*value_bytes*/) {
+inline u8x16 shuffle_indices(SubVector<u32, 2> idxs, IndexTag<8> /*value_bytes*/) {
   constexpr std::array<u8, 16> shuf_arr{0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4};
   const auto shift = vshlq_n_u8(as<u8>(idxs.full.r), 3);
   const auto shuf = vqtbl1q_u8(shift, vld1q_u8(shuf_arr.data()));
   return {.r = vorrq_u8(shuf, as<u8>(vdupq_n_u64(0x0706050403020100)))};
 }
 
-inline SubVector<u32, 2, 4> compress64(u64x2 idxs) {
-  return SubVector<u32, 2, 4>{{.r = vuzp1q_u32(as<u32>(idxs.r), as<u32>(idxs.r))}};
+inline SubVector<u32, 2> compress64(u64x2 idxs) {
+  return SubVector<u32, 2>{{.r = vuzp1q_u32(as<u32>(idxs.r), as<u32>(idxs.r))}};
 }
 inline u32x4 compress64(VectorFor<u64, 4> idxs) {
   return {.r = vuzp1q_u32(as<u32>(idxs.lower.r), as<u32>(idxs.upper.r))};
@@ -117,31 +118,31 @@ inline VectorFor<u32, TVec::size> compress64(TVec v) {
 inline u8x16 shuffle_indices(VectorFor<u64, 16> idxs, IndexTag<1> value_bytes) {
   return shuffle_indices(compress64(idxs), value_bytes);
 }
-inline SubVector<u8, 8, 16> shuffle_indices(VectorFor<u64, 8> idxs, IndexTag<1> value_bytes) {
+inline SubVector<u8, 8> shuffle_indices(VectorFor<u64, 8> idxs, IndexTag<1> value_bytes) {
   return shuffle_indices(compress64(idxs), value_bytes);
 }
-inline SubVector<u8, 4, 16> shuffle_indices(VectorFor<u64, 4> idxs, IndexTag<1> value_bytes) {
+inline SubVector<u8, 4> shuffle_indices(VectorFor<u64, 4> idxs, IndexTag<1> value_bytes) {
   return shuffle_indices(compress64(idxs), value_bytes);
 }
-inline SubVector<u8, 2, 16> shuffle_indices(u64x2 idxs, IndexTag<1> value_bytes) {
-  return SubVector<u8, 2, 16>{shuffle_indices(compress64(idxs).full, value_bytes).full};
+inline SubVector<u8, 2> shuffle_indices(u64x2 idxs, IndexTag<1> value_bytes) {
+  return SubVector<u8, 2>{shuffle_indices(compress64(idxs).full, value_bytes).full};
 }
 
 inline u8x16 shuffle_indices(VectorFor<u64, 8> idxs, IndexTag<2> value_bytes) {
   return shuffle_indices(compress64(idxs), value_bytes);
 }
-inline SubVector<u8, 8, 16> shuffle_indices(VectorFor<u64, 4> idxs, IndexTag<2> value_bytes) {
+inline SubVector<u8, 8> shuffle_indices(VectorFor<u64, 4> idxs, IndexTag<2> value_bytes) {
   return shuffle_indices(compress64(idxs), value_bytes);
 }
-inline SubVector<u8, 4, 16> shuffle_indices(u64x2 idxs, IndexTag<2> value_bytes) {
-  return SubVector<u8, 4, 16>{shuffle_indices(compress64(idxs).full, value_bytes).full};
+inline SubVector<u8, 4> shuffle_indices(u64x2 idxs, IndexTag<2> value_bytes) {
+  return SubVector<u8, 4>{shuffle_indices(compress64(idxs).full, value_bytes).full};
 }
 
 inline u8x16 shuffle_indices(VectorFor<u64, 4> idxs, IndexTag<4> value_bytes) {
   return shuffle_indices(compress64(idxs), value_bytes);
 }
-inline SubVector<u8, 8, 16> shuffle_indices(u64x2 idxs, IndexTag<4> value_bytes) {
-  return SubVector<u8, 8, 16>{shuffle_indices(compress64(idxs).full, value_bytes)};
+inline SubVector<u8, 8> shuffle_indices(u64x2 idxs, IndexTag<4> value_bytes) {
+  return SubVector<u8, 8>{shuffle_indices(compress64(idxs).full, value_bytes)};
 }
 
 inline u8x16 shuffle_indices(u64x2 idxs, IndexTag<8> /*value_bytes*/) {
@@ -151,8 +152,8 @@ inline u8x16 shuffle_indices(u64x2 idxs, IndexTag<8> /*value_bytes*/) {
   return {.r = vorrq_u8(shuf, as<u8>(vdupq_n_u64(0x0706050403020100)))};
 }
 
-template<Vectorizable T, std::size_t tPart, std::size_t tSize, std::size_t tValueBytes>
-inline VectorFor<u8, tPart * tValueBytes> shuffle_indices(SubVector<T, tPart, tSize> idxs,
+template<Vectorizable T, std::size_t tSize, std::size_t tValueBytes>
+inline VectorFor<u8, tPart * tValueBytes> shuffle_indices(SubVector<T, tSize> idxs,
                                                           IndexTag<tValueBytes> value_bytes) {
   return shrink<tPart * tValueBytes>(shuffle_indices(expand_any<2 * tPart>(idxs), value_bytes));
 }

@@ -14,10 +14,10 @@
 
 namespace grex::backend {
 #define GREX_MASKARITH_SUB(NAME) \
-  template<Vectorizable T, std::size_t tPart, std::size_t tSize> \
-  inline SubVector<T, tPart, tSize> NAME(SubMask<T, tPart, tSize> m, SubVector<T, tPart, tSize> a, \
-                                         SubVector<T, tPart, tSize> b) { \
-    return SubVector<T, tPart, tSize>{NAME(m.full, a.full, b.full)}; \
+  template<Vectorizable T, std::size_t tSize> \
+  inline SubVector<T, tSize> NAME(SubMask<T, tSize> m, SubVector<T, tSize> a, \
+                                  SubVector<T, tSize> b) { \
+    return SubVector<T, tSize>{NAME(m.full, a.full, b.full)}; \
   }
 GREX_MASKARITH_SUB(mask_add)
 GREX_MASKARITH_SUB(mask_subtract)

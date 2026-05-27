@@ -40,9 +40,9 @@ template<std::size_t tBytes, typename T>
 GREX_ALWAYS_INLINE inline void store_first(T* dst, NativeVector<T, 16 / sizeof(T)> src) {
   std::memcpy(dst, &src.r, tBytes);
 }
-template<std::size_t tBytes, typename T, std::size_t tPart, std::size_t tSize>
+template<std::size_t tBytes, typename T, std::size_t tSize>
 requires(tBytes <= sizeof(T) * tPart)
-GREX_ALWAYS_INLINE inline void store_first(T* dst, SubVector<T, tPart, tSize> src) {
+GREX_ALWAYS_INLINE inline void store_first(T* dst, SubVector<T, tSize> src) {
   std::memcpy(dst, &src.full.r, tBytes);
 }
 
@@ -96,12 +96,12 @@ GREX_ALWAYS_INLINE inline void store_part(typename TVec::Value* dst, TVec src,
   }
 }
 
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-GREX_ALWAYS_INLINE inline void store(T* dst, SubVector<T, tPart, tSize> src) {
+template<Vectorizable T, std::size_t tSize>
+GREX_ALWAYS_INLINE inline void store(T* dst, SubVector<T, tSize> src) {
   store_part(dst, src, index_tag<tPart>);
 }
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-GREX_ALWAYS_INLINE inline void store_aligned(T* dst, SubVector<T, tPart, tSize> src) {
+template<Vectorizable T, std::size_t tSize>
+GREX_ALWAYS_INLINE inline void store_aligned(T* dst, SubVector<T, tSize> src) {
   store_part(dst, src, index_tag<tPart>);
 }
 
@@ -124,8 +124,7 @@ GREX_ALWAYS_INLINE inline void store_aligned(T* dst, SubVector<T, tPart, tSize> 
 GREX_FOREACH_TYPE(GREX_PARTSTORE, 128)
 
 #define GREX_SUBPARTSTORE(KIND, BITS, PART, SIZE) \
-  inline void store_part(KIND##BITS* dst, SubVector<KIND##BITS, PART, SIZE> src, \
-                         std::size_t size) { \
+  inline void store_part(KIND##BITS* dst, SubVector<KIND##BITS, PART> src, std::size_t size) { \
     switch (size) { \
       GREX_REPEAT(PART, GREX_PARTSTORE_CASE, KIND, BITS) \
       [[unlikely]] GREX_PARTSTORE_CASE(PART, PART, KIND, BITS) default : std::unreachable(); \

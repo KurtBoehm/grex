@@ -9,6 +9,7 @@
 
 #include <cstddef>
 
+#include "grex/backend/active/sizes.hpp"
 #include "grex/base.hpp"
 
 namespace grex::backend {
@@ -19,12 +20,13 @@ struct Scalar {
 
 template<Vectorizable T, std::size_t tSize>
 struct NativeVector;
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+template<Vectorizable T, std::size_t tSize>
 struct SubVector {
-  using Full = NativeVector<T, tSize>;
+  using Full = NativeVector<T, min_native_size<T>>;
   using Register = Full::Register;
   using Value = T;
-  static constexpr std::size_t size = tPart;
+  static constexpr std::size_t size = tSize;
+  static constexpr std::size_t full_size = min_native_size<T>;
   static constexpr std::size_t bytes = sizeof(Value) * size;
 
   Full full;
@@ -62,8 +64,8 @@ struct AnyVectorTrait<NativeVector<T, tSize>> {
   static constexpr bool has_register = true;
   static constexpr SimdKind kind = SimdKind::native;
 };
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-struct AnyVectorTrait<SubVector<T, tPart, tSize>> {
+template<Vectorizable T, std::size_t tSize>
+struct AnyVectorTrait<SubVector<T, tSize>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = true;
   static constexpr SimdKind kind = SimdKind::subnative;
@@ -95,12 +97,13 @@ concept FloatVector = AnyVector<T> && FloatVectorizable<ValueOf<T>>;
 
 template<Vectorizable T, std::size_t tSize>
 struct NativeMask;
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
+template<Vectorizable T, std::size_t tSize>
 struct SubMask {
-  using Full = NativeMask<T, tSize>;
+  using Full = NativeMask<T, min_native_size<T>>;
   using Register = Full::Register;
   using VectorValue = T;
-  static constexpr std::size_t size = tPart;
+  static constexpr std::size_t size = tSize;
+  static constexpr std::size_t full_size = min_native_size<T>;
   static constexpr std::size_t bytes = sizeof(VectorValue) * size;
 
   Full full;
@@ -136,8 +139,8 @@ struct AnyMaskTrait<NativeMask<T, tSize>> {
   static constexpr bool has_register = true;
   static constexpr SimdKind kind = SimdKind::native;
 };
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-struct AnyMaskTrait<SubMask<T, tPart, tSize>> {
+template<Vectorizable T, std::size_t tSize>
+struct AnyMaskTrait<SubMask<T, tSize>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = true;
   static constexpr SimdKind kind = SimdKind::subnative;

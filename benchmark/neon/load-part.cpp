@@ -86,10 +86,9 @@ GREX_FOREACH_TYPE(GREX_PARTLOAD, 128)
   return Dst{be::load_part(ptr, grex::index_tag<INDEX>, \
                            grex::type_tag<be::NativeVector<KIND##BITS, SIZE>>)};
 #define GREX_SUBPARTLOAD(KIND, BITS, PART, SIZE) \
-  inline be::SubVector<KIND##BITS, PART, SIZE> load_part_swi( \
-    const KIND##BITS* ptr, std::size_t size, \
-    grex::TypeTag<be::SubVector<KIND##BITS, PART, SIZE>>) { \
-    using Dst = be::SubVector<KIND##BITS, PART, SIZE>; \
+  inline be::SubVector<KIND##BITS, PART> load_part_swi( \
+    const KIND##BITS* ptr, std::size_t size, grex::TypeTag<be::SubVector<KIND##BITS, PART>>) { \
+    using Dst = be::SubVector<KIND##BITS, PART>; \
     switch (size) { \
       GREX_REPEAT(PART, GREX_SUBPARTLOAD_CASE, KIND, BITS, SIZE) \
       [[unlikely]] GREX_SUBPARTLOAD_CASE(PART, PART, KIND, BITS, SIZE) default \

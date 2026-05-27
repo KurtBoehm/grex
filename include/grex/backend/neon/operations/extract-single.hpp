@@ -25,8 +25,8 @@ namespace grex::backend {
   }
 GREX_FOREACH_TYPE(GREX_EXTRINGLE, 128)
 
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline Scalar<T> extract_single(SubVector<T, tPart, tSize> v) {
+template<Vectorizable T, std::size_t tSize>
+inline Scalar<T> extract_single(SubVector<T, tSize> v) {
   return extract_single(v.full);
 }
 template<typename THalf>

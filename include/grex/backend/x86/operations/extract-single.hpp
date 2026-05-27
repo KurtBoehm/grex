@@ -47,8 +47,8 @@ namespace grex::backend {
   GREX_FOREACH_TYPE(GREX_EXTRINGLE, REGISTERBITS, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_EXTRINGLE_ALL)
 
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline T extract_single(SubVector<T, tPart, tSize> v) {
+template<Vectorizable T, std::size_t tSize>
+inline T extract_single(SubVector<T, tSize> v) {
   return extract_single(v.full);
 }
 template<typename THalf>

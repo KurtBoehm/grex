@@ -437,10 +437,10 @@ GREX_FOREACH_X86_64_LEVEL(GREX_PARTLOAD_ALL)
 // Basic sub-vector loads: always load exactly PART elements worth of bytes
 // via the corresponding scalar-sized _mm_loadu_siN intrinsic.
 #define GREX_LOAD_SUB_IMPL(NAME, KIND, BITS, PART, SIZE) \
-  inline SubVector<KIND##BITS, PART, SIZE> NAME(const KIND##BITS* ptr, \
-                                                TypeTag<SubVector<KIND##BITS, PART, SIZE>>) { \
+  inline SubVector<KIND##BITS, PART> NAME(const KIND##BITS* ptr, \
+                                          TypeTag<SubVector<KIND##BITS, PART>>) { \
     const __m128i r = GREX_CAT(_mm_loadu_si, GREX_MULTIPLY(BITS, PART))(ptr); \
-    return SubVector<KIND##BITS, PART, SIZE>{GREX_KINDCAST(i, KIND, BITS, 128, r)}; \
+    return SubVector<KIND##BITS, PART>{GREX_KINDCAST(i, KIND, BITS, 128, r)}; \
   }
 #define GREX_LOAD_SUB(...) \
   GREX_LOAD_SUB_IMPL(load, __VA_ARGS__) \
@@ -452,7 +452,7 @@ GREX_FOREACH_SUB(GREX_LOAD_SUB)
 
 // 2×32-bit sub-vector: size ∈ {0,1,2}
 #define GREX_PARTLOAD_SUB_32_2(KIND) \
-  using Dst = SubVector<KIND##32, 2, 4>; \
+  using Dst = SubVector<KIND##32, 2>; \
   GREX_PARTLOAD_SWITCH(KIND, 32, 2, Dst{GREX_KINDCAST(i, KIND, 32, 128, _mm_loadu_si32(ptr))}, \
                        Dst{GREX_KINDCAST(i, KIND, 32, 128, _mm_loadu_si64(ptr))})
 
@@ -492,7 +492,7 @@ GREX_FOREACH_SUB(GREX_LOAD_SUB)
 
 // 2×16-bit sub-vector: size ∈ {0,1,2}
 #define GREX_PARTLOAD_SUB_16_2(KIND) \
-  using Dst = SubVector<KIND##16, 2, 8>; \
+  using Dst = SubVector<KIND##16, 2>; \
   GREX_PARTLOAD_SWITCH(KIND, 16, 2, Dst{GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si16(ptr))}, \
                        Dst{GREX_KINDCAST(i, KIND, 16, 128, _mm_loadu_si32(ptr))})
 
@@ -579,7 +579,7 @@ GREX_FOREACH_SUB(GREX_LOAD_SUB)
 
 // 2×8-bit sub-vector: size ∈ {0,1,2} using scalar byte/16-bit loads.
 #define GREX_PARTLOAD_SUB_8_2(KIND) \
-  using Dst = SubVector<KIND##8, 2, 16>; \
+  using Dst = SubVector<KIND##8, 2>; \
   GREX_PARTLOAD_SWITCH( \
     KIND, 8, 2, \
     Dst{GREX_KINDCAST(i, KIND, 8, 128, \
@@ -591,7 +591,7 @@ GREX_FOREACH_SUB(GREX_LOAD_SUB)
 #else
 // On AVX-512, sub-vectors delegate to the native vector partial-load logic.
 #define GREX_PARTLOAD_SUB_IMPL(KIND, BITS, PART, SIZE) \
-  return SubVector<KIND##BITS, PART, SIZE>{ \
+  return SubVector<KIND##BITS, PART>{ \
     load_part(ptr, size, type_tag<NativeVector<KIND##BITS, SIZE>>)};
 #endif
 
@@ -621,8 +621,8 @@ GREX_ALWAYS_INLINE inline SuperVector<THalf> load_part(const ValueOf<THalf>* ptr
 
 // Entry point for sub-vector partial loads.
 #define GREX_PARTLOAD_SUB(KIND, BITS, PART, SIZE) \
-  inline SubVector<KIND##BITS, PART, SIZE> load_part(const KIND##BITS* ptr, std::size_t size, \
-                                                     TypeTag<SubVector<KIND##BITS, PART, SIZE>>) { \
+  inline SubVector<KIND##BITS, PART> load_part(const KIND##BITS* ptr, std::size_t size, \
+                                               TypeTag<SubVector<KIND##BITS, PART>>) { \
     GREX_PARTLOAD_SUB_IMPL(KIND, BITS, PART, SIZE) \
   }
 GREX_FOREACH_SUB(GREX_PARTLOAD_SUB)

@@ -14,13 +14,13 @@
 
 namespace grex::backend {
 // SubVector/SubMask
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubVector<T, tPart, tSize> insert(SubVector<T, tPart, tSize> v, std::size_t index, T value) {
-  return SubVector<T, tPart, tSize>{insert(v.full, index, value)};
+template<Vectorizable T, std::size_t tSize>
+inline SubVector<T, tSize> insert(SubVector<T, tSize> v, std::size_t index, T value) {
+  return SubVector<T, tSize>{insert(v.full, index, value)};
 }
-template<Vectorizable T, std::size_t tPart, std::size_t tSize>
-inline SubMask<T, tPart, tSize> insert(SubMask<T, tPart, tSize> v, std::size_t index, bool value) {
-  return SubMask<T, tPart, tSize>{insert(v.full, index, value)};
+template<Vectorizable T, std::size_t tSize>
+inline SubMask<T, tSize> insert(SubMask<T, tSize> v, std::size_t index, bool value) {
+  return SubMask<T, tSize>{insert(v.full, index, value)};
 }
 
 // SuperVector/SuperMask

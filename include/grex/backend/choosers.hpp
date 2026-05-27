@@ -26,7 +26,7 @@ struct VectorTrait<T, tSize, false, false> {
 };
 template<Vectorizable T, std::size_t tSize>
 struct VectorTrait<T, tSize, true, false> {
-  using Type = SubVector<T, tSize, min_native_size<T>>;
+  using Type = SubVector<T, tSize>;
 };
 template<Vectorizable T, std::size_t tSize>
 struct VectorTrait<T, tSize, false, true> {
@@ -45,7 +45,7 @@ struct MaskTrait<T, tSize, false, false> {
 };
 template<Vectorizable T, std::size_t tSize>
 struct MaskTrait<T, tSize, true, false> {
-  using Type = SubMask<T, tSize, min_native_size<T>>;
+  using Type = SubMask<T, tSize>;
 };
 template<Vectorizable T, std::size_t tSize>
 struct MaskTrait<T, tSize, false, true> {

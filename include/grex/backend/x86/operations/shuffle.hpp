@@ -138,7 +138,7 @@ inline u32x8 shuffle_indices(u32x4 idxs, IndexTag<4> /*dst_bytes*/, IndexTag<8> 
   const auto idxs32 = _mm256_slli_epi64(_mm256_setr_m128i(lo32, hi32), 1);
   return {.r = _mm256_add_epi32(idxs32, _mm256_setr_epi32(0, 1, 0, 1, 0, 1, 0, 1))};
 }
-inline u32x8 shuffle_indices(SubVector<u16, 4, 8> idxs, IndexTag<4> /*dst_bytes*/,
+inline u32x8 shuffle_indices(SubVector<u16, 4> idxs, IndexTag<4> /*dst_bytes*/,
                              IndexTag<8> /*value_bytes*/) {
   const auto lo64 = _mm_shufflelo_epi16(idxs.full.r, 0b01010000);
   const auto hi64 = _mm_shufflelo_epi16(idxs.full.r, 0b11111010);
@@ -148,7 +148,7 @@ inline u32x8 shuffle_indices(SubVector<u16, 4, 8> idxs, IndexTag<4> /*dst_bytes*
   const auto idxs32 = _mm256_slli_epi64(_mm256_setr_m128i(lo32, hi32), 1);
   return {.r = _mm256_add_epi32(idxs32, _mm256_setr_epi32(0, 1, 0, 1, 0, 1, 0, 1))};
 }
-inline u32x8 shuffle_indices(SubVector<u8, 4, 16> idxs, IndexTag<4> /*dst_bytes*/,
+inline u32x8 shuffle_indices(SubVector<u8, 4> idxs, IndexTag<4> /*dst_bytes*/,
                              IndexTag<8> /*value_bytes*/) {
   const __m256i bcidxs = _mm256_broadcastd_epi32(idxs.registr());
   const std::array<u8, 32> shuf{0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -503,7 +503,7 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
     const auto bc23 = blend(select0, bc3, bc2); \
     return as<KIND##32>(blend(select1, bc23, bc01)); \
   } \
-  inline KIND##32x4 shuffle(SubVector<KIND##32, 2, 4> table, u32x4 idxs, \
+  inline KIND##32x4 shuffle(SubVector<KIND##32, 2> table, u32x4 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
     const auto select0 = \
       bf32x4{.r = compare_eq(shift_left(idxs, index_tag<31>), zeros<u32x4>()).r}; \
@@ -543,7 +543,7 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
 \
     return blend(select2, bc4567, bc0123); \
   } \
-  inline KIND##16x8 shuffle(SubVector<KIND##16, 4, 8> table, u16x8 idxs, \
+  inline KIND##16x8 shuffle(SubVector<KIND##16, 4> table, u16x8 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##16, 8>; \
     using Msk = NativeMask<KIND##16, 8>; \
@@ -561,7 +561,7 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
     const auto bc23 = blend(select0, bc3, bc2); \
     return blend(select1, bc23, bc01); \
   } \
-  inline KIND##16x8 shuffle(SubVector<KIND##16, 2, 8> table, u16x8 idxs, \
+  inline KIND##16x8 shuffle(SubVector<KIND##16, 2> table, u16x8 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##16, 8>; \
     using Msk = NativeMask<KIND##16, 8>; \
@@ -626,7 +626,7 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
 \
     return blend(select3, bc89abcdef, bc01234567); \
   } \
-  inline KIND##8x16 shuffle(SubVector<KIND##8, 8, 16> table, u8x16 idxs, \
+  inline KIND##8x16 shuffle(SubVector<KIND##8, 8> table, u8x16 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##8, 16>; \
     using Msk = NativeMask<KIND##8, 16>; \
@@ -657,7 +657,7 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
     const auto bc4567 = blend(select1, bc67, bc45); \
     return blend(select2, bc4567, bc0123); \
   } \
-  inline KIND##8x16 shuffle(SubVector<KIND##8, 4, 16> table, u8x16 idxs, \
+  inline KIND##8x16 shuffle(SubVector<KIND##8, 4> table, u8x16 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##8, 16>; \
     using Msk = NativeMask<KIND##8, 16>; \
@@ -676,7 +676,7 @@ inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdx
     const auto bc23 = blend(select0, bc3, bc2); \
     return blend(select1, bc23, bc01); \
   } \
-  inline KIND##8x16 shuffle(SubVector<KIND##8, 2, 16> table, u8x16 idxs, \
+  inline KIND##8x16 shuffle(SubVector<KIND##8, 2> table, u8x16 idxs, \
                             AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##8, 16>; \
     using Msk = NativeMask<KIND##8, 16>; \

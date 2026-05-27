@@ -4,7 +4,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-
 #ifndef INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_EXPAND_HPP
 #define INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_EXPAND_HPP
 
@@ -55,8 +54,8 @@ inline TVec expand(TVec v, IndexTag<TVec::size> /*size*/, BoolTag<tZero> /*zero*
 }
 
 // sub-native → sub-native/native
-template<typename T, std::size_t tPart, std::size_t tSize, std::size_t tDstSize, bool tZero>
-inline VectorFor<T, tDstSize> expand(SubVector<T, tPart, tSize> v, IndexTag<tDstSize> size_tag,
+template<typename T, std::size_t tSize, std::size_t tDstSize, bool tZero>
+inline VectorFor<T, tDstSize> expand(SubVector<T, tSize> v, IndexTag<tDstSize> size_tag,
                                      BoolTag<tZero> zero_tag) {
   using Work = VectorFor<T, std::min(tDstSize, min_native_size<T>)>;
   Work work = [&] {
