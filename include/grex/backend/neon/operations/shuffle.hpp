@@ -153,9 +153,9 @@ inline u8x16 shuffle_indices(u64x2 idxs, IndexTag<8> /*value_bytes*/) {
 }
 
 template<Vectorizable T, std::size_t tSize, std::size_t tValueBytes>
-inline VectorFor<u8, tPart * tValueBytes> shuffle_indices(SubVector<T, tSize> idxs,
+inline VectorFor<u8, tSize * tValueBytes> shuffle_indices(SubVector<T, tSize> idxs,
                                                           IndexTag<tValueBytes> value_bytes) {
-  return shrink<tPart * tValueBytes>(shuffle_indices(expand_any<2 * tPart>(idxs), value_bytes));
+  return shrink<tSize * tValueBytes>(shuffle_indices(expand_any<2 * tSize>(idxs), value_bytes));
 }
 
 inline u8x16 shuffle(u8x16 table, u8x16 idxs, AnyIndexTag auto index_ub,

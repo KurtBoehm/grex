@@ -27,12 +27,11 @@ inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
                data[std::size_t(extract(idxs, index_tag<tIdxs>))]...);
   });
 }
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tPart,
-         std::size_t tSize>
-inline VectorFor<TValue, tPart> gather(std::span<const TValue, tExtent> data,
+template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
+inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
                                        SubVector<TIndex, tSize> idxs) {
-  return static_apply<tPart>([&]<std::size_t... tIdxs> {
-    return set(type_tag<VectorFor<TValue, tPart>>,
+  return static_apply<tSize>([&]<std::size_t... tIdxs> {
+    return set(type_tag<VectorFor<TValue, tSize>>,
                data[std::size_t(extract(idxs, index_tag<tIdxs>))]...);
   });
 }
@@ -52,13 +51,12 @@ inline VectorFor<TValue, tSize> mask_gather(std::span<const TValue, tExtent> dat
                                              : TValue{})...);
   });
 }
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tPart,
-         std::size_t tSize>
-inline VectorFor<TValue, tPart> mask_gather(std::span<const TValue, tExtent> data,
-                                            MaskFor<TValue, tPart> m,
+template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
+inline VectorFor<TValue, tSize> mask_gather(std::span<const TValue, tExtent> data,
+                                            MaskFor<TValue, tSize> m,
                                             SubVector<TIndex, tSize> idxs) {
-  return static_apply<tPart>([&]<std::size_t... tIdxs> {
-    return set(type_tag<VectorFor<TValue, tPart>>,
+  return static_apply<tSize>([&]<std::size_t... tIdxs> {
+    return set(type_tag<VectorFor<TValue, tSize>>,
                (extract(m, index_tag<tIdxs>) ? data[std::size_t(extract(idxs, index_tag<tIdxs>))]
                                              : TValue{})...);
   });

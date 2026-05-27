@@ -10,6 +10,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
+#include <utility>
 
 #include <arm_neon.h>
 
@@ -41,7 +42,7 @@ GREX_ALWAYS_INLINE inline void store_first(T* dst, NativeVector<T, 16 / sizeof(T
   std::memcpy(dst, &src.r, tBytes);
 }
 template<std::size_t tBytes, typename T, std::size_t tSize>
-requires(tBytes <= sizeof(T) * tPart)
+requires(tBytes <= sizeof(T) * tSize)
 GREX_ALWAYS_INLINE inline void store_first(T* dst, SubVector<T, tSize> src) {
   std::memcpy(dst, &src.full.r, tBytes);
 }
@@ -98,11 +99,11 @@ GREX_ALWAYS_INLINE inline void store_part(typename TVec::Value* dst, TVec src,
 
 template<Vectorizable T, std::size_t tSize>
 GREX_ALWAYS_INLINE inline void store(T* dst, SubVector<T, tSize> src) {
-  store_part(dst, src, index_tag<tPart>);
+  store_part(dst, src, index_tag<tSize>);
 }
 template<Vectorizable T, std::size_t tSize>
 GREX_ALWAYS_INLINE inline void store_aligned(T* dst, SubVector<T, tSize> src) {
-  store_part(dst, src, index_tag<tPart>);
+  store_part(dst, src, index_tag<tSize>);
 }
 
 #define GREX_PARTSTORE_ATTR_0

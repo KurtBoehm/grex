@@ -181,10 +181,9 @@ inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
                                        NativeVector<TIndex, tSize> idxs) {
   return gather(data, convert(idxs, type_tag<i32>));
 }
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tPart,
-         std::size_t tSize>
+template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
 requires(sizeof(TValue) >= 4 && sizeof(TIndex) <= 2)
-inline VectorFor<TValue, tPart> gather(std::span<const TValue, tExtent> data,
+inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
                                        SubVector<TIndex, tSize> idxs) {
   return gather(data, convert(idxs, type_tag<i32>));
 }

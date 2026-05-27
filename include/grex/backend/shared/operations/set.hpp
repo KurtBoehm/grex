@@ -43,15 +43,15 @@ inline SubVector<T, tSize> indices(TypeTag<SubVector<T, tSize>> /*tag*/) {
 // SubMask
 template<Vectorizable T, std::size_t tSize>
 inline SubMask<T, tSize> zeros(TypeTag<SubMask<T, tSize>> /*tag*/) {
-  return SubMask<T, tSize>{zeros(type_tag<NativeMask<T, tSize>>)};
+  return SubMask<T, tSize>{zeros(type_tag<NativeMask<T, min_native_size<T>>>)};
 }
 template<Vectorizable T, std::size_t tSize>
 inline SubMask<T, tSize> ones(TypeTag<SubMask<T, tSize>> /*tag*/) {
-  return SubMask<T, tSize>{ones(type_tag<NativeMask<T, tSize>>)};
+  return SubMask<T, tSize>{ones(type_tag<NativeMask<T, min_native_size<T>>>)};
 }
 template<Vectorizable T, std::size_t tSize, typename... Ts>
 inline SubMask<T, tSize> broadcast(bool value, TypeTag<SubMask<T, tSize>> /*tag*/) {
-  return SubMask<T, tSize>{broadcast(value, type_tag<NativeMask<T, tSize>>)};
+  return SubMask<T, tSize>{broadcast(value, type_tag<NativeMask<T, min_native_size<T>>>)};
 }
 
 // SuperVector

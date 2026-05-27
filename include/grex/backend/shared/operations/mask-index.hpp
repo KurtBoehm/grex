@@ -17,7 +17,7 @@
 namespace grex::backend {
 template<Vectorizable T, std::size_t tSize>
 inline SubMask<T, tSize> cutoff_mask(std::size_t i, TypeTag<SubMask<T, tSize>> /*tag*/) {
-  return SubMask<T, tSize>{cutoff_mask(i, type_tag<NativeMask<T, tSize>>)};
+  return SubMask<T, tSize>{cutoff_mask(i, type_tag<NativeMask<T, min_native_size<T>>>)};
 }
 template<typename THalf>
 inline SuperMask<THalf> cutoff_mask(std::size_t i, TypeTag<SuperMask<THalf>> /*tag*/) {
@@ -29,7 +29,7 @@ inline SuperMask<THalf> cutoff_mask(std::size_t i, TypeTag<SuperMask<THalf>> /*t
 
 template<Vectorizable T, std::size_t tSize>
 inline SubMask<T, tSize> single_mask(std::size_t i, TypeTag<SubMask<T, tSize>> /*tag*/) {
-  return SubMask<T, tSize>{single_mask(i, type_tag<NativeMask<T, tSize>>)};
+  return SubMask<T, tSize>{single_mask(i, type_tag<NativeMask<T, min_native_size<T>>>)};
 }
 template<typename THalf>
 inline SuperMask<THalf> single_mask(std::size_t i, TypeTag<SuperMask<THalf>> /*tag*/) {

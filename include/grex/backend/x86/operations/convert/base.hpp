@@ -219,7 +219,7 @@ inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst>
 }
 
 // Sub-native to super-native, integer → any: convert to the smallest integer type for which
-// the vector with tPart lanes is native and go from there
+// the vector with tSize lanes is native and go from there
 template<Vectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
 requires(is_supernative<TDst, tSize>)
 inline VectorFor<TDst, tSize> convert(SubVector<TSrc, tSize> v, TypeTag<TDst> tag) {

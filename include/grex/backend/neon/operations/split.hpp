@@ -56,13 +56,13 @@ inline MaskFor<T, tSize / 2> get_high(NativeMask<T, tSize> m) {
 
 // sub-native masks
 template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tPart / 2> get_low(SubMask<T, tSize> m) {
-  return MaskFor<T, tPart / 2>{
+inline MaskFor<T, tSize / 2> get_low(SubMask<T, tSize> m) {
+  return MaskFor<T, tSize / 2>{
     get_low(SubVector<UnsignedInt<sizeof(T)>, tSize>{m.registr()}).registr()};
 }
 template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tPart / 2> get_high(SubMask<T, tSize> m) {
-  return MaskFor<T, tPart / 2>{
+inline MaskFor<T, tSize / 2> get_high(SubMask<T, tSize> m) {
+  return MaskFor<T, tSize / 2>{
     get_high(SubVector<UnsignedInt<sizeof(T)>, tSize>{m.registr()}).registr()};
 }
 
