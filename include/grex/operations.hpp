@@ -99,7 +99,7 @@ inline bool is_finite(T a) {
 }
 template<FloatVectorizable T>
 inline T make_finite(T a) {
-  return backend::make_finite(backend::Scalar{a}).value;
+  return backend::make_finite(backend::Scalar{a});
 }
 
 // To determine whether a conversion is safe, i.e. guaranteed not to change finite values,

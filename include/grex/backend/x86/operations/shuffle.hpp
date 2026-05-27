@@ -435,9 +435,15 @@ shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto in
                  shuffle(table, get_high(idxs), index_ub, index_offset));
   }
 #if GREX_X86_64_LEVEL >= 4
-  else if constexpr (sizeof(Value) * table_size == 128 && !is_supernative<Value, index_size>) {
+  else if constexpr (
+#if GREX_HAS_AVX512VBMI
+    sizeof(Value) * table_size == 128 && !is_supernative<Value, index_size>
+#else
+    sizeof(Value) > 1 && sizeof(Value) * table_size == 128 && !is_supernative<Value, index_size>
+#endif
+  ) {
     // the size of the lookup table is 1024 bits, the output is at most native → delegate to a
-    // permutex2var implementation
+    // permutex2var implementation (8-bit only available with AVX-512VBMI)
     const auto xidxs = expand_any(convert(idxs, type_tag<ValueIndex>), index_tag<table_size / 2>);
     return shrink(shuffle(table, xidxs, index_ub, index_offset), index_tag<index_size>);
   }

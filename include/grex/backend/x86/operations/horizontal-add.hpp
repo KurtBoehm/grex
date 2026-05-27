@@ -16,12 +16,12 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
-#include "grex/backend/x86/operations/arithmetic.hpp"
 #include "grex/backend/x86/operations/blend-zero-static.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp" // IWYU pragma: keep
 
 #if GREX_X86_64_LEVEL >= 3
+#include "grex/backend/x86/operations/arithmetic.hpp"
 #include "grex/backend/x86/operations/split.hpp"
 #endif
 

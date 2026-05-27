@@ -7,13 +7,13 @@ Most operation names below link to their dedicated documentation, which also des
 Throughout this documentation, ``Vector<T, N>`` denotes any backend vector type with value type ``T`` and lane count ``N``, i.e. one of:
 
 - ``backend::NativeVector<T, N>``
-- ``backend::SubVector<T, N, M>`` for some ``M`` for which ``backend::NativeVector<T, M>`` is defined
+- ``backend::SubVector<T, N>``
 - ``backend::SuperVector<THalf>`` where ``THalf::Value == T`` and ``2 * THalf::size == N``
 
 Similarly, ``Mask<T, N>`` denotes any backend mask type with value type ``T`` and lane count ``N``, i.e. one of:
 
 - ``backend::NativeMask<T, N>``
-- ``backend::SubMask<T, N, M>`` for some ``M`` for which ``backend::NativeMask<T, M>`` is defined
+- ``backend::SubMask<T, N>``
 - ``backend::SuperMask<THalf>`` where ``THalf::Value == T`` and ``2 * THalf::size == N``
 
 ##########################

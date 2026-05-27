@@ -14,8 +14,8 @@
 
 namespace grex::backend {
 template<FloatVectorizable T>
-inline Scalar<T> make_finite(Scalar<T> v) {
-  return is_finite(v) ? v : Scalar{T{}};
+inline T make_finite(Scalar<T> v) {
+  return is_finite(v) ? v.value : T{};
 }
 
 template<FloatVectorizable T>
