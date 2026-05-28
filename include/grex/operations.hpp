@@ -43,7 +43,7 @@ inline bool andnot(bool a, bool b) {
 #define GREX_MATH_FMA(NAME) \
   template<FloatVectorizable T> \
   inline T NAME(T a, T b, T c) { \
-    return backend::NAME(backend::Scalar{a}, backend::Scalar{b}, backend::Scalar{c}).value; \
+    return backend::NAME(backend::Scalar{a}, backend::Scalar{b}, backend::Scalar{c}); \
   }
 GREX_MATH_FMA(fmadd)
 GREX_MATH_FMA(fmsub)
@@ -53,26 +53,26 @@ GREX_MATH_FMA(fnmsub)
 
 template<FloatVectorizable T>
 inline T sqrt(T a) {
-  return backend::sqrt(backend::Scalar{a}).value;
+  return backend::sqrt(backend::Scalar{a});
 }
 
 template<Vectorizable T>
 inline T abs(T a) {
-  return backend::abs(backend::Scalar{a}).value;
+  return backend::abs(backend::Scalar{a});
 }
 template<Vectorizable T>
 inline T min(T a, T b) {
-  return backend::min(backend::Scalar{a}, backend::Scalar{b}).value;
+  return backend::min(backend::Scalar{a}, backend::Scalar{b});
 }
 template<Vectorizable T>
 inline T max(T a, T b) {
-  return backend::max(backend::Scalar{a}, backend::Scalar{b}).value;
+  return backend::max(backend::Scalar{a}, backend::Scalar{b});
 }
 
 #define GREX_MATH_MASKARITH(NAME) \
   template<Vectorizable T> \
   inline T NAME(bool mask, T a, T b) { \
-    return backend::NAME(mask, backend::Scalar{a}, backend::Scalar{b}).value; \
+    return backend::NAME(mask, backend::Scalar{a}, backend::Scalar{b}); \
   }
 GREX_MATH_MASKARITH(mask_add)
 GREX_MATH_MASKARITH(mask_subtract)
@@ -82,15 +82,15 @@ GREX_MATH_MASKARITH(mask_divide)
 
 template<Vectorizable T>
 inline T extract_single(T v) {
-  return backend::extract_single(backend::Scalar{v}).value;
+  return backend::extract_single(backend::Scalar{v});
 }
 template<Vectorizable T>
 inline T blend_zero(bool selector, T v1) {
-  return backend::blend_zero(selector, backend::Scalar{v1}).value;
+  return backend::blend_zero(selector, backend::Scalar{v1});
 }
 template<Vectorizable T>
 inline T blend(bool selector, T v0, T v1) {
-  return backend::blend(selector, backend::Scalar{v0}, backend::Scalar{v1}).value;
+  return backend::blend(selector, backend::Scalar{v0}, backend::Scalar{v1});
 }
 
 template<FloatVectorizable T>

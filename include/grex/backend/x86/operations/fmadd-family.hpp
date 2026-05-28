@@ -34,7 +34,7 @@ namespace grex::backend {
   const auto vb = expand_any(b, index_tag<SIZE>).r; \
   const auto vc = expand_any(c, index_tag<SIZE>).r; \
   const auto vout = GREX_CAT(_mm_##NAME##_s, GREX_FP_LETTER(BITS))(va, vb, vc); \
-  return {.value = GREX_CAT(_mm_cvts, GREX_FP_LETTER(BITS), _f##BITS)(vout)};
+  return GREX_CAT(_mm_cvts, GREX_FP_LETTER(BITS), _f##BITS)(vout);
 
 inline constexpr bool has_fma = true;
 #else
@@ -43,10 +43,10 @@ inline constexpr bool has_fma = true;
 #define GREX_FMADDF_CALL_fnmadd subtract(c, multiply(a, b))
 #define GREX_FMADDF_CALL_fnmsub negate(add(multiply(a, b), c))
 #define GREX_FMADDF_CALL(NAME, ...) GREX_FMADDF_CALL_##NAME
-#define GREX_FMADDS_CALL_fmadd return {.value = (a.value * b.value) + c.value};
-#define GREX_FMADDS_CALL_fmsub return {.value = (a.value * b.value) - c.value};
-#define GREX_FMADDS_CALL_fnmadd return {.value = c.value - (a.value * b.value)};
-#define GREX_FMADDS_CALL_fnmsub return {.value = -(a.value * b.value + c.value)};
+#define GREX_FMADDS_CALL_fmadd return (a.value * b.value) + c.value;
+#define GREX_FMADDS_CALL_fmsub return (a.value * b.value) - c.value;
+#define GREX_FMADDS_CALL_fnmadd return c.value - (a.value * b.value);
+#define GREX_FMADDS_CALL_fnmsub return -(a.value * b.value + c.value);
 #define GREX_FMADDS_CALL(NAME, ...) GREX_FMADDS_CALL_##NAME
 
 inline constexpr bool has_fma = false;
@@ -72,8 +72,7 @@ GREX_NNVECTOR_TERNARY(fnmadd)
 GREX_NNVECTOR_TERNARY(fnmsub)
 
 #define GREX_FMADDS(KIND, BITS, SIZE, NAME) \
-  inline Scalar<KIND##BITS> NAME(Scalar<KIND##BITS> a, Scalar<KIND##BITS> b, \
-                                 Scalar<KIND##BITS> c) { \
+  inline KIND##BITS NAME(Scalar<KIND##BITS> a, Scalar<KIND##BITS> b, Scalar<KIND##BITS> c) { \
     GREX_FMADDS_CALL(NAME, KIND, BITS, SIZE) \
   }
 GREX_FOREACH_FP_TYPE(GREX_FMADDS, 128, fmadd)

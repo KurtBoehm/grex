@@ -99,13 +99,13 @@ Fused Negated Multiply–Subtract
 Scalar Variants
 ***************
 
-.. cpp:function:: Scalar<T> backend::fmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c)
+.. cpp:function:: T backend::fmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c)
 
-.. cpp:function:: Scalar<T> backend::fmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c)
+.. cpp:function:: T backend::fmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c)
 
-.. cpp:function:: Scalar<T> backend::fnmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c)
+.. cpp:function:: T backend::fnmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c)
 
-.. cpp:function:: Scalar<T> backend::fnmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c)
+.. cpp:function:: T backend::fnmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c)
 
    Scalar counterparts of the fused multiply–add family.
 

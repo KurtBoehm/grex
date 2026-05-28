@@ -13,14 +13,14 @@ Square Root
    - **x86-64**: ``sqrt`` intrinsics.
    - **Neon**: ``vsqrtq`` intrinsics.
 
-.. cpp:function:: Scalar<f32> backend::sqrt(Scalar<f32> v)
+.. cpp:function:: f32 backend::sqrt(Scalar<f32> v)
 
    Scalar square root :math:`\sqrt{v}` for ``f32``.
 
    - **x86-64**: 128-bit ``sqrt`` intrinsics on a temporary SIMD vector.
    - **Neon**: inline assembly (GCC) or built-in (Clang) which emits ``fsqrt``.
 
-.. cpp:function:: Scalar<f64> backend::sqrt(Scalar<f64> v)
+.. cpp:function:: f64 backend::sqrt(Scalar<f64> v)
 
    Scalar square root :math:`\sqrt{v}` for ``f64``.
 

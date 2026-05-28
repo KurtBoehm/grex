@@ -34,12 +34,12 @@ GREX_FOREACH_X86_64_LEVEL(GREX_SQRT_ALL)
 GREX_NNVECTOR_UNARY(sqrt)
 
 // scalar implementations
-inline Scalar<f32> sqrt(Scalar<f32> v) {
-  return {.value = _mm_cvtss_f32(_mm_sqrt_ss(expand_any(v, index_tag<4>).r))};
+inline f32 sqrt(Scalar<f32> v) {
+  return _mm_cvtss_f32(_mm_sqrt_ss(expand_any(v, index_tag<4>).r));
 }
-inline Scalar<f64> sqrt(Scalar<f64> v) {
+inline f64 sqrt(Scalar<f64> v) {
   const __m128d vec = expand_any(v, index_tag<2>).r;
-  return {.value = _mm_cvtsd_f64(_mm_sqrt_sd(vec, vec))};
+  return _mm_cvtsd_f64(_mm_sqrt_sd(vec, vec));
 }
 } // namespace grex::backend
 

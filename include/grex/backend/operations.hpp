@@ -23,17 +23,17 @@
 
 namespace grex::backend {
 template<Vectorizable T>
-inline Scalar<T> abs(Scalar<T> x) {
-  return {.value = T(std::abs(x.value))};
+inline T abs(Scalar<T> x) {
+  return T(std::abs(x.value));
 }
 
 template<Vectorizable T>
-inline Scalar<T> min(Scalar<T> a, Scalar<T> b) {
-  return {.value = std::min(a.value, b.value)};
+inline T min(Scalar<T> a, Scalar<T> b) {
+  return std::min(a.value, b.value);
 }
 template<Vectorizable T>
-inline Scalar<T> max(Scalar<T> a, Scalar<T> b) {
-  return {.value = std::max(a.value, b.value)};
+inline T max(Scalar<T> a, Scalar<T> b) {
+  return std::max(a.value, b.value);
 }
 
 inline bool logical_andnot(bool a, bool b) {
@@ -42,8 +42,8 @@ inline bool logical_andnot(bool a, bool b) {
 
 #define GREX_OPS_MASKARITH(NAME, OP) \
   template<Vectorizable T> \
-  inline Scalar<T> NAME(bool mask, Scalar<T> a, Scalar<T> b) { \
-    return {.value = (mask ? T(a.value OP b.value) : a.value)}; \
+  inline T NAME(bool mask, Scalar<T> a, Scalar<T> b) { \
+    return mask ? T(a.value OP b.value) : a.value; \
   }
 GREX_OPS_MASKARITH(mask_add, +)
 GREX_OPS_MASKARITH(mask_subtract, -)
@@ -52,17 +52,17 @@ GREX_OPS_MASKARITH(mask_divide, /)
 #undef GREX_OPS_MASKARITH
 
 template<Vectorizable T>
-inline Scalar<T> extract_single(Scalar<T> v) {
-  return v;
+inline T extract_single(Scalar<T> v) {
+  return v.value;
 }
 
 template<Vectorizable T>
-inline Scalar<T> blend_zero(bool selector, Scalar<T> v1) {
-  return selector ? v1 : Scalar<T>{T{}};
+inline T blend_zero(bool selector, Scalar<T> v1) {
+  return selector ? v1.value : T{};
 }
 template<Vectorizable T>
-inline Scalar<T> blend(bool selector, Scalar<T> v0, Scalar<T> v1) {
-  return selector ? v1 : v0;
+inline T blend(bool selector, Scalar<T> v0, Scalar<T> v1) {
+  return selector ? v1.value : v0.value;
 }
 
 template<FloatVectorizable T>

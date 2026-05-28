@@ -19,27 +19,27 @@ inline T make_finite(Scalar<T> v) {
 }
 
 template<FloatVectorizable T>
-inline Scalar<T> sqrt(Scalar<T> v) {
-  return {.value = std::sqrt(v.value)};
+inline T sqrt(Scalar<T> v) {
+  return std::sqrt(v.value);
 }
 
 inline constexpr bool has_fma = false;
 
 template<FloatVectorizable T>
-inline Scalar<T> fmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
-  return {.value = (a.value * b.value) + c.value};
+inline T fmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
+  return (a.value * b.value) + c.value;
 }
 template<FloatVectorizable T>
-inline Scalar<T> fmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
-  return {.value = (a.value * b.value) - c.value};
+inline T fmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
+  return (a.value * b.value) - c.value;
 }
 template<FloatVectorizable T>
-inline Scalar<T> fnmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
-  return {.value = c.value - (a.value * b.value)};
+inline T fnmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
+  return c.value - (a.value * b.value);
 }
 template<FloatVectorizable T>
-inline Scalar<T> fnmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
-  return {.value = -(a.value * b.value + c.value)};
+inline T fnmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
+  return -(a.value * b.value + c.value);
 }
 
 template<UnsignedIntVectorizable T>

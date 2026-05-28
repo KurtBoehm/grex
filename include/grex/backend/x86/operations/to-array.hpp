@@ -8,7 +8,6 @@
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_TO_ARRAY_HPP
 
 #include "grex/backend/base.hpp"
-#include "grex/backend/x86/operations/store.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
 

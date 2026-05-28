@@ -55,20 +55,20 @@ GREX_NNVECTOR_TERNARY(fnmadd)
 GREX_NNVECTOR_TERNARY(fnmsub)
 
 template<typename T>
-inline Scalar<T> fmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
-  return {.value = std::fma(a.value, b.value, c.value)};
+inline T fmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
+  return std::fma(a.value, b.value, c.value);
 }
 template<typename T>
-inline Scalar<T> fmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
-  return {.value = std::fma(a.value, b.value, -c.value)};
+inline T fmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
+  return std::fma(a.value, b.value, -c.value);
 }
 template<typename T>
-inline Scalar<T> fnmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
-  return {.value = std::fma(-a.value, b.value, c.value)};
+inline T fnmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
+  return std::fma(-a.value, b.value, c.value);
 }
 template<typename T>
-inline Scalar<T> fnmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
-  return {.value = std::fma(-a.value, b.value, -c.value)};
+inline T fnmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c) {
+  return std::fma(-a.value, b.value, -c.value);
 }
 } // namespace grex::backend
 
