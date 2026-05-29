@@ -27,5 +27,6 @@ These pages give an overview over the operations that a backend needs to impleme
    operations/compare
    operations/classification
    operations/blend
+   operations/shuffle
    operations/mask-index
    operations/multibyte

@@ -3,10 +3,10 @@
 .. _operations-fmadd-family:
 
 #########################
-Fused Multiply–Add Family
+Fused Multiply-Add Family
 #########################
 
-Fused multiply–add and related operations on floating-point vectors and scalars.
+Fused multiply-add and related operations on floating-point vectors and scalars.
 Sub-native vectors are processed by applying the given operation to their underlying native vectors, while each native lane of a super-native vector is processed independently.
 
 Only floating-point element types are supported.
@@ -14,12 +14,12 @@ Only floating-point element types are supported.
 .. _operations-fmadd:
 
 ******************
-Fused Multiply–Add
+Fused Multiply-Add
 ******************
 
 .. cpp:function:: Vector<T, N> backend::fmadd(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
 
-   Element-wise fused multiply–add :math:`a_i \cdot b_i + c_i`.
+   Element-wise fused multiply-add :math:`a_i \cdot b_i + c_i`.
 
    x86-64
    ======
@@ -35,12 +35,12 @@ Fused Multiply–Add
 .. _operations-fmsub:
 
 ***********************
-Fused Multiply–Subtract
+Fused Multiply-Subtract
 ***********************
 
 .. cpp:function:: Vector<T, N> backend::fmsub(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
 
-   Element-wise fused multiply–subtract :math:`a_i \cdot b_i - c_i`.
+   Element-wise fused multiply-subtract :math:`a_i \cdot b_i - c_i`.
 
    x86-64
    ======
@@ -56,12 +56,12 @@ Fused Multiply–Subtract
 .. _operations-fnmadd:
 
 **************************
-Fused Negated Multiply–Add
+Fused Negated Multiply-Add
 **************************
 
 .. cpp:function:: Vector<T, N> backend::fnmadd(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
 
-   Element-wise fused negated multiply–add :math:`-a_i \cdot b_i + c_i` (equivalently :math:`c_i - a_i \cdot b_i`).
+   Element-wise fused negated multiply-add :math:`-a_i \cdot b_i + c_i` (equivalently :math:`c_i - a_i \cdot b_i`).
 
    x86-64
    ======
@@ -77,12 +77,12 @@ Fused Negated Multiply–Add
 .. _operations-fnmsub:
 
 *******************************
-Fused Negated Multiply–Subtract
+Fused Negated Multiply-Subtract
 *******************************
 
 .. cpp:function:: Vector<T, N> backend::fnmsub(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
 
-   Element-wise fused negated multiply–subtract :math:`-a_i \cdot b_i - c_i`.
+   Element-wise fused negated multiply-subtract :math:`-a_i \cdot b_i - c_i`.
 
    x86-64
    ======
@@ -107,7 +107,7 @@ Scalar Variants
 
 .. cpp:function:: T backend::fnmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c)
 
-   Scalar counterparts of the fused multiply–add family.
+   Scalar counterparts of the fused multiply-add family.
 
    - **Neon/x86-64-v3+**: implemented via ``std::fma`` on the underlying scalar values (Neon) or by expanding to a SIMD register and using scalar FMA intrinsics (x86-64).
    - **Earlier x86-64**: computed from scalar multiply/add/subtract/negation; not fused.

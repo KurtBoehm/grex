@@ -93,6 +93,8 @@ inline constexpr std::size_t size_of = TVec::size;
 template<typename T>
 concept IntVector = AnyVector<T> && IntVectorizable<ValueOf<T>>;
 template<typename T>
+concept UnsignedIntVector = AnyVector<T> && UnsignedIntVectorizable<ValueOf<T>>;
+template<typename T>
 concept FloatVector = AnyVector<T> && FloatVectorizable<ValueOf<T>>;
 
 template<Vectorizable T, std::size_t tSize>
