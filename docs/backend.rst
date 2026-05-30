@@ -9,6 +9,7 @@ These pages give an overview over the operations that a backend needs to impleme
 
    operations/load
    operations/store
+   operations/gather
    operations/set
    operations/insert
    operations/extract
@@ -16,6 +17,7 @@ These pages give an overview over the operations that a backend needs to impleme
    operations/expand
    operations/convert
    operations/arithmetic
+   operations/arithmetic-masked
    operations/fmadd-family
    operations/abs
    operations/minmax

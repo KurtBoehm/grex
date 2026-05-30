@@ -331,20 +331,20 @@ Free-Function Utilities
    * - Blend (compile-time selectors)
      - :cpp:func:`grex::blend\<selectors>(Vector v0, Vector v1) <template<BlendSelector... tBls, Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend(Vector<T, tSize>, Vector<T, tSize>)>`
 
-   * - Shuffle (indexed)
+   * - :ref:`Shuffle (indexed) <operations-shuffle-dynamic>`
      - :cpp:func:`grex::shuffle(Vector table, Vector idxs) <template<Vectorizable T, UnsignedIntVectorizable TIdx, std::size_t tTableSize, std::size_t tIdxSize> Vector<T, tIdxSize> grex::shuffle(Vector<T, tTableSize>, Vector<TIdx, tIdxSize>)>`
 
    * - Shuffle (compile-time indices)
      - :cpp:func:`grex::shuffle(Vector table) <template<ShuffleIndex... tIdxs, Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::shuffle(Vector<T, tSize>)>`
 
-   * - Masked arithmetic
+   * - :ref:`Masked arithmetic <operations-mask-arithmetic>`
      - | :cpp:func:`grex::mask_add(Mask mask, Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::mask_add(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
        | :cpp:func:`grex::mask_subtract(Mask mask, Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::mask_subtract(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
        | :cpp:func:`grex::mask_multiply(Mask mask, Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::mask_multiply(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
        | :cpp:func:`grex::mask_divide(Mask mask, Vector a, Vector b) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::mask_divide(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
 
-   * - Gather
+   * - :ref:`Gather <operations-gather>`
      - :cpp:func:`grex::gather(std::span\<const T, extent> data, Vector indices) <template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize> Vector<TValue, tSize> grex::gather(std::span<const TValue, tExtent>, Vector<TIndex, tSize>)>`
 
-   * - Masked gather
+   * - :ref:`Masked gather <operations-mask-gather>`
      - :cpp:func:`grex::mask_gather(std::span\<const T, extent> data, Mask mask, Vector indices) <template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize> Vector<TValue, tSize> grex::mask_gather(std::span<const TValue, tExtent>, Mask<TValue, tSize>, Vector<TIndex, tSize>)>`

@@ -6,6 +6,8 @@ Table Shuffles
 
 Element-wise table lookups driven by per-lane indices.
 
+.. _operations-shuffle-indices-x64:
+
 *********************************
 Shuffle Index Conversion (x86-64)
 *********************************
@@ -45,6 +47,8 @@ Shuffle Index Conversion (x86-64)
 
      - All new cross-lane permutation instructions use values and indices of the same width, i.e. :math:`V = D`, and do not require additional special cases.
 
+.. _operations-shuffle-indices-neon:
+
 *******************************
 Shuffle Index Conversion (Neon)
 *******************************
@@ -61,6 +65,8 @@ Shuffle Index Conversion (Neon)
 
    - Uses a mix of lane zip/unzip, shifts, multiplications, and ``vqtbl1q_u8``/``vqtbl2q_u8`` lookups with small constant tables to expand element indices to byte indices.
    - 64-bit element indices are first compressed to 32-bit via lane unpacking, then treated as 32-bit indices.
+
+.. _operations-shuffle-dynamic:
 
 *************
 Table Shuffle

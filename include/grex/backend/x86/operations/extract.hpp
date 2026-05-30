@@ -51,7 +51,7 @@ namespace grex::backend {
 #define GREX_EXTRACT_BASIC_AVX512(ELEMENT, SIZE, CALL, CONVERT) \
   const auto x = CALL; \
   return CONVERT;
-// Compress v by mask selecting the i‑th element
+// Compress v by mask selecting the i-th element
 #define GREX_MASKZ_CMPR(KIND, BITS, SIZE, BITPREFIX) \
   GREX_CAT(BITPREFIX##_maskz_compress_, GREX_EPI_SUFFIX(KIND, BITS)) \
   (single_mask(i, type_tag<NativeMask<KIND##BITS, SIZE>>).r, v.r)
@@ -120,7 +120,7 @@ namespace grex::backend {
 
 // Extraction with compile-time index
 
-// i8x16: use _mm_extract_epi8 if available, otherwise extract via 16‑bit lane
+// i8x16: use _mm_extract_epi8 if available, otherwise extract via 16-bit lane
 inline i8 extract(NativeVector<i8, 16> v, AnyIndexTag auto i) {
   static_assert(i < 16);
 #if GREX_X86_64_LEVEL >= 2
@@ -178,7 +178,7 @@ inline f64 extract(NativeVector<f64, 2> v, AnyIndexTag auto i) {
   }
 GREX_FOREACH_INT_TYPE(GREX_STRACT_I256, 256)
 
-// f32x8: just extract from low or high 128‑bit half
+// f32x8: just extract from low or high 128-bit half
 inline f32 extract(f32x8 v, AnyIndexTag auto i) {
   static_assert(i < 8);
   if constexpr (i < 4) {
@@ -200,7 +200,7 @@ inline f64 extract(f64x4 v, AnyIndexTag auto i) {
 #endif
 
 #if GREX_X86_64_LEVEL >= 4
-// Helpers to extract 128‑bit lanes from 512‑bit vectors
+// Helpers to extract 128-bit lanes from 512-bit vectors
 #define GREX_TRACT_512_INT(A, IMM8) _mm512_extracti32x4_epi32(A, IMM8)
 #define GREX_TRACT_512_F32(A, IMM8) _mm512_extractf32x4_ps(A, IMM8)
 #define GREX_TRACT_512_F64(A, IMM8) _mm512_extractf64x2_pd(A, IMM8)
@@ -210,7 +210,7 @@ inline f64 extract(f64x4 v, AnyIndexTag auto i) {
 #define GREX_TRACT_512_u(BITS, A, IMM8) GREX_TRACT_512_INT(A, IMM8)
 #define GREX_TRACT_512(KIND, BITS, A, IMM8) GREX_TRACT_512_##KIND(BITS, A, IMM8)
 
-// 512‑bit integer: split into 4 lanes of equal size and recurse
+// 512-bit integer: split into 4 lanes of equal size and recurse
 #define GREX_STRACT_512_INT(KIND, BITS, SIZE) \
   if constexpr (lane_idx < 2) { \
     return extract(get_low(v), i); \
@@ -220,7 +220,7 @@ inline f64 extract(f64x4 v, AnyIndexTag auto i) {
                    index_tag<i.value - lane_idx * lane_size>); \
   }
 
-// 512‑bit floating-point: rotate bits so desired element is at position 0, then extract_single
+// 512-bit floating-point: rotate bits so desired element is at position 0, then extract_single
 #define GREX_STRACT_512_FP(KIND, BITS, SIZE) \
   if constexpr (lane_idx < 2) { \
     return extract(get_low(v), i); \
@@ -235,7 +235,7 @@ inline f64 extract(f64x4 v, AnyIndexTag auto i) {
 #define GREX_STRACT_512_i GREX_STRACT_512_INT
 #define GREX_STRACT_512_u GREX_STRACT_512_INT
 
-// Generic 512‑bit extract: compute lane index, delegate to INT/FP variant
+// Generic 512-bit extract: compute lane index, delegate to INT/FP variant
 #define GREX_STRACT_512(KIND, BITS, SIZE) \
   inline KIND##BITS extract(NativeVector<KIND##BITS, SIZE> v, AnyIndexTag auto i) { \
     static_assert(i < SIZE); \

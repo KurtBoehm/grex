@@ -13,6 +13,7 @@
 #include "grex/backend/macros/math.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/operations/bitwise.hpp"
 #include "grex/backend/x86/operations/extract.hpp" // IWYU pragma: export
 #include "grex/backend/x86/operations/merge.hpp" // IWYU pragma: export
 #include "grex/backend/x86/operations/set.hpp" // IWYU pragma: export
@@ -149,7 +150,7 @@ GREX_GATHER_DEFINE(i, 32, i, 64, 8, 512)
 GREX_GATHER_DEFINE(u, 32, i, 64, 8, 512)
 #endif
 
-// i64 indices: The virtual address space is far below 63 bits, i.e. we ignore the signedness
+// u64 indices: The virtual address space is far below 63 bits, i.e. we ignore the signedness
 // up to 128 bits
 GREX_GATHER_DEFINE(f, 64, u, 64, 2, 128)
 GREX_GATHER_DEFINE(i, 64, u, 64, 2, 128)
@@ -189,8 +190,8 @@ inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
 }
 
 // u32:
-// - data.size() < 2^31: idxs < 2^31 → cast to i32 is safe
-// - data.size() ≥ 2^31: add 2^31 to the base pointer and subtract 2^31 from idxs,
+// - data.size() ≤ 2^31: idxs < 2^31 → cast to i32 is safe
+// - data.size() > 2^31: add 2^31 to the base pointer and subtract 2^31 from idxs,
 //   which is equivalent to idxs ^ 2^31, which transforms the value range of u32 to i32.
 // sadly, the latter cannot be done in general in standard C++ because pointer arithmetic
 // past the array leads to undefined behaviour
@@ -198,13 +199,25 @@ template<Vectorizable TValue, std::size_t tExtent, std::size_t tSize>
 requires(sizeof(TValue) >= 4)
 inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
                                        NativeVector<u32, tSize> idxs) {
-  constexpr u32 limit = std::size_t{1} << 31;
-  if (data.size() >= limit) {
-    return gather(std::span{data.data() + limit, data.size() - limit},
-                  convert(bitwise_xor(idxs, broadcast(limit, type_tag<NativeVector<u32, tSize>>)),
-                          type_tag<i32>));
+  constexpr u32 limit = u32{1} << 31;
+  if (data.size() > limit) {
+    const auto flipped = bitwise_xor(idxs, broadcast(limit, type_tag<NativeVector<u32, tSize>>));
+    return gather(std::span{data.data() + limit, data.size() - limit}, as<i32>(flipped));
   }
   return gather(data, convert(idxs, type_tag<i32>));
+}
+
+template<Vectorizable TValue, std::size_t tExtent, std::size_t tSize>
+requires(sizeof(TValue) >= 4)
+inline VectorFor<TValue, tSize> mask_gather(std::span<const TValue, tExtent> data,
+                                            NativeMask<TValue, tSize> m,
+                                            NativeVector<u32, tSize> idxs) {
+  constexpr u32 limit = u32{1} << 31;
+  if (data.size() > limit) {
+    const auto flipped = bitwise_xor(idxs, broadcast(limit, type_tag<NativeVector<u32, tSize>>));
+    return mask_gather(std::span{data.data() + limit, data.size() - limit}, m, as<i32>(flipped));
+  }
+  return mask_gather(data, m, convert(idxs, type_tag<i32>));
 }
 #endif
 } // namespace grex::backend
