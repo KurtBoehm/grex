@@ -39,7 +39,7 @@ inline f32 sqrt(Scalar<f32> v) {
 inline f64 sqrt(Scalar<f64> v) {
 #if GREX_GCC
   if (__builtin_constant_p(v.value) == 0) {
-    f32 r{};
+    f64 r{};
     asm("fsqrt %d0, %d1" : "=w"(r) : "w"(v.value)); // NOLINT
     return r;
   }

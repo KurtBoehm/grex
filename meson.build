@@ -7,8 +7,8 @@
 project(
   'grex',
   'cpp',
-  default_options: ['cpp_std=c++23', 'warning_level=3'],
   meson_version: '>=1.5.0',
+  default_options: ['cpp_std=c++23', 'warning_level=3'],
 )
 
 backend = get_option('simd_backend')
@@ -49,6 +49,13 @@ if not meson.is_subproject()
     version: meson.project_version(),
     description: 'Generic C++ SIMD',
   )
+endif
+
+# On macOS + GCC, _Static_assert is used in system headers, which GCC does not
+# support in C++ mode
+cpp = meson.get_compiler('cpp')
+if cpp.get_id() == 'gcc' and host_machine.system() == 'darwin'
+  add_global_arguments('-D_Static_assert=static_assert', language: 'cpp')
 endif
 
 if get_option('build_tests')

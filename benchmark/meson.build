@@ -16,8 +16,8 @@ if backend == 'neon'
     executable(
       f'bm-@name@',
       f'neon/@name@.cpp',
-      cpp_args: all_args,
       dependencies: [benchmark_dep, grex_dep, pcg_dep],
+      cpp_args: all_args,
     )
   endforeach
 endif
@@ -34,8 +34,8 @@ if backend == 'x86_64'
     executable(
       f'bm-@name@',
       f'x86/@name@.cpp',
-      cpp_args: all_args,
       dependencies: [benchmark_dep, grex_dep, pcg_dep],
+      cpp_args: all_args,
     )
   endforeach
 
@@ -46,8 +46,8 @@ if backend == 'x86_64'
       exe = executable(
         f'bm-@name@-@arch_name@',
         f'x86/@name@.cpp',
-        cpp_args: basic_args + arch_args,
         dependencies: [benchmark_dep, grex_dep, pcg_dep],
+        cpp_args: basic_args + arch_args,
       )
       targets += exe
     endforeach

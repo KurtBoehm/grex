@@ -41,10 +41,10 @@ foreach name, conf : {
           exe = executable(
             f'@name@-@value@-@index@-@arch_name@',
             [f'@name@.cpp'],
+            dependencies: [grex_dep] + deps,
             cpp_args: args
             + arch_args
             + [f'-DGREX_VALUE_TYPE=@value@', f'-DGREX_INDEX_TYPE=@index@'],
-            dependencies: [grex_dep] + deps,
           )
           test(
             f'@space_name@ @value@ @index@ @arch_name@',
@@ -91,8 +91,8 @@ foreach name, conf : {
         exe = executable(
           f'@name@-@type@-@arch_name@',
           [f'@name@.cpp'],
-          cpp_args: args + arch_args + [f'-DGREX_TEST_TYPE=@type@'],
           dependencies: [grex_dep] + deps,
+          cpp_args: args + arch_args + [f'-DGREX_TEST_TYPE=@type@'],
         )
         test(
           f'@space_name@ @type@ @arch_name@',
@@ -136,8 +136,8 @@ foreach name, conf : {
       exe = executable(
         f'@name@-@arch_name@',
         [f'@name@.cpp'],
-        cpp_args: args + arch_args,
         dependencies: deps,
+        cpp_args: args + arch_args,
       )
       test(
         f'@space_name@ @arch_name@',
