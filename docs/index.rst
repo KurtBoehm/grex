@@ -13,3 +13,4 @@ See the `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructur
    operations
    simd
    backend
+   expensive-operations

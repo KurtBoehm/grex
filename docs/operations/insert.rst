@@ -5,6 +5,7 @@ Insertion
 #########
 
 Single-lane insertion into vectors and masks.
+Sub-native vectors/masks are processed via their backing native registers, while a super-native vector/mask is handled by inserting into the half that contains the target lane.
 
 .. _operations-insert-value-ct:
 
@@ -15,7 +16,7 @@ Vector Insertion (Compile-Time Index)
 .. cpp:function:: template<Vectorizable T, std::size_t N, AnyIndexTag I> \
                   Vector<T, N> backend::insert(Vector<T, N> v, I index, T value)
 
-   Returns a copy of ``v`` with lane :math:`\text{index} < N` replaced by ``value``; all other lanes are unchanged.
+   Returns a copy of ``v`` with lane :math:`\mathit{index} < N` replaced by ``value``; all other lanes are unchanged.
 
    Shared
    ======
@@ -23,8 +24,8 @@ Vector Insertion (Compile-Time Index)
    - **Sub-native**: forwards to the backing native vector.
    - **Super-native**:
 
-     - If :math:`\text{index} < N / 2`: insert into ``lower`` at ``index``; ``upper`` unchanged.
-     - Otherwise: insert into ``upper`` at :math:`\text{index} - N / 2`; ``lower`` unchanged.
+     - If :math:`\mathit{index} < N / 2`: insert into ``lower`` at ``index``; ``upper`` unchanged.
+     - Otherwise: insert into ``upper`` at :math:`\mathit{index} - N / 2`; ``lower`` unchanged.
 
    x86-64
    ======
@@ -86,7 +87,7 @@ Mask Insertion (Compile-Time Index)
 .. cpp:function:: template<Vectorizable T, std::size_t N, AnyIndexTag I> \
                   Mask<T, N> backend::insert(Mask<T, N> m, I index, bool value)
 
-   Returns a copy of ``m`` with mask lane :math:`\text{index} < N` set to ``value``; remaining lanes are unchanged.
+   Returns a copy of ``m`` with mask lane :math:`\mathit{index} < N` set to ``value``; remaining lanes are unchanged.
 
    Shared
    ======
@@ -121,8 +122,8 @@ Vector Insertion (Run-Time Index)
 .. cpp:function:: template<Vectorizable T, std::size_t N> \
                   Vector<T, N> backend::insert(Vector<T, N> v, std::size_t index, T value)
 
-   Returns a copy of ``v`` with lane :math:`\text{index} < N` replaced by ``value``; all other lanes are unchanged.
-   Behaviour is undefined if :math:`\text{index} \ge N`.
+   Returns a copy of ``v`` with lane :math:`\mathit{index} < N` replaced by ``value``; all other lanes are unchanged.
+   Behaviour is undefined if :math:`\mathit{index} \ge N`.
 
    Shared
    ======
@@ -130,8 +131,8 @@ Vector Insertion (Run-Time Index)
    - **Sub-native**: insert into the backing native vector at run-time index and re-wrap.
    - **Super-native**:
 
-     - If :math:`\text{index} < N / 2`: insert into ``lower`` at ``index``.
-     - Otherwise: insert into ``upper`` at :math:`\text{index} - N / 2`.
+     - If :math:`\mathit{index} < N / 2`: insert into ``lower`` at ``index``.
+     - Otherwise: insert into ``upper`` at :math:`\mathit{index} - N / 2`.
 
    x86-64
    ======
@@ -157,15 +158,15 @@ Vector Insertion (Run-Time Index)
 
 .. _operations-insert-mask-runtime:
 
-*************************************
-Single-Lane Mask Bit (Run-Time Index)
-*************************************
+*******************************
+Mask Insertion (Run-Time Index)
+*******************************
 
 .. cpp:function:: template<Vectorizable T, std::size_t N> \
                   Mask<T, N> backend::insert(Mask<T, N> m, std::size_t index, bool value)
 
-   Returns a copy of ``m`` with mask lane :math:`\text{index} < N` set to ``value``; remaining lanes are unchanged.
-   Behaviour is undefined if :math:`\text{index} \ge N`.
+   Returns a copy of ``m`` with mask lane :math:`\mathit{index} < N` set to ``value``; remaining lanes are unchanged.
+   Behaviour is undefined if :math:`\mathit{index} \ge N`.
 
    Shared
    ======
@@ -173,8 +174,8 @@ Single-Lane Mask Bit (Run-Time Index)
    - **Sub-native**: insert into the backing native mask and re-wrap.
    - **Super-native**:
 
-     - If :math:`\text{index} < N / 2`: insert into ``lower``; ``upper`` unchanged.
-     - Otherwise: insert into ``upper`` at :math:`\text{index} - N / 2`; ``lower`` unchanged.
+     - If :math:`\mathit{index} < N / 2`: insert into ``lower``; ``upper`` unchanged.
+     - Otherwise: insert into ``upper`` at :math:`\mathit{index} - N / 2`; ``lower`` unchanged.
 
    x86-64
    ======
@@ -183,7 +184,7 @@ Single-Lane Mask Bit (Run-Time Index)
 
      .. math::
 
-        r = (m \land \neg(1 \ll \text{index})) \lor (\text{value} \ll \text{index}).
+        r = (m \land \neg(1 \ll \mathit{index})) \lor (\text{value} \ll \mathit{index}).
 
    - **Earlier (broad masks)**:
 

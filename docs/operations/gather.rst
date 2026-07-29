@@ -5,7 +5,6 @@ Gather
 ######
 
 Random-access element loading from scalar arrays into SIMD vectors.
-
 Sub-native index vectors are processed via their backing native vectors, while each native lane of a super-native index vector is processed independently and results are merged.
 
 .. _operations-gather:
@@ -91,7 +90,7 @@ Masked Gather
    - **Other cases**: implemented via per-lane conditionals:
 
      - For each lane, read the mask entry :math:`m_i` and index :math:`\mathit{idxs}_i` with :cpp:func:`~backend::extract`.
-     - If :math:`m_i` is true, load :math:`\mathit{data}[\mathit{idx}_i]`, otherwise use :math:`0`.
+     - If :math:`m_i` is true, load :math:`\mathit{data}[\mathit{idxs}_i]`, otherwise use :math:`0`.
      - Reconstruct the result vector with :cpp:func:`~backend::set`.
 
    Neon

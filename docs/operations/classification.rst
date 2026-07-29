@@ -5,7 +5,7 @@ Classification
 ##############
 
 Element-wise floating-point classification and finite-value filtering.
-Sub-native vectors are processed via their backing native vectors; each native lane of a super-native vector is processed independently.
+Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
 
 .. _operations-is-finite:
 
@@ -36,7 +36,7 @@ Finite-Value Test
    ====
 
    - Broadcast the largest finite value ``std::numeric_limits<T>::max()``.
-   - Compare :math:`|v| \le \text{max}` via ``vabsq`` and ``vcleq``.
+   - Compare :math:`|v| \le \mathtt{max}` via ``vabsq`` and ``vcleq``.
 
 .. _operations-make-finite-vector:
 
@@ -57,7 +57,10 @@ Finite-Value Vector Clamp
         0   & \text{otherwise}
       \end{cases}
 
-   Implemented as :cpp:func:`~backend::blend_zero` with the mask from :cpp:func:`~backend::is_finite`.
+   Shared
+   ======
+
+   - Implemented as :cpp:func:`~backend::blend_zero` with the mask from :cpp:func:`~backend::is_finite`, so it inherits the backend-specific paths of both.
 
 .. _operations-make-finite-scalar:
 
@@ -68,7 +71,10 @@ Finite-Value Scalar Clamp
 .. cpp:function:: template<FloatVectorizable T> \
                   T backend::make_finite(Scalar<T> v)
 
-   Scalar version of :cpp:func:`make_finite() <template\<AnyVector V\> V backend::make_finite(V v)>`:
+   Scalar version of :cpp:func:`make_finite() <template\<AnyVector V\> V backend::make_finite(V v)>`.
+
+   Shared
+   ======
 
    - Expands ``v`` to a minimal native vector.
    - Applies :cpp:func:`~backend::make_finite` on that vector.

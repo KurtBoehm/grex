@@ -5,7 +5,7 @@ Minimum/Maximum
 ###############
 
 Element-wise minimum and maximum on vectors.
-Sub-native vectors are processed by applying the given operation to their underlying native vectors, while each native lane of a super-native vector is processed independently.
+Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
 
 .. _operations-min:
 
@@ -13,7 +13,8 @@ Sub-native vectors are processed by applying the given operation to their underl
 Minimum
 *******
 
-.. cpp:function:: Vector<T, N> backend::min(Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::min(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise minimum :math:`\min(a_i, b_i)`.
 
@@ -40,7 +41,8 @@ Minimum
 Maximum
 *******
 
-.. cpp:function:: Vector<T, N> backend::max(Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::max(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise maximum :math:`\max(a_i, b_i)`.
 
@@ -50,8 +52,8 @@ Maximum
    - **Floating point**: ``max`` intrinsics.
    - **Integers**:
 
-     - **8-bit signed/16-bit unsigned (x86-64-v1)**: flip the sign bit to reuse unsigned/signed maximum, then flip back.
-     - **32-bit integers (x86-64-v1), 64-bit integers (before x86-64-v4)**: compare via :cpp:func:`~backend::compare_lt` and select with :cpp:func:`~backend::blend`.
+     - **8-bit signed/16-bit unsigned (x86-64-v1)**: flip the sign bit to reuse unsigned/signed maximum, then flip back (based on VCL).
+     - **32-bit integers (x86-64-v1), 64-bit integers (before x86-64-v4)**: compare via :cpp:func:`~backend::compare_lt` and select with :cpp:func:`~backend::blend` (inspired by VCL).
      - **Otherwise**: integer ``max`` intrinsics.
 
    Neon

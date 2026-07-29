@@ -5,7 +5,7 @@ Shift Operations
 ################
 
 Element-wise bitwise left and right shifts of integer vectors by a compile-time constant number of bits.
-Sub-native vectors are processed by applying the given operation to their underlying native vectors, while each native lane of a super-native vector is processed independently.
+Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
 
 .. _operations-shift-left:
 
@@ -13,9 +13,10 @@ Sub-native vectors are processed by applying the given operation to their underl
 Left Shift
 **********
 
-.. cpp:function:: Vector<T, N> backend::shift_left(Vector<T, N> v, AnyIndexTag auto offset)
+.. cpp:function:: template<IntVectorizable T, std::size_t N> \
+                  Vector<T, N> backend::shift_left(Vector<T, N> v, AnyIndexTag auto offset)
 
-   Element-wise logical left shift :math:`v_i \ll \text{offset}` by a constant number of bits for integer element types only.
+   Element-wise logical left shift :math:`v_i \ll \mathit{offset}` by a constant number of bits for integer element types only.
 
    x86-64
    ======
@@ -34,9 +35,10 @@ Left Shift
 Right Shift
 ***********
 
-.. cpp:function:: Vector<T, N> backend::shift_right(Vector<T, N> v, AnyIndexTag auto offset)
+.. cpp:function:: template<IntVectorizable T, std::size_t N> \
+                  Vector<T, N> backend::shift_right(Vector<T, N> v, AnyIndexTag auto offset)
 
-   Element-wise right shift :math:`v_i \gg \text{offset}` by a constant number of bits for integer element types only.
+   Element-wise right shift :math:`v_i \gg \mathit{offset}` by a constant number of bits for integer element types only.
 
    Unsigned integers use a logical shift; signed integers use an arithmetic shift.
 

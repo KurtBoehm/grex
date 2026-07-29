@@ -13,11 +13,17 @@ Partial loads handle a prefix without accessing memory beyond the requested numb
 Load Unaligned
 **************
 
-.. cpp:function:: Vector<T, N> backend::load(const T* ptr, TypeTag<Vector<T, N>>)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::load(const T* ptr, TypeTag<Vector<T, N>>)
 
    Loads :math:`N` contiguous elements from ``ptr`` into a vector.
 
    The pointer must be valid for scalar ``T`` access and may be unaligned.
+
+   Shared
+   ======
+
+   - **Super-native**: split into halves and load independently.
 
    x86-64
    ======
@@ -31,21 +37,22 @@ Load Unaligned
    - **Native**: ``vld1q`` intrinsics.
    - **Sub-native**: implemented via :cpp:func:`~backend::load_part` on the backing native vector, then reinterpret.
 
-   Super-native (shared)
-   =====================
-
-   - Split into halves and load independently.
-
 .. _operations-load-aligned:
 
 ************
 Load Aligned
 ************
 
-.. cpp:function:: Vector<T, N> backend::load_aligned(const T* ptr, TypeTag<Vector<T, N>>)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::load_aligned(const T* ptr, TypeTag<Vector<T, N>>)
 
    Loads :math:`N` contiguous elements from an address assumed to be suitably aligned for a full SIMD vector of ``T``.
    Semantics match :cpp:func:`~backend::load`.
+
+   Shared
+   ======
+
+   - **Super-native**: as for unaligned loads, but using :cpp:func:`~backend::load_aligned` on each half.
 
    x86-64
    ======
@@ -57,25 +64,29 @@ Load Aligned
 
    - Same code path as :cpp:func:`~backend::load` (Neon loads are alignment-agnostic).
 
-   Super-native (shared)
-   =====================
-
-   - As for unaligned loads, but using :cpp:func:`~backend::load_aligned` on each half.
-
 .. _operations-load-part-runtime:
 
 *****************************
 Load Partial (Runtime Length)
 *****************************
 
-.. cpp:function:: Vector<T, N> backend::load_part(const T* ptr, std::size_t size, TypeTag<Vector<T, N>>)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::load_part(const T* ptr, std::size_t size, TypeTag<Vector<T, N>>)
 
    Loads up to ``size`` elements from ``ptr`` into a vector, without reading beyond them.
 
-   - If :math:`\text{size} \ge N`, equivalent to :cpp:func:`~backend::load`.
-   - If :math:`\text{size} = 0`, all lanes are left unspecified.
+   - If :math:`\mathit{size} \ge N`, equivalent to :cpp:func:`~backend::load`.
+   - If :math:`\mathit{size} = 0`, all lanes are left unspecified.
 
    Lanes beyond ``size`` (if any) are unspecified.
+
+   Shared
+   ======
+
+   - **Super-native**:
+
+     - If :math:`\mathit{size} \le N / 2`: partially load the lower half; upper half undefined.
+     - If :math:`\mathit{size} > N / 2`: fully load the lower half and partially load the upper half with :math:`\mathit{size} - N / 2` elements.
 
    x86-64
    ======
@@ -113,7 +124,7 @@ Load Partial (Runtime Length)
    Native vectors
    --------------
 
-   - Let :math:`\text{bytes} = \text{size} \cdot \text{sizeof}(T)`.
+   - Let :math:`\mathit{bytes} = \mathit{size} \cdot \operatorname{sizeof}(T)`.
    - Decompose into 8/4/2/1-byte blocks:
 
      - First non-zero block size uses a dedicated ``load_first`` helper:
@@ -129,13 +140,7 @@ Load Partial (Runtime Length)
    Sub-native vectors
    ------------------
 
-   - Delegate to the native 128-bit partial loader and then wrapped as a sub-native vector.
-
-   Super-native (shared)
-   =====================
-
-   - If :math:`\text{size} \le N / 2`: partially load the the lower half; upper half undefined.
-   - If :math:`\text{size} > N / 2`: fully load the lower half and partially load the upper half with :math:`\text{size} - N / 2` elements.
+   - Delegate to the native 128-bit partial loader and then wrap as a sub-native vector.
 
 .. _operations-load-part-ct:
 
@@ -143,12 +148,13 @@ Load Partial (Runtime Length)
 Load Partial (Compile-Time Length)
 **********************************
 
-.. cpp:function:: Vector<T, N> backend::load_part(const T* ptr, AnyIndexTag auto size, TypeTag<Vector<T, N>>)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::load_part(const T* ptr, AnyIndexTag auto size, TypeTag<Vector<T, N>>)
 
    Loads a compile-time-known number of elements ``size`` without reading beyond them.
 
-   - If :math:`\text{size} = N`, equivalent to :cpp:func:`~backend::load`.
-   - If :math:`\text{size} = 0`, all lanes are left unspecified.
+   - If :math:`\mathit{size} = N`, equivalent to :cpp:func:`~backend::load`.
+   - If :math:`\mathit{size} = 0`, all lanes are left unspecified.
 
    Backend behaviour matches the run-time :cpp:func:`~backend::load_part` overload, but:
 
@@ -156,4 +162,7 @@ Load Partial (Compile-Time Length)
    - On x86-64, this lets the compiler select a single specialized shuffle/mask path.
    - On Neon, the chosen ``load_first`` + lane-insert pattern is fully constant-folded.
 
-   Super-native vectors use the same half-splitting strategy as the run-time overload, with ``size`` tested at compile time.
+   Shared
+   ======
+
+   - **Super-native**: the same half-splitting strategy as the run-time overload, with ``size`` tested at compile time.

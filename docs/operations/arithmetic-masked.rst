@@ -16,7 +16,8 @@ Sub-native vectors are processed via their backing native vectors, while each na
 Masked Addition
 ***************
 
-.. cpp:function:: Vector<T, N> backend::mask_add(Mask<T, N> m, Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::mask_add(Mask<T, N> m, Vector<T, N> a, Vector<T, N> b)
 
    Element-wise masked addition:
 
@@ -45,7 +46,8 @@ Masked Addition
 Masked Subtraction
 ******************
 
-.. cpp:function:: Vector<T, N> backend::mask_subtract(Mask<T, N> m, Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::mask_subtract(Mask<T, N> m, Vector<T, N> a, Vector<T, N> b)
 
    Element-wise masked subtraction:
 
@@ -74,7 +76,8 @@ Masked Subtraction
 Masked Multiplication
 *********************
 
-.. cpp:function:: Vector<T, N> backend::mask_multiply(Mask<T, N> m, Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::mask_multiply(Mask<T, N> m, Vector<T, N> a, Vector<T, N> b)
 
    Element-wise masked multiplication:
 
@@ -103,7 +106,8 @@ Masked Multiplication
 Masked Division
 ***************
 
-.. cpp:function:: Vector<T, N> backend::mask_divide(Mask<T, N> m, Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<FloatVectorizable T, std::size_t N> \
+                  Vector<T, N> backend::mask_divide(Mask<T, N> m, Vector<T, N> a, Vector<T, N> b)
 
    Element-wise masked division for floating-point vectors only:
 

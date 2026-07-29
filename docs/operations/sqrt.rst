@@ -1,28 +1,52 @@
 .. cpp:namespace:: grex
 
-.. _operations-sqrt:
-
 ###########
 Square Root
 ###########
 
-.. cpp:function:: Vector<T, N> backend::sqrt(Vector<T, N> v)
+Element-wise square root on vectors, plus scalar counterparts.
+Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
 
-   Element-wise square root :math:`\sqrt{v_i}` for floating-point element types only.
+Only floating-point element types are supported.
 
-   - **x86-64**: ``sqrt`` intrinsics.
-   - **Neon**: ``vsqrtq`` intrinsics.
+.. _operations-sqrt:
+
+***********
+Square Root
+***********
+
+.. cpp:function:: template<FloatVectorizable T, std::size_t N> \
+                  Vector<T, N> backend::sqrt(Vector<T, N> v)
+
+   Element-wise square root :math:`\sqrt{v_i}`.
+
+   x86-64
+   ======
+
+   - ``sqrt`` intrinsics.
+
+   Neon
+   ====
+
+   - ``vsqrtq`` intrinsics.
+
+.. _operations-sqrt-scalar:
+
+***************
+Scalar Variants
+***************
 
 .. cpp:function:: f32 backend::sqrt(Scalar<f32> v)
+                  f64 backend::sqrt(Scalar<f64> v)
 
-   Scalar square root :math:`\sqrt{v}` for ``f32``.
+   Scalar square root :math:`\sqrt{v}`.
 
-   - **x86-64**: 128-bit ``sqrt`` intrinsics on a temporary SIMD vector.
-   - **Neon**: inline assembly (GCC) or built-in (Clang) which emits ``fsqrt``.
+   x86-64
+   ======
 
-.. cpp:function:: f64 backend::sqrt(Scalar<f64> v)
+   - 128-bit ``sqrt`` intrinsics on a temporary SIMD vector.
 
-   Scalar square root :math:`\sqrt{v}` for ``f64``.
+   Neon
+   ====
 
-   - **x86-64**: 128-bit ``sqrt`` intrinsics on a temporary SIMD vector.
-   - **Neon**: inline assembly (GCC) or built-in (Clang) which emits ``fsqrt``.
+   - Inline assembly (GCC) or built-in (Clang) which emits ``fsqrt``.

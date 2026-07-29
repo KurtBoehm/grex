@@ -5,7 +5,7 @@ Arithmetic Operations
 #####################
 
 Element-wise arithmetic operations on vectors.
-Sub-native vectors are processed by applying the given operation to their underlying native vectors, while each native lane of a super-native vector is processed independently.
+Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
 
 .. _operations-addition:
 
@@ -13,11 +13,20 @@ Sub-native vectors are processed by applying the given operation to their underl
 Addition
 ********
 
-.. cpp:function:: Vector<T, N> backend::add(Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::add(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise addition :math:`a_i + b_i`.
 
-   - **x86-64/Neon**: uses ``add``/``vaddq`` intrinsics.
+   x86-64
+   ======
+
+   - ``add`` intrinsics.
+
+   Neon
+   ====
+
+   - ``vaddq`` intrinsics.
 
 .. _operations-subtraction:
 
@@ -25,11 +34,20 @@ Addition
 Subtraction
 ***********
 
-.. cpp:function:: Vector<T, N> backend::subtract(Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::subtract(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise subtraction :math:`a_i - b_i`.
 
-   - **x86-64/Neon**: uses ``sub``/``vsubq`` intrinsics.
+   x86-64
+   ======
+
+   - ``sub`` intrinsics.
+
+   Neon
+   ====
+
+   - ``vsubq`` intrinsics.
 
 .. _operations-negation:
 
@@ -37,23 +55,21 @@ Subtraction
 Negation
 ********
 
-.. cpp:function:: Vector<T, N> backend::negate(Vector<T, N> v)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::negate(Vector<T, N> v)
 
    Element-wise arithmetic negation :math:`-v_i`.
 
-   .. list-table::
-      :header-rows: 1
-      :widths: 1 1 1
+   x86-64
+   ======
 
-      * - Arguments
-        - x86-64
-        - Neon
-      * - Integers
-        - :math:`0 - v`
-        - ``vnegq``
-      * - Floating point
-        - Flip sign bit
-        - ``vnegq``
+   - **Integers**: :math:`0 - v`.
+   - **Floating point**: flip the sign bit.
+
+   Neon
+   ====
+
+   - **Integers and floating point**: ``vnegq`` intrinsics.
 
 .. _operations-multiplication:
 
@@ -61,7 +77,8 @@ Negation
 Multiplication
 **************
 
-.. cpp:function:: Vector<T, N> backend::multiply(Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Vector<T, N> backend::multiply(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise multiplication :math:`a_i \cdot b_i`.
 
@@ -93,8 +110,19 @@ Multiplication
 Division
 ********
 
-.. cpp:function:: Vector<T, N> backend::divide(Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<FloatVectorizable T, std::size_t N> \
+                  Vector<T, N> backend::divide(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise division :math:`a_i / b_i` for floating-point element types only.
 
    Integer division is intentionally not provided due to poor performance.
+
+   x86-64
+   ======
+
+   - ``div`` intrinsics.
+
+   Neon
+   ====
+
+   - ``vdivq`` intrinsics.

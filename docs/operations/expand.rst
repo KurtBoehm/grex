@@ -20,6 +20,12 @@ Expand (Any)
 
    Expands a scalar ``x`` to size ``N`` by writing it to lane 0; remaining lanes have unspecified contents.
 
+   Shared
+   ------
+
+   - **Larger sizes**: recursively expand to half size, then expand that result to ``N`` (see :ref:`operations-expand-vector-any`).
+   - **Sub-native**: expand to the smallest native size and wrap as a sub-native vector.
+
    x86-64
    ------
 
@@ -46,12 +52,6 @@ Expand (Any)
      - **32/64-bit**: bit-cast to a floating-point type, expand via the floating-point path, then reinterpret.
      - **8/16-bit**: widen to 32 bits (ideally no code generated), then follow the 32-bit path.
 
-   Shared
-   ------
-
-   - **Larger sizes**: recursively expand to half size, then expand that result to ``N`` (see :ref:`operations-expand-vector-any`).
-   - **Sub-native**: expand to the smallest native size and wrap as a sub-native vector.
-
 .. _operations-expand-scalar-zero:
 
 Expand (Zeros)
@@ -61,6 +61,12 @@ Expand (Zeros)
                   Vector<T, N> backend::expand_zero(Scalar<T> x, IndexTag<N>)
 
    Expands scalar ``x`` to size ``N``, writing it to lane 0 and zero-filling other lanes.
+
+   Shared
+   ------
+
+   - **Larger sizes**: recursively expand to half size, then build a super-native vector whose upper half is :cpp:func:`~backend::zeros`.
+   - **Sub-native**: expand to the smallest native size (upper lanes zero) and wrap as a sub-native vector.
 
    x86-64
    ------
@@ -72,12 +78,6 @@ Expand (Zeros)
    ----
 
    - **All types**: start from a zero vector and insert ``x`` into lane 0.
-
-   Shared
-   ------
-
-   - **Larger sizes**: recursively expand to half size, then build a super-native vector whose upper half is :cpp:func:`~backend::zeros`.
-   - **Sub-native**: expand to the smallest native size (upper lanes zero) and wrap as a sub-native vector.
 
 ****************
 Vector Expansion
@@ -95,6 +95,12 @@ Expand (Any)
 
    Expands vector ``v`` to size ``N`` by placing its elements in the lowest lanes; remaining lanes have unspecified contents.
 
+   Shared
+   ------
+
+   - **Unchanged size**: returns ``v``.
+   - **Sub-native → sub-native/native**: truncate to sub-native/smallest native, then expand recursively if needed.
+
    x86-64
    ------
 
@@ -106,12 +112,6 @@ Expand (Any)
 
    - **Native → super-native**: recursively expand to :math:`N / 2` and build a super-native vector with an :cpp:func:`~backend::undefined` upper half.
 
-   Shared
-   ------
-
-   - **Unchanged size**: returns ``v``.
-   - **Sub-native → sub-native/native**: truncate to sub-native/smallest native, then expand recursively if needed.
-
 .. _operations-expand-vector-zero:
 
 Expand (Zeros)
@@ -121,6 +121,12 @@ Expand (Zeros)
                   Vector<typename V::Value, N> backend::expand_zero(V v, IndexTag<N>)
 
    Expands vector ``v`` to size ``N`` by placing it in the lower lanes and zero-filling remaining lanes.
+
+   Shared
+   ------
+
+   - **Unchanged size**: returns ``v``.
+   - **Sub-native → sub-native/native**: truncate to sub-native/smallest native and expand recursively if necessary.
 
    x86-64
    ------
@@ -132,9 +138,3 @@ Expand (Zeros)
    ----
 
    - **Native → super-native**: recursively expand to :math:`N / 2` and combine with a :cpp:func:`~backend::zeros` upper half.
-
-   Shared
-   ------
-
-   - **Unchanged size**: returns ``v``.
-   - **Sub-native → sub-native/native**: truncate to sub-native/smallest native and expand recursively if necessary.

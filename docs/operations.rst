@@ -184,15 +184,15 @@ Vector-Specific Operations
    * - :ref:`Expand (zero upper lanes) <operations-expand-vector-zero>`
      - :cpp:func:`Vector::expand_zero(AnyIndexTag) const <template<std::size_t tDstSize> Vector<T, tDstSize> grex::Vector::expand_zero(IndexTag<tDstSize>) const>`
 
-   * - Shingle up
+   * - :ref:`Shingle up <operations-shingle-up>`
      - | :cpp:func:`Vector::shingle_up() const <Vector grex::Vector::shingle_up() const>`
        | :cpp:func:`Vector::shingle_up(Value front) const <Vector grex::Vector::shingle_up(Value) const>`
 
-   * - Shingle down
+   * - :ref:`Shingle down <operations-shingle-down>`
      - | :cpp:func:`Vector::shingle_down() const <Vector grex::Vector::shingle_down() const>`
        | :cpp:func:`Vector::shingle_down(Value back) const <Vector grex::Vector::shingle_down(Value) const>`
 
-   * - :ref:`Conversion to Array <operations-to-array-mask-std-array>`
+   * - :ref:`Conversion to Array <operations-to-array-vector-std-array>`
      - :cpp:func:`Vector::as_array() const <std::array grex::Vector::as_array() const>`
 
    * - Backend access
@@ -263,7 +263,7 @@ Mask-Specific Operations
    * - :ref:`Insert element (compile-time index) <operations-insert-mask-ct>`
      - :cpp:func:`Mask::insert(AnyIndexTag auto i, bool value) const <Mask grex::Mask::insert(AnyIndexTag, bool) const>`
 
-   * - :ref:`Conversion to Array <operations-to-array-vector-std-array>`
+   * - :ref:`Conversion to Array <operations-to-array-mask-std-array>`
      - :cpp:func:`Mask::as_array() const <std::array grex::Mask::as_array() const>`
 
    * - Backend access
@@ -322,19 +322,19 @@ Free-Function Utilities
    * - :ref:`Blend zeros (masked) <operations-blend-zero>`
      - :cpp:func:`grex::blend_zero(Mask mask, Vector v1) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend_zero(Mask<T, tSize>, Vector<T, tSize>)>`
 
-   * - Blend zeros (compile-time selectors)
+   * - :ref:`Blend zeros (compile-time selectors) <operations-blend-zero-static>`
      - :cpp:func:`grex::blend_zero\<selectors>(Vector v1) <template<BlendZeroSelector... tBzs, Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend_zero(Vector<T, tSize>)>`
 
    * - :ref:`Blend (masked) <operations-blend>`
      - :cpp:func:`grex::blend(Mask mask, Vector v0, Vector v1) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
 
-   * - Blend (compile-time selectors)
+   * - :ref:`Blend (compile-time selectors) <operations-blend-static>`
      - :cpp:func:`grex::blend\<selectors>(Vector v0, Vector v1) <template<BlendSelector... tBls, Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend(Vector<T, tSize>, Vector<T, tSize>)>`
 
    * - :ref:`Shuffle (indexed) <operations-shuffle-dynamic>`
      - :cpp:func:`grex::shuffle(Vector table, Vector idxs) <template<Vectorizable T, UnsignedIntVectorizable TIdx, std::size_t tTableSize, std::size_t tIdxSize> Vector<T, tIdxSize> grex::shuffle(Vector<T, tTableSize>, Vector<TIdx, tIdxSize>)>`
 
-   * - Shuffle (compile-time indices)
+   * - :ref:`Shuffle (compile-time indices) <operations-shuffle-static>`
      - :cpp:func:`grex::shuffle(Vector table) <template<ShuffleIndex... tIdxs, Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::shuffle(Vector<T, tSize>)>`
 
    * - :ref:`Masked arithmetic <operations-mask-arithmetic>`

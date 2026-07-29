@@ -4,7 +4,9 @@
 Table Shuffles
 ##############
 
-Element-wise table lookups driven by per-lane indices.
+Element-wise table lookups driven by per-lane indices held in a run-time vector.
+
+The variant driven by compile-time indices rather than an index vector is described in :doc:`shuffle-static`.
 
 .. _operations-shuffle-indices-x64:
 
@@ -93,8 +95,8 @@ Table Shuffle
 
       return shuffle(table, idxs, index_tag<NTbl>, index_tag<0>);
 
-   Common Behaviour
-   ================
+   Shared
+   ======
 
    - **Index range smaller than table size**: if the index type cannot address the full table (:math:`\mathtt{NTbl} > 2^{\mathrm{bits}(\mathtt{TIndex})}`), the table is first shrunk to the largest addressable prefix.
    - **Super-native output**: split ``idxs`` into low/high halves, shuffle each half, then merge.
@@ -113,42 +115,42 @@ Table Shuffle
      - If both table and indices are sub-native, they are expanded so that at least one becomes native; the result is then shrunk.
      - If only one of table/indices is sub-native, the sub-native operand is expanded to its corresponding native representation and re-wrapped afterwards.
 
-x86-64
-======
+   x86-64
+   ======
 
-- **x86-64-v1**: repeated broadcast-and-blend trees:
+   - **x86-64-v1**: repeated broadcast-and-blend trees:
 
-  - Broadcasts candidate table lanes using ``unpck``/``shuffle`` intrinsics.
-  - Derives lane-selection masks from leading index bits via shifts and comparisons.
-  - Selects the requested element per lane with :cpp:func:`~backend::blend`.
+     - Broadcasts candidate table lanes using ``unpck``/``shuffle`` intrinsics.
+     - Derives lane-selection masks from leading index bits via shifts and comparisons.
+     - Selects the requested element per lane with :cpp:func:`~backend::blend`.
 
-- **x86-64-v2 (SSSE3)**: uses packed byte shuffles (``pshufb``):
+   - **x86-64-v2 (SSSE3)**: uses packed byte shuffles (``pshufb``):
 
-  - The table is reinterpreted as ``u8``, the indices are transformed into byte indices using :cpp:func:`~backend::shuffle_indices`.
-  - ``_mm_shuffle_epi8`` permutes bytes; results are then reinterpreted back to the original element type.
+     - The table is reinterpreted as ``u8``, the indices are transformed into byte indices using :cpp:func:`~backend::shuffle_indices`.
+     - ``_mm_shuffle_epi8`` permutes bytes; results are then reinterpreted back to the original element type.
 
-- **x86-64-v3 (AVX2)**:
+   - **x86-64-v3 (AVX2)**:
 
-  - **128-bit tables, 32/64-bit values**: ``_mm_permutevar_ps``/``_mm_permutevar_pd`` intrinsics.
-  - **256-bit tables, 32/64-bit values**: ``_mm256_permutevar8x32_epi32`` intrinsics; 64-bit indices are transformed using :cpp:func:`~backend::shuffle_indices`.
-  - **256-bit tables, 16/8-bit values:** two ``_mm256_shuffle_epi8`` (which permute locally to each 128-bit lane), one with the original table and one with the 128-bit halves swapped, and blending; 16-bit indices are transformed to byte indices using :cpp:func:`~backend::shuffle_indices`.
+     - **128-bit tables, 32/64-bit values**: ``_mm_permutevar_ps``/``_mm_permutevar_pd`` intrinsics.
+     - **256-bit tables, 32/64-bit values**: ``_mm256_permutevar8x32_epi32`` intrinsics; 64-bit indices are transformed using :cpp:func:`~backend::shuffle_indices`.
+     - **256-bit tables, 16/8-bit values:** two ``_mm256_shuffle_epi8`` (which permute locally to each 128-bit lane), one with the original table and one with the 128-bit halves swapped, and blending; 16-bit indices are transformed to byte indices using :cpp:func:`~backend::shuffle_indices`.
 
-- **x86-64-v4 (AVX-512)**:
+   - **x86-64-v4 (AVX-512)**:
 
-  - Uses native permute intrinsics where available:
+     - Uses native permute intrinsics where available:
 
-    - **Single-table shuffles**: ``permutexvar`` intrinsics; the 128/256-bit versions are used where no earlier instructions exist.
-    - **Shuffles across two 512-bit tables (8-bit only with AVX-512VBMI)**: ``_mm512_permutex2var`` intrinsics.
+       - **Single-table shuffles**: ``permutexvar`` intrinsics; the 128/256-bit versions are used where no earlier instructions exist.
+       - **Shuffles across two 512-bit tables (8-bit only with AVX-512VBMI)**: ``_mm512_permutex2var`` intrinsics.
 
-      - **8-bit fallback**: broadcast each 128-bit lane, shuffle using the 128-bit-lane-local ``_mm512_shuffle_epi8``, and blend.
+         - **8-bit fallback**: broadcast each 128-bit lane, shuffle using the 128-bit-lane-local ``_mm512_shuffle_epi8``, and blend.
 
-Neon
-====
+   Neon
+   ====
 
-- Uses table-lookup intrinsics on byte vectors:
+   - Uses table-lookup intrinsics on byte vectors:
 
-  - ``vqtbl1q_u8``/``vqtbl2q_u8``/``vqtbl4q_u8`` for 16/32/64-byte tables respectively.
-  - Indices are masked to the table size when ``index_ub`` exceeds the native table width, i.e. AND with ``0x0F``/``0x1F``/``0x3F``.
+     - ``vqtbl1q_u8``/``vqtbl2q_u8``/``vqtbl4q_u8`` for 16/32/64-byte tables respectively.
+     - Indices are masked to the table size when ``index_ub`` exceeds the native table width, i.e. AND with ``0x0F``/``0x1F``/``0x3F``.
 
-- Non-byte tables are reinterpreted as ``u8`` while non-byte index vectors are converted to byte indices via :cpp:func:`~backend::shuffle_indices`, shuffled with the corresponding byte-table intrinsic, and reinterpreted back to the destination element type.
-- Super-native tables or results are implemented by splitting tables/indices into native halves and reassembling the shuffled halves.
+   - Non-byte tables are reinterpreted as ``u8`` while non-byte index vectors are converted to byte indices via :cpp:func:`~backend::shuffle_indices`, shuffled with the corresponding byte-table intrinsic, and reinterpreted back to the destination element type.
+   - Super-native tables or results are implemented by splitting tables/indices into native halves and reassembling the shuffled halves.

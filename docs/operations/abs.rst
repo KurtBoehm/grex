@@ -5,7 +5,7 @@ Absolute Value
 ##############
 
 Element-wise absolute value on vectors.
-Sub-native vectors are processed via their underlying native vectors, while each native lane of a super-native vector is processed independently.
+Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
 
 .. _operations-abs:
 
@@ -13,7 +13,8 @@ Sub-native vectors are processed via their underlying native vectors, while each
 Absolute Value
 **************
 
-.. cpp:function:: Vector<T, N> backend::abs(Vector<T, N> v)
+.. cpp:function:: template<SignedVectorizable T, std::size_t N> \
+                  Vector<T, N> backend::abs(Vector<T, N> v)
 
    Element-wise absolute value :math:`|v_i|` for floating-point and signed-integer element types.
 

@@ -17,8 +17,12 @@ Vector → Scalar Array
 
    Stores all :math:`N` elements of ``v`` into ``dst[0..N-1]``.
 
-   - Implemented as a thin wrapper around :cpp:func:`~backend::store`.
-   - The pointer may be unaligned but must be valid for writing :math:`N` scalars of type ``T``.
+   The pointer may be unaligned but must be valid for writing :math:`N` scalars of type ``T``.
+
+   Shared
+   ======
+
+   - Implemented as a thin wrapper around :cpp:func:`~backend::store`, so it inherits all of its backend-specific paths.
 
 .. _operations-to-array-mask-ptr:
 
@@ -36,7 +40,7 @@ Mask → Boolean Array
 
    - **Non-byte masks**:
 
-     - Convert ``m`` to a ``u8`` mask with :cpp:func:`convert <template\<AnyMask MSrc, typename Dst\> Mask\<Dst, MSrc::size\> backend::convert(MSrc m, TypeTag\<Dst\>)>`.
+     - Convert ``m`` to a ``u8`` mask with :cpp:func:`convert() <template\<AnyMask MSrc, typename Dst\> Mask\<Dst, MSrc::size\> backend::convert(MSrc m, TypeTag\<Dst\>)>`.
      - The resulting ``u8`` mask is then handled as below.
 
    - **Super-native byte masks**:
@@ -83,6 +87,9 @@ Vector → ``std::array``
 
    Returns a :cpp:type:`std::array` containing all :math:`N` lanes of ``v``.
 
+   Shared
+   ======
+
    - Allocates a ``std::array<T, N>`` and fills it via the pointer-based :cpp:func:`to_array() <template\<Vectorizable T, std::size_t N\> void backend::to_array(T* dst, Vector\<T, N\> v)>`.
 
 .. _operations-to-array-mask-std-array:
@@ -95,6 +102,9 @@ Mask → ``std::array<bool>``
                   std::array<bool, N> backend::to_array(Mask<T, N> m)
 
    Returns a ``std::array<bool, N>`` holding the Boolean value of each mask lane.
+
+   Shared
+   ======
 
    - Allocates a ``std::array<bool, N>`` and fills it via the pointer-based :cpp:func:`to_array() <template\<Vectorizable T, std::size_t N\> void backend::to_array(bool* dst, Mask\<T, N\> m)>`.
    - Each entry is the Boolean interpretation of the corresponding mask lane as defined above.

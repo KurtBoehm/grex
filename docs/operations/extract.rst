@@ -5,17 +5,24 @@ Extraction
 ##########
 
 Extraction operations read individual lanes from vectors and masks.
+Sub-native vectors/masks are processed via their backing native registers, while a super-native vector/mask is handled by selecting the half that contains the requested lane.
+
+.. _operations-extract-single:
 
 *****************
 Single-Lane Value
 *****************
 
-.. _operations-extract-single:
-
-.. cpp:function:: template<Vectorizable T> \
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
                   T backend::extract_single(Vector<T, N> v)
 
    Returns the lowest lane :math:`v_0`.
+
+   Shared
+   ======
+
+   - **Sub-native**: forward to the backing native vector.
+   - **Super-native**: extract from the lower half.
 
    x86-64
    ======
@@ -35,22 +42,25 @@ Single-Lane Value
 
    - **Native 128-bit**: ``vgetq_lane`` at lane 0.
 
-   Shared
-   ======
-
-   - **Sub-vector**: forward to the backing native vector.
-   - **Super-vector**: extract from the lower half.
+.. _operations-extract-value-runtime:
 
 *******************************
 Element Value by Run-Time Index
 *******************************
 
-.. _operations-extract-value-runtime:
-
 .. cpp:function:: template<Vectorizable T, std::size_t N> \
                   T backend::extract(Vector<T, N> v, std::size_t index)
 
-   Returns lane :math:`v_{\text{index}}` for :math:`\text{index} < N`.
+   Returns lane :math:`v_{\mathit{index}}` for :math:`\mathit{index} < N`.
+
+   Shared
+   ======
+
+   - **Sub-native**: forward to the backing native vector.
+   - **Super-native**:
+
+     - If :math:`\mathit{index} < N / 2`: extract from ``v.lower`` at that index.
+     - Otherwise: extract from ``v.upper`` at index :math:`\mathit{index} - N / 2`.
 
    x86-64
    ======
@@ -69,25 +79,25 @@ Element Value by Run-Time Index
 
    - **Native**: ``switch (index)`` dispatch to ``vgetq_lane`` intrinsics.
 
-   Shared
-   ======
-
-   - **Sub-vector**: forward to the backing native vector.
-   - **Super-vector**:
-
-     - If :math:`\text{index} < N / 2`: extract from ``v.lower`` at that index.
-     - Otherwise: extract from ``v.upper`` at index :math:`\text{index} - N / 2`.
+.. _operations-extract-value-ct:
 
 ***********************************
 Element Value by Compile-Time Index
 ***********************************
 
-.. _operations-extract-value-ct:
-
 .. cpp:function:: template<Vectorizable T, std::size_t N, AnyIndexTag I> \
                   T backend::extract(Vector<T, N> v, I index)
 
-   Returns lane :math:`v_{\text{index}}` for :math:`\text{index} < N` known at compile time.
+   Returns lane :math:`v_{\mathit{index}}` for :math:`\mathit{index} < N` known at compile time.
+
+   Shared
+   ======
+
+   - **Sub-native**: forward to the backing native vector.
+   - **Super-native**:
+
+     - If :math:`I < N / 2`: extract from ``v.lower`` at index ``I``.
+     - Otherwise: extract from ``v.upper`` at index :math:`I - N / 2`.
 
    x86-64
    ======
@@ -136,25 +146,25 @@ Element Value by Compile-Time Index
 
    - **Native**: ``vgetq_lane`` with the lane index encoded in ``I``.
 
-   Shared
-   ======
-
-   - **Sub-vector**: forward to the backing native vector.
-   - **Super-vector**:
-
-     - If :math:`I < N / 2`: extract from ``v.lower`` at index ``I``.
-     - Otherwise: extract from ``v.upper`` at index :math:`I - N / 2`.
+.. _operations-extract-mask-runtime:
 
 *******************************
 Mask Bit by Run-Time Lane Index
 *******************************
 
-.. _operations-extract-mask-runtime:
-
 .. cpp:function:: template<Vectorizable T, std::size_t N> \
                   bool backend::extract(Mask<T, N> m, std::size_t index)
 
-   Returns the Boolean value of mask lane :math:`\text{index} < N`.
+   Returns the Boolean value of mask lane :math:`\mathit{index} < N`.
+
+   Shared
+   ======
+
+   - **Sub-native**: forward to the backing native mask.
+   - **Super-native**:
+
+     - If :math:`\mathit{index} < N / 2`: extract from ``m.lower`` at that index.
+     - Otherwise: extract from ``m.upper`` at index :math:`\mathit{index} - N / 2`.
 
    x86-64
    ======
@@ -167,25 +177,25 @@ Mask Bit by Run-Time Lane Index
 
    - Reinterpret as an unsigned integer vector and call run-time-index :cpp:func:`~backend::extract`; return non-zero.
 
-   Shared
-   ======
-
-   - **Sub-mask**: forward to the backing native mask.
-   - **Super-mask**:
-
-     - If :math:`\text{index} < N / 2`: extract from ``m.lower`` at that index.
-     - Otherwise: extract from ``m.upper`` at index :math:`\text{index} - N / 2`.
+.. _operations-extract-mask-ct:
 
 ***********************************
 Mask Bit by Compile-Time Lane Index
 ***********************************
 
-.. _operations-extract-mask-ct:
-
 .. cpp:function:: template<Vectorizable T, std::size_t N, AnyIndexTag I> \
                   bool backend::extract(Mask<T, N> m, I index)
 
-   Returns the Boolean value of mask lane :math:`\text{index} < N` known at compile time.
+   Returns the Boolean value of mask lane :math:`\mathit{index} < N` known at compile time.
+
+   Shared
+   ======
+
+   - **Sub-native**: forward to the backing native mask.
+   - **Super-native**:
+
+     - If :math:`I < N / 2`: extract from ``m.lower`` at index ``I``.
+     - Otherwise: extract from ``m.upper`` at index :math:`I - N / 2`.
 
    x86-64
    ======
@@ -197,12 +207,3 @@ Mask Bit by Compile-Time Lane Index
    ====
 
    - Reinterpret as an unsigned integer vector and call compile-time-index :cpp:func:`~backend::extract`; test non-zero.
-
-   Shared
-   ======
-
-   - **Sub-mask**: forward to the backing native mask.
-   - **Super-mask**:
-
-     - If :math:`I < N / 2`: extract from ``m.lower`` at index ``I``.
-     - Otherwise: extract from ``m.upper`` at index :math:`I - N / 2`.

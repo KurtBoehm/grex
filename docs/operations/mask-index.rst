@@ -5,6 +5,7 @@ Index-Based Masks
 #################
 
 Index-based mask operations construct masks and masked vectors from lane indices.
+Sub-native masks/vectors are processed via their backing native registers, while each native lane of a super-native mask/vector is processed independently.
 
 .. _operations-cutoff-mask:
 
@@ -21,9 +22,25 @@ Cutoff Mask
 
       m_j =
       \begin{cases}
-        \text{true} & j < i \\
+        \text{true}  & j < i \\
         \text{false} & j \ge i
       \end{cases}
+
+   Shared
+   ======
+
+   - **Sub-native**: delegate to native :cpp:func:`~backend::cutoff_mask` on the backing mask and wrap.
+   - **Super-native**:
+
+     - If :math:`i \le N / 2`:
+
+       - Lower half: :cpp:func:`~backend::cutoff_mask`.
+       - Upper half: :cpp:func:`~backend::zeros`.
+
+     - Otherwise:
+
+       - Lower half: :cpp:func:`~backend::ones`.
+       - Upper half: :cpp:func:`~backend::cutoff_mask` with :math:`i - N / 2`.
 
    x86-64
    ======
@@ -42,22 +59,6 @@ Cutoff Mask
 
    - As on earlier x86-64: :cpp:func:`~backend::indices` with :cpp:func:`~backend::compare_lt`.
 
-   Shared
-   ======
-
-   - **Sub-native**: delegate to native :cpp:func:`~backend::cutoff_mask` on the backing mask and wrap.
-   - **Super-native**:
-
-     - If :math:`i \le N / 2`:
-
-       - Lower half: :cpp:func:`~backend::cutoff_mask`.
-       - Upper half: :cpp:func:`~backend::zeros`.
-
-     - Otherwise:
-
-       - Lower half: :cpp:func:`~backend::ones`.
-       - Upper half: :cpp:func:`~backend::cutoff_mask` with :math:`i - N / 2`.
-
 .. _operations-single-mask:
 
 ****************
@@ -68,6 +69,15 @@ Single-Lane Mask
                   Mask<T, N> backend::single_mask(std::size_t i, TypeTag<Mask<T, N>>)
 
    Constructs a mask with lane :math:`i < N` set and all other lanes cleared.
+
+   Shared
+   ======
+
+   - **Sub-native**: delegate to the native single-lane mask and wrap.
+   - **Super-native**:
+
+     - If :math:`i < N / 2`: lower half has a single lane set at ``i``, upper half is cleared.
+     - Otherwise: lower half cleared, upper half has a single lane set at :math:`i - N / 2`.
 
    x86-64
    ======
@@ -84,16 +94,7 @@ Single-Lane Mask
    Neon
    ====
 
-   - Same pattern as earlier x86-64: :cpp:func:`~backend::indices` and :cpp:func:`~backend::compare_eq` on the unsigned mask representation.
-
-   Shared
-   ======
-
-   - **Sub-native**: delegate to the native single-lane mask and wrap.
-   - **Super-native**:
-
-     - If :math:`i < N / 2`: lower half has a single lane set at ``i``, upper half is cleared.
-     - Otherwise: lower half cleared, upper half has a single lane set at :math:`i - N / 2`.
+   - As on earlier x86-64: :cpp:func:`~backend::indices` and :cpp:func:`~backend::compare_eq` on the unsigned mask representation.
 
 .. _operations-cutoff:
 
@@ -116,6 +117,15 @@ Cut-Off
 
    Valid for :math:`i \le N` only.
 
+   Shared
+   ======
+
+   - **Sub-native**: forward to native :cpp:func:`~backend::cutoff` on the backing vector and wrap.
+   - **Super-native**:
+
+     - If :math:`i \le N / 2`: lower half cut off at :math:`i`, upper half set to :cpp:func:`~backend::zeros`.
+     - Otherwise: lower half unchanged, upper half cut off at :math:`i - N / 2`.
+
    x86-64
    ======
 
@@ -128,12 +138,3 @@ Cut-Off
    ====
 
    - **Native**: :cpp:func:`~backend::blend_zero` with a cut-off mask from :cpp:func:`~backend::cutoff_mask` and a zero vector.
-
-   Shared
-   ======
-
-   - **Sub-native**: forward to native :cpp:func:`~backend::cutoff` on the backing vector and wrap.
-   - **Super-native**:
-
-     - If :math:`i \le N / 2`: lower half cut off at :math:`i`, upper half set to :cpp:func:`~backend::zeros`.
-     - Otherwise: lower half unchanged, upper half cut off at :math:`i - N / 2`.

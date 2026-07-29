@@ -4,6 +4,11 @@
 Masked Blend
 ############
 
+Element-wise selection between vectors under a Boolean mask.
+Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
+
+The variants driven by compile-time selectors rather than a run-time mask are described in :doc:`blend-static`.
+
 .. _operations-blend:
 
 *****
@@ -19,9 +24,15 @@ Blend
 
       r_i =
       \begin{cases}
-        v_{1,i} & m_i = \text{true} \\
-        v_{0,i} & m_i = \text{false}
+        v_{1,i} & m_i \\
+        v_{0,i} & \neg m_i
       \end{cases}
+
+   Shared
+   ======
+
+   - **Sub-native**: forwards to native :cpp:func:`~backend::blend` on the backing vector/mask and re-wraps.
+   - **Super-native**: applies :cpp:func:`~backend::blend` to lower and upper halves independently and recombines.
 
    x86-64
    ======
@@ -46,12 +57,6 @@ Blend
 
    - ``vbslq`` intrinsics on the underlying mask/vector type to select bits from ``v1`` where ``m`` is set and from ``v0`` otherwise.
 
-   Shared
-   ======
-
-   - **Sub-native**: forwards to native :cpp:func:`~backend::blend` on the backing vector/mask and re-wraps.
-   - **Super-native**: applies :cpp:func:`~backend::blend` to lower and upper halves independently and recombines.
-
 .. _operations-blend-zero:
 
 *************
@@ -67,9 +72,15 @@ Blend (Zeros)
 
       r_i =
       \begin{cases}
-        v_{1,i} & m_i = \text{true} \\
-        0       & m_i = \text{false}
+        v_{1,i} & m_i \\
+        0       & \neg m_i
       \end{cases}
+
+   Shared
+   ======
+
+   - **Sub-native**: forwards to native :cpp:func:`~backend::blend_zero` on the backing vector/mask and re-wraps.
+   - **Super-native**: applies :cpp:func:`~backend::blend_zero` to lower and upper halves independently and recombines.
 
    x86-64
    ======
@@ -85,9 +96,3 @@ Blend (Zeros)
    ====
 
    - ``vandq`` intrinsics between the integer representation of ``m`` and ``v1`` (with reinterprets for floating-point element types).
-
-   Shared
-   ======
-
-   - **Sub-native**: forwards to native :cpp:func:`~backend::blend_zero` on the backing vector/mask and re-wraps.
-   - **Super-native**: applies :cpp:func:`~backend::blend_zero` to lower and upper halves independently and recombines.

@@ -5,7 +5,7 @@ Logical Operations
 ##################
 
 Element-wise logical operations on masks.
-Sub-native masks are processed by applying the given operation to their underlying native masks, while each native lane of a super-native mask is processed independently.
+Sub-native masks are processed via their backing native masks, while each native lane of a super-native mask is processed independently.
 
 .. _operations-logical-not:
 
@@ -13,16 +13,21 @@ Sub-native masks are processed by applying the given operation to their underlyi
 Logical NOT
 ***********
 
-.. cpp:function:: Mask<T, N> backend::logical_not(Mask<T, N> m)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Mask<T, N> backend::logical_not(Mask<T, N> m)
 
-   Element-wise logical NOT :math:`\neg m`.
+   Element-wise logical NOT :math:`\neg m_i`.
 
-   - **x86-64**:
+   x86-64
+   ======
 
-     - **x86-64-v4**: mask negation (bitwise complement of the mask register).
-     - **Earlier**: XOR with an all-ones mask.
+   - **x86-64-v4**: mask negation (bitwise complement of the mask register).
+   - **Earlier**: XOR with an all-ones mask.
 
-   - **Neon**: bitwise NOT (``vmvnq``) on the underlying integer mask.
+   Neon
+   ====
+
+   - Bitwise NOT (``vmvnq``) on the underlying integer mask.
 
 .. _operations-logical-and:
 
@@ -30,16 +35,21 @@ Logical NOT
 Logical AND
 ***********
 
-.. cpp:function:: Mask<T, N> backend::logical_and(Mask<T, N> a, Mask<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Mask<T, N> backend::logical_and(Mask<T, N> a, Mask<T, N> b)
 
-   Element-wise logical AND :math:`a \land b`.
+   Element-wise logical AND :math:`a_i \land b_i`.
 
-   - **x86-64**:
+   x86-64
+   ======
 
-     - **x86-64-v4**: ``kand_mask`` intrinsics.
-     - **Earlier**: ``and`` intrinsics on the underlying integer vector.
+   - **x86-64-v4**: ``kand_mask`` intrinsics.
+   - **Earlier**: ``and`` intrinsics on the underlying integer vector.
 
-   - **Neon**: ``vandq`` on the underlying integer mask.
+   Neon
+   ====
+
+   - ``vandq`` on the underlying integer mask.
 
 .. _operations-logical-andnot:
 
@@ -47,16 +57,21 @@ Logical AND
 Logical ANDNOT
 **************
 
-.. cpp:function:: Mask<T, N> backend::logical_andnot(Mask<T, N> a, Mask<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Mask<T, N> backend::logical_andnot(Mask<T, N> a, Mask<T, N> b)
 
-   Element-wise :math:`\neg a \land b`.
+   Element-wise :math:`\neg a_i \land b_i`.
 
-   - **x86-64**:
+   x86-64
+   ======
 
-     - **x86-64-v4**: ``kandn_mask`` intrinsics.
-     - **Earlier**: ``andn`` intrinsics on the underlying integer vector.
+   - **x86-64-v4**: ``kandn_mask`` intrinsics.
+   - **Earlier**: ``andn`` intrinsics on the underlying integer vector.
 
-   - **Neon**: ``vbicq(b, a)``.
+   Neon
+   ====
+
+   - ``vbicq(b, a)``.
 
 .. _operations-logical-or:
 
@@ -64,16 +79,21 @@ Logical ANDNOT
 Logical OR
 **********
 
-.. cpp:function:: Mask<T, N> backend::logical_or(Mask<T, N> a, Mask<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Mask<T, N> backend::logical_or(Mask<T, N> a, Mask<T, N> b)
 
-   Element-wise logical OR :math:`a \lor b`.
+   Element-wise logical OR :math:`a_i \lor b_i`.
 
-   - **x86-64**:
+   x86-64
+   ======
 
-     - **x86-64-v4**: ``kor_mask`` intrinsics.
-     - **Earlier**: ``or`` intrinsics on the underlying integer vector.
+   - **x86-64-v4**: ``kor_mask`` intrinsics.
+   - **Earlier**: ``or`` intrinsics on the underlying integer vector.
 
-   - **Neon**: ``vorrq`` on the underlying integer mask.
+   Neon
+   ====
+
+   - ``vorrq`` on the underlying integer mask.
 
 .. _operations-logical-xor:
 
@@ -81,13 +101,18 @@ Logical OR
 Logical XOR
 ***********
 
-.. cpp:function:: Mask<T, N> backend::logical_xor(Mask<T, N> a, Mask<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Mask<T, N> backend::logical_xor(Mask<T, N> a, Mask<T, N> b)
 
-   Element-wise logical XOR :math:`a \oplus b`.
+   Element-wise logical XOR :math:`a_i \oplus b_i`.
 
-   - **x86-64**:
+   x86-64
+   ======
 
-     - **x86-64-v4**: ``_kxor_mask*`` intrinsics.
-     - **Earlier**: ``xor`` intrinsics on the underlying integer vector.
+   - **x86-64-v4**: ``kxor_mask`` intrinsics.
+   - **Earlier**: ``xor`` intrinsics on the underlying integer vector.
 
-   - **Neon**: ``veorq`` on the underlying integer mask.
+   Neon
+   ====
+
+   - ``veorq`` on the underlying integer mask.

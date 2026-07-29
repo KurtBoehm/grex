@@ -5,7 +5,7 @@ Comparisons
 ###########
 
 Element-wise comparisons on vectors, producing a Boolean mask.
-Sub-native vectors are processed by applying the given operation to their underlying native vectors, while each native lane of a super-native vector is processed independently and results are reassembled into a super-native mask.
+Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently and results are reassembled into a super-native mask.
 
 .. _operations-compare-eq:
 
@@ -13,7 +13,8 @@ Sub-native vectors are processed by applying the given operation to their underl
 Equality (Vectors)
 ******************
 
-.. cpp:function:: Mask<T, N> backend::compare_eq(Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Mask<T, N> backend::compare_eq(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise equality :math:`a_i = b_i`.
 
@@ -41,7 +42,8 @@ Equality (Vectors)
 Equality (Masks)
 ****************
 
-.. cpp:function:: Mask<T, N> backend::compare_eq(Mask<T, N> a, Mask<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Mask<T, N> backend::compare_eq(Mask<T, N> a, Mask<T, N> b)
 
    Element-wise mask equality :math:`a_i = b_i`.
 
@@ -62,7 +64,8 @@ Equality (Masks)
 Inequality (Vectors)
 ********************
 
-.. cpp:function:: Mask<T, N> backend::compare_neq(Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Mask<T, N> backend::compare_neq(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise inequality :math:`a_i \ne b_i`.
 
@@ -86,7 +89,8 @@ Inequality (Vectors)
 Less Than
 *********
 
-.. cpp:function:: Mask<T, N> backend::compare_lt(Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Mask<T, N> backend::compare_lt(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise strict less-than :math:`a_i < b_i`.
 
@@ -123,7 +127,8 @@ Less Than
 Greater or Equal
 ****************
 
-.. cpp:function:: Mask<T, N> backend::compare_ge(Vector<T, N> a, Vector<T, N> b)
+.. cpp:function:: template<Vectorizable T, std::size_t N> \
+                  Mask<T, N> backend::compare_ge(Vector<T, N> a, Vector<T, N> b)
 
    Element-wise greater-or-equal :math:`a_i \ge b_i`.
 

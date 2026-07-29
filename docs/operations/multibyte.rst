@@ -1,15 +1,15 @@
 .. cpp:namespace:: grex
 
+.. _operations-load-multibyte:
+
 #########################
 Multibyte Integer Loading
 #########################
 
-Loading of packed integers whose logical value spans :math:`M` bytes into SIMD vectors with element width :math:`N = 2^B` bytes, where :math:`N = \text{bitceil}(M)`.
+Loading of packed integers whose logical value spans :math:`M` bytes into SIMD vectors with element width :math:`N = 2^B` bytes, where :math:`N = \operatorname{bitceil}(M)`.
 The input memory is padded on both sides by the number of bytes in the largest supported SIMD register.
 
 Each native lane of a super-native vector is processed independently.
-
-.. _operations-load-multibyte:
 
 .. cpp:function:: template<std::size_t SrcBytes, AnyVector Dst> \
                   Dst backend::load_multibyte(const u8* ptr, IndexTag<SrcBytes>, TypeTag<Dst>)
@@ -25,9 +25,8 @@ Each native lane of a super-native vector is processed independently.
 
    Diagrams use the index of the logical value in each byte; ``.`` represents an unspecified byte, ``·`` represents a zero byte, ``|`` is for readability only.
 
-   ******
    x86-64
-   ******
+   ======
 
    - :math:`M = N`: direct :cpp:func:`~backend::load`.
    - **x86-64-v1**:
@@ -156,9 +155,8 @@ Each native lane of a super-native vector is processed independently.
      - Apply ``_mm512_shuffle_epi8`` (within 128-bit lanes) to gather the :math:`M` data bytes and zero the :math:`O` padding bytes.
      - Variants using ``vpermb`` or ``vpermi2b``/``vpermt2b`` instead of the first permutation perform worse on Tigerlake and no better on Zen 5, and are not used.
 
-   ****
    Neon
-   ****
+   ====
 
    - :math:`M = N`: direct :cpp:func:`~backend::load`.
    - :math:`N = 8`, :math:`M < 8`, 128-bit output: offset load, shift, merge, shift-back; for :math:`M = 5`:
