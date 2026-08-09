@@ -8,7 +8,6 @@
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_BLEND_ZERO_STATIC_SHARED_HPP
 
 #include <cstddef>
-#include <utility>
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/shared/defs.hpp"
@@ -27,7 +26,7 @@ struct ZeroBlenderAnd : public BaseExpensiveOp {
   }
   template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
   static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
-    using Value = TVec::Value;
+    using Value = ValueOf<TVec>;
     static constexpr std::size_t size = TVec::size;
     using Int = SignedInt<sizeof(Value)>;
     using IVec = NativeVector<Int, size>;

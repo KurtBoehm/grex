@@ -12,12 +12,16 @@
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/types.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/operations/bitwise.hpp"
+#include "grex/backend/x86/operations/f16.hpp"
+#include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp" // IWYU pragma: keep
 
@@ -26,15 +30,16 @@
 #endif
 
 namespace grex::backend {
-// Base case: Use intrinsics
+// Base case: Use intrinsics, incl. for binary16 when AVX512-FP16 is available.
 #define GREX_ARITH_BASE(KIND, BITS, SIZE, NAME, OP) \
   inline NativeVector<KIND##BITS, SIZE> NAME(NativeVector<KIND##BITS, SIZE> a, \
                                              NativeVector<KIND##BITS, SIZE> b) { \
-    return {.r = GREX_CAT(OP##_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r)}; \
+    return {.r = to_stored<KIND##BITS>(GREX_CAT(OP##_, GREX_EPI_SUFFIX(KIND, BITS))( \
+              from_stored<KIND##BITS>(a.r), from_stored<KIND##BITS>(b.r)))}; \
   }
 #define GREX_ADDSUB_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_TYPE(GREX_ARITH_BASE, REGISTERBITS, add, BITPREFIX##_add) \
-  GREX_FOREACH_TYPE(GREX_ARITH_BASE, REGISTERBITS, subtract, BITPREFIX##_sub)
+  GREX_FOREACH_TYPE_OPT_EXT(GREX_ARITH_BASE, REGISTERBITS, add, BITPREFIX##_add) \
+  GREX_FOREACH_TYPE_OPT_EXT(GREX_ARITH_BASE, REGISTERBITS, subtract, BITPREFIX##_sub)
 
 // Negation: Flip sign bit for floating-point values, subtract from zero for integers
 #define GREX_NEGATE_FP(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, KINDSUFFIX) \
@@ -120,7 +125,8 @@ namespace grex::backend {
 #endif
 
 #define GREX_MUL_f(KIND, BITS, SIZE, BITPREFIX) \
-  return {.r = GREX_CAT(BITPREFIX##_mul_, GREX_FP_SUFFIX(BITS))(a.r, b.r)};
+  return {.r = to_stored<KIND##BITS>(GREX_CAT(BITPREFIX##_mul_, GREX_FP_SUFFIX(BITS))( \
+            from_stored<KIND##BITS>(a.r), from_stored<KIND##BITS>(b.r)))};
 #define GREX_MUL_i(KIND, BITS, ...) GREX_MUL_INT##BITS(KIND, BITS, __VA_ARGS__)
 #define GREX_MUL_u(KIND, BITS, ...) GREX_MUL_INT##BITS(KIND, BITS, __VA_ARGS__)
 #define GREX_MUL(KIND, BITS, SIZE, BITPREFIX) \
@@ -128,11 +134,12 @@ namespace grex::backend {
                                                  NativeVector<KIND##BITS, SIZE> b) { \
     GREX_MUL_##KIND(KIND, BITS, SIZE, BITPREFIX) \
   }
-#define GREX_MUL_ALL(REGISTERBITS, BITPREFIX) GREX_FOREACH_TYPE(GREX_MUL, REGISTERBITS, BITPREFIX)
+#define GREX_MUL_ALL(REGISTERBITS, BITPREFIX) \
+  GREX_FOREACH_TYPE_OPT_EXT(GREX_MUL, REGISTERBITS, BITPREFIX)
 
 // Floating-point division (integer division is not available because it is very slow)
 #define GREX_DIV_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_FP_TYPE(GREX_ARITH_BASE, REGISTERBITS, divide, BITPREFIX##_div)
+  GREX_FOREACH_FP_TYPE_OPT_EXT(GREX_ARITH_BASE, REGISTERBITS, divide, BITPREFIX##_div)
 
 GREX_FOREACH_X86_64_LEVEL(GREX_NEGATE_ALL)
 GREX_FOREACH_X86_64_LEVEL(GREX_ADDSUB_ALL)
@@ -144,6 +151,28 @@ GREX_NNVECTOR_BINARY(add)
 GREX_NNVECTOR_BINARY(subtract)
 GREX_NNVECTOR_BINARY(multiply)
 GREX_NNVECTOR_BINARY(divide)
+
+// Binary16: always XOR the sign bit, which is what GCC and Clang do on their own, too.
+template<std::size_t tSize>
+inline NativeVector<f16, tSize> negate(NativeVector<f16, tSize> a) {
+  return {.r = bitwise_xor(NativeVector<u16, tSize>{a.r},
+                           broadcast(u16(0x8000), type_tag<NativeVector<u16, tSize>>))
+                 .r};
+}
+
+// Binary16 without AVX512-FP16: round-trip through binary32.
+#if !GREX_F16_NATIVE_ARITHMETIC
+#define GREX_F16_ARITH(NAME) \
+  template<std::size_t tSize> \
+  inline NativeVector<f16, tSize> NAME(NativeVector<f16, tSize> a, NativeVector<f16, tSize> b) { \
+    return f32_to_f16(NAME(f16_to_f32(a), f16_to_f32(b))); \
+  }
+GREX_F16_ARITH(add)
+GREX_F16_ARITH(subtract)
+GREX_F16_ARITH(multiply)
+GREX_F16_ARITH(divide)
+#undef GREX_F16_ARITH
+#endif
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_ARITHMETIC_HPP

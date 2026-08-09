@@ -12,18 +12,21 @@
 #if GREX_X86_64_LEVEL >= 4
 #include <algorithm>
 #include <array>
-#include <cstddef>
 #include <optional>
-#include <utility>
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/shuffle-static.hpp"
-#include "grex/backend/x86/operations/bitwise.hpp"
 #include "grex/backend/x86/operations/blend-zero-static.hpp"
 #include "grex/backend/x86/operations/load.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
+
+#if !GREX_HAS_AVX512VBMI
+#include <cstddef>
+
+#include "grex/backend/x86/operations/bitwise.hpp"
+#endif
 
 // TODO These could be improved by using more maskz intrinsics instead of zero blending.
 
@@ -37,7 +40,7 @@ struct ShufflerShuffle128x4 : public BaseExpensiveOp {
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
+    using Value = ValueOf<TVec>;
     static constexpr int imm8 = convert<16>(tSh).value().imm8();
     static constexpr ShuffleIndices<4, 16> idxs32 = convert<4>(tSh).value();
     static_assert(!idxs32.subzero);
@@ -64,7 +67,7 @@ struct ShufflerShuffle8x64 : public BaseExpensiveOp {
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
+    using Value = ValueOf<TVec>;
     static constexpr ShuffleIndices<1, 64> shi = convert<1>(tSh).value();
     static constexpr auto idxs = shi.laned_indices().value();
 
@@ -86,7 +89,7 @@ struct ShufflerShuffle32x16 : public BaseExpensiveOp {
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
+    using Value = ValueOf<TVec>;
     static constexpr ShuffleIndices<4, 16> bidxs = convert<4>(tSh).value();
     static constexpr int imm8 = bidxs.single_lane().value().imm8();
 
@@ -110,7 +113,7 @@ struct ShufflerPermutex64x8 : public BaseExpensiveOp {
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
+    using Value = ValueOf<TVec>;
     static constexpr ShuffleIndices<8, 8> bidxs = convert<8>(tSh).value();
     static constexpr int imm8 = bidxs.double_lane().value().imm8();
 
@@ -134,7 +137,7 @@ struct ShufflerPermutex64x8 : public BaseExpensiveOp {
     } \
     template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh> \
     static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) { \
-      using Value = TVec::Value; \
+      using Value = ValueOf<TVec>; \
       static constexpr ShuffleIndices<BYTES, SIZE> idxs = convert<BYTES>(tSh).value(); \
       static_assert(!idxs.subzero); \
 \
@@ -163,7 +166,7 @@ struct ShufflerPermutex64x8 : public BaseExpensiveOp {
     } \
     template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh> \
     static TVec apply(TVec a, TVec b, AutoTag<tSh> /*tag*/) { \
-      using Value = TVec::Value; \
+      using Value = ValueOf<TVec>; \
       static constexpr ShuffleIndices<BYTES, SIZE> idxs = convert<BYTES>(tSh).value(); \
       static_assert(!idxs.subzero); \
 \
@@ -204,7 +207,7 @@ struct ShufflerPermutexVar8x64 : public BaseExpensiveOp {
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
+    using Value = ValueOf<TVec>;
     static constexpr ShuffleIndices<1, 64> idxs = convert<1>(tSh).value();
     static_assert(!idxs.subzero);
 
@@ -252,7 +255,7 @@ struct PairShufflerPermutexVar8x64 : public BaseExpensiveOp {
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec a, TVec b, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
+    using Value = ValueOf<TVec>;
     static constexpr ShuffleIndices<1, 64> idxs = convert<1>(tSh).value();
     static_assert(!idxs.subzero);
 

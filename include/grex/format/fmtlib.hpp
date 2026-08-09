@@ -12,6 +12,7 @@
 
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/base.hpp"
+#include "grex/format/base.hpp"
 
 #if !GREX_BACKEND_SCALAR
 #include <array>
@@ -20,9 +21,11 @@
 #include "grex/types.hpp"
 
 template<grex::Vectorizable T, std::size_t tSize>
-struct fmt::formatter<grex::Vector<T, tSize>> : fmt::formatter<std::array<T, tSize>> {
+struct fmt::formatter<grex::Vector<T, tSize>>
+    : fmt::formatter<std::array<grex::format_impl::Formatted<T>, tSize>> {
   fmt::format_context::iterator format(grex::Vector<T, tSize> v, fmt::format_context& ctx) const {
-    return fmt::formatter<std::array<T, tSize>>::format(v.as_array(), ctx);
+    return fmt::formatter<std::array<grex::format_impl::Formatted<T>, tSize>>::format(
+      grex::format_impl::formatted_array(v), ctx);
   }
 };
 template<grex::Vectorizable T, std::size_t tSize, typename TChar>
@@ -55,6 +58,23 @@ struct fmt::formatter<grex::ShuffleIndex> {
   }
 };
 #endif
+
+/**
+ * Binary16 values are formatted as the binary32 values they are equal to.
+ *
+ * Both customization points are provided: `format_as` is the only one that `{fmt}` applies to types
+ * that are not class types, which a native `_Float16` is not, while `format` is what the range
+ * formatter uses for the elements of a range of binary16 values.
+ */
+template<>
+struct fmt::formatter<grex::f16> : fmt::formatter<grex::f32> {
+  static grex::f32 format_as(grex::f16 v) {
+    return grex::f16_to_f32(v);
+  }
+  fmt::format_context::iterator format(grex::f16 v, fmt::format_context& ctx) const {
+    return fmt::formatter<grex::f32>::format(grex::f16_to_f32(v), ctx);
+  }
+};
 
 template<>
 struct fmt::formatter<grex::BlendZeroSelector> {

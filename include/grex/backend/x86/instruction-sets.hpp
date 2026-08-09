@@ -32,4 +32,10 @@
 #define GREX_HAS_AVX512VBMI2 false
 #endif
 
+#if __AVX512FP16__
+#define GREX_HAS_AVX512FP16 true
+#else
+#define GREX_HAS_AVX512FP16 false
+#endif
+
 #endif // INCLUDE_GREX_BACKEND_X86_INSTRUCTION_SETS_HPP

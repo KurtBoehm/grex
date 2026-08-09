@@ -7,32 +7,32 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXPAND_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXPAND_HPP
 
+#include <concepts>
 #include <cstddef>
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
-#include "grex/backend/macros/math.hpp"
-#include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/expand-register.hpp"
+#include "grex/backend/neon/operations/f16.hpp"
 #include "grex/backend/neon/operations/insert-static.hpp"
 #include "grex/backend/neon/sizes.hpp"
-#include "grex/backend/shared/operations/expand.hpp" // IWYU pragma: export
 #include "grex/base.hpp"
 
 namespace grex::backend {
 #define GREX_EXPAND_ANY(KIND, BITS, SIZE) \
-  inline NativeVector<KIND##BITS, SIZE> expand(Scalar<KIND##BITS> x, IndexTag<SIZE> /*tag*/, \
-                                               BoolTag<false> /*tag*/) { \
-    return {.r = expand_register(x)}; \
+  template<std::same_as<KIND##BITS> T> \
+  inline NativeVector<T, SIZE> expand(T x, IndexTag<SIZE> /*size*/, BoolTag<false> /*tag*/) { \
+    return {.r = to_stored<T>(expand_register(x))}; \
   }
-GREX_FOREACH_TYPE(GREX_EXPAND_ANY, 128)
+GREX_FOREACH_TYPE_EXT(GREX_EXPAND_ANY, 128)
 
 template<Vectorizable T, std::size_t tSize>
-inline VectorFor<T, tSize> expand(Scalar<T> x, IndexTag<tSize> /*tag*/, BoolTag<true> /*tag*/) {
-  return insert(zeros(type_tag<VectorFor<T, tSize>>), index_tag<0>, x.value);
+inline VectorFor<T, tSize> expand(T x, IndexTag<tSize> /*size*/, BoolTag<true> /*tag*/) {
+  return insert(zeros(type_tag<VectorFor<T, tSize>>), index_tag<0>, x);
 }
 
 // native/super-native → super-native
@@ -56,37 +56,8 @@ inline VectorFor<typename TVec::Value, tDstSize> expand(TVec v, IndexTag<tDstSiz
     };
   }
 }
-
-#if GREX_GCC
-#define GREX_EXPAND_64(KIND, BITS, SIZE) \
-  inline GREX_REGISTER(KIND, BITS, GREX_MULTIPLY(SIZE, 2)) \
-    expand64(GREX_REGISTER(KIND, BITS, SIZE) v) { \
-    GREX_REGISTER(KIND, BITS, GREX_MULTIPLY(SIZE, 2)) retval; \
-    asm("" : "=w"(retval) : "0"(v)); /*NOLINT*/ \
-    return retval; \
-  }
-#elif GREX_CLANG
-#define GREX_EXPAND_64(KIND, BITS, SIZE) \
-  inline GREX_REGISTER(KIND, BITS, GREX_MULTIPLY(SIZE, 2)) \
-    expand64(GREX_REGISTER(KIND, BITS, SIZE) v) { \
-    union Uni { \
-      GREX_REGISTER(KIND, BITS, SIZE) v64; \
-      GREX_REGISTER(KIND, BITS, GREX_MULTIPLY(SIZE, 2)) v128; \
-    }; \
-    Uni uni{.v64 = v}; \
-    return uni.v128; \
-  }
-#endif
-GREX_EXPAND_64(f, 64, 1) // NOLINT
-GREX_EXPAND_64(i, 64, 1) // NOLINT
-GREX_EXPAND_64(u, 64, 1) // NOLINT
-GREX_EXPAND_64(f, 32, 2) // NOLINT
-GREX_EXPAND_64(i, 32, 2) // NOLINT
-GREX_EXPAND_64(u, 32, 2) // NOLINT
-GREX_EXPAND_64(i, 16, 4) // NOLINT
-GREX_EXPAND_64(u, 16, 4) // NOLINT
-GREX_EXPAND_64(i, 8, 8) // NOLINT
-GREX_EXPAND_64(u, 8, 8) // NOLINT
 } // namespace grex::backend
+
+#include "grex/backend/shared/operations/expand.hpp" // IWYU pragma: export
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXPAND_HPP

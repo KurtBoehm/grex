@@ -10,122 +10,78 @@ Fused multiply-add and related operations on floating-point vectors and scalars.
 Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
 
 Only floating-point element types are supported.
+The four members of the family differ only in the signs of the product and the addend, so the backend provides a single :cpp:func:`~backend::fused`, selected by a tag, rather than four separate functions; the high-level :cpp:func:`fmadd`, :cpp:func:`fmsub`, :cpp:func:`fnmadd`, and :cpp:func:`fnmsub` are thin wrappers that pass the matching tag.
 
-.. _operations-fmadd:
+.. _operations-fused-tags:
 
-******************
-Fused Multiply-Add
-******************
+****
+Tags
+****
+
+.. cpp:struct:: backend::MultiplyAdd
+
+   Selects :math:`a \cdot b + c`.
+
+.. cpp:struct:: backend::MultiplySubtract
+
+   Selects :math:`a \cdot b - c`.
+
+.. cpp:struct:: backend::NegatedMultiplyAdd
+
+   Selects :math:`-(a \cdot b) + c`.
+
+.. cpp:struct:: backend::NegatedMultiplySubtract
+
+   Selects :math:`-(a \cdot b) - c`.
+
+.. cpp:concept:: template<typename T> backend::FusedTag
+
+   Satisfied by exactly these four tags.
+
+.. cpp:var:: constexpr bool backend::has_fma
+             constexpr bool backend::has_f16_fma
+
+   Indicate whether the fused operations on binary32/binary64 and on binary16, respectively, are carried out with a single rounding.
+   Where they are not, the operation is decomposed — into a multiplication and an addition for binary32/binary64, and into a single binary32 fused multiply-add sandwiched between conversions for binary16, which is off by at most one unit in the last place (see :ref:`f16-accuracy`).
+
+**************
+Vector Variant
+**************
 
 .. cpp:function:: template<FloatVectorizable T, std::size_t N> \
-                  Vector<T, N> backend::fmadd(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
+                  Vector<T, N> backend::fused(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c, FusedTag auto tag)
 
-   Element-wise fused multiply-add :math:`a_i \cdot b_i + c_i`.
+   Element-wise fused multiply-add with the signs prescribed by ``tag``, i.e. :math:`\pm a_i \cdot b_i \pm c_i` computed with a single rounding where :cpp:var:`~backend::has_fma`/:cpp:var:`~backend::has_f16_fma` says so.
 
    x86-64
    ======
 
-   - **x86-64-v3+ (FMA)**: ``fmadd`` intrinsics.
-   - **Earlier**: decomposed into :cpp:func:`~backend::multiply` and :cpp:func:`~backend::add`; not fused.
+   - **x86-64-v3+ (FMA)**: the ``fmadd``/``fmsub``/``fnmadd``/``fnmsub`` intrinsics, one per tag.
+   - **Earlier**: decomposed per tag into :cpp:func:`~backend::multiply`, :cpp:func:`~backend::add`/:cpp:func:`~backend::subtract`, and :cpp:func:`~backend::negate`; not fused.
 
    Neon
    ====
 
-   - ``vfmaq`` intrinsics.
-
-.. _operations-fmsub:
-
-***********************
-Fused Multiply-Subtract
-***********************
-
-.. cpp:function:: template<FloatVectorizable T, std::size_t N> \
-                  Vector<T, N> backend::fmsub(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
-
-   Element-wise fused multiply-subtract :math:`a_i \cdot b_i - c_i`.
-
-   x86-64
-   ======
-
-   - **x86-64-v3+ (FMA)**: ``fmsub`` intrinsics.
-   - **Earlier**: decomposed into :cpp:func:`~backend::multiply` and :cpp:func:`~backend::subtract`; not fused.
-
-   Neon
-   ====
-
-   - Implemented as :cpp:func:`~backend::fmadd` with negated addend: :math:`a \cdot b + (-c)`.
-
-.. _operations-fnmadd:
-
-**************************
-Fused Negated Multiply-Add
-**************************
-
-.. cpp:function:: template<FloatVectorizable T, std::size_t N> \
-                  Vector<T, N> backend::fnmadd(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
-
-   Element-wise fused negated multiply-add :math:`-a_i \cdot b_i + c_i` (equivalently :math:`c_i - a_i \cdot b_i`).
-
-   x86-64
-   ======
-
-   - **x86-64-v3+ (FMA)**: ``fnmadd`` intrinsics.
-   - **Earlier**: decomposed into :cpp:func:`~backend::multiply` and :cpp:func:`~backend::subtract`; not fused.
-
-   Neon
-   ====
-
-   - ``vfmsq`` intrinsics: :math:`c - a \cdot b`.
-
-.. _operations-fnmsub:
-
-*******************************
-Fused Negated Multiply-Subtract
-*******************************
-
-.. cpp:function:: template<FloatVectorizable T, std::size_t N> \
-                  Vector<T, N> backend::fnmsub(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
-
-   Element-wise fused negated multiply-subtract :math:`-a_i \cdot b_i - c_i`.
-
-   x86-64
-   ======
-
-   - **x86-64-v3+ (FMA)**: ``fnmsub`` intrinsics.
-   - **Earlier**: decomposed into :cpp:func:`~backend::multiply`, :cpp:func:`~backend::add`, and :cpp:func:`~backend::negate`; not fused.
-
-   Neon
-   ====
-
-   - Implemented as negation of :cpp:func:`~backend::fmadd`: :math:`-(a \cdot b + c)`.
+   - ``vfmaq`` for :cpp:struct:`~backend::MultiplyAdd` and ``vfmsq``, which computes :math:`c - a \cdot b`, for :cpp:struct:`~backend::NegatedMultiplyAdd`; the two subtracting tags negate ``c`` and delegate to the corresponding adding tag.
 
 .. _operations-fmadd-scalar:
 
-***************
-Scalar Variants
-***************
+**************
+Scalar Variant
+**************
 
 .. cpp:function:: template<FloatVectorizable T> \
-                  T backend::fmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c)
+                  T backend::fused(Scalar<T> a, Scalar<T> b, Scalar<T> c, FusedTag auto tag)
 
-.. cpp:function:: template<FloatVectorizable T> \
-                  T backend::fmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c)
-
-.. cpp:function:: template<FloatVectorizable T> \
-                  T backend::fnmadd(Scalar<T> a, Scalar<T> b, Scalar<T> c)
-
-.. cpp:function:: template<FloatVectorizable T> \
-                  T backend::fnmsub(Scalar<T> a, Scalar<T> b, Scalar<T> c)
-
-   Scalar counterparts of the fused multiply-add family, with the same sign conventions as the vector overloads above.
+   Scalar counterpart of the above, with the same sign conventions.
 
    x86-64
    ======
 
-   - **x86-64-v3+ (FMA)**: expand to a SIMD register and use scalar FMA intrinsics.
-   - **Earlier**: computed from scalar multiply/add/subtract/negation; not fused.
+   - **x86-64-v3+ (FMA)**: expand to a SIMD register and use the scalar FMA intrinsics.
+   - **Earlier**: computed from scalar multiplication, addition/subtraction, and negation; not fused.
 
    Neon
    ====
 
-   - ``std::fma`` on the underlying scalar values.
+   - The ``__builtin_fma`` family, with ``a`` and ``c`` negated as the tag requires.

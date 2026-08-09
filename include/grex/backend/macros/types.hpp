@@ -7,6 +7,15 @@
 #ifndef INCLUDE_GREX_BACKEND_MACROS_TYPES_HPP
 #define INCLUDE_GREX_BACKEND_MACROS_TYPES_HPP
 
+#define GREX_REGKIND_f16 u
+#define GREX_REGKIND_f32 f
+#define GREX_REGKIND_f64 f
+#define GREX_REGKIND_f(BITS) GREX_REGKIND_f##BITS
+#define GREX_REGKIND_i(BITS) i
+#define GREX_REGKIND_u(BITS) u
+#define GREX_REGKIND_I(KIND, BITS) GREX_REGKIND_##KIND(BITS)
+#define GREX_REGKIND(KIND, BITS) GREX_REGKIND_I(KIND, BITS)
+
 #define GREX_NN_UNARY(TYPE, NAME) \
   template<typename THalf> \
   inline Super##TYPE<THalf> NAME(Super##TYPE<THalf> v) { \
@@ -27,23 +36,9 @@
     return Sub##TYPE<T, tSize>{NAME(a.full, b.full)}; \
   }
 
-#define GREX_NN_TERNARY(TYPE, NAME) \
-  template<typename THalf> \
-  inline Super##TYPE<THalf> NAME(Super##TYPE<THalf> a, Super##TYPE<THalf> b, \
-                                 Super##TYPE<THalf> c) { \
-    return {.lower = NAME(a.lower, b.lower, c.lower), .upper = NAME(a.upper, b.upper, c.upper)}; \
-  } \
-  template<Vectorizable T, std::size_t tSize> \
-  inline Sub##TYPE<T, tSize> NAME(Sub##TYPE<T, tSize> a, Sub##TYPE<T, tSize> b, \
-                                  Sub##TYPE<T, tSize> c) { \
-    return Sub##TYPE<T, tSize>{NAME(a.full, b.full, c.full)}; \
-  }
-
 #define GREX_NNVECTOR_UNARY(NAME) GREX_NN_UNARY(Vector, NAME)
 #define GREX_NNVECTOR_BINARY(NAME) GREX_NN_BINARY(Vector, NAME)
-#define GREX_NNVECTOR_TERNARY(NAME) GREX_NN_TERNARY(Vector, NAME)
 #define GREX_NNMASK_UNARY(NAME) GREX_NN_UNARY(Mask, NAME)
 #define GREX_NNMASK_BINARY(NAME) GREX_NN_BINARY(Mask, NAME)
-#define GREX_NNMASK_TERNARY(NAME) GREX_NN_TERNARY(Mask, NAME)
 
 #endif // INCLUDE_GREX_BACKEND_MACROS_TYPES_HPP

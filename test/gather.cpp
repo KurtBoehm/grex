@@ -52,7 +52,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
 
     const auto imax = std::size_t(std::numeric_limits<TIndex>::max());
     std::uniform_int_distribution<TIndex> idist{0, std::min(data_size - 1, imax)};
-    auto ival = [&](std::size_t /*dummy*/) { return idist(rng); };
+    auto ival = [&] { return idist(rng); };
     std::uniform_int_distribution<int> mdist{0, 1};
     auto mval = [&](std::size_t /*dummy*/) { return bool(mdist(rng)); };
 
@@ -61,7 +61,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
 
       for (std::size_t i = 0; i < repetitions; ++i) {
         grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
-          test::VectorChecker<TIndex, tSize> idxs{ival(tIdxs)...};
+          auto idxs = test::VectorChecker<TIndex, tSize>::random(ival);
           // gather
           {
             test::VectorChecker<TValue, tSize> gathered{

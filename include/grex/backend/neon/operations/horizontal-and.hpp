@@ -11,6 +11,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
@@ -26,7 +27,7 @@ namespace grex::backend {
   inline bool horizontal_and(NativeMask<KIND##BITS, SIZE> m) { \
     return GREX_HAND_##BITS != 0; \
   }
-GREX_FOREACH_TYPE(GREX_HAND, 128)
+GREX_FOREACH_TYPE_EXT(GREX_HAND, 128)
 
 // At most 64 bits: Extract as integer and compare with all ones
 #define GREX_HAND_SUB_II(KIND, BITS, PART, SIZE, TOTAL) \
@@ -41,7 +42,7 @@ GREX_FOREACH_TYPE(GREX_HAND, 128)
 #define GREX_HAND_SUB(KIND, BITS, PART, SIZE) \
   GREX_HAND_SUB_I(KIND, BITS, PART, SIZE, GREX_MULTIPLY(BITS, PART))
 
-GREX_FOREACH_SUB(GREX_HAND_SUB)
+GREX_FOREACH_SUB_EXT(GREX_HAND_SUB)
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/horizontal-and.hpp" // IWYU pragma: export

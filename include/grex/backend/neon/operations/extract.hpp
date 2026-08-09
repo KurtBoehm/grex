@@ -12,25 +12,30 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/repeat.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/f16.hpp"
 #include "grex/backend/neon/types.hpp"
 #include "grex/base.hpp"
 
+// vgetq_lane_f16 is always available irrespective of FP16 availability.
+
 namespace grex::backend {
 #define GREX_EXTRACT_SWITCH(SIZE, INDEX, INTRINSIC) \
-  case INDEX: return INTRINSIC(v.r, INDEX);
+  case INDEX: return INTRINSIC(vr, INDEX);
 
 #define GREX_EXTRACT_VEC(KIND, BITS, SIZE) \
   inline KIND##BITS extract(NativeVector<KIND##BITS, SIZE> v, std::size_t index) { \
+    const auto vr = from_stored<KIND##BITS>(v.r); \
     switch (index) { \
       GREX_REPEAT(SIZE, GREX_EXTRACT_SWITCH, GREX_ISUFFIXED(vgetq_lane, KIND, BITS)) \
       default: std::unreachable(); \
     } \
   } \
   inline KIND##BITS extract(NativeVector<KIND##BITS, SIZE> v, AnyIndexTag auto index) { \
-    return GREX_ISUFFIXED(vgetq_lane, KIND, BITS)(v.r, index.value); \
+    return GREX_ISUFFIXED(vgetq_lane, KIND, BITS)(from_stored<KIND##BITS>(v.r), index.value); \
   }
 
 #define GREX_EXTRACT_MASK(KIND, BITS, SIZE) \
@@ -41,8 +46,8 @@ namespace grex::backend {
     return extract(NativeVector<u##BITS, SIZE>{m.r}, i) != 0; \
   }
 
-GREX_FOREACH_TYPE(GREX_EXTRACT_VEC, 128)
-GREX_FOREACH_TYPE(GREX_EXTRACT_MASK, 128)
+GREX_FOREACH_TYPE_EXT(GREX_EXTRACT_VEC, 128)
+GREX_FOREACH_TYPE_EXT(GREX_EXTRACT_MASK, 128)
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/extract.hpp"

@@ -8,6 +8,9 @@ Reductions over all lanes of a vector or mask, producing a scalar result.
 Sub-native vectors/masks are reduced over their active lanes via the backing native register.
 Super-native vectors/masks are reduced by combining lower and upper halves and reducing the result.
 
+:cpp:func:`~backend::horizontal_and` only inspects bits and hence shares the ``u16`` implementation for binary16.
+The arithmetic reductions do not: where the hardware lacks binary16 instructions, they widen to binary32, reduce there, and round the scalar result back once at the end, which is *more* accurate than reducing in binary16 (see :ref:`f16-implementation`).
+
 .. _operations-horizontal-add:
 
 *******************
@@ -37,11 +40,12 @@ Horizontal Addition
      - **Otherwise**: shuffle/add trees using ``add`` intrinsics.
 
    - **256/512-bit**: split into halves, add the halves element-wise, and recurse on the half-width vector.
+   - **Binary16 with AVX512-FP16**: the same shuffle/add tree, written out rather than left to the compiler’s ``reduce_add_ph``.
 
    Neon
    ====
 
-   - **Native**: ``vaddvq`` reduction intrinsics for all element types.
+   - **Native**: ``vaddvq`` reduction intrinsics for all element types except binary16, for which the FP16 extension provides no reduction and a chain of pairwise ``vpadd_f16`` additions is used instead.
    - **Sub-native**:
 
      - **64 bits active**: extract the low 64 bits and use ``vaddv`` intrinsics.
@@ -120,13 +124,14 @@ Horizontal Min / Max
 
    - **256/512-bit**: split into halves, apply element-wise :cpp:func:`~backend::min`/:cpp:func:`~backend::max` to the halves, then recurse on the half-width result.
    - **Sub-native**: shuffle/min-max trees analogous to the 128-bit native implementation, but with shallower trees.
+   - **Binary16 with AVX512-FP16**: the same tree, written out rather than left to the compiler’s ``reduce_min_ph``/``reduce_max_ph``.
 
    Neon
    ====
 
    - **Native**:
 
-     - **Floating point**: ``vminnmvq``/``vmaxnmvq`` intrinsics.
+     - **Floating point**: ``vminnmvq``/``vmaxnmvq`` intrinsics, which the FP16 extension provides for binary16 as well.
      - **Integers**:
 
        - **8/16/32-bit**: ``vminvq``/``vmaxvq`` intrinsics.

@@ -5,6 +5,7 @@ Expansion
 #########
 
 Expansion operations build SIMD vectors from scalars or smaller vectors by placing existing elements in the lowest lanes, with upper lanes zeroed or unspecified.
+Vector expansion only moves bits and hence treats binary16 like ``u16``; scalar expansion does not, since a binary16 scalar already resides in the vector register file and follows the floating-point path (see :ref:`f16-implementation`).
 
 ****************
 Scalar Expansion
@@ -29,10 +30,12 @@ Expand (Any)
    x86-64
    ------
 
-   - **Floating point**:
+   - **Floating point**: the scalar is already in a vector register, so the goal is to perform the type conversion without emitting an instruction.
 
-     - **GCC**: inline assembly to reinterpret as ``__m128``/``__m128d``; upper lanes logically unspecified.
-     - **Clang**: store to a one-element array and load with ``_mm_load_ps``/``_mm_load_pd``; only lane 0 is initialized.
+     - **GCC**: an empty inline-assembly block that reinterprets the register; upper lanes logically unspecified.
+     - **Clang**: store to a one-element array and load it back, which Clang folds away.
+       For binary16, the result is additionally made opaque by an empty inline-assembly block, without which Clang traces the sole lane back to the scalar and rewrites consumers into exactly the general-purpose-register detour this expansion avoids.
+     - **Binary16 known to be constant**: build the vector from the bit pattern instead, so that callers such as :cpp:func:`~backend::set` can still fold a constant argument list into one vector constant, which the opaque assembly would prevent.
 
    - **Integers**:
 

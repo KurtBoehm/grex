@@ -15,9 +15,12 @@
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
-#include "grex/backend/x86/operations/set.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
+
+#if GREX_X86_64_LEVEL < 4
+#include "grex/backend/x86/operations/set.hpp"
+#endif
 
 namespace grex::backend {
 // Since the largest vector size is 64, signed comparisons can be used even with i8
@@ -63,7 +66,7 @@ namespace grex::backend {
     return {.r = GREX_SINGLE_MASK_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)}; \
   }
 #define GREX_INDEX_MASK_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_TYPE(GREX_INDEX_MASK, REGISTERBITS, BITPREFIX, REGISTERBITS)
+  GREX_FOREACH_TYPE_EXT(GREX_INDEX_MASK, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_INDEX_MASK_ALL)
 } // namespace grex::backend
 

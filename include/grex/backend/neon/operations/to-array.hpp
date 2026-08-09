@@ -7,16 +7,13 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_TO_ARRAY_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_TO_ARRAY_HPP
 
-#include <array>
-#include <concepts>
 #include <cstddef>
-#include <utility>
 
 #include <arm_neon.h>
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
-#include "grex/backend/neon/operations/expand.hpp"
+#include "grex/backend/neon/operations/expand64.hpp"
 #include "grex/backend/neon/operations/store.hpp"
 #include "grex/backend/neon/types.hpp"
 #include "grex/base.hpp"

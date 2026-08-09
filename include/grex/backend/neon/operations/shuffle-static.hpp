@@ -8,8 +8,8 @@
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SHUFFLE_STATIC_HPP
 
 #include <cstddef>
-#include <utility>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/neon/operations/extract.hpp"
 #include "grex/backend/neon/operations/set.hpp"

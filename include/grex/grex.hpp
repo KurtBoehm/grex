@@ -4,6 +4,7 @@
 // IWYU pragma: begin_exports
 #include "backend.hpp"
 #include "base.hpp"
+#include "f16.hpp"
 #include "format.hpp"
 #include "lookup-table.hpp"
 #include "operations-tagged.hpp"

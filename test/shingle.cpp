@@ -23,11 +23,11 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
   using VC = test::VectorChecker<T, tSize>;
 
   auto dist = test::make_distribution<T>();
-  auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+  auto dval = [&] { return dist(rng); };
 
   grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
     for (std::size_t i = 0; i < repetitions; ++i) {
-      VC base{dval(tIdxs)...};
+      VC base = VC::random(dval);
       // zero-inserting upwards shingling
       test::check("shingle_up zero scalar", grex::shingle_up(dist(rng), grex::scalar_tag), T{},
                   false);

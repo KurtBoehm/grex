@@ -5,10 +5,10 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 [wrap-file]
-directory = benchmark-1.9.4
-source_url = https://github.com/google/benchmark/archive/refs/tags/v1.9.4.tar.gz
-source_filename = benchmark-1.9.4.tar.gz
-source_hash = b334658edd35efcf06a99d9be21e4e93e092bd5f95074c1673d5c8705d95c104
+directory = benchmark-1.9.5
+source_url = https://github.com/google/benchmark/archive/refs/tags/v1.9.5.tar.gz
+source_filename = benchmark-1.9.5.tar.gz
+source_hash = 9631341c82bac4a288bef951f8b26b41f69021794184ece969f8473977eaa340
 patch_directory = google-benchmark
 
 [provide]

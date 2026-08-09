@@ -207,12 +207,12 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
 
   /** Expands scalar `x` into a vector with undefined upper lanes. */
   GREX_ALWAYS_INLINE static Vector expanded_any(T value) {
-    return Vector{backend::expand_any(backend::Scalar<T>{value}, index_tag<tSize>)};
+    return Vector{backend::expand_any(value, index_tag<tSize>)};
   }
 
   /** Expands scalar `x` into a vector with upper lanes filled with zeros. */
   GREX_ALWAYS_INLINE static Vector expanded_zero(T value) {
-    return Vector{backend::expand_zero(backend::Scalar<T>{value}, index_tag<tSize>)};
+    return Vector{backend::expand_zero(value, index_tag<tSize>)};
   }
 
   /** Loads a vector from unaligned memory. */
@@ -441,7 +441,7 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
    * `result[i] = (i > 0) ? (*this)[i - 1] : front`.
    */
   GREX_ALWAYS_INLINE Vector shingle_up(Value front) const {
-    return Vector{backend::shingle_up(backend::Scalar<T>{front}, vec_)};
+    return Vector{backend::shingle_up(front, vec_)};
   }
 
   /**
@@ -457,7 +457,7 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
    * `result[i] = (i + 1 < size) ? (*this)[i + 1] : back`.
    */
   GREX_ALWAYS_INLINE Vector shingle_down(Value back) const {
-    return Vector{backend::shingle_down(vec_, backend::Scalar<T>{back})};
+    return Vector{backend::shingle_down(vec_, back)};
   }
 
   /** Returns underlying backend vector. */
@@ -602,28 +602,36 @@ GREX_ALWAYS_INLINE inline bool horizontal_and(Mask<T, tSize> m) {
 template<FloatVectorizable T, std::size_t tSize>
 GREX_ALWAYS_INLINE inline Vector<T, tSize> fmadd(Vector<T, tSize> a, Vector<T, tSize> b,
                                                  Vector<T, tSize> c) {
-  return Vector<T, tSize>{backend::fmadd(a.backend(), b.backend(), c.backend())};
+  return Vector<T, tSize>{
+    backend::fused(a.backend(), b.backend(), c.backend(), backend::MultiplyAdd{}),
+  };
 }
 
 /** Lane-wise fused multiply-subtract: @f$ a \cdot b - c @f$. */
 template<FloatVectorizable T, std::size_t tSize>
 GREX_ALWAYS_INLINE inline Vector<T, tSize> fmsub(Vector<T, tSize> a, Vector<T, tSize> b,
                                                  Vector<T, tSize> c) {
-  return Vector<T, tSize>{backend::fmsub(a.backend(), b.backend(), c.backend())};
+  return Vector<T, tSize>{
+    backend::fused(a.backend(), b.backend(), c.backend(), backend::MultiplySubtract{}),
+  };
 }
 
 /** Lane-wise negative fused multiply-add: @f$ -(a \cdot b) + c @f$. */
 template<FloatVectorizable T, std::size_t tSize>
 GREX_ALWAYS_INLINE inline Vector<T, tSize> fnmadd(Vector<T, tSize> a, Vector<T, tSize> b,
                                                   Vector<T, tSize> c) {
-  return Vector<T, tSize>{backend::fnmadd(a.backend(), b.backend(), c.backend())};
+  return Vector<T, tSize>{
+    backend::fused(a.backend(), b.backend(), c.backend(), backend::NegatedMultiplyAdd{}),
+  };
 }
 
 /** Lane-wise negative fused multiply-subtract: @f$ -(a \cdot b) - c @f$. */
 template<FloatVectorizable T, std::size_t tSize>
 GREX_ALWAYS_INLINE inline Vector<T, tSize> fnmsub(Vector<T, tSize> a, Vector<T, tSize> b,
                                                   Vector<T, tSize> c) {
-  return Vector<T, tSize>{backend::fnmsub(a.backend(), b.backend(), c.backend())};
+  return Vector<T, tSize>{
+    backend::fused(a.backend(), b.backend(), c.backend(), backend::NegatedMultiplySubtract{}),
+  };
 }
 
 /** Extracts `v[0]`. */

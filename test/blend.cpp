@@ -23,16 +23,52 @@ namespace test = grex::test;
 using Value = grex::GREX_TEST_TYPE;
 inline constexpr std::size_t repetitions = 256;
 
+/**
+ * Reports a failed `blend_zero` and terminates.
+ *
+ * Kept out of line and cold: the reporting code formats whole vectors, and would otherwise be
+ * inlined and optimized into each of the `repetitions` unrolled copies of the test body.
+ */
+template<std::size_t tSize, typename TBlended>
+[[gnu::cold, gnu::noinline]] void fail_blend_zero(
+  const std::array<grex::BlendZeroSelector, tSize>& sels, const grex::Vector<Value, tSize>& a,
+  const std::array<Value, tSize>& aref, const TBlended& blended) {
+  std::array<Value, tSize> ref{};
+  for (std::size_t i = 0; i < tSize; ++i) {
+    ref[i] = (sels[i] == grex::keep_bz) ? aref[i] : Value{};
+  }
+  fmt::print("grex::blend_zero<{}>({}x{}, {}) == {}, ref={};\n", fmt::join(sels, ", "),
+             test::type_name<Value>(), tSize, a, blended, ref);
+  std::exit(EXIT_FAILURE);
+}
+
+/** Reports a failed `blend` and terminates, see `fail_blend_zero`. */
+template<std::size_t tSize, typename TBlended>
+[[gnu::cold, gnu::noinline]] void fail_blend(const std::array<grex::BlendSelector, tSize>& sels,
+                                             const grex::Vector<Value, tSize>& a,
+                                             const std::array<Value, tSize>& aref,
+                                             const grex::Vector<Value, tSize>& b,
+                                             const std::array<Value, tSize>& bref,
+                                             const TBlended& blended) {
+  std::array<Value, tSize> ref{};
+  for (std::size_t i = 0; i < tSize; ++i) {
+    ref[i] = (sels[i] != grex::rhs_bl) ? aref[i] : bref[i];
+  }
+  fmt::print("grex::blend<{}>({}x{}, {}, {}) == {}, ref={};\n", fmt::join(sels, ", "),
+             test::type_name<Value>(), tSize, a, b, blended, ref);
+  std::exit(EXIT_FAILURE);
+}
+
 template<std::size_t tSize>
 void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
   using VC = test::VectorChecker<Value, tSize>;
 
   auto dist = test::make_distribution<Value>();
-  auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+  auto dval = [&] { return dist(rng); };
 
   grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
-    VC vca{dval(tIdxs)...};
-    VC vcb{dval(tIdxs)...};
+    VC vca = VC::random(dval);
+    VC vcb = VC::random(dval);
 
     constexpr auto bzs = grex::static_apply<repetitions>([&]<std::size_t... tReps>() {
       test::Pcg32 pcg{};
@@ -61,14 +97,7 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
           }
         }
         if (!same) {
-          auto f = [&](std::size_t i) {
-            return (bzs[rep][i] == grex::keep_bz) ? vca.ref[i] : Value{};
-          };
-          const std::array ref{f(tIdxs)...};
-
-          fmt::print("grex::blend_zero<{}>({}) == {}, ref={};\n", fmt::join(bzs[rep], ", "),
-                     test::type_name<Value>(), tSize, vca.vec, blended, ref);
-          std::exit(EXIT_FAILURE);
+          fail_blend_zero(bzs[rep], vca.vec, vca.ref, blended);
         }
       }
       {
@@ -84,14 +113,7 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
           }
         }
         if (!same) {
-          auto f = [&](std::size_t i) {
-            return (bls[rep][i] != grex::rhs_bl) ? vca.ref[i] : vcb.ref[i];
-          };
-          const std::array ref{f(tIdxs)...};
-
-          fmt::print("grex::blend<{}>({}, {}) == {}, ref={};\n", fmt::join(bls[rep], ", "),
-                     test::type_name<Value>(), tSize, vca.vec, vcb.vec, blended, ref);
-          std::exit(EXIT_FAILURE);
+          fail_blend(bls[rep], vca.vec, vca.ref, vcb.vec, vcb.ref, blended);
         }
       }
     };

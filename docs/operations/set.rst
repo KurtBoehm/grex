@@ -6,6 +6,9 @@ Construction
 
 Vector and mask construction operations build vectors from scalars, constants, or indices.
 
+:cpp:func:`~backend::zeros`, :cpp:func:`~backend::undefined`, and everything on masks treat binary16 exactly like ``u16``.
+:cpp:func:`~backend::broadcast` and :cpp:func:`~backend::set` do not, because they consume a scalar: a binary16 value already sits in the vector register file, whereas a ``u16`` sits in a general-purpose register, so binary16 gets its own paths that never leave the vector registers (see :ref:`f16-implementation`).
+
 ***************
 Vector Creation
 ***************
@@ -82,11 +85,12 @@ Broadcast
    ------
 
    - ``set1`` intrinsics with the appropriate casts.
+   - **Binary16**: ``broadcastw`` from the vector register holding the scalar; without AVX2, where that form does not exist, splat lane 0 across the low 64 bits and duplicate them into the upper half.
 
    Neon
    ----
 
-   - ``vdupq_n`` intrinsics.
+   - ``vdupq_n`` intrinsics, or ``vdupq_laneq`` for binary16 without the FP16 extension, which is what ``vdupq_n`` compiles to anyway.
 
 .. _operations-set-vector:
 
@@ -113,15 +117,16 @@ Set
      - **Larger sizes**: build lower and upper halves recursively and merge them with an appropriately sized ``_mm_unpacklo`` operation.
 
    - **Sub-native, floating-point**: ``unpcklps``.
+   - **Binary16**: interleave the scalars pairwise in vector registers, since they are already there.
 
    Neon
    ----
 
-   - **64-bit entries**: expand scalars with :cpp:func:`~backend::expand_any` to 2-lane vectors and interleave with ``vzip1q`` intrinsics.
-   - **32-bit floating point**: expand scalars with :cpp:func:`~backend::expand_any` and interleave with ``vzip1q_f32``; 4-lane vectors are built by zipping two 2-lane temporaries.
-   - **32-bit integers**: merge scalar pairs into 64-bit temporaries (``bfi`` or ``std::memcpy``), expand with :cpp:func:`~backend::expand_any`, then reinterpret as ``i32``/``u32`` and combine via 64-bit interleaving.
-   - **8/16-bit integers**: merge scalar pairs into wider integer temporaries (``bfi`` or ``std::memcpy``), expand with :cpp:func:`~backend::expand_any`, and recursively combine into 8/16-lane vectors.
-   - **Sub-native**: dedicated sub-vector overloads that use the same approach as the native version, but with fewer merging steps.
+   The general pattern is to combine the scalars pairwise until the full vector is assembled, differing only in where the pairs are formed:
+
+   - **Floating point and 64-bit entries**: expand the scalars with :cpp:func:`~backend::expand_any` and interleave with ``vzip1q`` intrinsics, recursively for more than two lanes.
+   - **Integers below 64 bits**: merge scalar pairs into wider integer temporaries in general-purpose registers first (``bfi`` or ``std::memcpy``), expand those, and continue interleaving from there.
+   - **Sub-native**: dedicated overloads following the same approach with fewer merging steps.
 
 .. _operations-indices:
 

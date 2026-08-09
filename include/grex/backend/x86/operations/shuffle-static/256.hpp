@@ -12,7 +12,6 @@
 #if GREX_X86_64_LEVEL >= 3
 #include <algorithm>
 #include <optional>
-#include <utility>
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/shared/defs.hpp"
@@ -30,7 +29,7 @@ struct ShufflerShuffle8x32 : public BaseExpensiveOp {
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
+    using Value = ValueOf<TVec>;
     static constexpr ShuffleIndices<1, 32> shi = convert<1>(tSh).value();
     static constexpr auto idxs = shi.laned_indices().value();
 
@@ -55,7 +54,7 @@ struct ShufflerShuffle32x8 : public BaseExpensiveOp {
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
+    using Value = ValueOf<TVec>;
     static constexpr int imm8 = convert<4>(tSh).value().single_lane().value().imm8();
 
     const i32x8 ivec = reinterpret(vec, type_tag<i32>);
@@ -76,7 +75,7 @@ struct ShufflerPermute64x4 : public BaseExpensiveOp {
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
+    using Value = ValueOf<TVec>;
     static constexpr int imm8 = convert<8>(tSh).value().imm8();
 
     const i64x4 ivec = reinterpret(vec, type_tag<i64>);
@@ -98,7 +97,7 @@ struct ShufflerShuffle8x32Ext : public BaseExpensiveOp {
   }
   template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
   static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
+    using Value = ValueOf<TVec>;
     static constexpr ShuffleIndices<1, 32> shi = convert<1>(tSh).value();
     static constexpr auto idxs0 = shi.intralane_indices();
     static constexpr auto idxs1 = shi.extralane_indices();

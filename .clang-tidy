@@ -18,8 +18,10 @@ Checks: "
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-type-vararg,
   -hicpp-avoid-c-arrays,
   -hicpp-signed-bitwise,
+  -hicpp-vararg,
   -misc-non-private-member-variables-in-classes,
   -misc-use-internal-linkage,
   -modernize-avoid-c-arrays,
@@ -57,7 +59,7 @@ CheckOptions:
   - { key: readability-identifier-naming.TypeAliasCase, value: CamelCase }
   - {
       key: readability-identifier-naming.TypeAliasIgnoredRegexp,
-      value: "^(([a-z_]+_type)|([a-z_]*iterator)|([fiu][0-9]+))$",
+      value: "^(([a-z_]+_type)|([a-z_]*iterator)|([fiu][0-9]+)|(b?[fiu][0-9]+x[0-9]+))$",
     }
   - {
       key: readability-identifier-naming.ValueTemplateParameterCase,

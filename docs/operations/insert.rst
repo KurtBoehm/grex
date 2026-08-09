@@ -7,6 +7,8 @@ Insertion
 Single-lane insertion into vectors and masks.
 Sub-native vectors/masks are processed via their backing native registers, while a super-native vector/mask is handled by inserting into the half that contains the target lane.
 
+As for :doc:`extraction <extract>`, binary16 avoids the ``u16`` paths that route the value through a general-purpose register and instead keeps it in the vector register file throughout (see :ref:`f16-implementation`).
+
 .. _operations-insert-value-ct:
 
 *************************************
@@ -32,20 +34,29 @@ Vector Insertion (Compile-Time Index)
 
    - **128-bit**:
 
-     - ``f64``: expand the scalar with :cpp:func:`~backend::expand_any` and combine via ``_mm_move_sd`` (index 0) or ``_mm_unpacklo_pd`` (index 1).
-     - ``f32``:
+     - **64-bit**:
 
-       - **x86-64-v2+**: expand scalar and use ``_mm_move_ss`` (index 0) or ``_mm_insert_ps`` (other indices).
-       - **x86-64-v1**: expand scalar and use ``_mm_move_ss`` (index 0) or shuffles (other indices).
+       - **Floating-point, integer on x86-64-v1**: expand the scalar with :cpp:func:`~backend::expand_any` and combine via ``_mm_move_sd`` (index 0) or ``_mm_unpacklo_pd`` (index 1).
+       - **Integer on x86-64-v2+**: ``_mm_insert_epi64``.
 
-     - **Integers**:
+     - **32-bit**:
 
-       - **16-bit**: ``_mm_insert_epi16``.
-       - **Otherwise**:
+       - **Floating-point, integer on x86-64-v1**: expand scalar and use ``_mm_move_ss`` for index 0, shuffles (x86-64-v1)/``_mm_insert_ps`` (x86-64-v2+) for other indices.
+       - **Integer on x86-64-v2+**: ``_mm_insert_epi32``.
 
-         - **x86-64-v2+**: ``_mm_insert`` intrinsics.
-         - **Otherwise**: fall back to the :ref:`run-time-index implementation <operations-insert-value-runtime>`.
+     - **16-bit integers**: ``_mm_insert_epi16``.
+     - **Binary16**: move ``value`` into the target lane by a broadcast (``_mm_broadcastw_epi16``) or, without AVX2, a shuffle or byte shift, then combine with ``_mm_blend_epi16`` or, on x86-64-v1, a mask and bitwise OR.
+     - **8-bit integers**:
 
+       - **x86-64-v1**:
+
+         - Apply bitwise AND with a compile-time mask, which is 0 at the index and 255 elsewhere, and ``v``.
+         - Create a vector with ``value`` at ``index`` and zeros elsewhere using zero-extension and ``_mm_cvtsi32_si128`` for index 0 and ``_mm_insert_epi16`` with a zero-extended, and potentially shifted, ``value``.
+         - Combine both partial results using bitwise OR.
+
+       - **x86-64-v2+**: ``_mm_insert_epi8``.
+
+   - **256/512-bit binary16**: broadcast ``value`` into the target 128-bit lane and blend it in, or, with AVX-512, write it directly with a single-lane masked ``broadcastw``.
    - **256-bit (x86-64-v3)**:
 
      - ``f32``/``f64``:
@@ -56,7 +67,7 @@ Vector Insertion (Compile-Time Index)
      - **8-bit integers**:
 
        - **Index in lower 128 bits**: ``_mm_insert_epi8`` into lower half and ``_mm256_blend_epi32`` to merge the affected 32 bits.
-       - **Otherwise**: Extract upper 128 bits with ``_mm256_extracti128_si256``
+       - **Otherwise**: Extract upper 128 bits with ``_mm256_extracti128_si256``, insert into it using ``_mm_insert_epi8``, and re-insert it into the 256-bit vector using ``_mm256_inserti128_si256``.
 
      - **Other integers**:
 
@@ -139,17 +150,15 @@ Vector Insertion (Run-Time Index)
 
    - **x86-64-v4**:
 
-     - Uses masked broadcasts of the scalar with a :cpp:func:`~backend::single_mask`:
-
-       - ``f32``: ``mask_broadcastss_ps`` intrinsics.
-       - ``f64``: ``_mm_mask_movedup_pd`` (size 2) or ``mask_broadcastsd_pd`` intrinsics.
-       - **Integers**: ``mask_set1`` intrinsics.
+     - Uses masked broadcasts of the scalar with a :cpp:func:`~backend::single_mask`.
+       The naming of these is uncharacteristically inconsistent, which forces a case distinction: the floating-point variants (``mask_broadcastss_ps``, ``mask_broadcastsd_pd``, ``_mm_mask_movedup_pd``, and ``mask_broadcastw_epi16`` for binary16) broadcast out of the lowest lane of a vector register, which :cpp:func:`~backend::expand_any` fills without a detour, whereas the integer ``mask_set1`` intrinsics broadcast straight out of a general-purpose register, which is where the value already is.
 
    - **Earlier**:
 
      - Build a single-lane mask via :cpp:func:`~backend::single_mask`; only lane ``index`` is set.
      - Broadcast ``value`` to all lanes with :cpp:func:`~backend::broadcast`.
      - Blend old and new vectors with :cpp:func:`~backend::blend`, keeping ``v`` where the mask is false and the broadcast where it is true.
+     - Binary16 needs no special case here, since :cpp:func:`~backend::broadcast` already keeps it in a vector register.
 
    Neon
    ====

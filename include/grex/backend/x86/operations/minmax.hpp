@@ -9,6 +9,8 @@
 
 #include <immintrin.h>
 
+#include "grex/backend/base.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
@@ -16,8 +18,13 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/operations/f16.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base.hpp" // IWYU pragma: keep
+#include "grex/base.hpp"
+
+#if !GREX_F16_NATIVE_ARITHMETIC
+#include <cstddef>
+#endif
 
 #if GREX_X86_64_LEVEL == 1
 #include "grex/backend/x86/operations/bitwise.hpp"
@@ -30,7 +37,8 @@
 
 namespace grex::backend {
 #define GREX_MINMAX_INTRINSIC(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
-  return {.r = GREX_CAT(BITPREFIX##_##OP##_, GREX_EPU_SUFFIX(KIND, BITS))(a.r, b.r)};
+  return {.r = to_stored<KIND##BITS>(GREX_CAT(BITPREFIX##_##OP##_, GREX_EPU_SUFFIX(KIND, BITS))( \
+            from_stored<KIND##BITS>(a.r), from_stored<KIND##BITS>(b.r)))};
 #define GREX_MINMAX_FLIP_IMPL(TOELEMENT, KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
   auto signbit = broadcast(KIND##BITS(1U << GREX_CAT(GREX_DECR(BITS), U)), \
                            type_tag<NativeVector<KIND##BITS, SIZE>>); \
@@ -55,6 +63,7 @@ namespace grex::backend {
 #define GREX_MINMAX_FLIP GREX_MINMAX_FLIP_IMPL
 #endif
 
+#define GREX_MINMAX_IMPL_128_f16 GREX_MINMAX_INTRINSIC
 #define GREX_MINMAX_IMPL_128_f32 GREX_MINMAX_INTRINSIC
 #define GREX_MINMAX_IMPL_128_f64 GREX_MINMAX_INTRINSIC
 #define GREX_MINMAX_IMPL_128_i8(...) GREX_MINMAX_FLIP(u8, __VA_ARGS__)
@@ -67,6 +76,7 @@ namespace grex::backend {
 #define GREX_MINMAX_IMPL_128_u64 GREX_MINMAX_BLEND64
 #define GREX_MINMAX_IMPL_128(KIND, BITS, ...) \
   GREX_MINMAX_IMPL_128_##KIND##BITS(KIND, BITS, __VA_ARGS__)
+#define GREX_MINMAX_IMPL_256_f16 GREX_MINMAX_INTRINSIC
 #define GREX_MINMAX_IMPL_256_f32 GREX_MINMAX_INTRINSIC
 #define GREX_MINMAX_IMPL_256_f64 GREX_MINMAX_INTRINSIC
 #define GREX_MINMAX_IMPL_256_i8 GREX_MINMAX_INTRINSIC
@@ -89,12 +99,24 @@ namespace grex::backend {
     GREX_MINMAX_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OP) \
   }
 #define GREX_MINMAX_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_TYPE(GREX_MINMAX, REGISTERBITS, BITPREFIX, REGISTERBITS, min) \
-  GREX_FOREACH_TYPE(GREX_MINMAX, REGISTERBITS, BITPREFIX, REGISTERBITS, max)
+  GREX_FOREACH_TYPE_OPT_EXT(GREX_MINMAX, REGISTERBITS, BITPREFIX, REGISTERBITS, min) \
+  GREX_FOREACH_TYPE_OPT_EXT(GREX_MINMAX, REGISTERBITS, BITPREFIX, REGISTERBITS, max)
 GREX_FOREACH_X86_64_LEVEL(GREX_MINMAX_ALL)
 
 GREX_NNVECTOR_BINARY(min)
 GREX_NNVECTOR_BINARY(max)
+
+// Binary16 without AVX512-FP16: round-trip through binary32.
+#if !GREX_F16_NATIVE_ARITHMETIC
+#define GREX_F16_MINMAX(NAME) \
+  template<std::size_t tSize> \
+  inline NativeVector<f16, tSize> NAME(NativeVector<f16, tSize> a, NativeVector<f16, tSize> b) { \
+    return f32_to_f16(NAME(f16_to_f32(a), f16_to_f32(b))); \
+  }
+GREX_F16_MINMAX(min)
+GREX_F16_MINMAX(max)
+#undef GREX_F16_MINMAX
+#endif
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_MINMAX_HPP

@@ -7,6 +7,9 @@ Arithmetic Operations
 Element-wise arithmetic operations on vectors.
 Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
 
+Binary16 follows the general rule described in :ref:`f16-implementation`: where the hardware provides binary16 instructions, they are used exactly like their binary32 counterparts, and otherwise both operands are widened to binary32, the operation is carried out there, and the result is rounded back, which still yields the correctly rounded binary16 result (see :ref:`f16-accuracy`).
+Negation is the exception, as it is a pure bit operation.
+
 .. _operations-addition:
 
 ********
@@ -64,12 +67,12 @@ Negation
    ======
 
    - **Integers**: :math:`0 - v`.
-   - **Floating point**: flip the sign bit.
+   - **Floating point**: flip the sign bit, which is what both compilers emit for the binary16 intrinsic as well, so it is used unconditionally there.
 
    Neon
    ====
 
-   - **Integers and floating point**: ``vnegq`` intrinsics.
+   - **Integers and floating point**: ``vnegq`` intrinsics; binary16 flips the sign bit where ``vnegq_f16`` is unavailable.
 
 .. _operations-multiplication:
 

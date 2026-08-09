@@ -17,9 +17,9 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-/////////////////////////
-// Trivial no-op cases //
-/////////////////////////
+//==================================================================================================
+// Trivial no-op cases
+//==================================================================================================
 
 // Source and destination scalar types are identical: return the vector unchanged.
 template<AnyVector TVec>
@@ -35,9 +35,9 @@ inline NativeVector<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> /*tag*/) 
   return as<TDst>(v);
 }
 
-///////////////////
-// Generic cases //
-///////////////////
+//==================================================================================================
+// Generic cases
+//==================================================================================================
 
 // Sub-native vector → sub-native vector:
 // expand to the smallest size where the source or destination element type becomes native,

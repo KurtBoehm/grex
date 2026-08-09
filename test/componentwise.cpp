@@ -6,7 +6,6 @@
 
 #include <cstddef>
 #include <functional>
-#include <limits>
 #include <random>
 
 #include <fmt/base.h>
@@ -20,6 +19,27 @@
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
+namespace ref {
+using namespace grex::primitives;
+
+/** Binary64 FMA. */
+f64 fma(f64 a, f64 b, f64 c) {
+  return __builtin_fma(a, b, c);
+}
+/** Binary32 FMA. */
+f32 fma(f32 a, f32 b, f32 c) {
+  return __builtin_fmaf(a, b, c);
+}
+/** Binary16 FMA. */
+f16 fma(f16 a, f16 b, f16 c) {
+  // Computed via binary64 rather than `__builtin_fmaf16` directly: the latter requires the target
+  // libm to provide `fmaf16`, which is not universally available, whereas `fma` (binary64) is; both
+  // are exactly correctly rounded, so this is an equally valid reference.
+  return grex::f64_to_f16(
+    __builtin_fma(grex::f16_to_f64(a), grex::f16_to_f64(b), grex::f16_to_f64(c)));
+}
+} // namespace ref
+
 #if !GREX_BACKEND_SCALAR
 #include <array>
 #include <climits>
@@ -30,7 +50,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
   using MC = test::MaskChecker<T, tSize>;
 
   auto dist = test::make_distribution<T>();
-  auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+  auto dval = [&] { return dist(rng); };
   std::uniform_int_distribution<int> bdist{0, 1};
   auto bval = [&](std::size_t /*dummy*/) { return bool(bdist(rng)); };
 
@@ -40,11 +60,11 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         return dist(rng);
       }
       if (bdist(rng)) {
-        const T inf = std::numeric_limits<T>::infinity();
+        const T inf = grex::NumericTrait<T>::infinity();
         return bdist(rng) ? inf : -inf;
       }
-      return bdist(rng) ? std::numeric_limits<T>::quiet_NaN()
-                        : std::numeric_limits<T>::signaling_NaN();
+      return bdist(rng) ? grex::NumericTrait<T>::quiet_NaN()
+                        : grex::NumericTrait<T>::signaling_NaN();
     }
   };
 
@@ -53,14 +73,14 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       // vector-only operations
       {
         auto v2vx = [&](auto label, auto vop, auto sop) {
-          VC a{dval(tIdxs)...};
+          VC a = VC::random(dval);
           VC{vop(a.vec), std::array{T(sop(a.ref[tIdxs]))...}}.check(label, false);
         };
         auto v2v = [&](auto label, auto op) { v2vx(label, op, op); };
 
         auto vv2vx = [&](auto label, auto vop, auto sop) {
-          VC a{dval(tIdxs)...};
-          VC b{dval(tIdxs)...};
+          VC a = VC::random(dval);
+          VC b = VC::random(dval);
           VC checker{vop(a.vec, b.vec), std::array{T(sop(a.ref[tIdxs], b.ref[tIdxs]))...}};
           checker.check(label, false);
         };
@@ -94,19 +114,25 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
 
         // abs/sqrt
         if constexpr (grex::SignedVectorizable<T>) {
-          v2vx("abs", [](auto a) { return grex::abs(a); }, [](auto a) { return std::abs(a); });
+          v2vx(
+            "abs", [](auto a) { return grex::abs(a); },
+            [](auto a) { return std::abs(test::widen(a)); });
           v2v("abs", [](auto a) { return grex::abs(a); });
         }
         if constexpr (grex::FloatVectorizable<T>) {
-          v2vx("sqrt", [](auto a) { return grex::sqrt(a); }, [](auto a) { return std::sqrt(a); });
+          v2vx(
+            "sqrt", [](auto a) { return grex::sqrt(a); },
+            [](auto a) { return std::sqrt(test::widen(a)); });
           v2v("sqrt", [](auto a) { return grex::sqrt(a); });
         }
 
         // make_finite
         if constexpr (grex::FloatVectorizable<T>) {
           VC a{nonfin(tIdxs)...};
-          VC checker{grex::make_finite(a.vec),
-                     std::array{(std::isfinite(a.ref[tIdxs]) ? a.ref[tIdxs] : T{})...}};
+          VC checker{
+            grex::make_finite(a.vec),
+            std::array{(std::isfinite(test::widen(a.ref[tIdxs])) ? a.ref[tIdxs] : T{})...},
+          };
           checker.check("make_finite", false);
           VC gchecker{grex::make_finite(a.vec), std::array{grex::make_finite(a.ref[tIdxs])...}};
           gchecker.check("make_finite", false);
@@ -125,47 +151,54 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         // fma family
         if constexpr (grex::FloatVectorizable<T>) {
           auto vvv2v = [&](auto label, auto grex_op, auto fused_op, auto fb_op) {
-            VC a{dval(tIdxs)...};
-            VC b{dval(tIdxs)...};
-            VC c{dval(tIdxs)...};
+            VC vca = VC::random(dval);
+            VC vcb = VC::random(dval);
+            VC vcc = VC::random(dval);
 
-            auto op = [&] {
-              if constexpr (grex::has_fma) {
-                return fused_op;
+            auto op = [&](T a, T b, T c) {
+              if constexpr (grex::has_fma<T>) {
+                // Use the built-in FMA at each width. This implicitly assumes that there is a
+                // built-in for the platform on which this is executed, which is the case for all
+                // non-scalar backends.
+                return fused_op(a, b, c);
+              } else if constexpr (grex::has_fma<test::Widened<T>>) {
+                // Matches the backend’s fallback: a single binary32 fused multiply-add, rounded
+                // once back down to binary16.
+                return T(fused_op(test::widen(a), test::widen(b), test::widen(c)));
               } else {
-                return fb_op;
+                return fb_op(a, b, c);
               }
-            }();
+            };
             VC checker{
-              grex_op(a.vec, b.vec, c.vec),
-              std::array{T(op(a.ref[tIdxs], b.ref[tIdxs], c.ref[tIdxs]))...},
+              grex_op(vca.vec, vcb.vec, vcc.vec),
+              std::array{T(op(vca.ref[tIdxs], vcb.ref[tIdxs], vcc.ref[tIdxs]))...},
             };
             checker.check(label, false);
 
             // using the scalar operation as reference
             VC gchecker{
-              grex_op(a.vec, b.vec, c.vec),
-              std::array{T(grex_op(a.ref[tIdxs], b.ref[tIdxs], c.ref[tIdxs]))...},
+              grex_op(vca.vec, vcb.vec, vcc.vec),
+              std::array{T(grex_op(vca.ref[tIdxs], vcb.ref[tIdxs], vcc.ref[tIdxs]))...},
             };
             gchecker.check(label, false);
           };
 
           vvv2v(
             "fmadd", [](auto a, auto b, auto c) { return grex::fmadd(a, b, c); },
-            [](auto a, auto b, auto c) { return std::fma(a, b, c); },
+            [](auto a, auto b, auto c) { return ref::fma(a, b, c); },
             [](auto a, auto b, auto c) { return a * b + c; });
           vvv2v(
             "fmsub", [](auto a, auto b, auto c) { return grex::fmsub(a, b, c); },
-            [](auto a, auto b, auto c) { return std::fma(a, b, -c); },
+            [](auto a, auto b, auto c) { return ref::fma(a, b, -c); },
             [](auto a, auto b, auto c) { return a * b - c; });
           vvv2v(
             "fnmadd", [](auto a, auto b, auto c) { return grex::fnmadd(a, b, c); },
-            [](auto a, auto b, auto c) { return std::fma(-a, b, c); },
+            [](auto a, auto b, auto c) { return ref::fma(-a, b, c); },
             [](auto a, auto b, auto c) { return c - a * b; });
           vvv2v(
             "fnmsub", [](auto a, auto b, auto c) { return grex::fnmsub(a, b, c); },
-            [](auto a, auto b, auto c) { return -std::fma(a, b, c); },
-            [](auto a, auto b, auto c) { return -(a * b + c); });
+            [](auto a, auto b, auto c) { return ref::fma(-a, b, -c); },
+            [](auto a, auto b, auto c) { return -(a * b) - c; });
         }
       }
 
@@ -173,8 +206,8 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       {
         auto mvv2v = [&](auto label, auto gop, auto sop) {
           MC m{bval(tIdxs)...};
-          VC a{dval(tIdxs)...};
-          VC b{dval(tIdxs)...};
+          VC a = VC::random(dval);
+          VC b = VC::random(dval);
           VC checker{
             gop(m.mask, a.vec, b.vec),
             std::array{T(m.ref[tIdxs] ? sop(a.ref[tIdxs], b.ref[tIdxs]) : a.ref[tIdxs])...},
@@ -207,7 +240,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         // blend_zero
         {
           MC m{bval(tIdxs)...};
-          VC a{dval(tIdxs)...};
+          VC a = VC::random(dval);
           VC checker{
             grex::blend_zero(m.mask, a.vec),
             std::array{T(m.ref[tIdxs] ? a.ref[tIdxs] : 0)...},
@@ -221,8 +254,8 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         }
         {
           MC m{bval(tIdxs)...};
-          VC a{dval(tIdxs)...};
-          VC b{dval(tIdxs)...};
+          VC a = VC::random(dval);
+          VC b = VC::random(dval);
           VC checker{
             grex::blend(m.mask, a.vec, b.vec),
             std::array<T, tSize>{T(m.ref[tIdxs] ? b.ref[tIdxs] : a.ref[tIdxs])...},
@@ -239,8 +272,8 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       // vector-vector comparison operations
       {
         auto vv2m = [&](auto label, auto op) {
-          VC a{dval(tIdxs)...};
-          VC b{dval(tIdxs)...};
+          VC a = VC::random(dval);
+          VC b = VC::random(dval);
           MC checker{op(a.vec, b.vec), std::array{op(a.ref[tIdxs], b.ref[tIdxs])...}};
           checker.check(label, false);
         };
@@ -255,7 +288,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       // vector-to-mask operations
       if constexpr (grex::FloatVectorizable<T>) {
         VC a{nonfin(tIdxs)...};
-        MC checker{grex::is_finite(a.vec), std::array{std::isfinite(a.ref[tIdxs])...}};
+        MC checker{grex::is_finite(a.vec), std::array{std::isfinite(test::widen(a.ref[tIdxs]))...}};
         checker.check("is_finite", false);
         MC gchecker{grex::is_finite(a.vec), std::array{grex::is_finite(a.ref[tIdxs])...}};
         gchecker.check("is_finite", false);
@@ -295,7 +328,7 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
     {
       auto v2v = [&](auto label, auto vop, auto sop) {
         const T a = dist(rng);
-        test::check(label, vop(a), sop(a), false);
+        test::check(label, vop(a), sop(test::widen(a)), false);
       };
       auto vv2v = [&](auto label, auto vop, auto sop) {
         const T a = dist(rng);
@@ -308,7 +341,7 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
         v2v("abs", [](auto a) { return grex::abs(a); }, [](auto a) { return T(std::abs(a)); });
       }
       if constexpr (grex::FloatVectorizable<T>) {
-        v2v("sqrt", [](auto a) { return grex::sqrt(a); }, [](auto a) { return std::sqrt(a); });
+        v2v("sqrt", [](auto a) { return grex::sqrt(a); }, [](auto a) { return T(std::sqrt(a)); });
       }
 
       // min/max
@@ -326,32 +359,35 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
           const T b = dist(rng);
           const T c = dist(rng);
 
-          auto ref_op = [&] {
-            if constexpr (grex::has_fma) {
-              return fused_op;
+          auto ref = [&] {
+            if constexpr (grex::has_fma<T>) {
+              return fused_op(a, b, c);
+            } else if constexpr (grex::has_fma<test::Widened<T>>) {
+              // Matches the backend’s binary16 fallback: round-trip through binary32.
+              return T(fused_op(test::widen(a), test::widen(b), test::widen(c)));
             } else {
-              return fb_op;
+              return fb_op(a, b, c);
             }
           }();
-          test::check(label, grex_op(a, b, c), ref_op(a, b, c), false);
+          test::check(label, grex_op(a, b, c), ref, false);
         };
 
         vvv2v(
           "fmadd", [](auto a, auto b, auto c) { return grex::fmadd(a, b, c); },
-          [](auto a, auto b, auto c) { return std::fma(a, b, c); },
+          [](auto a, auto b, auto c) { return ref::fma(a, b, c); },
           [](auto a, auto b, auto c) { return a * b + c; });
         vvv2v(
           "fmsub", [](auto a, auto b, auto c) { return grex::fmsub(a, b, c); },
-          [](auto a, auto b, auto c) { return std::fma(a, b, -c); },
+          [](auto a, auto b, auto c) { return ref::fma(a, b, -c); },
           [](auto a, auto b, auto c) { return a * b - c; });
         vvv2v(
           "fnmadd", [](auto a, auto b, auto c) { return grex::fnmadd(a, b, c); },
-          [](auto a, auto b, auto c) { return std::fma(-a, b, c); },
+          [](auto a, auto b, auto c) { return ref::fma(-a, b, c); },
           [](auto a, auto b, auto c) { return c - a * b; });
         vvv2v(
           "fnmsub", [](auto a, auto b, auto c) { return grex::fnmsub(a, b, c); },
-          [](auto a, auto b, auto c) { return -std::fma(a, b, c); },
-          [](auto a, auto b, auto c) { return -(a * b + c); });
+          [](auto a, auto b, auto c) { return ref::fma(-a, b, -c); },
+          [](auto a, auto b, auto c) { return -(a * b) - c; });
       }
     }
 
@@ -396,9 +432,9 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
     // vector-to-mask operations
     if constexpr (grex::FloatVectorizable<T>) {
       const T a = bool(bdist(rng)) ? dist(rng)
-                                   : (bool(bdist(rng)) ? std::numeric_limits<T>::infinity()
-                                                       : std::numeric_limits<T>::quiet_NaN());
-      test::check("is_finite", grex::is_finite(a), std::isfinite(a), false);
+                                   : (bool(bdist(rng)) ? grex::NumericTrait<T>::infinity()
+                                                       : grex::NumericTrait<T>::quiet_NaN());
+      test::check("is_finite", grex::is_finite(a), std::isfinite(test::widen(a)), false);
     }
   }
 }

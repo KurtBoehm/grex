@@ -5,7 +5,7 @@ Compile-Time Shuffles
 ######################
 
 Table lookups whose per-lane indices are fixed at compile time rather than supplied in an index vector.
-As with :doc:`blend-static`, a constant index pattern lets the backend select an immediate-controlled permute — or fold the operation into a cheaper one — instead of building an index vector at run time.
+As with :doc:`blend-static`, a constant index pattern lets the backend select an immediate-controlled permute — or fold the operation into a cheaper one — instead of building an index vector at run time, and the candidates are selected by element *size* rather than by element kind, which covers binary16 without any code of its own.
 
 The run-time, vector-driven counterpart is described in :doc:`shuffle`.
 

@@ -6,6 +6,7 @@ Storing
 
 Vector storing operations write elements from SIMD vectors to contiguous scalar memory.
 Partial stores write a prefix without touching memory beyond the requested number of elements.
+Storing only moves bits, so binary16 goes through the very same code as ``u16`` (see :ref:`f16-implementation`).
 
 .. _operations-store:
 

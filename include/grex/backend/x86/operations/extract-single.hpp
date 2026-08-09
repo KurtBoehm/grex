@@ -12,6 +12,7 @@
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros.hpp"
@@ -23,28 +24,45 @@
 #endif
 
 namespace grex::backend {
-#define GREX_EXTRINGLE_CVT_f64 _mm_cvtsd_f64(v.r)
-#define GREX_EXTRINGLE_CVT_f32 _mm_cvtss_f32(v.r)
-#define GREX_EXTRINGLE_CVT_i64(KIND) GREX_KINDCAST_SINGLE(i, KIND, 64, _mm_cvtsi128_si64(v.r))
-#define GREX_EXTRINGLE_CVT_i32(KIND) GREX_KINDCAST_SINGLE(i, KIND, 32, _mm_cvtsi128_si32(v.r))
-#define GREX_EXTRINGLE_CVT_i16(KIND) KIND##16(_mm_cvtsi128_si32(v.r))
-#define GREX_EXTRINGLE_CVT_i8(KIND) KIND##8(_mm_cvtsi128_si32(v.r))
+#define GREX_EXTRINGLE_CVT_f64 return _mm_cvtsd_f64(v.r)
+#define GREX_EXTRINGLE_CVT_f32 return _mm_cvtss_f32(v.r)
+#if GREX_F16_NATIVE_ARITHMETIC
+#define GREX_EXTRINGLE_CVT_f16 return _mm_cvtsh_h(_mm_castsi128_ph(v.r));
+#else
+#if GREX_GCC
+#define GREX_EXTRINGLE_CVT_f16 \
+  f16 retval; \
+  asm("" : "=x"(retval) : "0"(v.r)); \
+  return retval;
+#elif GREX_CLANG
+#define GREX_EXTRINGLE_CVT_f16 \
+  f16 data[8]; \
+  _mm_store_si128(reinterpret_cast<__m128i*>(data), v.r); \
+  return data[0];
+#endif
+#endif
+#define GREX_EXTRINGLE_CVT_i64(KIND) \
+  return GREX_KINDCAST_SINGLE(i, KIND, 64, _mm_cvtsi128_si64(v.r))
+#define GREX_EXTRINGLE_CVT_i32(KIND) \
+  return GREX_KINDCAST_SINGLE(i, KIND, 32, _mm_cvtsi128_si32(v.r))
+#define GREX_EXTRINGLE_CVT_i16(KIND) return KIND##16(_mm_cvtsi128_si32(v.r))
+#define GREX_EXTRINGLE_CVT_i8(KIND) return KIND##8(_mm_cvtsi128_si32(v.r))
 
 #define GREX_EXTRINGLE_CVT_f(KIND, BITS) GREX_EXTRINGLE_CVT_f##BITS
 #define GREX_EXTRINGLE_CVT_i(KIND, BITS) GREX_EXTRINGLE_CVT_i##BITS(KIND)
 #define GREX_EXTRINGLE_CVT_u(KIND, BITS) GREX_EXTRINGLE_CVT_i##BITS(KIND)
 
 #define GREX_EXTRINGLE_128(KIND, BITS, SIZE) GREX_EXTRINGLE_CVT_##KIND(KIND, BITS)
-#define GREX_EXTRINGLE_256(...) extract_single(split(v, index_tag<0>))
-#define GREX_EXTRINGLE_512(...) extract_single(split(v, index_tag<0>))
+#define GREX_EXTRINGLE_256(...) return extract_single(split(v, index_tag<0>))
+#define GREX_EXTRINGLE_512(...) return extract_single(split(v, index_tag<0>))
 
 #define GREX_EXTRINGLE(KIND, BITS, SIZE, REGISTERBITS) \
   inline KIND##BITS extract_single(NativeVector<KIND##BITS, SIZE> v) { \
-    return GREX_EXTRINGLE_##REGISTERBITS(KIND, BITS, SIZE); \
+    GREX_EXTRINGLE_##REGISTERBITS(KIND, BITS, SIZE); \
   }
 
 #define GREX_EXTRINGLE_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_TYPE(GREX_EXTRINGLE, REGISTERBITS, REGISTERBITS)
+  GREX_FOREACH_TYPE_EXT(GREX_EXTRINGLE, REGISTERBITS, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_EXTRINGLE_ALL)
 
 template<Vectorizable T, std::size_t tSize>

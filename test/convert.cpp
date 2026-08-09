@@ -40,11 +40,11 @@ inline auto make_distribution() {
     return [gen = test::make_distribution<TSrc>()](Rng& rng) mutable {
       TSrc f = gen(rng);
       if constexpr (grex::IntVectorizable<TDst>) {
-        // The C++ standard only specifies behaviour if the floating-point value
-        // is representable by the destination integer
-        // I adopt the same approach to keep the amount of work reasonable
+        // The C++ standard only specifies behaviour if the floating-point value is representable by
+        // the destination integer. I adopt the same approach to keep the amount of work reasonable.
         using Limits = std::numeric_limits<TDst>;
-        while (f < TSrc(Limits::min()) || f > TSrc(Limits::max())) {
+        while (test::widen(f) < test::Widened<TSrc>(Limits::min()) ||
+               test::widen(f) > test::Widened<TSrc>(Limits::max())) {
           f = gen(rng);
         }
       }
@@ -63,14 +63,14 @@ void run_simd(Rng& rng) {
     auto op = [&]<std::size_t tSize>(grex::IndexTag<tSize> /*tag*/) {
       fmt::print(fmt::fg(fmt::terminal_color::magenta), "{}\n", tSize);
       auto dist = make_distribution<Src, TDst>();
-      auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+      auto dval = [&] { return dist(rng); };
       auto bdst = std::uniform_int_distribution<int>(0, 1);
       auto bval = [&](std::size_t /*dummy*/) { return bool(bdst(rng)); };
 
       for (std::size_t i = 0; i < repetitions; ++i) {
         grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
           {
-            test::VectorChecker<Src, tSize> src{dval(tIdxs)...};
+            auto src = test::VectorChecker<Src, tSize>::random(dval);
             test::VectorChecker<TDst, tSize> dst{
               src.vec.convert(grex::type_tag<TDst>),
               std::array{TDst(src.ref[tIdxs])...},
@@ -88,7 +88,7 @@ void run_simd(Rng& rng) {
             dstsca.check([&] { return fmt::format("vector/tagged scalar {}", src); }, false);
           }
           {
-            test::VectorChecker<Src, tSize> src{dval(tIdxs)...};
+            auto src = test::VectorChecker<Src, tSize>::random(dval);
             const auto arr = src.vec.as_array();
             test::check([&] { return fmt::format("vector to array {}", src); }, arr, src.ref,
                         false);

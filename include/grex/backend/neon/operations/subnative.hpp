@@ -9,6 +9,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
@@ -25,7 +26,7 @@ namespace grex::backend {
     out = GREX_CAT(vcopyq_lane_u, GREX_MULTIPLY(BITS, PART))(out, 0, low, 0); \
     return {.r = as<KIND##BITS>(out)}; \
   }
-GREX_FOREACH_SUB(GREX_CUTOFF_SUB)
+GREX_FOREACH_SUB_EXT(GREX_CUTOFF_SUB)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SUBNATIVE_HPP

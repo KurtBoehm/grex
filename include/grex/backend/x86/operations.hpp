@@ -16,6 +16,7 @@
 #include "operations/expand.hpp"
 #include "operations/extract-single.hpp"
 #include "operations/extract.hpp"
+#include "operations/f16.hpp"
 #include "operations/fmadd-family.hpp"
 #include "operations/gather.hpp"
 #include "operations/horizontal-add.hpp"

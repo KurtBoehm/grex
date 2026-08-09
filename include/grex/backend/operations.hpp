@@ -18,22 +18,22 @@
 #include <limits>
 #include <utility>
 
-#include "grex/backend/base.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/base.hpp"
 
 namespace grex::backend {
 template<Vectorizable T>
-inline T abs(Scalar<T> x) {
-  return T(std::abs(x.value));
+inline T abs(T x) {
+  return T(std::abs(x));
 }
 
 template<Vectorizable T>
-inline T min(Scalar<T> a, Scalar<T> b) {
-  return std::min(a.value, b.value);
+inline T min(T a, T b) {
+  return std::min(a, b);
 }
 template<Vectorizable T>
-inline T max(Scalar<T> a, Scalar<T> b) {
-  return std::max(a.value, b.value);
+inline T max(T a, T b) {
+  return std::max(a, b);
 }
 
 inline bool logical_andnot(bool a, bool b) {
@@ -42,8 +42,8 @@ inline bool logical_andnot(bool a, bool b) {
 
 #define GREX_OPS_MASKARITH(NAME, OP) \
   template<Vectorizable T> \
-  inline T NAME(bool mask, Scalar<T> a, Scalar<T> b) { \
-    return mask ? T(a.value OP b.value) : a.value; \
+  inline T NAME(bool mask, T a, T b) { \
+    return mask ? T(a OP b) : a; \
   }
 GREX_OPS_MASKARITH(mask_add, +)
 GREX_OPS_MASKARITH(mask_subtract, -)
@@ -52,23 +52,57 @@ GREX_OPS_MASKARITH(mask_divide, /)
 #undef GREX_OPS_MASKARITH
 
 template<Vectorizable T>
-inline T extract_single(Scalar<T> v) {
-  return v.value;
+inline T extract_single(T v) {
+  return v;
 }
 
 template<Vectorizable T>
-inline T blend_zero(bool selector, Scalar<T> v1) {
-  return selector ? v1.value : T{};
+inline T blend_zero(bool selector, T v1) {
+  return selector ? v1 : T{};
 }
 template<Vectorizable T>
-inline T blend(bool selector, Scalar<T> v0, Scalar<T> v1) {
-  return selector ? v1.value : v0.value;
+inline T blend(bool selector, T v0, T v1) {
+  return selector ? v1 : v0;
 }
 
 template<FloatVectorizable T>
-inline bool is_finite(Scalar<T> v) {
-  return std::isfinite(v.value);
+inline bool is_finite(T v) {
+  return std::isfinite(v);
 }
+
+/** Whether the binary16 fused operations are carried out with a single rounding. */
+inline constexpr bool has_f16_fma = GREX_F16_NATIVE_ARITHMETIC;
+
+// Scalar binary16 operations are implemented in terms of GCC/Clang built-ins if `_Float16` is
+// supported. If not, they are emulated through bit operations on the underlying `u16`.
+
+#if GREX_NATIVE_F16
+template<std::same_as<f16> T>
+inline T abs(T x) {
+  return __builtin_fabsf16(x);
+}
+template<std::same_as<f16> T>
+inline bool is_finite(T v) {
+  return abs(v) < NumericTrait<f16>::infinity();
+}
+template<std::same_as<f16> T>
+inline T make_finite(T v) {
+  return is_finite(v) ? v : f16{};
+}
+#else
+template<std::same_as<f16> T>
+inline T abs(T x) {
+  return f16_from_bits(u16(f16_bits(x) & 0x7FFFU));
+}
+template<std::same_as<f16> T>
+inline bool is_finite(T v) {
+  return (f16_bits(v) & 0x7C00U) != 0x7C00U;
+}
+template<std::same_as<f16> T>
+inline T make_finite(T v) {
+  return is_finite(v) ? v : f16{};
+}
+#endif
 
 template<std::size_t tSrcBytes>
 static UnsignedInt<std::bit_ceil(tSrcBytes)> load_multibyte(const std::byte* data,

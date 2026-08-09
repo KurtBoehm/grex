@@ -17,6 +17,7 @@
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
+#include "grex/backend/macros/types.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
@@ -37,27 +38,29 @@ namespace grex::backend {
                                               NativeVector<KIND##BITS, GREX_DIVIDE(SIZE, 2)> v1) { \
     return {.r = IMPL}; \
   }
+#define GREX_MERGE_512_INT _mm512_inserti64x4(_mm512_castsi256_si512(v0.r), v1.r, 1)
 
 // 128 bit: No merging
 #define GREX_MERGE_128(...)
 // 256 bit
-#define GREX_MERGE_256(KIND, BITS, SIZE) \
+#define GREX_MERGE_256(KIND, BITS, SIZE, WORKKIND) \
   GREX_MERGE_WRAP(KIND, BITS, SIZE, \
-                  GREX_CAT(_mm256_set_, m128, GREX_REGISTER_SUFFIX(KIND, BITS))(v1.r, v0.r))
+                  GREX_CAT(_mm256_set_, m128, GREX_REGISTER_SUFFIX(WORKKIND, BITS))(v1.r, v0.r))
 // 512 bit
+#define GREX_MERGE_512_f16 GREX_MERGE_512_INT
 #define GREX_MERGE_512_f32 _mm512_insertf32x8(_mm512_castps256_ps512(v0.r), v1.r, 1)
 #define GREX_MERGE_512_f64 _mm512_insertf64x4(_mm512_castpd256_pd512(v0.r), v1.r, 1)
 #define GREX_MERGE_512_f(BITS) GREX_MERGE_512_f##BITS
-#define GREX_MERGE_512_i(BITS) _mm512_inserti64x4(_mm512_castsi256_si512(v0.r), v1.r, 1)
-#define GREX_MERGE_512_u(BITS) _mm512_inserti64x4(_mm512_castsi256_si512(v0.r), v1.r, 1)
-#define GREX_MERGE_512(KIND, BITS, SIZE) \
+#define GREX_MERGE_512_i(BITS) GREX_MERGE_512_INT
+#define GREX_MERGE_512_u(BITS) GREX_MERGE_512_INT
+#define GREX_MERGE_512(KIND, BITS, SIZE, WORKKIND) \
   GREX_MERGE_WRAP(KIND, BITS, SIZE, GREX_MERGE_512_##KIND(BITS))
 
 #define GREX_MERGE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_MERGE_##REGISTERBITS(KIND, BITS, SIZE)
+  GREX_MERGE_##REGISTERBITS(KIND, BITS, SIZE, GREX_REGKIND(KIND, BITS))
 
 #define GREX_MERGE_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_TYPE(GREX_MERGE, REGISTERBITS, BITPREFIX, REGISTERBITS)
+  GREX_FOREACH_TYPE_EXT(GREX_MERGE, REGISTERBITS, BITPREFIX, REGISTERBITS)
 
 GREX_FOREACH_X86_64_LEVEL(GREX_MERGE_ALL)
 
@@ -80,11 +83,13 @@ GREX_FOREACH_X86_64_LEVEL(GREX_MERGE_ALL)
 GREX_MERGE_SUB(f, 32, 4, GREX_MERGE_f64x2)
 GREX_MERGE_SUB(i, 32, 4, GREX_MERGE_i64x2)
 GREX_MERGE_SUB(u, 32, 4, GREX_MERGE_i64x2)
+GREX_MERGE_SUB(f, 16, 8, GREX_MERGE_i64x2)
 GREX_MERGE_SUB(i, 16, 8, GREX_MERGE_i64x2)
 GREX_MERGE_SUB(u, 16, 8, GREX_MERGE_i64x2)
 GREX_MERGE_SUB(i, 8, 16, GREX_MERGE_i64x2)
 GREX_MERGE_SUB(u, 8, 16, GREX_MERGE_i64x2)
 // 2×32
+GREX_MERGE_SUB(f, 16, 4, GREX_MERGE_i32x2)
 GREX_MERGE_SUB(i, 16, 4, GREX_MERGE_i32x2)
 GREX_MERGE_SUB(u, 16, 4, GREX_MERGE_i32x2)
 GREX_MERGE_SUB(i, 8, 8, GREX_MERGE_i32x2)

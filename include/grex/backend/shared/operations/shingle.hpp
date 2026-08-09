@@ -7,36 +7,40 @@
 #ifndef INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SHINGLE_HPP
 #define INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SHINGLE_HPP
 
+#include "grex/backend/active/operations/extract-single.hpp"
 #include "grex/backend/active/operations/extract.hpp"
 #include "grex/backend/base.hpp"
+#include "grex/base.hpp"
 
 namespace grex::backend {
-// super-native vectors: carry over the last element from the lower part to the upper part
+// Super-native vectors: carry over the last element of the lower part to the upper part.
 template<typename THalf>
 inline SuperVector<THalf> shingle_up(SuperVector<THalf> v) {
   return {
     .lower = shingle_up(v.lower),
-    .upper = shingle_up(Scalar{extract(v.lower, THalf::size - 1)}, v.upper),
+    .upper = shingle_up(extract(v.lower, index_tag<size_of<THalf> - 1>), v.upper),
   };
 }
 template<typename THalf>
-inline SuperVector<THalf> shingle_up(Scalar<typename THalf::Value> front, SuperVector<THalf> v) {
+inline SuperVector<THalf> shingle_up(ValueOf<THalf> front, SuperVector<THalf> v) {
   return {
     .lower = shingle_up(front, v.lower),
-    .upper = shingle_up(Scalar{extract(v.lower, THalf::size - 1)}, v.upper),
+    .upper = shingle_up(extract(v.lower, index_tag<size_of<THalf> - 1>), v.upper),
   };
 }
+
+// Super-native vectors: carry over the first element of the upper part to the lower part.
 template<typename THalf>
 inline SuperVector<THalf> shingle_down(SuperVector<THalf> v) {
   return {
-    .lower = shingle_down(v.lower, Scalar{extract(v.upper, 0)}),
+    .lower = shingle_down(v.lower, extract_single(v.upper)),
     .upper = shingle_down(v.upper),
   };
 }
 template<typename THalf>
-inline SuperVector<THalf> shingle_down(SuperVector<THalf> v, Scalar<typename THalf::Value> back) {
+inline SuperVector<THalf> shingle_down(SuperVector<THalf> v, ValueOf<THalf> back) {
   return {
-    .lower = shingle_down(v.lower, Scalar{extract(v.upper, 0)}),
+    .lower = shingle_down(v.lower, extract_single(v.upper)),
     .upper = shingle_down(v.upper, back),
   };
 }

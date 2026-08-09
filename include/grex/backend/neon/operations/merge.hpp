@@ -34,7 +34,7 @@ namespace grex::backend {
                                                              VectorFor<KIND##BITS, PART> v1) { \
     GREX_MERGE_SUB_I(KIND, BITS, GREX_MULTIPLY(PART, 2), GREX_MULTIPLY(BITS, PART)) \
   }
-GREX_FOREACH_SUB(GREX_MERGE_SUB)
+GREX_FOREACH_SUB_EXT(GREX_MERGE_SUB)
 
 // Merge to super-native vector
 template<Vectorizable T, std::size_t tSize>

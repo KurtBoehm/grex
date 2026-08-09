@@ -14,9 +14,11 @@
 #include "grex/backend/base.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
+#include "grex/backend/macros/math.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/f16.hpp"
 
 namespace grex::backend {
 // Mask definition macros
@@ -79,7 +81,11 @@ namespace grex::backend {
 #define GREX_TYPES(KIND, BITS, SIZE, REGISTERBITS) GREX_TYPES_IMPL(KIND, BITS, SIZE, REGISTERBITS)
 
 #define GREX_TYPES_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_TYPE(GREX_TYPES, REGISTERBITS, REGISTERBITS)
+  GREX_FOREACH_TYPE(GREX_TYPES, REGISTERBITS, REGISTERBITS) \
+  using GREX_CAT(f16x, GREX_DIVIDE(REGISTERBITS, 16)) = \
+    NativeVector<f16, GREX_DIVIDE(REGISTERBITS, 16)>; \
+  using GREX_CAT(bf16x, GREX_DIVIDE(REGISTERBITS, 16)) = \
+    NativeMask<f16, GREX_DIVIDE(REGISTERBITS, 16)>;
 
 GREX_FOREACH_X86_64_LEVEL(GREX_TYPES_ALL)
 } // namespace grex::backend

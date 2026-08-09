@@ -25,14 +25,14 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
   using MC = test::MaskChecker<T, tSize>;
 
   auto dist = test::make_distribution<T>();
-  auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+  auto dval = [&] { return dist(rng); };
   std::uniform_int_distribution<int> bdist{0, 1};
   auto bval = [&](std::size_t /*dummy*/) { return bool(bdist(rng)); };
 
   grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
     for (std::size_t i = 0; i < repetitions; ++i) {
       {
-        const VC vc{dval(tIdxs)...};
+        const VC vc = VC::random(dval);
         test::check("vector extract run-time", std::array{vc.vec[tIdxs]...}, vc.ref, false);
         test::check("vector extract compile-time", std::array{vc.vec[grex::index_tag<tIdxs>]...},
                     vc.ref, false);

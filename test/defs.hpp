@@ -8,6 +8,7 @@
 #define TEST_DEFS_HPP
 
 #include <array>
+#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <cstdlib>
@@ -36,7 +37,18 @@ using Rng = pcg64;
 template<typename T>
 inline auto make_distribution() {
   using Limits = std::numeric_limits<T>;
-  if constexpr (grex::FloatVectorizable<T>) {
+  if constexpr (Float16<T>) {
+    // Binary16 is generated in binary32 and rounded, as the standard distributions do not support
+    // it.
+    return [](Rng& rng) {
+      using Trait = NumericTrait<T>;
+      const int sign = std::uniform_int_distribution<int>{0, 1}(rng) * 2 - 1;
+      const auto base = std::uniform_real_distribution<f32>{0.5F, 1}(rng);
+      const int expo =
+        std::uniform_int_distribution<int>{Trait::min_exponent, Trait::max_exponent}(rng);
+      return f32_to_f16(f32(sign) * std::ldexp(base, expo));
+    };
+  } else if constexpr (FloatVectorizable<T>) {
     return [](Rng& rng) {
       const int sign = std::uniform_int_distribution<int>{0, 1}(rng) * 2 - 1;
       const T base = std::uniform_real_distribution<T>{T(0.5), T(1)}(rng);
@@ -46,6 +58,31 @@ inline auto make_distribution() {
     };
   } else {
     return std::uniform_int_distribution<T>{Limits::min(), Limits::max()};
+  }
+}
+
+/**
+ * Promotes a binary16 value to binary32 (exact), passing every other type through unchanged.
+ *
+ * Intended to wrap arguments to `std::` `<cmath>` functions used as an independent reference
+ * implementation: `std::numeric_limits` and the `<cmath>` functions are not guaranteed to support
+ * `_Float16`, whereas binary16-to-binary32 promotion is exact and always available, and every
+ * `<cmath>` function used in tests already has a `float` overload.
+ */
+template<Vectorizable T>
+using Widened = std::conditional_t<Float16<T>, f32, T>;
+
+/**
+ * Promotes a binary16 value to binary32 (exact), passing every other type through unchanged.
+ *
+ * See `Widened` for details.
+ */
+template<Vectorizable T>
+inline Widened<T> widen(T x) {
+  if constexpr (Float16<T>) {
+    return f16_to_f32(x);
+  } else {
+    return x;
   }
 }
 
@@ -60,7 +97,7 @@ struct EquivVal {
     return result;
   }
 };
-template<FloatVectorizable T>
+template<FullFloatVectorizable T>
 inline EquivVal<T> are_equivalent(T val, T ref, T f = T{}) {
   if (std::isnan(val) && std::isnan(ref)) {
     return {.result = true, .err = 0};
@@ -75,6 +112,29 @@ inline EquivVal<T> are_equivalent(T val, T ref, T f = T{}) {
   }
   return {};
 }
+/**
+ * Binary16 values are compared in binary32 (which is exact), but the tolerance `f` is still
+ * expressed in binary16 epsilons (`NumericTrait<f16>::epsilon()`, about 9.8e-4), not binary32 ones
+ * (about 1.2e-7): delegating to the binary32 overload with the same `f` would demand roughly four
+ * orders of magnitude more precision than a binary16 result can actually provide.
+ */
+inline EquivVal<f32> are_equivalent(f16 val, f16 ref, f32 f = 0) {
+  if (f16_bits(val) == f16_bits(ref)) {
+    return {.result = true, .err = 0};
+  }
+  const f32 fval = f16_to_f32(val);
+  const f32 fref = f16_to_f32(ref);
+  if (std::isnan(fval) && std::isnan(fref)) {
+    return {.result = true, .err = 0};
+  }
+  if (f > 0) {
+    const f32 denom = (fref != 0 && std::isfinite(fref)) ? fref : f32{1};
+    const f32 err = std::abs((fval - fref) / denom);
+    return {.result = err <= f * widen(NumericTrait<f16>::epsilon()), .err = err};
+  }
+  return {};
+}
+
 template<typename T>
 requires(!FloatVectorizable<T>)
 inline bool are_equivalent(T val, T ref) {
@@ -90,15 +150,27 @@ inline decltype(auto) resolve_label(const T& label) {
   }
 }
 
+/**
+ * Reports a failed comparison and terminates.
+ *
+ * Kept out of line and cold: `label` is typically a lambda that formats whole vectors, and the
+ * mismatch branch is the only one that cannot be folded away when `verbose` is a literal `false`.
+ * Inlining it would instantiate and optimize that formatting code at every comparison site.
+ */
+template<typename T1, typename T2, typename TLabel>
+[[gnu::cold, gnu::noinline]] inline void fail_msg(const TLabel& label, const T1& a, const T2& b) {
+  fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", resolve_label(label), a, b);
+  std::exit(EXIT_FAILURE);
+}
+
 template<typename T1, typename T2, typename TLabel>
 inline void check_msg(const TLabel& label, bool same, T1 a, T2 b, bool verbose = true) {
-  if (same) {
+  if (same) [[likely]] {
     if (verbose) {
       fmt::print(fmt::fg(fmt::terminal_color::green), "{}: {} == {}\n", resolve_label(label), a, b);
     }
   } else {
-    fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", resolve_label(label), a, b);
-    std::exit(EXIT_FAILURE);
+    fail_msg(label, a, b);
   }
 }
 
@@ -125,8 +197,13 @@ requires(requires {
 })
 inline void check(const auto& label, T1 a, T2 b, bool verbose = true) {
   constexpr std::size_t size = std::tuple_size_v<T1>;
-  const bool same = static_apply<size>(
-    [&]<std::size_t... tIdxs>() { return (... && are_equivalent(a[tIdxs], b[tIdxs])); });
+  bool same = true;
+  for (std::size_t i = 0; i < size; ++i) {
+    if (!are_equivalent(a[i], b[i])) {
+      same = false;
+      break;
+    }
+  }
   check_msg(label, same, a, b, verbose);
 }
 template<typename T1, typename T2>
@@ -140,16 +217,43 @@ inline void check(const auto& label, T1 a, T2 b, std::size_t size, bool verbose 
   for (std::size_t i = 0; i < size; ++i) {
     if (!are_equivalent(a[i], b[i])) {
       same = false;
+      break;
     }
   }
   check_msg(label, same, a, b, verbose);
 }
 
+/**
+ * Returns an array whose elements are drawn, in order, from the nullary generator `gen`.
+ *
+ * The array is filled in a loop rather than by expanding a pack of `tSize` calls to `gen`, as
+ * expanding the pack inlines the generator once per element into the caller, which dominates
+ * compile time once `tSize` grows beyond a few dozen elements.
+ */
+template<typename T, std::size_t tSize>
+inline std::array<T, tSize> random_array(auto&& gen) {
+  std::array<T, tSize> values{};
+  for (T& value : values) {
+    value = gen();
+  }
+  return values;
+}
+
 #if !GREX_BACKEND_SCALAR
 template<Vectorizable T, std::size_t tSize>
 struct VectorChecker {
-  grex::Vector<T, tSize> vec{};
+  Vector<T, tSize> vec{};
   std::array<T, tSize> ref{};
+
+  /**
+   * Creates a checker whose lanes are drawn from the nullary generator `gen`.
+   *
+   * See `random_array` for why the lanes are not filled by expanding a pack.
+   */
+  static VectorChecker random(auto&& gen) {
+    const std::array<T, tSize> values = random_array<T, tSize>(gen);
+    return {Vector<T, tSize>::load(values.data()), values};
+  }
 
   VectorChecker() = default;
 
@@ -159,7 +263,7 @@ struct VectorChecker {
   template<typename... Ts>
   requires(sizeof...(Ts) == tSize && (... && std::same_as<Ts, T>))
   explicit VectorChecker(Ts... values) : vec{values...}, ref{values...} {}
-  VectorChecker(grex::Vector<T, tSize> v, std::array<T, tSize> a) : vec{v}, ref{a} {}
+  VectorChecker(Vector<T, tSize> v, std::array<T, tSize> a) : vec{v}, ref{a} {}
 
   void check(const auto& label, bool verbose = true) const {
     test::check(label, vec.as_array(), ref, verbose);
@@ -175,7 +279,7 @@ auto format_as(const VectorChecker<T, tSize>& checker) {
 
 template<Vectorizable T, std::size_t tSize>
 struct MaskChecker {
-  grex::Mask<T, tSize> mask{};
+  Mask<T, tSize> mask{};
   std::array<bool, tSize> ref{};
 
   MaskChecker() = default;
@@ -186,7 +290,7 @@ struct MaskChecker {
   template<typename... Ts>
   requires(sizeof...(Ts) == tSize)
   explicit MaskChecker(Ts... values) : mask{values...}, ref{values...} {}
-  MaskChecker(grex::Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
+  MaskChecker(Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
 
   void check(const auto& label, bool verbose = true) const {
     test::check(label, mask.as_array(), ref, verbose);
@@ -204,7 +308,9 @@ struct TypeNameTrait;
   template<> \
   struct TypeNameTrait<TYPE> { \
     static constexpr auto name = #TYPE; \
-  };
+  }
+
+GREX_TYPE_TRAIT(f16);
 GREX_TYPE_TRAIT(f32);
 GREX_TYPE_TRAIT(f64);
 GREX_TYPE_TRAIT(i8);
@@ -222,27 +328,28 @@ constexpr std::string_view type_name() {
 }
 
 void for_each_integral(auto op) {
-  op(grex::type_tag<grex::i64>);
-  op(grex::type_tag<grex::i32>);
-  op(grex::type_tag<grex::i16>);
-  op(grex::type_tag<grex::i8>);
-  op(grex::type_tag<grex::u64>);
-  op(grex::type_tag<grex::u32>);
-  op(grex::type_tag<grex::u16>);
-  op(grex::type_tag<grex::u8>);
-};
+  op(type_tag<i64>);
+  op(type_tag<i32>);
+  op(type_tag<i16>);
+  op(type_tag<i8>);
+  op(type_tag<u64>);
+  op(type_tag<u32>);
+  op(type_tag<u16>);
+  op(type_tag<u8>);
+}
 void for_each_type(auto op) {
-  op(grex::type_tag<grex::f64>);
-  op(grex::type_tag<grex::f32>);
+  op(type_tag<f64>);
+  op(type_tag<f32>);
+  op(type_tag<f16>);
   for_each_integral(op);
-};
+}
 
 #if !GREX_BACKEND_SCALAR
 template<Vectorizable T, std::size_t tMaxShift = std::bit_width(max_native_size<T>) + 1>
 inline void for_each_size(auto op) {
   static_apply<1, tMaxShift>(
     [&]<std::size_t... tIdxs>() { (..., op(type_tag<T>, index_tag<1U << tIdxs>)); });
-};
+}
 
 inline void run_types_sizes(auto f) {
   auto inner = [&]<typename T, std::size_t tSize>(TypeTag<T> t, IndexTag<tSize> s) {

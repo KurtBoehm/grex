@@ -7,15 +7,19 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_FMADD_FAMILY_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_FMADD_FAMILY_HPP
 
+#include <concepts>
+#include <cstddef>
+
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/for-each.hpp"
-#include "grex/backend/macros/types.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
+#include "grex/backend/x86/operations/f16.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/base.hpp" // IWYU pragma: keep
+#include "grex/base.hpp"
 
 #if GREX_X86_64_LEVEL >= 3
 #include "grex/backend/macros/base.hpp"
@@ -28,57 +32,81 @@
 namespace grex::backend {
 #if GREX_X86_64_LEVEL >= 3
 #define GREX_FMADDF_CALL(NAME, KIND, BITS, BITPREFIX) \
-  {.r = GREX_CAT(BITPREFIX##_##NAME##_, GREX_EPI_SUFFIX(KIND, BITS))(a.r, b.r, c.r)}
+  {.r = to_stored<KIND##BITS>(GREX_CAT(BITPREFIX##_##NAME##_, GREX_EPI_SUFFIX(KIND, BITS))( \
+     from_stored<KIND##BITS>(a.r), from_stored<KIND##BITS>(b.r), from_stored<KIND##BITS>(c.r)))}
 #define GREX_FMADDS_CALL(NAME, KIND, BITS, SIZE) \
-  const auto va = expand_any(a, index_tag<SIZE>).r; \
-  const auto vb = expand_any(b, index_tag<SIZE>).r; \
-  const auto vc = expand_any(c, index_tag<SIZE>).r; \
+  const auto va = from_stored<KIND##BITS>(expand_any(a, index_tag<SIZE>).r); \
+  const auto vb = from_stored<KIND##BITS>(expand_any(b, index_tag<SIZE>).r); \
+  const auto vc = from_stored<KIND##BITS>(expand_any(c, index_tag<SIZE>).r); \
   const auto vout = GREX_CAT(_mm_##NAME##_s, GREX_FP_LETTER(BITS))(va, vb, vc); \
-  return GREX_CAT(_mm_cvts, GREX_FP_LETTER(BITS), _f##BITS)(vout);
+  return GREX_CAT(_mm_cvts, GREX_FP_LETTER(BITS), _, GREX_CVTS_VALSUFFIX(BITS))(vout);
 
 inline constexpr bool has_fma = true;
 #else
 #define GREX_FMADDF_CALL_fmadd add(multiply(a, b), c)
 #define GREX_FMADDF_CALL_fmsub subtract(multiply(a, b), c)
 #define GREX_FMADDF_CALL_fnmadd subtract(c, multiply(a, b))
-#define GREX_FMADDF_CALL_fnmsub negate(add(multiply(a, b), c))
+#define GREX_FMADDF_CALL_fnmsub subtract(negate(multiply(a, b)), c)
 #define GREX_FMADDF_CALL(NAME, ...) GREX_FMADDF_CALL_##NAME
-#define GREX_FMADDS_CALL_fmadd return (a.value * b.value) + c.value;
-#define GREX_FMADDS_CALL_fmsub return (a.value * b.value) - c.value;
-#define GREX_FMADDS_CALL_fnmadd return c.value - (a.value * b.value);
-#define GREX_FMADDS_CALL_fnmsub return -(a.value * b.value + c.value);
+#define GREX_FMADDS_CALL_fmadd return (a * b) + c;
+#define GREX_FMADDS_CALL_fmsub return (a * b) - c;
+#define GREX_FMADDS_CALL_fnmadd return c - (a * b);
+#define GREX_FMADDS_CALL_fnmsub return -(a * b) - c;
 #define GREX_FMADDS_CALL(NAME, ...) GREX_FMADDS_CALL_##NAME
 
 inline constexpr bool has_fma = false;
 #endif
 
-#define GREX_FMADDF(KIND, BITS, SIZE, BITPREFIX, NAME) \
-  inline NativeVector<KIND##BITS, SIZE> NAME(NativeVector<KIND##BITS, SIZE> a, \
-                                             NativeVector<KIND##BITS, SIZE> b, \
-                                             NativeVector<KIND##BITS, SIZE> c) { \
+#define GREX_FMADDF(KIND, BITS, SIZE, BITPREFIX, NAME, TAG) \
+  inline NativeVector<KIND##BITS, SIZE> fused(NativeVector<KIND##BITS, SIZE> a, \
+                                              NativeVector<KIND##BITS, SIZE> b, \
+                                              NativeVector<KIND##BITS, SIZE> c, TAG) { \
     return GREX_FMADDF_CALL(NAME, KIND, BITS, BITPREFIX); \
   }
-#define GREX_FMADDF_ALL(REGISTERBITS, BITPREFIX, NAME) \
-  GREX_FOREACH_FP_TYPE(GREX_FMADDF, REGISTERBITS, BITPREFIX, NAME)
+#define GREX_FMADDF_ALL(REGISTERBITS, BITPREFIX, NAME, TAG) \
+  GREX_FOREACH_FP_TYPE_OPT_EXT(GREX_FMADDF, REGISTERBITS, BITPREFIX, NAME, TAG)
 
-GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fmadd)
-GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fmsub)
-GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fnmadd)
-GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fnmsub)
+GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fmadd, MultiplyAdd)
+GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fmsub, MultiplySubtract)
+GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fnmadd, NegatedMultiplyAdd)
+GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fnmsub, NegatedMultiplySubtract)
 
-GREX_NNVECTOR_TERNARY(fmadd)
-GREX_NNVECTOR_TERNARY(fmsub)
-GREX_NNVECTOR_TERNARY(fnmadd)
-GREX_NNVECTOR_TERNARY(fnmsub)
+template<typename THalf>
+GREX_ALWAYS_INLINE inline SuperVector<THalf> fused(SuperVector<THalf> a, SuperVector<THalf> b,
+                                                   SuperVector<THalf> c, FusedTag auto tag) {
+  return {
+    .lower = fused(a.lower, b.lower, c.lower, tag),
+    .upper = fused(a.upper, b.upper, c.upper, tag),
+  };
+}
+template<NativeFloatVectorizable T, std::size_t tSize>
+GREX_ALWAYS_INLINE inline SubVector<T, tSize> fused(SubVector<T, tSize> a, SubVector<T, tSize> b,
+                                                    SubVector<T, tSize> c, FusedTag auto tag) {
+  return SubVector<T, tSize>{fused(a.full, b.full, c.full, tag)};
+}
 
-#define GREX_FMADDS(KIND, BITS, SIZE, NAME) \
-  inline KIND##BITS NAME(Scalar<KIND##BITS> a, Scalar<KIND##BITS> b, Scalar<KIND##BITS> c) { \
+#define GREX_FMADDS(KIND, BITS, SIZE, NAME, TAG) \
+  template<std::same_as<KIND##BITS> T> \
+  inline T fused(T a, T b, T c, TAG) { \
     GREX_FMADDS_CALL(NAME, KIND, BITS, SIZE) \
   }
-GREX_FOREACH_FP_TYPE(GREX_FMADDS, 128, fmadd)
-GREX_FOREACH_FP_TYPE(GREX_FMADDS, 128, fmsub)
-GREX_FOREACH_FP_TYPE(GREX_FMADDS, 128, fnmadd)
-GREX_FOREACH_FP_TYPE(GREX_FMADDS, 128, fnmsub)
+GREX_FOREACH_FP_TYPE_OPT_EXT(GREX_FMADDS, 128, fmadd, MultiplyAdd)
+GREX_FOREACH_FP_TYPE_OPT_EXT(GREX_FMADDS, 128, fmsub, MultiplySubtract)
+GREX_FOREACH_FP_TYPE_OPT_EXT(GREX_FMADDS, 128, fnmadd, NegatedMultiplyAdd)
+GREX_FOREACH_FP_TYPE_OPT_EXT(GREX_FMADDS, 128, fnmsub, NegatedMultiplySubtract)
+
+// Binary16 without AVX512-FP16: round-trip through binary32.
+#if !GREX_F16_NATIVE_ARITHMETIC
+template<Float16Vector TVec>
+GREX_ALWAYS_INLINE inline TVec fused(TVec a, TVec b, TVec c, FusedTag auto tag) {
+  return f32_to_f16(fused(f16_to_f32(a), f16_to_f32(b), f16_to_f32(c), tag));
+}
+template<std::same_as<f16> T>
+GREX_ALWAYS_INLINE inline T fused(T a, T b, T c, FusedTag auto tag) {
+  const auto r = fused(grex::f16_to_f32(a), grex::f16_to_f32(b), grex::f16_to_f32(c), tag);
+  return grex::f32_to_f16(r);
+}
+#endif
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_FMADD_FAMILY_HPP

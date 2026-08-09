@@ -19,9 +19,9 @@
 #endif
 
 namespace grex {
-/////////////////
-// scalar tags //
-/////////////////
+//==================================================================================================
+// Scalar tags
+//==================================================================================================
 
 template<Vectorizable T>
 struct TypedScalarTag;
@@ -65,9 +65,9 @@ template<Vectorizable T>
 }
 
 #if !GREX_BACKEND_SCALAR
-///////////////
-// full tags //
-///////////////
+//==================================================================================================
+// Full tags
+//==================================================================================================
 
 template<Vectorizable T, std::size_t tSize>
 struct TypedFullTag;
@@ -125,9 +125,9 @@ template<Vectorizable T>
   return {};
 }
 
-////////////////////////////////////
-// partial tags incl. masked tags //
-////////////////////////////////////
+//==================================================================================================
+// Partial tags, incl. masked tags
+//==================================================================================================
 
 template<Vectorizable T, std::size_t tSize>
 struct TypedMaskedTag {
@@ -198,6 +198,10 @@ inline PartTag<tSize> part_tag(std::size_t part) {
   return PartTag<tSize>{part};
 }
 #endif
+
+//==================================================================================================
+// Tag traits
+//==================================================================================================
 
 template<typename TTag>
 struct TagTraits {
@@ -281,6 +285,10 @@ struct TagTraits<TypedMaskedTag<T, tSize>> {
 };
 #endif
 
+//==================================================================================================
+// Tag concepts
+//==================================================================================================
+
 template<typename TTag>
 concept AnyTag = TagTraits<TTag>::is_tag;
 
@@ -323,6 +331,10 @@ template<typename TTag, typename T>
 concept OptTypedPartialVectorTag = PartialVectorTag<TTag> && OptTypedTag<TTag, T>;
 template<typename TTag, typename T>
 concept OptTypedPartVectorTag = PartVectorTag<TTag> && OptTypedTag<TTag, T>;
+
+//==================================================================================================
+// Tag-related type aliases
+//==================================================================================================
 
 template<AnyTag TTag, Vectorizable TValue>
 using TagType = TagTraits<TTag>::template AugmentedType<TValue>;

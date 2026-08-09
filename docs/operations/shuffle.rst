@@ -5,6 +5,7 @@ Table Shuffles
 ##############
 
 Element-wise table lookups driven by per-lane indices held in a run-time vector.
+Only bits are moved, so binary16 shares the ``u16`` implementation (see :ref:`f16-implementation`).
 
 The variant driven by compile-time indices rather than an index vector is described in :doc:`shuffle-static`.
 

@@ -1,0 +1,99 @@
+.. cpp:namespace:: grex
+
+################
+Binary16 Support
+################
+
+Grex supports IEEE 754 binary16 (“half-precision”) through the scalar type :cpp:type:`f16` and the corresponding vector and mask types.
+Support is complete: every operation Grex offers for :cpp:type:`f32` and :cpp:type:`f64` is available for :cpp:type:`f16` as well, at every lane count supported for 16-bit types, including conversion to and from every other vectorizable type.
+
+********
+The Type
+********
+
+.. cpp:type:: f16
+
+   IEEE 754 binary16.
+   This is the compiler-provided ``_Float16`` where it exists and a software emulation with identical semantics otherwise, as indicated by the macro ``GREX_NATIVE_F16``.
+
+Whether ``_Float16`` exists depends on the target architecture rather than on the compiler version.
+It is always available on x86-64, where it only requires SSE2, and on ARM64, so the native type is used on every target that Grex vectorizes; the emulation keeps :cpp:type:`f16` usable on the architectures that reject it, such as PowerPC, MIPS, SPARC, and WebAssembly.
+Grex detects this automatically, and the detection can be overridden by defining ``GREX_NATIVE_F16`` externally.
+
+The emulation holds the bit pattern in a ``std::uint16_t`` and carries every operation out in binary32.
+Conversions from types that binary32 does *not* represent exactly, above all binary64, are performed directly, since rounding to binary32 first would round a second time.
+
+Since ``_Float16`` is not one of the standard floating-point types, neither ``std::numeric_limits`` nor the ``<cmath>`` functions are guaranteed to support it, which Grex works around:
+
+.. cpp:struct:: template<typename T> NumericTrait
+
+   The subset of ``std::numeric_limits`` that Grex requires, specialized for :cpp:type:`f16` and falling back to ``std::numeric_limits`` for every other type.
+
+The free functions :cpp:func:`f16_bits`, :cpp:func:`f16_from_bits`, :cpp:func:`f16_to_f32`, :cpp:func:`f32_to_f16`, :cpp:func:`f16_to_f64`, and :cpp:func:`f64_to_f16` convert between :cpp:type:`f16`, its bit pattern, binary32, and binary64 independently of which implementation is in use.
+The concepts :cpp:concept:`F16Vectorizable` (only :cpp:type:`f16`) and :cpp:concept:`FullFloatVectorizable` (:cpp:type:`f32` and :cpp:type:`f64`) partition :cpp:concept:`FloatVectorizable`.
+
+.. _f16-accuracy:
+
+********
+Accuracy
+********
+
+Addition, subtraction, multiplication, division, and the square root are correctly rounded, i.e. they produce the binary16 value nearest to the exact result, with ties rounded to even.
+This holds both where the hardware provides binary16 instructions and where Grex emulates them in binary32: because binary32 has at least :math:`2 p + 2` mantissa bits for :math:`p = 11`, rounding the correctly rounded binary32 result to binary16 gives the correctly rounded binary16 result.
+Comparisons and classification are exact for the same reason, and so is every conversion *from* binary16.
+
+.. cpp:var:: template<FloatVectorizable T> constexpr bool has_fma
+
+   Indicates whether the fused multiply-add operations on ``T`` are genuinely fused, i.e. carried out with a single rounding.
+
+Conversion *to* binary16 rounds exactly once as well, including from binary64, which only AVX512-FP16 narrows in a single instruction: everywhere else the emulation rounds to odd on the way through binary32, which makes the subsequent rounding to binary16 the correctly rounded one (see :ref:`operations-convert-f16`).
+
+The fused operations are the sole exception, and only where :cpp:var:`has_fma\<f16> <has_fma>` is ``false``.
+They are then carried out with a single binary32 fused multiply-add and rounded once back down to binary16.
+Unlike for a single arithmetic operation, this is not always correctly rounded, because the exact value of :math:`a \cdot b + c` can lie arbitrarily close to a binary16 rounding boundary; the residual error is rare and never exceeds one unit in the last place.
+Computing the fallback this way needs no more precision than the hardware already provides via :cpp:var:`has_fma\<f32> <has_fma>` and avoids rounding twice within binary16, which would be strictly less accurate for no benefit.
+
+***********
+Performance
+***********
+
+Everything that only moves bits — loading, storing, element access, blending, shuffling, shingling, and the mask operations — is exactly as fast as its ``u16`` counterpart, since it *is* that operation.
+The cost of the arithmetic depends on the platform:
+
+- **ARM64 with the FP16 extension, x86-64 with AVX512-FP16**: dedicated binary16 instructions, so a binary16 vector operation costs the same as a binary32 one while processing twice as many lanes.
+  For example, ``fmadd`` on ``Vector<f16, 8>`` compiles to a single ``fmla``/``vfmaddph`` on eight lanes.
+- **ARM64 without the FP16 extension and x86-64-v3/v4 without AVX512-FP16**: two hardware conversions per operand and one for the result, around the binary32 operation on twice the register space.
+- **x86-64-v1 and x86-64-v2**: the same structure, but each conversion is roughly a dozen integer and floating-point vector operations instead of a single instruction, because F16C is not available.
+  Binary16 is best treated as a storage format on these levels.
+
+**********
+Formatting
+**********
+
+``{fmt}`` can format :cpp:type:`f16` values and Grex’s binary16 vectors and masks directly; the values are printed as the binary32 values they are equal to.
+
+``std::format`` can format ``Vector<f16, N>`` and ``Mask<f16, N>``, but not a bare :cpp:type:`f16`: ``std::formatter`` must not be specialized for a native ``_Float16``, which is not a program-defined type and for which the standard library may provide ``std::formatter<std::float16_t>`` itself.
+Use ``f16_to_f32(x)`` to format an individual binary16 value.
+
+.. _f16-implementation:
+
+**************
+Implementation
+**************
+
+Binary16 vectors and masks reuse the register that the backend uses for ``u16``: ``backend::NativeVector<f16, N>::Register`` and ``backend::NativeMask<f16, N>::Register`` *are* the corresponding ``u16`` register types, which makes ``as<f16>``/``as<u16>`` no-ops.
+Binary16 therefore needs no operation files of its own; it is woven into the same per-operation macro tables as every other value type, and two questions decide how:
+
+- **Does the result depend on more than the bits?**
+  If not, the operation is generated for binary16 exactly as for ``u16`` by the ``GREX_FOREACH_*_EXT`` macros, which iterate over binary16 alongside the other types.
+  Where an intrinsic insists on a binary16 register type, ``to_stored``/``from_stored`` reinterpret it at no cost.
+- **Does the hardware provide binary16 instructions?**
+  The macro ``GREX_F16_NATIVE_ARITHMETIC`` answers this; it requires the FP16 extension (ARMv8.2-A) on ARM64 and AVX512-FP16 on x86-64, which is part of no microarchitecture level and hence only enabled explicitly, e.g. via ``-mavx512fp16``.
+  The ``GREX_FOREACH_*_OPT_EXT`` macros cover binary16 exactly when it is set; otherwise the operation converts to binary32, computes there, and converts back.
+
+That fallback rests on :cpp:func:`~backend::f16_to_f32` and :cpp:func:`~backend::f32_to_f16`, which each backend provides in ``operations/f16.hpp`` and which :ref:`operations-convert-f16` describes.
+
+Binary16 only gets code of its own where a general-purpose register would get in the way, i.e. when a single lane or scalar is read, written, or broadcast: a binary16 scalar already lives in the vector register file, whereas a ``u16`` belongs in a general-purpose register, so the ``u16`` implementations deliberately end up in the wrong place.
+This affects :cpp:func:`~backend::extract_single`, :cpp:func:`~backend::extract`, :cpp:func:`~backend::insert`, :cpp:func:`~backend::broadcast`, :cpp:func:`~backend::set`, and scalar :cpp:func:`~backend::expand_any`.
+
+The per-operation consequences are described on the individual :doc:`backend operation pages <backend>`.

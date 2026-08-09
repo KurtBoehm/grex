@@ -7,6 +7,9 @@ Comparisons
 Element-wise comparisons on vectors, producing a Boolean mask.
 Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently and results are reassembled into a super-native mask.
 
+Binary16 uses the corresponding intrinsic where the hardware provides one and otherwise compares in binary32 (see :ref:`f16-implementation`), narrowing the resulting binary32 mask back to binary16 lane width.
+Mask equality is a pure bit operation and hence always shares the ``u16`` implementation.
+
 .. _operations-compare-eq:
 
 ******************

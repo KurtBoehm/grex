@@ -9,10 +9,12 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/cast.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/f16.hpp"
 #include "grex/backend/neon/types.hpp"
 #include "grex/base.hpp"
 
@@ -20,8 +22,9 @@ namespace grex::backend {
 #define GREX_VEC_SINSERT(KIND, BITS, SIZE) \
   inline NativeVector<KIND##BITS, SIZE> insert(NativeVector<KIND##BITS, SIZE> v, \
                                                AnyIndexTag auto index, KIND##BITS value) { \
-    const auto ret = GREX_ISUFFIXED(vsetq_lane, KIND, BITS)(value, v.r, index.value); \
-    return {.r = ret}; \
+    const auto r = from_stored<KIND##BITS>(v.r); \
+    const auto ret = GREX_ISUFFIXED(vsetq_lane, KIND, BITS)(value, r, index.value); \
+    return {.r = to_stored<KIND##BITS>(ret)}; \
   } \
   inline NativeMask<KIND##BITS, SIZE> insert(NativeMask<KIND##BITS, SIZE> v, \
                                              AnyIndexTag auto index, bool value) { \
@@ -29,7 +32,8 @@ namespace grex::backend {
                                                          v.r, index.value); \
     return {.r = ret}; \
   }
-GREX_FOREACH_TYPE(GREX_VEC_SINSERT, 128)
+// The binary16 version is available even if FP16 is not.
+GREX_FOREACH_TYPE_EXT(GREX_VEC_SINSERT, 128)
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/insert-static.hpp" // IWYU pragma: export

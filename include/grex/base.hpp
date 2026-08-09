@@ -16,6 +16,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "grex/f16.hpp" // IWYU pragma: export
+
 #if defined(__GNUC__) && !defined(__clang__)
 #define GREX_GCC true
 #define GREX_CLANG false
@@ -45,26 +47,10 @@ using f32 = float;
 static_assert(std::numeric_limits<f32>::is_iec559 && sizeof(f32) == 4);
 using f64 = double;
 static_assert(std::numeric_limits<f64>::is_iec559 && sizeof(f64) == 8);
+// f16 is provided by f16.hpp, which is included above
+static_assert(sizeof(f16) == 2);
 } // namespace primitives
 using namespace primitives;
-
-template<typename T>
-concept UnsignedIntVectorizable =
-  std::same_as<T, u8> || std::same_as<T, u16> || std::same_as<T, u32> || std::same_as<T, u64>;
-template<typename T>
-concept SignedIntVectorizable =
-  std::same_as<T, i8> || std::same_as<T, i16> || std::same_as<T, i32> || std::same_as<T, i64>;
-template<typename T>
-concept FloatVectorizable = std::same_as<T, f32> || std::same_as<T, f64>;
-
-template<typename T>
-concept IntVectorizable = UnsignedIntVectorizable<T> || SignedIntVectorizable<T>;
-template<typename T>
-concept SignedVectorizable = SignedIntVectorizable<T> || FloatVectorizable<T>;
-template<typename T>
-concept UnsignedVectorizable = UnsignedIntVectorizable<T>;
-template<typename T>
-concept Vectorizable = IntVectorizable<T> || FloatVectorizable<T>;
 
 template<typename T>
 concept Int8 = std::same_as<T, u8> || std::same_as<T, i8>;
@@ -74,6 +60,30 @@ template<typename T>
 concept Int32 = std::same_as<T, u32> || std::same_as<T, i32>;
 template<typename T>
 concept Int64 = std::same_as<T, u64> || std::same_as<T, i64>;
+/** IEEE 754 binary16: not always supported in hardware and therefore often a special case. */
+template<typename T>
+concept Float16 = std::same_as<T, f16>;
+
+template<typename T>
+concept UnsignedIntVectorizable =
+  std::same_as<T, u8> || std::same_as<T, u16> || std::same_as<T, u32> || std::same_as<T, u64>;
+template<typename T>
+concept SignedIntVectorizable =
+  std::same_as<T, i8> || std::same_as<T, i16> || std::same_as<T, i32> || std::same_as<T, i64>;
+/** The floating-point types that are always supported. */
+template<typename T>
+concept FullFloatVectorizable = std::same_as<T, f32> || std::same_as<T, f64>;
+template<typename T>
+concept FloatVectorizable = FullFloatVectorizable<T> || Float16<T>;
+
+template<typename T>
+concept IntVectorizable = UnsignedIntVectorizable<T> || SignedIntVectorizable<T>;
+template<typename T>
+concept SignedVectorizable = SignedIntVectorizable<T> || FloatVectorizable<T>;
+template<typename T>
+concept UnsignedVectorizable = UnsignedIntVectorizable<T>;
+template<typename T>
+concept Vectorizable = IntVectorizable<T> || FloatVectorizable<T>;
 
 template<typename T>
 struct SignednessTrait;
@@ -127,6 +137,10 @@ using CopySignInt = std::conditional_t<is_signed<T>, SignedInt<tBytes>, Unsigned
 template<std::size_t tBytes>
 struct FloatTrait;
 template<>
+struct FloatTrait<2> {
+  using Type = f16;
+};
+template<>
 struct FloatTrait<4> {
   using Type = f32;
 };
@@ -136,6 +150,44 @@ struct FloatTrait<8> {
 };
 template<std::size_t tBytes>
 using Float = FloatTrait<tBytes>::Type;
+
+/**
+ * Numeric properties of a vectorizable type.
+ *
+ * This mirrors the subset of `std::numeric_limits` that Grex requires, since `std::numeric_limits`
+ * is not specialized for `_Float16` by every standard library and may not be specialized for it
+ * by Grex, as it is not a program-defined type.
+ */
+template<typename T>
+struct NumericTrait : std::numeric_limits<T> {};
+template<>
+struct NumericTrait<f16> {
+  static constexpr int digits = 11;
+  static constexpr int min_exponent = -13;
+  static constexpr int max_exponent = 16;
+
+  static constexpr f16 min() {
+    return f16_from_bits(0x0400); // 2⁻¹⁴
+  }
+  static constexpr f16 max() {
+    return f16_from_bits(0x7BFF); // 65504
+  }
+  static constexpr f16 epsilon() {
+    return f16_from_bits(0x1400); // 2⁻¹⁰
+  }
+  static constexpr f16 infinity() {
+    return f16_from_bits(0x7C00);
+  }
+  // Quiet (the top mantissa bit set) and signalling (clear, with some other mantissa bit set
+  // instead) not-a-number values, matching the convention `wide_bits_to_f16_bits` (grex/f16.hpp)
+  // itself produces when quietening a not-a-number during conversion.
+  static constexpr f16 quiet_NaN() { // NOLINT(*-identifier-naming)
+    return f16_from_bits(0x7E00);
+  }
+  static constexpr f16 signaling_NaN() { // NOLINT(*-identifier-naming)
+    return f16_from_bits(0x7D00);
+  }
+};
 
 template<typename T>
 struct TypeTag {};

@@ -14,7 +14,24 @@ test_arches = {}
 foreach arch : arches
   test_arches += {arch: [f'-march=@arch@']}
 endforeach
-test_arches += {'native': options_sub.get_variable('optimization_args')}
+
+# Optional ISA extensions (e.g. AVX512-FP16, only available from Sapphire Rapids on) are not
+# implied by any microarchitecture level, so each is tested independently on top of the x86-64-v4
+# baseline: combining several into one binary would make it impossible to tell which extension a
+# given failure comes from.
+# Some extensions never ship without another: no CPU has AVX-512-VBMI2 without AVX-512-VBMI, despite
+# them being independent CPUID bits and compiler flags, so testing the former without the latter
+# would exercise a combination that does not correspond to any real CPU.
+ext_implies = {'avx512vbmi2': ['avx512vbmi']}
+if arches.contains('x86-64-v4')
+  foreach ext : extensions
+    ext_args = []
+    foreach name : [ext] + ext_implies.get(ext, [])
+      ext_args += [f'-m@name@']
+    endforeach
+    test_arches += {f'x86-64-v4-@ext@': ['-march=x86-64-v4'] + ext_args}
+  endforeach
+endif
 
 fmt_sub = subproject('fmt', default_options: ['default_library=static'])
 fmt_dep = fmt_sub.get_variable('fmt_dep')
@@ -22,7 +39,10 @@ omp_dep = dependency('openmp')
 pcg_dep = dependency('pcg-cpp')
 thesauros_dep = dependency('thesauros')
 
-# tests that are separated based on the value and index type
+# ==============================================================================
+# Tests with separated value and index type
+# ==============================================================================
+
 dynamic_shuffles = []
 foreach name, conf : {
   'shuffle-dynamic': [['x86_64', 'neon'], true],
@@ -34,7 +54,7 @@ foreach name, conf : {
     if not parallel
       deps += [omp_dep]
     endif
-    foreach value : ['f64', 'f32', 'i64', 'i32', 'i16', 'i8', 'u64', 'u32', 'u16', 'u8']
+    foreach value : ['f64', 'f32', 'f16', 'i64', 'i32', 'i16', 'i8', 'u64', 'u32', 'u16', 'u8']
       foreach index : ['u64', 'u32', 'u16', 'u8']
         foreach arch_name, arch_args : test_arches
           space_name = name.replace('-', ' ')
@@ -60,6 +80,12 @@ foreach name, conf : {
   endif
 endforeach
 if dynamic_shuffles.length() > 0
+  all_targets = []
+  foreach pair : dynamic_shuffles
+    all_targets += pair[1]
+  endforeach
+  alias_target(f'shuffle-dynamic', all_targets)
+
   foreach arch_name, arch_args : test_arches
     targets = []
     foreach pair : dynamic_shuffles
@@ -71,10 +97,14 @@ if dynamic_shuffles.length() > 0
   endforeach
 endif
 
-# tests that are separated based on the value type
+# ==============================================================================
+# Tests with separated value type
+# ==============================================================================
+
 foreach name, conf : {
   'blend': [['x86_64', 'neon'], true],
   'convert': [['scalar', 'x86_64', 'neon'], true],
+  'nary': [['scalar', 'x86_64', 'neon'], true],
   'shuffle': [['x86_64', 'neon'], true],
 }
   backends = conf[0]
@@ -85,7 +115,7 @@ foreach name, conf : {
       deps += [omp_dep]
     endif
     targets = []
-    foreach type : ['f64', 'f32', 'i64', 'i32', 'i16', 'i8', 'u64', 'u32', 'u16', 'u8']
+    foreach type : ['f64', 'f32', 'f16', 'i64', 'i32', 'i16', 'i8', 'u64', 'u32', 'u16', 'u8']
       foreach arch_name, arch_args : test_arches
         space_name = name.replace('-', ' ')
         exe = executable(
@@ -108,17 +138,20 @@ foreach name, conf : {
   endif
 endforeach
 
-# monolithic tests
+# ==============================================================================
+# Monolithic tests
+# ==============================================================================
+
 foreach name, conf : {
   'componentwise': [['scalar', 'x86_64', 'neon'], true],
   'expand': [['x86_64', 'neon'], true],
   'extract': [['scalar', 'x86_64', 'neon'], true],
+  'f16': [['scalar', 'x86_64', 'neon'], true],
   'gather': [['scalar', 'x86_64', 'neon'], false],
   'general': [['scalar', 'x86_64', 'neon'], true],
   'horizontal': [['scalar', 'x86_64', 'neon'], true],
   'load': [['scalar', 'x86_64', 'neon'], true],
   'multibyte': [['scalar', 'x86_64', 'neon'], true],
-  'nary': [['scalar', 'x86_64', 'neon'], true],
   'set': [['scalar', 'x86_64', 'neon'], true],
   'shingle': [['scalar', 'x86_64', 'neon'], true],
   'store': [['scalar', 'x86_64', 'neon'], true],

@@ -25,9 +25,9 @@
 #endif
 
 namespace grex::backend {
-//////////////////////
-// Integer widening //
-//////////////////////
+//==================================================================================================
+// Integer widening
+//==================================================================================================
 
 #if GREX_X86_64_LEVEL >= 2
 // On x86-64-v2+, use the generic EPUI helper (pmovzx/pmovsx) for all widening conversions.
@@ -98,9 +98,9 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_u64_u8_2 GREX_CVT_IMPL_HALFINCR
 #endif
 
-////////////////////////
-// Integer truncation //
-////////////////////////
+//==================================================================================================
+// Integer truncation
+//==================================================================================================
 
 // Truncation drops the high bits. Signedness does not matter for the bit pattern.
 
@@ -245,22 +245,23 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_u32_u64_4 GREX_CVT_IMPL_i32_i64_4
 #endif
 
-/////////////////////////////////////
-// Floating-point ↔ floating-point //
-/////////////////////////////////////
+//==================================================================================================
+// Floating-point ↔ floating-point
+//==================================================================================================
 
 // f32↔f64 conversions use native cvt intrinsics.
 #define GREX_CVT_IMPL_f64_f32_2 GREX_CVT_INTRINSIC_EPU
 #define GREX_CVT_IMPL_f32_f64_2 GREX_CVT_INTRINSIC_EPU
 
-//////////////////////////////
-// Integer → floating-point //
-//////////////////////////////
+//==================================================================================================
+// Integer → floating-point
+//==================================================================================================
 // SMALLI2F helpers handle small integer types via i32 intermediates.
 
-//                   //
-// Conversion to f64 //
-//                   //
+//--------------------------------------------------------------------------------------------------
+// Conversion to f64
+//--------------------------------------------------------------------------------------------------
+
 #if GREX_X86_64_LEVEL >= 4
 // Direct packed cvt intrinsics for 32- and 64-bit integer sources.
 #define GREX_CVT_IMPL_f64_i64_2 GREX_CVT_INTRINSIC_EPU
@@ -309,9 +310,10 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_f64_i8_2 GREX_CVT_IMPL_SMALLI2F
 #define GREX_CVT_IMPL_f64_u8_2 GREX_CVT_IMPL_SMALLI2F
 
-//                   //
-// Conversion to f32 //
-//                   //
+//--------------------------------------------------------------------------------------------------
+// Conversion to f32
+//--------------------------------------------------------------------------------------------------
+
 #if GREX_X86_64_LEVEL >= 4
 // Direct packed cvt for 64-bit integer sources.
 #define GREX_CVT_IMPL_f32_i64_2 GREX_CVT_INTRINSIC_EPU
@@ -379,14 +381,15 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_f32_i8_4 GREX_CVT_IMPL_SMALLI2F
 #define GREX_CVT_IMPL_f32_u8_4 GREX_CVT_IMPL_SMALLI2F
 
-//////////////////////////////
-// Floating-point → integer //
-//////////////////////////////
+//==================================================================================================
+// Floating-point → integer
+//==================================================================================================
 // CVTT variants use truncation semantics (round toward zero).
 
-//                     //
-// Conversion from f64 //
-//                     //
+//--------------------------------------------------------------------------------------------------
+// Conversion from f64
+//--------------------------------------------------------------------------------------------------
+
 #if GREX_X86_64_LEVEL >= 4
 // Direct packed cvtt intrinsics for 32- and 64-bit integer destinations.
 #define GREX_CVT_IMPL_i64_f64_2 GREX_CVTT_INTRINSIC_EPU
@@ -494,9 +497,9 @@ namespace grex::backend {
 #define GREX_CVT_IMPL_i8_f32_4 GREX_CVT_IMPL_F2SMALLI
 #define GREX_CVT_IMPL_u8_f32_4 GREX_CVT_IMPL_F2SMALLI
 
-////////////////////////////////
-// Macro-driven instantiation //
-////////////////////////////////
+//==================================================================================================
+// Macro-driven instantiation
+//==================================================================================================
 
 GREX_CVT_DEF_ALL(_mm, 128)
 

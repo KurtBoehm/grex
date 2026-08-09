@@ -6,6 +6,7 @@ Index-Based Masks
 
 Index-based mask operations construct masks and masked vectors from lane indices.
 Sub-native masks/vectors are processed via their backing native registers, while each native lane of a super-native mask/vector is processed independently.
+The results depend only on the lane width, so binary16 shares the ``u16`` implementation (see :ref:`f16-implementation`).
 
 .. _operations-cutoff-mask:
 

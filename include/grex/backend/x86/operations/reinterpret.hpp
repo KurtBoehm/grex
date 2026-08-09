@@ -32,6 +32,21 @@ namespace grex::backend {
   GREX_FOREACH_TYPE(GREX_REINTERPRET, REGISTERBITS, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_REINTERPRET_ALL)
 
+// f16 shares its register with u16, so reinterpreting from/to f16 is reinterpreting from/to u16.
+template<Vectorizable TDst, std::size_t tSize>
+inline auto reinterpret(NativeVector<f16, tSize> v, TypeTag<TDst> tag) {
+  return reinterpret(NativeVector<u16, tSize>{.r = v.r}, tag);
+}
+template<Vectorizable TSrc, std::size_t tSize>
+inline NativeVector<f16, tSize * sizeof(TSrc) / 2> reinterpret(NativeVector<TSrc, tSize> v,
+                                                               TypeTag<f16> /*tag*/) {
+  return NativeVector<f16, tSize * sizeof(TSrc) / 2>{.r = reinterpret(v, type_tag<u16>).r};
+}
+template<std::size_t tSize>
+inline NativeVector<f16, tSize> reinterpret(NativeVector<f16, tSize> v, TypeTag<f16> /*tag*/) {
+  return v;
+}
+
 template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
 inline SubVector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)> reinterpret(SubVector<TSrc, tSize> v,
                                                                         TypeTag<TDst> tag) {

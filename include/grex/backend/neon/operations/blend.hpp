@@ -11,8 +11,10 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/f16.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/types.hpp"
 
@@ -25,14 +27,16 @@ namespace grex::backend {
   inline NativeVector<KIND##BITS, SIZE> blend(NativeMask<KIND##BITS, SIZE> m, \
                                               NativeVector<KIND##BITS, SIZE> v0, \
                                               NativeVector<KIND##BITS, SIZE> v1) { \
-    return {.r = GREX_ISUFFIXED(vbslq, KIND, BITS)(m.r, v1.r, v0.r)}; \
+    const auto v0r = from_stored<KIND##BITS>(v0.r); \
+    const auto v1r = from_stored<KIND##BITS>(v1.r); \
+    return {.r = to_stored<KIND##BITS>(GREX_ISUFFIXED(vbslq, KIND, BITS)(m.r, v1r, v0r))}; \
   } \
   inline NativeVector<KIND##BITS, SIZE> blend_zero(NativeMask<KIND##BITS, SIZE> m, \
                                                    NativeVector<KIND##BITS, SIZE> v1) { \
     GREX_BLENDZ_##KIND(BITS, SIZE) \
   }
 
-GREX_FOREACH_TYPE(GREX_BLEND, 128)
+GREX_FOREACH_TYPE_EXT(GREX_BLEND, 128)
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/blend.hpp" // IWYU pragma: export

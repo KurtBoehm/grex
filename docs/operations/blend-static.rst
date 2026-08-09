@@ -5,6 +5,7 @@ Compile-Time Blends
 ####################
 
 Blends whose per-lane selection is fixed at compile time rather than supplied as a run-time mask.
+The candidates are selected by element *size* rather than by element kind, so binary16 is covered without any code of its own.
 Because the selection is a constant, the backend can pick an immediate-controlled instruction — or elide the operation entirely — instead of materializing a mask and issuing a variable blend.
 
 The run-time, mask-driven counterparts are described in :doc:`blend`.

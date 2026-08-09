@@ -7,9 +7,12 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP
 
+#include <cstddef>
+
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
@@ -18,6 +21,8 @@
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
+#include "grex/backend/x86/operations/f16.hpp"
+#include "grex/backend/x86/operations/intrinsics.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
 
@@ -30,13 +35,15 @@ namespace grex::backend {
 #define GREX_CMP_AVX512(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
   inline NativeMask<KIND##BITS, SIZE> compare_##OPNAME(NativeVector<KIND##BITS, SIZE> a, \
                                                        NativeVector<KIND##BITS, SIZE> b) { \
-    return {.r = \
-              GREX_CAT(BITPREFIX##_cmp_, GREX_EPU_SUFFIX(KIND, BITS), _mask)(a.r, b.r, CMPIDX)}; \
+    GREX_DIAGCONV_PUSH() \
+    return {.r = GREX_CAT(BITPREFIX##_cmp_, GREX_EPU_SUFFIX(KIND, BITS), _mask)( \
+              from_stored<KIND##BITS>(a.r), from_stored<KIND##BITS>(b.r), CMPIDX)}; \
+    GREX_DIAGCONV_POP() \
   }
 
-///////////////////////////////////////////////////////////////////////////////////
-// compare_eq: use cmpeq except for i64/u64 on level 1; unsigned uses signed cmp //
-///////////////////////////////////////////////////////////////////////////////////
+//==================================================================================================
+// compare_eq: use cmpeq except for i64/u64 on level 1; unsigned uses signed cmp
+//==================================================================================================
 
 #define GREX_CMP_IMPL_BASE_CMPEQ_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   return {.r = \
@@ -67,9 +74,9 @@ namespace grex::backend {
 #define GREX_CMP_IMPL_BASE_CMPEQ_u GREX_CMP_IMPL_BASE_CMPEQ_INT
 #define GREX_CMP_IMPL_BASE_cmpeq(KIND, ...) GREX_CMP_IMPL_BASE_CMPEQ_##KIND(KIND, __VA_ARGS__)
 
-//////////////////////////////////////////////////////////////////////////////////////////
-// compare_neq: dedicated cmpneq intrinsic only for floating-point; integers use !equal //
-//////////////////////////////////////////////////////////////////////////////////////////
+//==================================================================================================
+// compare_neq: dedicated cmpneq intrinsic only for floating-point; integers use !equal
+//==================================================================================================
 
 #define GREX_CMPNEQ_f(BITS, BITPREFIX, REGISTERBITS) \
   return {.r = GREX_KINDCAST(f, i, BITS, REGISTERBITS, \
@@ -79,9 +86,9 @@ namespace grex::backend {
 #define GREX_CMP_IMPL_BASE_cmpneq(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   GREX_CMPNEQ_##KIND(BITS, BITPREFIX, REGISTERBITS)
 
-////////////////////////////////////////////////////////////////////
-// Less-than: cmpgt for f/i (except i64 on level 1), tricks for u //
-////////////////////////////////////////////////////////////////////
+//==================================================================================================
+// Less-than: cmpgt for f/i (except i64 on level 1), tricks for u
+//==================================================================================================
 
 // f, i other than i64 on level 1: dedicated cmpgt intrinsics (cmpgt(b, a) == cmplt(a, b))
 #define GREX_CMPLT_INTRINSIC(KIND, BITS, BITPREFIX, REGISTERBITS) \
@@ -150,9 +157,9 @@ namespace grex::backend {
 // base
 #define GREX_CMP_IMPL_BASE_cmplt(KIND, ...) GREX_CMPLT_##KIND(__VA_ARGS__)
 
-//////////////////////
-// Greater or equal //
-//////////////////////
+//==================================================================================================
+// Greater or equal
+//==================================================================================================
 
 // f: dedicated cmpge intrinsics
 #define GREX_CMPGE_INTRINSIC(KIND, BITS, BITPREFIX, REGISTERBITS) \
@@ -194,9 +201,9 @@ namespace grex::backend {
 #define GREX_CMP_IMPL_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
   GREX_CMP_IMPL_BASE_##CMPNAME(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS)
 
-//////////////////////////////////////////////
-// Case distinctions between register sizes //
-//////////////////////////////////////////////
+//==================================================================================================
+// Case distinctions between register sizes
+//==================================================================================================
 
 // SSE family definitions
 #define GREX_CMP_IMPL_128 GREX_CMP_IMPL_BASE
@@ -211,9 +218,9 @@ namespace grex::backend {
 #define GREX_CMP_IMPL(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX) \
   GREX_CMP_IMPL_##REGISTERBITS(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, CMPNAME, CMPIDX)
 
-//////////////////////////////////////////////////////////////
-// Instantiate for each type, with AVX-512 case distinction //
-//////////////////////////////////////////////////////////////
+//==================================================================================================
+// Instantiate for each type, with AVX-512 case distinction
+//==================================================================================================
 
 #define GREX_CMP_BASE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX) \
   inline NativeMask<KIND##BITS, SIZE> compare_##OPNAME(NativeVector<KIND##BITS, SIZE> a, \
@@ -227,16 +234,18 @@ namespace grex::backend {
 #define GREX_CMP GREX_CMP_BASE
 #endif
 
+// Binary16 is folded in when native.
 #define GREX_CMP_ALL(REGISTERBITS, BITPREFIX, OPNAME, CMPNAME, CMPIDX) \
-  GREX_FOREACH_TYPE(GREX_CMP, REGISTERBITS, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, CMPIDX)
+  GREX_FOREACH_TYPE_OPT_EXT(GREX_CMP, REGISTERBITS, BITPREFIX, REGISTERBITS, OPNAME, CMPNAME, \
+                            CMPIDX)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, eq, cmpeq, 0)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, neq, cmpneq, 4)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, lt, cmplt, 1)
 GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, ge, cmpge, 5)
 
-///////////////////
-// Mask equality //
-///////////////////
+//==================================================================================================
+// Mask equality
+//==================================================================================================
 
 // Compact masks: use kxnor on the native mask type
 #define GREX_MASKEQ_COMPACT(SIZE, BITPREFIX) GREX_CAT(_kxnor_mask, GREX_MAX(SIZE, 8))(a.r, b.r)
@@ -254,10 +263,27 @@ GREX_FOREACH_X86_64_LEVEL(GREX_CMP_ALL, ge, cmpge, 5)
     return {.r = GREX_MASKEQ_IMPL(SIZE, BITPREFIX)}; \
   }
 #define GREX_MASKEQ_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_TYPE(GREX_MASKEQ, REGISTERBITS, BITPREFIX)
+  GREX_FOREACH_TYPE_EXT(GREX_MASKEQ, REGISTERBITS, BITPREFIX)
 GREX_FOREACH_X86_64_LEVEL(GREX_MASKEQ_ALL)
 GREX_NNMASK_BINARY(compare_eq)
 
+// Binary16 without AVX512-FP: round-trip through binary32.
+#if !GREX_F16_NATIVE_ARITHMETIC
+#define GREX_F16_CMP(NAME) \
+  template<std::size_t tSize> \
+  inline NativeMask<f16, tSize> NAME(NativeVector<f16, tSize> a, NativeVector<f16, tSize> b) { \
+    return convert(NAME(f16_to_f32(a), f16_to_f32(b)), type_tag<f16>); \
+  }
+GREX_F16_CMP(compare_eq)
+GREX_F16_CMP(compare_lt)
+GREX_F16_CMP(compare_ge)
+#undef GREX_F16_CMP
+
+template<std::size_t tSize>
+inline NativeMask<f16, tSize> compare_neq(NativeVector<f16, tSize> a, NativeVector<f16, tSize> b) {
+  return logical_not(compare_eq(a, b));
+}
+#endif
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_COMPARE_HPP

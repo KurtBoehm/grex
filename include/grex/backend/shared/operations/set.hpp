@@ -121,6 +121,16 @@ template<AnyVector TVec>
 inline TVec broadcast(typename TVec::Value value) {
   return broadcast(value, type_tag<TVec>);
 }
+
+// Binary16: simple delegation to `u16` for basic construction.
+template<std::size_t tSize>
+inline NativeVector<f16, tSize> zeros(TypeTag<NativeVector<f16, tSize>>) {
+  return {.r = zeros(type_tag<NativeVector<u16, tSize>>).r};
+}
+template<std::size_t tSize>
+inline NativeVector<f16, tSize> undefined(TypeTag<NativeVector<f16, tSize>>) {
+  return {.r = undefined(type_tag<NativeVector<u16, tSize>>).r};
+}
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SET_HPP

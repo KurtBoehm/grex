@@ -11,12 +11,21 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/defs.hpp" // IWYU pragma: keep
+#include "grex/backend/base.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/f16.hpp"
 #include "grex/backend/neon/types.hpp"
+
+#if GREX_F16_NATIVE_ARITHMETIC
+#include "grex/backend/neon/operations/f16.hpp"
+#endif
+
+// Binary16 is defined together with the rest if FP16 is available, which takes precedence over the
+// the binary32 round trip (which is used without FP16).
 
 namespace grex::backend {
 #define GREX_HMINMAX_IMPL_BASE(NAME, KIND, BITS, INFIX, VEC) \
@@ -37,21 +46,21 @@ namespace grex::backend {
 
 #define GREX_HMINMAX(KIND, BITS, SIZE) \
   inline KIND##BITS horizontal_min(NativeVector<KIND##BITS, SIZE> v) { \
-    GREX_HMINMAX_IMPL_##KIND(min, KIND, BITS, q, v.r) \
+    GREX_HMINMAX_IMPL_##KIND(min, KIND, BITS, q, from_stored<KIND##BITS>(v.r)) \
   } \
   inline KIND##BITS horizontal_max(NativeVector<KIND##BITS, SIZE> v) { \
-    GREX_HMINMAX_IMPL_##KIND(max, KIND, BITS, q, v.r) \
+    GREX_HMINMAX_IMPL_##KIND(max, KIND, BITS, q, from_stored<KIND##BITS>(v.r)) \
   }
-GREX_FOREACH_TYPE(GREX_HMINMAX, 128)
+GREX_FOREACH_TYPE_OPT_EXT(GREX_HMINMAX, 128)
 
 // 64 bits: Use 64-bit instructions
 // <64 bits: Use up to two pairwise min/max operations and extract
 
 #define GREX_HMINMAX_64(NAME, KIND, BITS, PART, SIZE) \
-  const auto lo64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(v.registr()); \
+  const auto lo64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(from_stored<KIND##BITS>(v.registr())); \
   GREX_HMINMAX_IMPL_##KIND(NAME, KIND, BITS, , lo64)
 #define GREX_HMINMAX_PW(NAME, KIND, BITS, PART, SIZE) \
-  auto r = GREX_ISUFFIXED(vget_low, KIND, BITS)(v.registr()); \
+  auto r = GREX_ISUFFIXED(vget_low, KIND, BITS)(from_stored<KIND##BITS>(v.registr())); \
   r = GREX_ISUFFIXED(vp##NAME, KIND, BITS)(r, r); \
   return GREX_ISUFFIXED(vget_lane, KIND, BITS)(r, 0);
 
@@ -73,7 +82,7 @@ GREX_FOREACH_TYPE(GREX_HMINMAX, 128)
   inline KIND##BITS horizontal_max(SubVector<KIND##BITS, PART> v) { \
     GREX_CAT(GREX_HMINMAX_, GREX_MULTIPLY(BITS, PART), _##BITS)(max, KIND, BITS, PART, SIZE) \
   }
-GREX_FOREACH_SUB(GREX_HMINMAX_SUB)
+GREX_FOREACH_SUB_OPT_EXT(GREX_HMINMAX_SUB)
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/horizontal-minmax.hpp" // IWYU pragma: export

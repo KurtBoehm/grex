@@ -20,6 +20,12 @@
 #define GREX_DIAGCONV_POP() _Pragma("GCC diagnostic pop")
 
 namespace grex::backend {
+/**
+ * The rounding mode of the F16C binary16 conversion instructions: round to nearest with ties to
+ * even, which matches both the default C/C++ behavior and the emulated conversion.
+ */
+inline constexpr int f16c_round = _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC;
+
 namespace mm {
 GREX_ALWAYS_INLINE inline __m128i insert_epi8(__m128i a, int b, AnyIntTag auto imm8) {
   GREX_DIAGCONV_PUSH()
@@ -31,7 +37,28 @@ GREX_ALWAYS_INLINE inline __m128i insert_epi16(__m128i a, int b, AnyIntTag auto 
   return _mm_insert_epi16(a, b, imm8.value);
   GREX_DIAGCONV_POP()
 }
+GREX_ALWAYS_INLINE inline __m128i insert_epi32(__m128i a, int b, AnyIntTag auto imm8) {
+  return _mm_insert_epi32(a, b, imm8.value);
+}
 } // namespace mm
+
+#if GREX_X86_64_LEVEL >= 3
+namespace mm {
+GREX_ALWAYS_INLINE inline __m128i cvtps_ph(__m128 a) {
+  GREX_DIAGCONV_PUSH()
+  return _mm_cvtps_ph(a, f16c_round);
+  GREX_DIAGCONV_POP()
+}
+} // namespace mm
+
+namespace mm256 {
+GREX_ALWAYS_INLINE inline __m128i cvtps_ph(__m256 a) {
+  GREX_DIAGCONV_PUSH()
+  return _mm256_cvtps_ph(a, f16c_round);
+  GREX_DIAGCONV_POP()
+}
+} // namespace mm256
+#endif
 
 #if GREX_X86_64_LEVEL >= 4
 namespace mm {
@@ -177,6 +204,12 @@ GREX_ALWAYS_INLINE inline __m512 range_ps(__m512 a, __m512 b, AnyIntTag auto imm
 GREX_ALWAYS_INLINE inline __m512d range_pd(__m512d a, __m512d b, AnyIntTag auto imm8) {
   GREX_DIAGCONV_PUSH()
   return _mm512_range_pd(a, b, imm8.value);
+  GREX_DIAGCONV_POP()
+}
+
+GREX_ALWAYS_INLINE inline __m256i cvtps_ph(__m512 a) {
+  GREX_DIAGCONV_PUSH()
+  return _mm512_cvtps_ph(a, f16c_round);
   GREX_DIAGCONV_POP()
 }
 

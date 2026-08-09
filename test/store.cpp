@@ -25,11 +25,11 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
   using VC = test::VectorChecker<T, tSize>;
 
   auto dist = test::make_distribution<T>();
-  auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+  auto dval = [&] { return dist(rng); };
 
   for (std::size_t i = 0; i < repetitions; ++i) {
     grex::static_apply<tSize>([&]<std::size_t... tI>() {
-      VC checker{dval(tI)...};
+      VC checker = VC::random(dval);
       // store scalar
       {
         std::array<T, 1> buf{};

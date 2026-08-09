@@ -6,6 +6,7 @@ Logical Operations
 
 Element-wise logical operations on masks.
 Sub-native masks are processed via their backing native masks, while each native lane of a super-native mask is processed independently.
+Mask operations only move bits, so binary16 masks share the ``u16`` implementation (see :ref:`f16-implementation`).
 
 .. _operations-logical-not:
 

@@ -7,9 +7,9 @@
 #ifndef INCLUDE_GREX_OPERATIONS_HPP
 #define INCLUDE_GREX_OPERATIONS_HPP
 
-#include <limits>
+#include <concepts>
 
-#include "grex/backend/active/operations.hpp" // IWYU pragma: keep
+#include "grex/backend/active/operations.hpp"
 #include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/operations.hpp"
@@ -23,9 +23,12 @@ namespace grex {
 /**
   Indicates whether the backend supports fused multiply-add.
 
-  If `false`, fused multiply-addition is emulated using multiplication and addition.
+  If `false`, fused multiply-addition is emulated:
+  - `f64`/`f32`: multiplication, addition/subtraction, and negation (if required).
+  - `f16`: widen to `f32`, perform `f32` FMA (which may be emulated), and round back.
 */
-inline constexpr bool has_fma = backend::has_fma;
+template<FloatVectorizable T>
+inline constexpr bool has_fma = std::same_as<T, f16> ? backend::has_f16_fma : backend::has_fma;
 
 template<IntVectorizable TDst>
 inline TDst expand_any(IntVectorizable auto value) {
@@ -40,39 +43,39 @@ inline bool andnot(bool a, bool b) {
   return backend::logical_andnot(a, b);
 }
 
-#define GREX_MATH_FMA(NAME) \
+#define GREX_MATH_FMA(NAME, TAG) \
   template<FloatVectorizable T> \
   inline T NAME(T a, T b, T c) { \
-    return backend::NAME(backend::Scalar{a}, backend::Scalar{b}, backend::Scalar{c}); \
+    return backend::fused(a, b, c, backend::TAG{}); \
   }
-GREX_MATH_FMA(fmadd)
-GREX_MATH_FMA(fmsub)
-GREX_MATH_FMA(fnmadd)
-GREX_MATH_FMA(fnmsub)
+GREX_MATH_FMA(fmadd, MultiplyAdd)
+GREX_MATH_FMA(fmsub, MultiplySubtract)
+GREX_MATH_FMA(fnmadd, NegatedMultiplyAdd)
+GREX_MATH_FMA(fnmsub, NegatedMultiplySubtract)
 #undef GREX_MATH_FMA
 
 template<FloatVectorizable T>
 inline T sqrt(T a) {
-  return backend::sqrt(backend::Scalar{a});
+  return backend::sqrt(a);
 }
 
 template<Vectorizable T>
 inline T abs(T a) {
-  return backend::abs(backend::Scalar{a});
+  return backend::abs(a);
 }
 template<Vectorizable T>
 inline T min(T a, T b) {
-  return backend::min(backend::Scalar{a}, backend::Scalar{b});
+  return backend::min(a, b);
 }
 template<Vectorizable T>
 inline T max(T a, T b) {
-  return backend::max(backend::Scalar{a}, backend::Scalar{b});
+  return backend::max(a, b);
 }
 
 #define GREX_MATH_MASKARITH(NAME) \
   template<Vectorizable T> \
   inline T NAME(bool mask, T a, T b) { \
-    return backend::NAME(mask, backend::Scalar{a}, backend::Scalar{b}); \
+    return backend::NAME(mask, a, b); \
   }
 GREX_MATH_MASKARITH(mask_add)
 GREX_MATH_MASKARITH(mask_subtract)
@@ -82,24 +85,24 @@ GREX_MATH_MASKARITH(mask_divide)
 
 template<Vectorizable T>
 inline T extract_single(T v) {
-  return backend::extract_single(backend::Scalar{v});
+  return backend::extract_single(v);
 }
 template<Vectorizable T>
 inline T blend_zero(bool selector, T v1) {
-  return backend::blend_zero(selector, backend::Scalar{v1});
+  return backend::blend_zero(selector, v1);
 }
 template<Vectorizable T>
 inline T blend(bool selector, T v0, T v1) {
-  return backend::blend(selector, backend::Scalar{v0}, backend::Scalar{v1});
+  return backend::blend(selector, v0, v1);
 }
 
 template<FloatVectorizable T>
 inline bool is_finite(T a) {
-  return backend::is_finite(backend::Scalar{a});
+  return backend::is_finite(a);
 }
 template<FloatVectorizable T>
 inline T make_finite(T a) {
-  return backend::make_finite(backend::Scalar{a});
+  return backend::make_finite(a);
 }
 
 // To determine whether a conversion is safe, i.e. guaranteed not to change finite values,
@@ -107,11 +110,13 @@ inline T make_finite(T a) {
 // - floating-point → integer: Always unsafe, since max(f32) ≈ 2^128
 // - otherwise: digits(TDst) >= digits(TSrc), signed(Dst) || unsigned(Src)
 // One of the underlying assumptions is that the number of bits for the mantissa and the exponent
-// grow/shrink together, which is true for f32/f64 (there is no support for f16/bf16)
+// grow/shrink together, which is true for f16/f32/f64 (there is no support for bf16, whose exponent
+// is as wide as that of f32 while its mantissa is narrower than that of f16). `grex::NumericTrait`
+// is used instead of `std::numeric_limits`, which is not specialized for `f16`.
 template<typename TDst, typename TSrc>
 concept SafeConversion = (!FloatVectorizable<TSrc> || FloatVectorizable<TDst>) &&
                          (SignedVectorizable<TDst> || UnsignedVectorizable<TSrc>) &&
-                         std::numeric_limits<TDst>::digits >= std::numeric_limits<TSrc>::digits;
+                         NumericTrait<TDst>::digits >= NumericTrait<TSrc>::digits;
 
 // convert
 template<Vectorizable TDst, Vectorizable TSrc>

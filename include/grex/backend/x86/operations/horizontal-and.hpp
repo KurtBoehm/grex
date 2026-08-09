@@ -55,18 +55,18 @@ namespace grex::backend {
 #endif
 
 #define GREX_HAND(KIND, BITS, SIZE, ...) \
-  inline bool horizontal_and(NativeMask<KIND##BITS, SIZE> m) { \
+  GREX_ALWAYS_INLINE inline bool horizontal_and(NativeMask<KIND##BITS, SIZE> m) { \
     return GREX_HAND_IMPL(KIND, BITS, SIZE, __VA_ARGS__); \
   }
 #define GREX_HAND_ALL(REGISTERBITS, BITPREFIX) \
-  GREX_FOREACH_TYPE(GREX_HAND, REGISTERBITS, BITPREFIX, REGISTERBITS)
+  GREX_FOREACH_TYPE_EXT(GREX_HAND, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_HAND_ALL)
 
 #define GREX_HAND_SUB(KIND, BITS, PART, SIZE) \
-  inline bool horizontal_and(SubMask<KIND##BITS, PART> m) { \
+  GREX_ALWAYS_INLINE inline bool horizontal_and(SubMask<KIND##BITS, PART> m) { \
     return GREX_HAND_SUB_IMPL(KIND, BITS, PART, SIZE); \
   }
-GREX_FOREACH_SUB(GREX_HAND_SUB)
+GREX_FOREACH_SUB_EXT(GREX_HAND_SUB)
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/horizontal-and.hpp" // IWYU pragma: export

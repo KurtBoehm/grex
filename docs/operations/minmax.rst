@@ -7,6 +7,8 @@ Minimum/Maximum
 Element-wise minimum and maximum on vectors.
 Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
 
+Binary16 uses the corresponding intrinsic where the hardware provides one and is otherwise carried out in binary32 (see :ref:`f16-implementation`), which is exact because the widening is.
+
 .. _operations-min:
 
 *******

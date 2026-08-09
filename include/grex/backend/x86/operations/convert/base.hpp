@@ -232,7 +232,7 @@ inline VectorFor<TDst, tSize> convert(SubVector<TSrc, tSize> v, TypeTag<TDst> ta
 template<IntVectorizable TDst, IntVector THalf>
 requires(!is_supernative<TDst, THalf::size * 2>)
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
-  using Src = THalf::Value;
+  using Src = ValueOf<THalf>;
   static constexpr std::size_t tmp_bytes = sizeof(Src) / 2;
   static constexpr bool tmp_signed = std::is_signed_v<Src>;
   using Tmp = std::conditional_t<tmp_signed, SignedInt<tmp_bytes>, UnsignedInt<tmp_bytes>>;
@@ -241,8 +241,10 @@ inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TD
 }
 // Super-native → sub-native/native, floating-point → integer:
 // cast to same-sized integer, then go from there.
+// Excludes binary16 sources, as there is no conversion between 16-bit integers and binary16 without
+// AVX512-FP.
 template<IntVectorizable TDst, FloatVector THalf>
-requires(!is_supernative<TDst, THalf::size * 2>)
+requires(!is_supernative<TDst, THalf::size * 2> && !Float16<ValueOf<THalf>>)
 inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<TDst, sizeof(ValueOf<THalf>)>>), tag);
 }

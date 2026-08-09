@@ -6,6 +6,7 @@ Loading
 
 Vector loading operations read elements from contiguous scalar memory into SIMD vectors.
 Partial loads handle a prefix without accessing memory beyond the requested number of elements.
+Loading only moves bits, so binary16 goes through the very same code as ``u16`` (see :ref:`f16-implementation`).
 
 .. _operations-load:
 
@@ -29,7 +30,7 @@ Load Unaligned
    ======
 
    - **Native**: ``loadu`` intrinsics at the appropriate width.
-   - **Sub-native**: load only the required bytes into a 128-bit integer register via narrow loads (e.g. ``_mm_loadu_si8``) and packing, then reinterpret.
+   - **Sub-native**: load exactly the bytes the sub-vector holds with the matching narrow load (``_mm_loadu_si16/32/64``), then reinterpret.
 
    Neon
    ====
@@ -98,25 +99,25 @@ Load Partial (Runtime Length)
    - **x86-64-v3**:
 
      - **32/64-bit elements (any register width)**: ``maskload`` intrinsics with a mask from :cpp:func:`~backend::cutoff_mask`.
-     - **8/16-bit elements**: overlapping scalar-sized loads (8/4/2 bytes), pack into a 128-bit register, then shuffle with ``pshufb`` using precomputed tables to assemble the prefix into the low bytes and zero-fill the rest.
-     - **512-bit vectors**: split into halves, partially load the active half.
+     - **256-bit vectors, 8/16-bit elements**: fully load the lower half, then load the 16 bytes ending at the last requested element and move them down by the bytes the lower half already covers, using a ``pshufb`` row read at a run-time offset from a 32-byte index table. If the requested size does not reach the upper half, the lower half is loaded partially and the upper half is left undefined.
+     - **128-bit vectors, 8/16-bit elements**: the byte-wise prefix load described below.
 
-   - **x86-64-v2**:
+   - **x86-64-v2** and **x86-64-v1**:
 
-     - **128-bit vectors, 32/16/8-bit elements**: overlapping 64/32/16-bit loads into a 128-bit integer register and ``pshufb`` with precomputed shuffle masks.
-     - **128-bit vectors, 64-bit elements**: switch statement over the size.
-     - **Wider vectors**: built from 128-bit partial loads via splitting/merging as above.
+     - **128-bit vectors, 2 elements**: switch statement over the size, as every case is a single narrow load.
+     - **128-bit vectors otherwise**: the byte-wise prefix load described below.
+     - **Wider vectors**: super-native, hence split into halves.
 
-   - **x86-64-v1**:
+   Both element counts of the byte-wise prefix load are compile-time constants, which prunes the cases the caller cannot reach:
 
-     - **128-bit vectors**: accumulate 8/16/32 bytes into one or two 64-bit temporaries via ``std::memcpy``, then assemble with ``_mm_set_epi64x``.
-     - **Wider vectors**: split into halves and combine full/partial/zero halves.
+   - **x86-64-v2**: two overlapping loads of the largest block (8 or 4 bytes) that fits into the requested byte count, packed into a 128-bit register and gathered by a single ``pshufb`` with a precomputed control row; three bytes use a 16-bit load completed by ``pinsrb``, and fewer bytes a single narrow load.
+   - **x86-64-v1**: accumulate the bytes into one or two 64-bit temporaries via ``std::memcpy``, then assemble with ``_mm_set_epi64x``.
 
    Sub-native vectors
    ------------------
 
    - **x86-64-v4**: delegate to the corresponding native :cpp:func:`~backend::load_part` and wrap.
-   - **Earlier**: use narrow scalar loads (``_mm_loadu_si8/16/32/64`` equivalents) plus small, size-specialized paths per sub-vector shape (2/4/8 lanes), reusing the same ``pshufb``/``memcpy`` strategies as native vectors.
+   - **Earlier**: the same two paths as native 128-bit vectors, with the byte count bounded by the sub-vector rather than the register.
 
    Neon
    ====

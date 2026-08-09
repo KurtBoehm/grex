@@ -32,6 +32,8 @@ Vector Conversion
 
    Only this limited subset of generic conversion operations is shared because the two backends have different instructions to make use of: Arm Neon only provides integer widening/narrowing instructions which double/halve the size of the input elements, whereas x86-64 provides instructions for larger increases/decreases (starting on level 2).
 
+   Conversions with a binary16 source or destination are described in :ref:`operations-convert-f16`.
+
    x86-64
    ======
 
@@ -67,82 +69,23 @@ Vector Conversion
    - **Integer → floating-point**:
 
      For an integer :math:`n`, produce the nearest representable ``f32``/``f64`` to :math:`n` (exact when :math:`n` is in range).
+     Only signed 32-bit sources — and, on x86-64-v4, all of them — have direct instructions; everything else is reduced to those.
 
-     - **32-bit inputs**:
+     - **Small integers (< 32 bits)**: widen to ``i32`` first.
+     - **Unsigned before x86-64-v4**: exploit that writing :math:`n` into the mantissa of a constant exponent yields :math:`n + 2^e` exactly, so subtracting :math:`2^e` as a floating-point value leaves :math:`n`.
+       Where the mantissa is too narrow for the whole value — ``u32`` → ``f32`` and ``u64`` → ``f64`` — :math:`n` is split into two halves that are converted this way and added.
+       ``u64`` → ``f32`` instead halves :math:`n` with rounding to even, converts the result as a (now non-negative) ``i64``, and doubles it again, which rounds exactly as the direct conversion would.
+     - ``i64`` **before x86-64-v4**: extract each lane to a scalar register, convert it there, and repack.
 
-       - ``i32`` → ``f32``/``f64``: direct conversion intrinsics.
-       - ``u32`` → ``f64``:
-
-         - **x86-64-v4**: direct conversion.
-         - **Earlier**: treat ``u32`` as the low 32 bits of a 64-bit mantissa:
-
-           - Form a value whose mantissa contains ``n`` and exponent :math:`2^{52}`, so the ``f64`` equals :math:`n + 2^{52}`.
-           - Subtract :math:`2^{52}` encoded with the same exponent to obtain exactly :math:`n`.
-
-       - ``u32`` → ``f32``:
-
-         - **x86-64-v4**: direct conversion.
-         - **Earlier** (x86-64-v1 and x86-64-v2/v3 use slightly different shuffles):
-
-           - Decompose :math:`n = \text{lo} + 2^{16} \cdot \text{hi}` with 16-bit ``lo``/``hi``.
-           - Embed ``lo`` and ``hi`` into mantissas with exponents :math:`2^{23}` and :math:`2^{39}` respectively, so both are exact integers but each gains an extra hidden bit.
-           - Subtract the hidden-bit contributions :math:`2^{23}` and :math:`2^{39}` and add the resulting ``f32`` values.
-
-     - **64-bit inputs**:
-
-       - **x86-64-v4**: direct conversion intrinsics.
-       - **Earlier**:
-
-         - ``i64`` → ``f32``/``f64``:
-
-           - **x86-64-v4**: direct packed conversion intrinsics.
-           - **Earlier**: extract each lane to a scalar register, perform scalar ``i64`` → ``f32``/``f64``, then repack.
-
-         - ``u64`` → ``f64``:
-
-           - Decompose :math:`n = \text{lo} + 2^{32} \cdot \text{hi}` with 32-bit ``lo``/``hi``.
-           - Embed into mantissas with exponents :math:`2^{52}` and :math:`2^{84}` to obtain exact integer values with extra hidden bits.
-           - Subtract the hidden-bit terms :math:`2^{52}` and :math:`2^{84}` from the constructed ``f64`` values and add the results.
-
-         - ``u64`` → ``f32``:
-
-           - Compute :math:`h = \lfloor n / 2 \rceil` as ``i64`` (right shift plus rounding to even).
-           - Convert :math:`h` to ``f32``, and multiply by 2.
-
-             The division by 2 keeps the value non-negative so a signed conversion suffices; the final scaling restores the original magnitude with the same rounding as a direct ``u64`` → ``f32``.
-
-     - **Small integers (< 32 bits)**: widen to ``i32``, then convert to the desired floating-point type using the above paths.
-
-   - **Floating-point → integer**:
-
-     Let :math:`x` be a floating-point lane value; all conversions use truncation toward zero.
+   - **Floating-point → integer**: all conversions truncate toward zero.
 
      - ``f32``/``f64`` → ``i32``: direct conversion intrinsics.
-     - ``f32``/``f64`` → ``i64``:
-
-       - **x86-64-v4**: direct truncating intrinsics.
-       - **Earlier**: scalar lane-wise truncation and repacking.
-
-     - ``f64``/``f32`` → ``u64``/``u32``:
-
-       - **x86-64-v4**: direct truncating intrinsics.
-       - **Earlier**:
-
-         - Let :math:`B` be the number of bits in the destination type (32/64) and let :math:`c_i` denote the hardware conversion from floating-point to a *signed* integer with :math:`B` bits.
-         - Compute a signed truncation :math:`v = c_i(x)`.
-           For :math:`x \in [0, 2^{B-1})`, this already equals the desired unsigned result.
-           For :math:`x \in [2^{B-1}, 2^B)`, this produces the *indefinite integer value* :math:`2^{B-1}`.
-         - Compute an *offset* truncation :math:`o = c_i(x - 2^{B-1})`.
-           For :math:`x \in [2^{B-1}, 2^B)`, :math:`x - 2^{B-1} \in [0, 2^{B-1})`, so :math:`o` is the exact integer :math:`c_u(x) - 2^{B-1}`, where :math:`c_u` is the unsigned conversion.
-         - Use the sign bit of :math:`v` as a mask: it is zero for :math:`x \in [0, 2^{B-1})` and all ones for :math:`x \in [2^{B-1}, 2^B)`.
-           The implementation forms :math:`m = o \land \text{sign}(v)` and returns :math:`v \lor m`.
-
-           - If :math:`x \in [0, 2^{B-1})`, :math:`\text{sign}(v) = 0`, so :math:`m = 0` and the result is :math:`v`.
-           - If :math:`x \in [2^{B-1}, 2^B)`, :math:`v` contributes the high bit :math:`2^{B-1}` and :math:`m = c_u(x) - 2^{B-1}`; the bitwise OR reconstructs :math:`c_u(x)`.
-
-         As in the C++ standard, the behaviour is only specified for :math:`x \in [0, 2^B)`.
-
-     - **Small integers (< 32 bits)**: convert to ``i32`` with truncation, then narrow using the integer paths above.
+     - **Small integers (< 32 bits)**: convert to ``i32``, then narrow using the integer paths above.
+     - ``f32``/``f64`` → ``i64``: direct truncating intrinsics on x86-64-v4, scalar lane-wise truncation and repacking earlier.
+     - ``f32``/``f64`` → ``u32``/``u64`` before x86-64-v4: let :math:`B` be the destination width and :math:`c_i` the hardware truncation to a *signed* :math:`B`-bit integer.
+       For :math:`x < 2^{B-1}`, :math:`c_i(x)` is already the desired result, and for larger :math:`x` it yields the indefinite value :math:`2^{B-1}`, i.e. exactly the high bit, while :math:`c_i(x - 2^{B-1})` yields the remaining bits.
+       Masking the latter with the sign bit of the former and combining both with a bitwise OR therefore covers both ranges without a branch.
+       As in the C++ standard, the behaviour is only specified for :math:`x \in [0, 2^B)`.
 
    - **Conversions involving super-native vectors**:
 
@@ -180,6 +123,88 @@ Vector Conversion
      - **Factor 4/8**: multiple factor-2 narrowing steps.
 
    - **Same-width integers with different signedness**: bitwise reinterpretation between signed and unsigned types.
+
+.. _operations-convert-f16:
+
+*******************
+Binary16 Conversion
+*******************
+
+.. cpp:function:: template<std::size_t N> \
+                  Vector<f32, N> backend::f16_to_f32(Vector<f16, N> v)
+
+   Widens a binary16 vector to binary32, which is always exact.
+
+.. cpp:function:: template<std::size_t N> \
+                  Vector<f16, N> backend::f32_to_f16(Vector<f32, N> v)
+
+   Narrows a binary32 vector to the nearest binary16 values, rounding ties to even.
+
+   These two are the pivot of all binary16 support: :cpp:func:`~backend::convert` uses them directly for ``f32``, routes every other type through binary32, and every operation without binary16 instructions is emulated with them (see :ref:`f16-implementation`).
+   Since a binary32 vector needs twice the register space of a binary16 vector with the same lane count, one of the two is super-native whenever the other is native.
+
+   x86-64
+   ======
+
+   - **With AVX512-FP16**: direct ``cvt`` intrinsics between binary16 and every other numeric type, so the detour through binary32 is unnecessary; only 8-bit integers have no instruction and go through 16-bit ones.
+   - **x86-64-v3 and later**: the F16C instructions ``vcvtph2ps``/``vcvtps2ph`` at the widest applicable width, splitting the source or merging the result where the other side does not fit into a single register.
+   - **x86-64-v1 and x86-64-v2**: F16C is unavailable, so both directions are emulated with SSE2, using x86-64-v2 instructions where they are cheaper.
+     The exponent is re-biased by an integer addition, subnormals are normalized by a single floating-point addition, and the normal, subnormal, and infinity/not-a-number cases are combined by blending.
+     Rounding is to nearest, ties to even, matching the hardware instructions.
+     Eight lanes is the widest vector converted this way, since F16C is unconditionally available from x86-64-v3 on.
+
+   Neon
+   ====
+
+   - ``vcvt_f32_f16``/``vcvt_high_f32_f16`` and ``vcvt_f16_f32``/``vcvt_high_f16_f32``, which ARM64 always provides, so no software fallback is needed.
+   - With the FP16 extension, binary16 ↔ ``i16``/``u16`` additionally use ``vcvtq`` intrinsics; ``i8``/``u8`` use ``i16``/``u16`` as intermediary type when converting, all remaining types use binary32.
+
+.. cpp:function:: template<std::size_t N> \
+                  Vector<f64, N> backend::f16_to_f64(Vector<f16, N> v)
+
+   Widens a binary16 vector to binary64, which is always exact.
+
+.. cpp:function:: template<std::size_t N> \
+                  Vector<f16, N> backend::f64_to_f16(Vector<f64, N> v)
+
+   Narrows a binary64 vector to the nearest binary16 values, rounding ties to even — in a *single* rounding step, unlike a plain conversion by way of binary32.
+
+   Binary64 is the one type that cannot be routed through binary32 naively.
+   Narrowing twice with round-to-nearest rounds twice: a value just past a binary16 rounding boundary can be pulled exactly onto it by the first step and then sent the wrong way by the tie rule of the second.
+   No amount of intermediate precision repairs this for an arbitrary binary64 input, since the trap window merely shrinks with the intermediate format.
+   Rather than repeat the bit manipulation of :cpp:func:`~backend::f32_to_f16` for the wider format, the narrowing step therefore rounds *to odd*: it truncates the binary64 significand towards zero to the 24 bits of binary32 and forces the lowest surviving bit to one whenever anything was discarded, which yields whichever of the two neighbouring binary32 values has an odd significand.
+
+   Rounding that intermediate to binary16 then gives the correctly rounded result.
+   Write :math:`p = 11` for the binary16 significand and :math:`q = 24` for the binary32 one, and let :math:`x` lie between the adjacent binary16 values :math:`a` and :math:`b` with midpoint :math:`m`:
+
+   - :math:`m` is a multiple of half a binary16 ulp, so it needs :math:`p + 1` significand bits and is exactly representable in binary32; its :math:`q`-bit significand ends in :math:`q - p - 1 \ge 1` zeros and is therefore *even*.
+   - Rounding to odd never produces an even significand unless it leaves the value untouched, so the intermediate equals :math:`m` only if :math:`x` did — a genuine tie stays a tie and is broken identically.
+   - Rounding to odd moves :math:`x` to an adjacent binary32 value, and :math:`m` is itself one, so the intermediate cannot cross :math:`m`.
+
+   The intermediate therefore lies strictly on the same side of :math:`m` as :math:`x`, and the second rounding picks the same :math:`a` or :math:`b` that rounding :math:`x` directly would.
+   This needs only :math:`q \ge p + 2 = 13` bits, which binary32 exceeds comfortably.
+
+   Two details ensure that special cases are handled correctly: forcing the lowest bit to one can never carry into the exponent, because a significand of all ones is already odd, and it also keeps a not-a-number whose payload lives entirely in the discarded bits from collapsing into an infinity.
+   Where the intermediate falls outside the binary32 exponent range the hardware narrowing is not exact, but those magnitudes are far beyond binary16’s own range and round to zero or infinity either way.
+
+   Widening needs no such care, since both steps are exact.
+
+   Shared
+   ======
+
+   - The sticky bit is obtained without a comparison: adding the mask of the discarded bits to those bits carries into the lowest surviving bit exactly if any of them is set.
+   - Only the native register widths convert; wider vectors split into halves and merge the results.
+
+   x86-64
+   ======
+
+   - **With AVX512-FP16**: ``vcvtph2pd``/``vcvtpd2ph`` convert directly in one instruction, so :cpp:func:`~backend::convert` uses those and the round-to-odd path does not exist.
+   - **Otherwise**: round to odd, then ``cvtpd_ps``/``cvtps_pd`` at the widest applicable width, then :cpp:func:`~backend::f32_to_f16`/:cpp:func:`~backend::f16_to_f32`.
+
+   Neon
+   ====
+
+   - ARM64 has no binary16 ↔ binary64 instruction at any extension level, so the round-to-odd path is always used, with ``fcvtn``/``fcvtl`` and their ``_high`` forms for the binary64 half.
 
 .. _operations-convert-mask:
 

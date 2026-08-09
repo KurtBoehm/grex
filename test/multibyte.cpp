@@ -13,7 +13,7 @@
 #include <fmt/color.h>
 #include <pcg_extras.hpp>
 #include <thesauros/containers/multi-byte-integers.hpp>
-#include <thesauros/ranges/iota.hpp>
+#include <thesauros/ranges/indices.hpp>
 #include <thesauros/utility/byte-integer.hpp>
 
 #include "grex/grex.hpp"
@@ -45,18 +45,20 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
     (src_bytes == dst_bytes) ? std::numeric_limits<Dst>::max() : Dst(Dst{1} << (8 * src_bytes)),
   };
   thes::MultiByteIntegers<thes::ByteInteger<src_bytes>, padding> mbi(mbi_size);
-  for (const auto i : thes::range(mbi_size)) {
+  for (const auto i : thes::views::indices(mbi_size)) {
     mbi[i] = dist(rng);
   }
 
   auto op = [&]<std::size_t tSize>(grex::IndexTag<tSize> /*tag*/) {
     fmt::print(fmt::fg(fmt::terminal_color::blue), "{}×{}\n", test::type_name<Dst>(), tSize);
-    std::uniform_int_distribution<std::size_t> idist{0, mbi_size - tSize};
+    std::uniform_int_distribution<std::ptrdiff_t> idist{
+      0,
+      static_cast<std::ptrdiff_t>(mbi_size - tSize),
+    };
 
     grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
       for (std::size_t r = 0; r < repetitions; ++r) {
-        const std::size_t i = idist(rng);
-        const auto it = std::as_const(mbi).begin() + i;
+        const auto it = std::as_const(mbi).begin() + idist(rng);
 
         {
           test::VectorChecker<Dst, tSize> checker{
@@ -99,16 +101,15 @@ void run_scalar(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
     (src_bytes == dst_bytes) ? std::numeric_limits<Dst>::max() : Dst(Dst{1} << (8 * src_bytes)),
   };
   thes::MultiByteIntegers<thes::ByteInteger<src_bytes>, std::bit_ceil(src_bytes)> mbi(mbi_size);
-  for (const auto i : thes::range(mbi_size)) {
+  for (const auto i : thes::views::indices(mbi_size)) {
     mbi[i] = dist(rng);
   }
 
   fmt::print(fmt::fg(fmt::terminal_color::blue), "{}\n", test::type_name<Dst>());
-  std::uniform_int_distribution<std::size_t> idist{0, mbi_size - 1};
+  std::uniform_int_distribution<std::ptrdiff_t> idist{0, static_cast<std::ptrdiff_t>(mbi_size) - 1};
 
   for (std::size_t r = 0; r < repetitions; ++r) {
-    const std::size_t i = idist(rng);
-    const auto it = std::as_const(mbi).begin() + i;
+    const auto it = std::as_const(mbi).begin() + idist(rng);
     const auto a = grex::load_multibyte(it, grex::scalar_tag);
     const auto b = *it;
     const auto c = it[0];

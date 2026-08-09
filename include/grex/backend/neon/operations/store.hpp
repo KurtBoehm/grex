@@ -21,6 +21,7 @@
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/repeat.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/f16.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/types.hpp"
 #include "grex/base.hpp"
@@ -28,14 +29,16 @@
 namespace grex::backend {
 #define GREX_STORE(KIND, BITS, SIZE) \
   GREX_ALWAYS_INLINE inline void store(KIND##BITS* dst, NativeVector<KIND##BITS, SIZE> src) { \
-    GREX_ISUFFIXED(vst1q, KIND, BITS)(dst, src.r); \
-  } \
-  /* This is not actually aligned, but who cares */ \
-  GREX_ALWAYS_INLINE inline void store_aligned(KIND##BITS* dst, \
-                                               NativeVector<KIND##BITS, SIZE> src) { \
-    GREX_ISUFFIXED(vst1q, KIND, BITS)(dst, src.r); \
+    using M = GREX_MEMTYPE(KIND, BITS); \
+    GREX_ISUFFIXED(vst1q, KIND, BITS)(reinterpret_cast<M*>(dst), from_stored<KIND##BITS>(src.r)); \
   }
-GREX_FOREACH_TYPE(GREX_STORE, 128)
+GREX_FOREACH_TYPE_EXT(GREX_STORE, 128)
+
+/* This is not actually aligned, but who cares */
+template<Vectorizable T, std::size_t tSize>
+GREX_ALWAYS_INLINE inline void store_aligned(T* dst, NativeVector<T, tSize> src) {
+  store(dst, src);
+}
 
 template<std::size_t tBytes, typename T>
 GREX_ALWAYS_INLINE inline void store_first(T* dst, NativeVector<T, 16 / sizeof(T)> src) {
@@ -122,7 +125,7 @@ GREX_ALWAYS_INLINE inline void store_aligned(T* dst, SubVector<T, tSize> src) {
       [[unlikely]] GREX_PARTSTORE_CASE(SIZE, SIZE, KIND, BITS) default : std::unreachable(); \
     } \
   }
-GREX_FOREACH_TYPE(GREX_PARTSTORE, 128)
+GREX_FOREACH_TYPE_EXT(GREX_PARTSTORE, 128)
 
 #define GREX_SUBPARTSTORE(KIND, BITS, PART, SIZE) \
   inline void store_part(KIND##BITS* dst, SubVector<KIND##BITS, PART> src, std::size_t size) { \
@@ -131,7 +134,7 @@ GREX_FOREACH_TYPE(GREX_PARTSTORE, 128)
       [[unlikely]] GREX_PARTSTORE_CASE(PART, PART, KIND, BITS) default : std::unreachable(); \
     } \
   }
-GREX_FOREACH_SUB(GREX_SUBPARTSTORE)
+GREX_FOREACH_SUB_EXT(GREX_SUBPARTSTORE)
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/store.hpp" // IWYU pragma: export

@@ -7,23 +7,53 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_INSERT_STATIC_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_INSERT_STATIC_HPP
 
+#include <array>
+#include <cstddef>
+
 #include "grex/backend/base.hpp"
 #include "grex/backend/macros/base.hpp"
-#include "grex/backend/macros/cast.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/expand.hpp"
+#include "grex/backend/x86/operations/load.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
 
+#if GREX_X86_64_LEVEL < 4
+#include "grex/backend/macros/cast.hpp"
+#endif
+
 namespace grex::backend {
+// In most cases, at least starting on level 2, there is an “insert” intrinsics for integers.
 #define GREX_VEC_SINSERT_INTRINSIC(KIND, BITS, SIZE, BITPREFIX) \
   return {.r = GREX_CAT(BITPREFIX##_insert_, GREX_EPI_SUFFIX(KIND, BITS))( \
             v.r, GREX_SIGNED_CAST(KIND, BITS, value), index.value)};
-#define GREX_VEC_SINSERT_FALLBACK(KIND, BITS, SIZE, BITPREFIX) return insert(v, index.value, value);
+// Helper for 64-bit insertions given a __m128d VECTOR and SCALAR.
+#define GREX_VEC_SINSERT_64x2(VECTOR, VSCALAR) \
+  const __m128d dst = [&] { \
+    if constexpr (index == 0) { \
+      return _mm_move_sd(VECTOR, VSCALAR); \
+    } else { \
+      return _mm_unpacklo_pd(VECTOR, VSCALAR); \
+    } \
+  }()
+// Helper for 32-bit insertions given a __m128 VECTOR and SCALAR.
+#define GREX_VEC_SINSERT_32x4(VECTOR, VSCALAR) \
+  const __m128 dst = [&] { \
+    if constexpr (index == 0) { \
+      return _mm_move_ss(VECTOR, VSCALAR); \
+    } else if (index == 1) { \
+      return _mm_shuffle_ps(_mm_movelh_ps(VSCALAR, VECTOR), VECTOR, 0b11'10'00'10); \
+    } else { \
+      /* [value, value, v[2], v[3]] */ \
+      const auto a = _mm_shuffle_ps(VSCALAR, VECTOR, 0b11'10'00'00); \
+      constexpr int imm8 = 0b11'10'01'00 & (0xFF - (0b11 << (2 * index))); \
+      return _mm_shuffle_ps(VECTOR, a, imm8); \
+    } \
+  }()
 
 #define GREX_VEC_SINSERT_AVX512(KIND, BITS, SIZE, BITPREFIX) \
   if constexpr (BITS * index < 128) { \
@@ -37,50 +67,60 @@ namespace grex::backend {
   return insert(v, index.value, value);
 
 #define GREX_VEC_SINSERT_f64x2(KIND, BITS, SIZE, BITPREFIX) \
-  if constexpr (index == 0) { \
-    return {.r = _mm_move_sd(v.r, expand_any(Scalar{value}, index_tag<2>).r)}; \
-  } else { \
-    return {.r = _mm_unpacklo_pd(v.r, expand_any(Scalar{value}, index_tag<2>).r)}; \
-  }
+  GREX_VEC_SINSERT_64x2(v.r, expand_any(value, index_tag<2>).r); \
+  return {.r = dst};
 #if GREX_X86_64_LEVEL >= 2
 #define GREX_VEC_SINSERT_i64x2 GREX_VEC_SINSERT_INTRINSIC
 #define GREX_VEC_SINSERT_f32x4(KIND, BITS, SIZE, BITPREFIX) \
   if constexpr (index == 0) { \
-    return {.r = _mm_move_ss(v.r, expand_any(Scalar{value}, index_tag<4>).r)}; \
+    return {.r = _mm_move_ss(v.r, expand_any(value, index_tag<4>).r)}; \
   } else { \
-    return {.r = _mm_insert_ps(v.r, expand_any(Scalar{value}, index_tag<4>).r, index.value << 4)}; \
+    return {.r = _mm_insert_ps(v.r, expand_any(value, index_tag<4>).r, index.value << 4)}; \
   }
 #define GREX_VEC_SINSERT_i32x4 GREX_VEC_SINSERT_INTRINSIC
 #define GREX_VEC_SINSERT_i16x8 GREX_VEC_SINSERT_INTRINSIC
 #define GREX_VEC_SINSERT_i8x16 GREX_VEC_SINSERT_INTRINSIC
 #else
-#define GREX_VEC_SINSERT_i64x2 GREX_VEC_SINSERT_FALLBACK
-#define GREX_VEC_SINSERT_f32x4(KIND, BITS, SIZE, BITPREFIX) \
-  const __m128 vec = expand_any(Scalar{value}, index_tag<4>).r; \
-  if constexpr (index == 0) { \
-    return {.r = _mm_move_ss(v.r, vec)}; \
-  } else if (index == 1) { \
-    return {.r = _mm_shuffle_ps(_mm_movelh_ps(vec, v.r), v.r, 0b11'10'00'10)}; \
-  } else { \
-    /* [value, value, v[2], v[3]] */ \
-    const auto a = _mm_shuffle_ps(vec, v.r, 0b11'10'00'00); \
-    constexpr int imm8 = 0b11'10'01'00 & (0xFF - (0b11 << (2 * index))); \
-    return {.r = _mm_shuffle_ps(v.r, a, imm8)}; \
-  }
-#define GREX_VEC_SINSERT_i32x4 GREX_VEC_SINSERT_FALLBACK
+#define GREX_VEC_SINSERT_i64x2(KIND, ...) \
+  const auto fv = GREX_KINDCAST(KIND, f, 64, 128, v.r); \
+  const auto fs = GREX_KINDCAST(KIND, f, 64, 128, expand_any(value, index_tag<2>).r); \
+  GREX_VEC_SINSERT_64x2(fv, fs); \
+  return {.r = GREX_KINDCAST(f, KIND, 64, 128, dst)};
+#define GREX_VEC_SINSERT_f32x4(...) \
+  GREX_VEC_SINSERT_32x4(v.r, expand_any(value, index_tag<4>).r); \
+  return {.r = dst};
+#define GREX_VEC_SINSERT_i32x4(KIND, ...) \
+  const auto fv = GREX_KINDCAST(KIND, f, 32, 128, v.r); \
+  const auto fs = GREX_KINDCAST(KIND, f, 32, 128, expand_any(value, index_tag<4>).r); \
+  GREX_VEC_SINSERT_32x4(fv, fs); \
+  return {.r = GREX_KINDCAST(f, KIND, 32, 128, dst)};
 #define GREX_VEC_SINSERT_i16x8 GREX_VEC_SINSERT_INTRINSIC
-#define GREX_VEC_SINSERT_i8x16 GREX_VEC_SINSERT_FALLBACK
+#define GREX_VEC_SINSERT_i8x16(KIND, ...) \
+  static constexpr std::size_t i = index.value; \
+  constexpr std::array<u8, 16> mask = static_apply<16>( \
+    []<std::size_t... tJ>() { return std::array<u8, 16>{((tJ == i) ? 0 : 255)...}; }); \
+  const __m128i mvec = _mm_and_si128(v.r, load(mask.data(), type_tag<u8x16>).r); \
+  const __m128i vvalue = [&] { \
+    if constexpr (index == 0) { \
+      return _mm_cvtsi32_si128(GREX_KINDCAST_SINGLE(KIND, u, 8, value)); \
+    } else { \
+      return _mm_insert_epi16( \
+        _mm_setzero_si128(), \
+        u16{GREX_KINDCAST_SINGLE(KIND, u, 8, value)} << (8 * (index.value % 2)), index.value / 2); \
+    } \
+  }(); \
+  return {.r = _mm_or_si128(vvalue, mvec)};
 #endif
 
 #define GREX_VEC_SINSERT_f64x4(KIND, BITS, SIZE, BITPREFIX) \
   __m256d ins; \
   if constexpr (index == 0) { \
-    ins = expand_any(Scalar{value}, index_tag<4>).r; \
+    ins = expand_any(value, index_tag<4>).r; \
   } else if (index == 1) { \
     ins = _mm256_castpd128_pd256( \
-      _mm_unpacklo_pd(_mm256_castpd256_pd128(v.r), expand_any(Scalar{value}, index_tag<2>).r)); \
+      _mm_unpacklo_pd(_mm256_castpd256_pd128(v.r), expand_any(value, index_tag<2>).r)); \
   } else { \
-    ins = _mm256_broadcastsd_pd(expand_any(Scalar{value}, index_tag<2>).r); \
+    ins = _mm256_broadcastsd_pd(expand_any(value, index_tag<2>).r); \
   } \
   return {.r = _mm256_blend_pd(v.r, ins, 1 << index.value)};
 #define GREX_VEC_SINSERT_i64x4(KIND, BITS, SIZE, BITPREFIX) \
@@ -97,12 +137,12 @@ namespace grex::backend {
 #define GREX_VEC_SINSERT_f32x8(KIND, BITS, SIZE, BITPREFIX) \
   __m256 ins; \
   if constexpr (index == 0) { \
-    ins = expand_any(Scalar{value}, index_tag<8>).r; \
+    ins = expand_any(value, index_tag<8>).r; \
   } else if (index < 4) { \
     ins = _mm256_castps128_ps256(_mm_insert_ps( \
-      _mm256_castps256_ps128(v.r), expand_any(Scalar{value}, index_tag<4>).r, index.value << 4)); \
+      _mm256_castps256_ps128(v.r), expand_any(value, index_tag<4>).r, index.value << 4)); \
   } else { \
-    ins = _mm256_broadcastss_ps(expand_any(Scalar{value}, index_tag<4>).r); \
+    ins = _mm256_broadcastss_ps(expand_any(value, index_tag<4>).r); \
   } \
   return {.r = _mm256_blend_ps(v.r, ins, 1 << index.value)};
 #define GREX_VEC_SINSERT_i32x8(KIND, BITS, SIZE, BITPREFIX) \
@@ -171,6 +211,67 @@ namespace grex::backend {
   GREX_FOREACH_TYPE(GREX_VEC_SINSERT, REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_MASK_SINSERT, REGISTERBITS, BITPREFIX)
 GREX_FOREACH_X86_64_LEVEL(GREX_SINSERT_ALL)
+
+// Binary16: shuffle/shift `value` into place and blend.
+inline f16x8 insert(f16x8 v, AnyIndexTag auto index, f16 value) {
+  static_assert(index < 8);
+  const auto xvalue = expand_any(value, index_tag<8>).r;
+  const auto shuf = [&] {
+#if GREX_X86_64_LEVEL < 3
+    if constexpr (index == 0) {
+      return xvalue;
+    } else if constexpr (index % 2 == 0) {
+      return _mm_shuffle_epi32(xvalue, 0);
+    } else {
+      return _mm_bslli_si128(xvalue, 2 * index.value);
+    }
+#else
+    return _mm_broadcastw_epi16(xvalue);
+#endif
+  }();
+#if GREX_X86_64_LEVEL < 2
+  const auto blend_mask = static_apply<8>(
+    [&]<std::size_t... tI>() { return _mm_setr_epi16(((tI == index) ? -1 : 0)...); });
+  const auto masked = [&] {
+    if constexpr (index == 7) {
+      return shuf;
+    } else {
+      return _mm_and_si128(blend_mask, shuf);
+    }
+  }();
+  return {.r = _mm_or_si128(masked, _mm_andnot_si128(blend_mask, v.r))};
+#else
+  return {.r = _mm_blend_epi16(v.r, shuf, 1 << index.value)};
+#endif
+}
+#if GREX_X86_64_LEVEL >= 3
+inline NativeVector<f16, 16> insert(NativeVector<f16, 16> v, AnyIndexTag auto index, f16 value) {
+  static_assert(index < 16);
+  const auto shuf = [&] {
+    if constexpr (index == 0) {
+      return expand_any(value, index_tag<16>).r;
+    } else if constexpr (index < 8) {
+      return _mm256_castsi128_si256(_mm_broadcastw_epi16(expand_any(value, index_tag<8>).r));
+    } else {
+      return _mm256_broadcastw_epi16(expand_any(value, index_tag<8>).r);
+    }
+  }();
+  const auto blend16 = _mm256_blend_epi16(v.r, shuf, 1 << (index.value % 8));
+  return {.r = _mm256_blend_epi32(v.r, blend16, 1 << (index.value / 2))};
+}
+#endif
+#if GREX_X86_64_LEVEL >= 4
+inline NativeVector<f16, 32> insert(NativeVector<f16, 32> v, AnyIndexTag auto index, f16 value) {
+  static_assert(index < 32);
+  if constexpr (index == 0) {
+    const auto xvalue = expand_any(value, index_tag<32>).r;
+    return {.r = _mm512_mask_mov_epi16(v.r, 1, xvalue)};
+  } else {
+    const auto xvalue = expand_any(value, index_tag<8>).r;
+    return {.r = _mm512_mask_broadcastw_epi16(v.r, 1U << index.value, xvalue)};
+  }
+}
+#endif
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/insert-static.hpp" // IWYU pragma: export

@@ -24,15 +24,43 @@ namespace test = grex::test;
 using Value = grex::GREX_TEST_TYPE;
 inline constexpr std::size_t repetitions = 256;
 
+/**
+ * Announces the shuffle that is about to be checked.
+ *
+ * Kept out of line: formatting the index list and the whole vector would otherwise be inlined and
+ * optimized into each of the `repetitions` unrolled copies of the test body.
+ */
+template<std::size_t tSize>
+[[gnu::noinline]] void announce_shuffle(const std::array<grex::ShuffleIndex, tSize>& idxs,
+                                        const grex::Vector<Value, tSize>& base) {
+  fmt::print("grex::shuffle<{}>({}x{}{{{}}});\n", fmt::join(idxs, ", "), test::type_name<Value>(),
+             tSize, fmt::join(base, ", "));
+}
+
+/** Reports a failed `shuffle` and terminates, kept out of line as in `announce_shuffle`. */
+template<std::size_t tSize, typename TShuffled>
+[[gnu::cold, gnu::noinline]] void fail_shuffle(const std::array<grex::ShuffleIndex, tSize>& idxs,
+                                               const std::array<Value, tSize>& baseref,
+                                               const TShuffled& shuf) {
+  std::array<Value, tSize> ref{};
+  for (std::size_t i = 0; i < tSize; ++i) {
+    const auto sh = idxs[i];
+    ref[i] = grex::is_index(sh) ? baseref[grex::u8(sh)] : Value{};
+  }
+  fmt::print(fmt::fg(fmt::terminal_color::red), "shuffle({}, {}) != {} vs. {}\n", idxs, baseref,
+             shuf, ref);
+  std::exit(EXIT_FAILURE);
+}
+
 template<std::size_t tSize>
 void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
   using VC = test::VectorChecker<Value, tSize>;
 
   auto dist = test::make_distribution<Value>();
-  auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+  auto dval = [&] { return dist(rng); };
 
   grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
-    VC base{dval(tIdxs)...};
+    VC base = VC::random(dval);
 
     constexpr auto idxs = grex::static_apply<repetitions>([&]<std::size_t... tReps>() {
       test::Pcg32 pcg{};
@@ -49,8 +77,7 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
     });
 
     auto fix = [&](grex::AnyIndexTag auto rep) {
-      fmt::print("grex::shuffle<{}>({}x{}{{{}}});\n", fmt::join(idxs[rep], ", "),
-                 test::type_name<Value>(), tSize, fmt::join(base.vec, ", "));
+      announce_shuffle(idxs[rep], base.vec);
       const auto shuf = grex::shuffle<idxs[rep][tIdxs]...>(base.vec);
       bool same = true;
       for (std::size_t i = 0; i < tSize; ++i) {
@@ -62,15 +89,7 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
         }
       }
       if (!same) {
-        auto f = [&](std::size_t i) {
-          const auto sh = idxs[rep][i];
-          return grex::is_index(sh) ? base.ref[grex::u8(sh)] : Value{};
-        };
-        const std::array ref{f(tIdxs)...};
-
-        fmt::print(fmt::fg(fmt::terminal_color::red), "shuffle({}, {}) != {} vs. {}\n", idxs[rep],
-                   base.ref, shuf, ref);
-        std::exit(EXIT_FAILURE);
+        fail_shuffle(idxs[rep], base.ref, shuf);
       }
     };
     grex::static_apply<repetitions>(

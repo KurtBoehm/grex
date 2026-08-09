@@ -8,6 +8,7 @@ Multibyte Integer Loading
 
 Loading of packed integers whose logical value spans :math:`M` bytes into SIMD vectors with element width :math:`N = 2^B` bytes, where :math:`N = \operatorname{bitceil}(M)`.
 The input memory is padded on both sides by the number of bytes in the largest supported SIMD register.
+Since the packed values are unsigned integers, this operation only exists for unsigned-integer element types.
 
 Each native lane of a super-native vector is processed independently.
 

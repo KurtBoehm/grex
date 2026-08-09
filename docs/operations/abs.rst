@@ -25,6 +25,7 @@ Absolute Value
 
      - **x86-64-v4**: ``range`` intrinsics with an absolute-value control.
      - **Earlier**: clear the sign bit via bitwise AND with a constant sign-mask vector (based on VCL).
+     - **Binary16**: always clear the sign bit, since the compilers translate ``_mm512_abs_ph`` to the same thing.
 
    - **Signed integers**:
 
@@ -44,4 +45,4 @@ Absolute Value
    Neon
    ====
 
-   - **Floating point and signed integers**: ``vabsq`` intrinsics.
+   - **Floating point and signed integers**: ``vabsq`` intrinsics; binary16 clears the sign bit where ``vabsq_f16`` is unavailable.

@@ -37,7 +37,7 @@ struct ZeroBlenderMovq : public BaseExpensiveOp {
   static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
     static_assert(is_applicable(auto_tag<tBzs>));
     return reinterpret(i64x2{_mm_move_epi64(reinterpret(vec, type_tag<i64>).r)},
-                       type_tag<typename TVec::Value>);
+                       type_tag<ValueOf<TVec>>);
   }
   static constexpr Cost cost(auto /*bzs*/) {
     return {.inv_throughput = 0.5, .latency = 1};

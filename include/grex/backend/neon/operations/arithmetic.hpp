@@ -14,6 +14,7 @@
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/types.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/f16.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/types.hpp"
 
@@ -86,6 +87,37 @@ GREX_NNVECTOR_BINARY(add)
 GREX_NNVECTOR_BINARY(subtract)
 GREX_NNVECTOR_BINARY(multiply)
 GREX_NNVECTOR_BINARY(divide)
+
+// Binary16: negation uses and intrinsic if available or flips the sign bit.
+// The arithmetic operations use dedicated instructions if the FP16 extension (ARMv8.2-A) is
+// available (`GREX_F16_NATIVE_ARITHMETIC`) and are otherwise carried out in binary32 via
+// `f16_to_f32`/`f32_to_f16`.
+#if GREX_F16_NATIVE_ARITHMETIC
+inline f16x8 negate(f16x8 a) {
+  return {.r = as_u16(vnegq_f16(as_f16(a.r)))};
+}
+
+#define GREX_F16_ARITH(NAME, INTRINSIC) \
+  inline f16x8 NAME(f16x8 a, f16x8 b) { \
+    return {.r = as_u16(INTRINSIC(as_f16(a.r), as_f16(b.r)))}; \
+  }
+#else
+inline f16x8 negate(f16x8 a) {
+  return {.r = veorq_u16(a.r, vdupq_n_u16(0x8000))};
+}
+
+#define GREX_F16_ARITH(NAME, INTRINSIC) \
+  inline f16x8 NAME(f16x8 a, f16x8 b) { \
+    return f32_to_f16(NAME(f16_to_f32(a), f16_to_f32(b))); \
+  }
+#endif
+
+GREX_F16_ARITH(add, vaddq_f16)
+GREX_F16_ARITH(subtract, vsubq_f16)
+GREX_F16_ARITH(multiply, vmulq_f16)
+GREX_F16_ARITH(divide, vdivq_f16)
+
+#undef GREX_F16_ARITH
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_ARITHMETIC_HPP

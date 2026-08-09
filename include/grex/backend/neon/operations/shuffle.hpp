@@ -217,9 +217,9 @@ inline VectorFor<u8, tSize * tValueBytes> shuffle_indices(SubVector<T, tSize> id
   return shrink<tSize * tValueBytes>(shuffle_indices(expand_any<2 * tSize>(idxs), value_bytes));
 }
 
-/////////////////////////////
-// Neon 8-bit tbl shuffles //
-/////////////////////////////
+//==================================================================================================
+// Neon 8-bit tbl shuffles
+//==================================================================================================
 
 // Table size 16: vqtbl1q_u8.
 // If logical index range (index_ub) exceeds table size, mask indices down to [0, 15].
@@ -260,9 +260,9 @@ inline u8x16 shuffle(VectorFor<u8, 64> table, u8x16 idxs, AnyIndexTag auto index
   return {.r = vqtbl4q_u8(vtable, vidxs)};
 }
 
-/////////////////////////////////////
-// Generic typed shuffle front-end //
-/////////////////////////////////////
+//==================================================================================================
+// Generic typed shuffle front-end
+//==================================================================================================
 
 // TTable:       table of values to select from
 // TIdxs:        unsigned integer indices into the table

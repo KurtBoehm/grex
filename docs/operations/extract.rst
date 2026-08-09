@@ -7,6 +7,9 @@ Extraction
 Extraction operations read individual lanes from vectors and masks.
 Sub-native vectors/masks are processed via their backing native registers, while a super-native vector/mask is handled by selecting the half that contains the requested lane.
 
+Binary16 does not share the ``u16`` code path: ``u16`` extraction ends in a general-purpose register (which is where an integer belongs) whereas a binary16 value belongs in the vector register file.
+Binary16 therefore has its own paths that never leave it (see :ref:`f16-implementation`).
+
 .. _operations-extract-single:
 
 *****************
@@ -29,18 +32,20 @@ Single-Lane Value
 
    - **128-bit**:
 
-     - **Floating point**: ``_mm_cvtss_f32``/``_mm_cvtsd_f64``.
+     - **Floating point**: ``_mm_cvtss_f32``/``_mm_cvtsd_f64``, and ``_mm_cvtsh_h`` for binary16 with AVX512-FP16.
      - **Integers**:
 
        - **32/64-bit**: ``_mm_cvtsi128_si32``/``_mm_cvtsi128_si64`` with appropriate extension.
        - **8/16-bit**: extract via ``_mm_cvtsi128_si32`` and narrow.
+
+     - **Binary16 without AVX512-FP16**: no intrinsic reads a binary16 lane, so the register is reinterpreted by an empty inline-assembly constraint (GCC) or a store-and-read round trip that the compiler folds away (Clang).
 
    - **256/512-bit**: extract the lowest 128 bits and delegate to the 128-bit implementation.
 
    Neon
    ====
 
-   - **Native 128-bit**: ``vgetq_lane`` at lane 0.
+   - **Native 128-bit**: ``vgetq_lane`` at lane 0, which exists for binary16 irrespective of the FP16 extension.
 
 .. _operations-extract-value-runtime:
 
@@ -65,19 +70,20 @@ Element Value by Run-Time Index
    x86-64
    ======
 
-   - **x86-64-v4 (with AVX-512VBMI2 for 8/16-bit)**:
+   - **x86-64-v2 and later**: permute the requested lane to the front of the register and read it with :cpp:func:`~backend::extract_single`.
+     Since a permutation only moves bit patterns, it is performed on the unsigned integer type of the same width.
 
-     - Use ``maskz_compress`` intrinsics driven by :cpp:func:`~backend::single_mask` to move the selected lane to position 0, then:
+     - The permutation acts on *parts* of a width chosen per element width and register width: the element width itself where a variable permutation of that width exists, and 32 bits (``vpermd``) otherwise, mirroring the choices :cpp:func:`~backend::shuffle` makes.
+       Bytes always use a byte shuffle in 128-bit registers, as it has the lowest latency even where ``vpermb`` exists.
+     - Where the parts are wider than the elements, the permuted chunk holds several of them and the requested one is isolated by a shift: within a general-purpose register for integers, which end up there anyway, and within the vector register for binary16, which must not.
+     - The control operand packs one part index per part into a single scalar, computed from the lane index by one multiplication and one addition of compile-time constants.
 
-       - Floating point: ``_mm_cvtss_f32``/``_mm_cvtsd_f64``.
-       - Integers: ``_mm_cvtsi128_si32``/``_mm_cvtsi128_si64`` plus narrowing/extension.
-
-   - **Earlier**: store via :cpp:func:`~backend::store` to a temporary array and return ``array[index % N]``.
+   - **x86-64-v1**: SSE2 offers no variable shuffle, so the vector is stored to a temporary array and read back at ``index``.
 
    Neon
    ====
 
-   - **Native**: ``switch (index)`` dispatch to ``vgetq_lane`` intrinsics.
+   - **Native**: ``switch (index)`` dispatch to the compile-time-index ``vgetq_lane`` intrinsics.
 
 .. _operations-extract-value-ct:
 
@@ -113,6 +119,7 @@ Element Value by Compile-Time Index
 
      - **Floating point**:
 
+       - **16-bit**: shift the lane down to position 0 within the register and use :cpp:func:`~backend::extract_single`.
        - **32-bit**: shuffle the requested lane to position 0 with ``_mm_shuffle_epi32`` and use ``_mm_cvtss_f32``.
        - **64-bit**: select the high element via ``_mm_unpackhi_pd`` when needed, then ``_mm_cvtsd_f64``.
 
@@ -140,6 +147,8 @@ Element Value by Compile-Time Index
 
        - Lower-half indices: delegate to 256-bit :cpp:func:`~backend::extract`.
        - Upper-half indices: use ``_mm512_alignr`` to move the lane to position 0, then :cpp:func:`~backend::extract_single`.
+
+   - **Wider binary16 vectors**: select the 128-bit lane containing ``I`` and recurse.
 
    Neon
    ====

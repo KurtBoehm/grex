@@ -12,6 +12,7 @@
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
@@ -141,11 +142,11 @@ namespace grex::backend {
 
 // Wrapper macros
 #define GREX_HADD(KIND, BITS, SIZE) \
-  inline KIND##BITS horizontal_add(NativeVector<KIND##BITS, SIZE> v) { \
+  GREX_ALWAYS_INLINE inline KIND##BITS horizontal_add(NativeVector<KIND##BITS, SIZE> v) { \
     GREX_HADD_##KIND(KIND, BITS, SIZE, SIZE) \
   }
 #define GREX_HADD_SUB(KIND, BITS, PART, SIZE) \
-  inline KIND##BITS horizontal_add(SubVector<KIND##BITS, PART> v) { \
+  GREX_ALWAYS_INLINE inline KIND##BITS horizontal_add(SubVector<KIND##BITS, PART> v) { \
     const auto vf = v.full; \
     GREX_HADD_##KIND(KIND, BITS, PART, SIZE) \
   }
@@ -155,6 +156,22 @@ GREX_FOREACH_X86_64_LEVEL(GREX_HADD_ALL)
 
 // SubVector
 GREX_FOREACH_SUB(GREX_HADD_SUB)
+
+// Binary16 with AVX512-FP16: shuffle and add repeatedly, emulating `reduce_add_ph` intrinsics
+// without relying on the compiler implementations.
+// Without AVX512-FP, the portable fallback (round trip through binary32) is used.
+#if GREX_F16_NATIVE_ARITHMETIC
+GREX_ALWAYS_INLINE inline f16 horizontal_add(SubVector<f16, 2> v) {
+  // [v1, -, -, -, -, -, -, -]
+  const __m128h shuf = _mm_castsi128_ph(_mm_shufflelo_epi16(v.registr(), 1));
+  // [v0 + v1, -, -, -, -, -, -, -][0]
+  return _mm_cvtsh_h(_mm_add_sh(_mm_castsi128_ph(v.registr()), shuf));
+}
+template<Float16Vector TVec>
+GREX_ALWAYS_INLINE inline f16 horizontal_add(TVec v) {
+  return horizontal_add(add(get_low(v), get_high(v)));
+}
+#endif
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/horizontal-add.hpp" // IWYU pragma: export

@@ -52,7 +52,6 @@
 
 namespace grex::backend {
 #if GREX_X86_64_LEVEL > 1
-
 // Thin wrappers to abstract over 128/256-bit byte-wise shuffles.
 GREX_ALWAYS_INLINE inline __m128i shuffle_epi8(__m128i a, __m128i b) {
   return _mm_shuffle_epi8(a, b);
@@ -127,16 +126,16 @@ shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> /*dst_bytes*/,
 #if GREX_X86_64_LEVEL >= 3
 // Specialized computations for 256-bit shuffles with 32-bit chunks (vpermd) and 64-bit values
 
-// 4×u64 → 8×u32: replicate the lower 32 bits into the upper 32 bits, double each index,
-// and offset by [0, 1].
+// 4×u64 → 8×u32: replicate the lower 32 bits into the upper 32 bits, double each index, and offset
+// by [0, 1].
 GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(u64x4 idxs, IndexTag<4> /*dst_bytes*/,
                                                 IndexTag<8> /*value_bytes*/) {
   const auto idxs32 = _mm256_slli_epi64(_mm256_shuffle_epi32(idxs.r, 0b10100000), 1);
   return {.r = _mm256_add_epi32(idxs32, _mm256_setr_epi32(0, 1, 0, 1, 0, 1, 0, 1))};
 }
 
-// 4×u32 → 8×u32: replicate each 4-byte index to 8 adjacent bytes, double each index,
-// and offset by [0, 1].
+// 4×u32 → 8×u32: replicate each 4-byte index to 8 adjacent bytes, double each index, and offset by
+// [0, 1].
 GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(u32x4 idxs, IndexTag<4> /*dst_bytes*/,
                                                 IndexTag<8> /*value_bytes*/) {
   const auto lo32 = _mm_shuffle_epi32(idxs.r, 0b01010000);
@@ -145,8 +144,8 @@ GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(u32x4 idxs, IndexTag<4> /*dst_by
   return {.r = _mm256_add_epi32(idxs32, _mm256_setr_epi32(0, 1, 0, 1, 0, 1, 0, 1))};
 }
 
-// 4×u16 → 8×u32: replicate each 2-byte index to 8 adjacent bytes, double each index,
-// and offset by [0, 1].
+// 4×u16 → 8×u32: replicate each 2-byte index to 8 adjacent bytes, double each index, and offset by
+// [0, 1].
 GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(SubVector<u16, 4> idxs, IndexTag<4> /*dst_bytes*/,
                                                 IndexTag<8> /*value_bytes*/) {
   const auto lo64 = _mm_shufflelo_epi16(idxs.full.r, 0b01010000);
@@ -158,8 +157,8 @@ GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(SubVector<u16, 4> idxs, IndexTag
   return {.r = _mm256_add_epi32(idxs32, _mm256_setr_epi32(0, 1, 0, 1, 0, 1, 0, 1))};
 }
 
-// 4×u8 → 8×u32: replicate each 1-byte index to 8 adjacent bytes, double each index,
-// and offset by [0, 1].
+// 4×u8 → 8×u32: replicate each 1-byte index to 8 adjacent bytes, double each index, and offset by
+// [0, 1].
 GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(SubVector<u8, 4> idxs, IndexTag<4> /*dst_bytes*/,
                                                 IndexTag<8> /*value_bytes*/) {
   const __m256i bcidxs = _mm256_broadcastd_epi32(idxs.registr());
@@ -485,12 +484,19 @@ GREX_SHFL_MULTI(GREX_SHFL_MULTI_PSHUFB, i, 8, 32)
 GREX_SHFL_MULTI(GREX_SHFL_MULTI_PSHUFB, u, 8, 32)
 #endif
 
+// Binary16: delegate to `u16`.
+template<Float16Vector TTable, UnsignedIntVector TIdxs>
+inline VectorFor<f16, size_of<TIdxs>> shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub,
+                                              AnyIndexTag auto index_offset) {
+  return as<f16>(shuffle(as<u16>(table), idxs, index_ub, index_offset));
+}
+
 // Generic entry point for x86-64-v2+.
 //
 // The overload set above covers many nice cases (native tables/indices).
 // This function resolves the remaining cases by splitting/expanding/merging into forms that are
 // handled by the specialized overloads.
-template<AnyVector TTable, AnyVector TIdxs>
+template<AnyVector TTable, UnsignedIntVector TIdxs>
 GREX_ALWAYS_INLINE inline VectorFor<ValueOf<TTable>, size_of<TIdxs>>
 shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto index_offset) {
   using Value = ValueOf<TTable>;
@@ -558,7 +564,7 @@ shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto in
 }
 
 // Convenience overload: full table range, zero offset.
-template<AnyVector TTable, AnyVector TIdxs>
+template<AnyVector TTable, UnsignedIntVector TIdxs>
 GREX_ALWAYS_INLINE inline VectorFor<ValueOf<TTable>, size_of<TIdxs>> shuffle(TTable table,
                                                                              TIdxs idxs) {
   return shuffle(table, idxs, index_tag<TTable::size>, index_tag<0>);
@@ -799,11 +805,18 @@ GREX_SHFL_16(u)
 GREX_SHFL_8(i)
 GREX_SHFL_8(u)
 
+// Binary16: delegate to `u16`.
+template<Float16Vector TTable, UnsignedIntVector TIdxs>
+inline VectorFor<f16, size_of<TIdxs>> shuffle(TTable table, TIdxs idxs,
+                                              AnyIndexTag auto index_offset) {
+  return as<f16>(shuffle(as<u16>(table), idxs, index_offset));
+}
+
 // Generic entry point for x86-64-v1.
 //
 // Similar strategy as the x86-64-v2+ variant, but with fewer cases because only very small vector
 // sizes are natively supported.
-template<AnyVector TTable, AnyVector TIdxs>
+template<AnyVector TTable, UnsignedIntVector TIdxs>
 GREX_ALWAYS_INLINE inline VectorFor<ValueOf<TTable>, size_of<TIdxs>>
 shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_offset) {
   using Value = ValueOf<TTable>;
@@ -842,7 +855,7 @@ shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_offset) {
 }
 
 // Convenience overload: zero offset.
-template<AnyVector TTable, AnyVector TIdxs>
+template<AnyVector TTable, UnsignedIntVector TIdxs>
 GREX_ALWAYS_INLINE inline VectorFor<ValueOf<TTable>, size_of<TIdxs>> shuffle(TTable table,
                                                                              TIdxs idxs) {
   return shuffle(table, idxs, index_tag<0>);

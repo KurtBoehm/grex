@@ -14,7 +14,7 @@ template<typename T>
 requires(std::is_trivial_v<T>)
 inline T make_undefined() {
   T undefined;
-  // This prevents warnings about undefined values
+  // This prevents warnings about undefined values.
   asm("" : "=w"(undefined)); // NOLINT
   return undefined;
 }

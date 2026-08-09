@@ -13,33 +13,37 @@
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
+#include "grex/backend/macros/types.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/types.hpp"
+#include "grex/base.hpp"
+#include "grex/f16.hpp"
 
 #if GREX_X86_64_LEVEL < 2
 #include "grex/backend/x86/operations/mask-index.hpp"
 #endif
 
 namespace grex::backend {
-#define GREX_CUTOFF_SUB_64(KIND, BITS, PART) \
-  {.r = GREX_KINDCAST(i, KIND, BITS, 128, \
-                      _mm_move_epi64(GREX_KINDCAST(KIND, i, BITS, 128, v.registr())))}
+#define GREX_CUTOFF_SUB_64(KIND, BITS, PART, RKIND) \
+  {.r = GREX_KINDCAST(i, RKIND, BITS, 128, \
+                      _mm_move_epi64(GREX_KINDCAST(RKIND, i, BITS, 128, v.registr())))}
 #if GREX_X86_64_LEVEL >= 2
-#define GREX_CUTOFF_SUB_32(KIND, BITS, PART) \
+#define GREX_CUTOFF_SUB_32(KIND, BITS, PART, RKIND) \
   {.r = _mm_castps_si128(_mm_blend_ps(_mm_setzero_ps(), _mm_castsi128_ps(v.registr()), 1))}
-#define GREX_CUTOFF_SUB_16(KIND, BITS, PART) \
+#define GREX_CUTOFF_SUB_16(KIND, BITS, PART, RKIND) \
   {.r = _mm_blend_epi16(_mm_setzero_si128(), v.registr(), 1)}
 #else
-#define GREX_CUTOFF_SUB_32(KIND, BITS, PART) cutoff(PART, v.full)
-#define GREX_CUTOFF_SUB_16(KIND, BITS, PART) cutoff(PART, v.full)
+#define GREX_CUTOFF_SUB_32(KIND, BITS, PART, RKIND) cutoff(PART, v.full)
+#define GREX_CUTOFF_SUB_16(KIND, BITS, PART, RKIND) cutoff(PART, v.full)
 #endif
 #define GREX_CUTOFF_SUB(KIND, BITS, PART, SIZE) \
   inline NativeVector<KIND##BITS, SIZE> full_cutoff(SubVector<KIND##BITS, PART> v) { \
-    return GREX_CAT(GREX_CUTOFF_SUB_, GREX_MULTIPLY(BITS, PART))(KIND, BITS, PART); \
+    return GREX_CAT(GREX_CUTOFF_SUB_, GREX_MULTIPLY(BITS, PART))(KIND, BITS, PART, \
+                                                                 GREX_REGKIND(KIND, BITS)); \
   }
 
-GREX_FOREACH_SUB(GREX_CUTOFF_SUB)
+GREX_FOREACH_SUB_EXT(GREX_CUTOFF_SUB)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_SUBNATIVE_HPP

@@ -6,6 +6,10 @@ All of Grex’s functionality is available on x86-64 and ARM64 CPUs and Linux, m
 Main features:
 
 - **Generic SIMD vector/mask types** that make it easy to write a function that can be applied using SIMD vectors with an arbitrary (supported) value type and size.
+- **Full IEEE 754 binary16 (“half-precision”) support**.
+  - The compiler-provided `_Float16` is used where it is available, with a software emulation as a fallback on platforms that lack it.
+  - Operations use dedicated binary16 instructions where the platform has them (ARM64 with the FP16 extension, x86-64 with AVX512-FP16) and is otherwise carried out in `f32`, which yields the same results.
+  - The conversion between `f16` and `f32` uses hardware instructions where available (always on ARM64, from x86-64-v3 on via F16C) and a portable, bit-exact software conversion otherwise.
 - **User-friendly interface** using operator overloading, template functions, and function overloading to enable intuitive code without run-time cost.
   - This includes **a large assortment of useful operations** that are implemented with close to ideal efficiency (in most cases), among others:
     - **A full complement of conversions** between value types, including ones with differently-sized value types and ones not provided by the instruction set (e.g. `u64` to `f64` on x86-64 without AVX-512).
@@ -28,7 +32,7 @@ Grex provides full vectorization support on x86-64 and little-endian ARM64 proce
 Vectorization support for 32-bit x86, 32-bit ARM, or big-endian ARM64 is not planned, as these platforms are not relevant for modern HPC workloads.
 On these and other systems, Grex can still be used via the scalar backend, which implements all generic operations but does not provide vector or mask types.
 
-Grex has been tested with GCC 14+ and Clang 17+ on:
+Grex has been tested with GCC 14+ and Clang 21+ on:
 
 - Linux: x86-64 and ARM64
 - macOS Tahoe and Sequoia: ARM64 (Apple Silicon)
@@ -46,6 +50,19 @@ These can be run by executing `meson setup -C <build directory>` followed by `me
 `Makefile` contains targets for calling `meson setup` with different optimization and debug settings.
 
 Grex additionally provides fully-featured CMake build files, including the tests (which use CTest in the CMake version).
+
+The instruction sets the tests are built for are detected by compiling and running a small tool on the build machine: `tools/cpuid.cpp` on x86-64 (see below) and `tools/neon-features.cpp` on ARM64, which reports the ARMv8-a baseline and, if the CPU supports the FP16 extension, ARMv8-a with FP16.
+
+### Testing Sapphire Rapids (AVX512-FP16) via Intel SDE
+
+The test suite builds and runs one binary per detected x86-64-vN microarchitecture level plus one per detected optional extension not implied by any level (e.g. AVX512-FP16, see `tools/cpuid.cpp`), so which of these actually get exercised depends on the CPU the tests run on.
+Since essentially no development or CI machine has AVX512-FP16 (it requires Sapphire Rapids or newer), [`cross/sapphirerapids-sde.ini`](cross/sapphirerapids-sde.ini) is a Meson cross file that builds and runs Grex as if on such a CPU by executing all binaries under [Intel SDE](https://www.intel.com/content/www/us/en/developer/articles/tool/software-development-emulator.html), which emulates the desired instruction set:
+
+```sh
+# Assuming sde64 is on PATH; set GREX_SDE_PATH to override
+meson setup build-spr --cross-file cross/sapphirerapids-sde.ini -Dbuild_tests=true
+meson test -C build-spr
+```
 
 ## Dependencies
 

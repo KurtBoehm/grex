@@ -9,12 +9,17 @@
 
 #include <arm_neon.h>
 
-#include "grex/backend/defs.hpp" // IWYU pragma: keep
+#include "grex/backend/base.hpp"
+#include "grex/backend/defs.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/math.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
+
+#if GREX_F16_NATIVE_ARITHMETIC
+#include "grex/backend/neon/operations/f16.hpp"
+#endif
 
 namespace grex::backend {
 #define GREX_HADD(KIND, BITS, SIZE) \
@@ -50,6 +55,26 @@ GREX_FOREACH_TYPE(GREX_HADD, 128)
     GREX_CAT(GREX_HADD_, GREX_MULTIPLY(BITS, PART), _##BITS)(KIND, BITS, PART, SIZE) \
   }
 GREX_FOREACH_SUB(GREX_HADD_SUB)
+
+// Binary16 with FP16: always use a sequence of pairwise additions, as FP16 does not provide
+// binary16 horizontal addition.
+#if GREX_F16_NATIVE_ARITHMETIC
+inline f16 horizontal_add(f16x8 v) {
+  const auto vr = as_f16(v.r);
+  const auto s4 = vget_low_f16(vpaddq_f16(vr, vr));
+  const auto s2 = vpadd_f16(s4, s4);
+  return vget_lane_f16(vpadd_f16(s2, s2), 0);
+}
+inline f16 horizontal_add(SubVector<f16, 4> v) {
+  const auto vr = vget_low_f16(as_f16(v.full.r));
+  const auto s2 = vpadd_f16(vr, vr);
+  return vget_lane_f16(vpadd_f16(s2, s2), 0);
+}
+inline f16 horizontal_add(SubVector<f16, 2> v) {
+  const auto vr = vget_low_f16(as_f16(v.full.r));
+  return vget_lane_f16(vpadd_f16(vr, vr), 0);
+}
+#endif
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/horizontal-add.hpp" // IWYU pragma: export

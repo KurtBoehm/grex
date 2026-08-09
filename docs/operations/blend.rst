@@ -6,6 +6,7 @@ Masked Blend
 
 Element-wise selection between vectors under a Boolean mask.
 Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
+Blending only selects bits, so binary16 shares the ``u16`` implementation (see :ref:`f16-implementation`).
 
 The variants driven by compile-time selectors rather than a run-time mask are described in :doc:`blend-static`.
 

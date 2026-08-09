@@ -15,15 +15,18 @@
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/f16.hpp"
 #include "grex/backend/neon/types.hpp"
 #include "grex/base.hpp"
+
+// vgetq_lane_f16 is always available irrespective of FP16 availability.
 
 namespace grex::backend {
 #define GREX_EXTRINGLE(KIND, BITS, SIZE) \
   inline KIND##BITS extract_single(NativeVector<KIND##BITS, SIZE> v) { \
-    return GREX_ISUFFIXED(vgetq_lane, KIND, BITS)(v.r, 0); \
+    return GREX_ISUFFIXED(vgetq_lane, KIND, BITS)(from_stored<KIND##BITS>(v.r), 0); \
   }
-GREX_FOREACH_TYPE(GREX_EXTRINGLE, 128)
+GREX_FOREACH_TYPE_EXT(GREX_EXTRINGLE, 128)
 
 template<Vectorizable T, std::size_t tSize>
 inline T extract_single(SubVector<T, tSize> v) {

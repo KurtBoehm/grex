@@ -48,6 +48,9 @@ namespace grex::backend {
 #define GREX_TYPES(KIND, BITS, SIZE) GREX_TYPES_I(KIND, BITS, SIZE)
 
 GREX_FOREACH_TYPE(GREX_TYPES, 128)
+
+using f16x8 = NativeVector<f16, 8>;
+using bf16x8 = NativeMask<f16, 8>;
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_TYPES_HPP

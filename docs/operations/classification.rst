@@ -22,21 +22,21 @@ Finite-Value Test
 
       m_i = \operatorname{isfinite}(v_i).
 
+   A value is non-finite exactly if all of its exponent bits are set, so masking out sign and mantissa and comparing the remainder against the bit pattern of infinity decides finiteness; both backends build on this where no classification instruction applies.
+
    x86-64
    ======
 
-   - **x86-64-v4**: ``fpclass_*_mask`` intrinsics with classification mask ``0x99`` (NaN and infinities), complemented with ``knot_mask`` to obtain finiteness.
-   - **Earlier**:
-
-     - Compute :math:`|v|` via :cpp:func:`~backend::abs` and reinterpret as unsigned integers.
-     - Broadcast the bit pattern of positive infinity as an unsigned integer.
-     - Compare :math:`|v| < +\infty` with :cpp:func:`~backend::compare_lt`; finite values compare less.
+   - **x86-64-v4**: ``fpclass_*_mask`` intrinsics with classification mask ``0x99`` (NaN and infinities), complemented with ``knot_mask`` to obtain finiteness; binary16 only has such an instruction with AVX512-FP16.
+   - **Earlier**: mask the reinterpreted value with the bit pattern of infinity and compare the result against that same pattern with :cpp:func:`~backend::compare_lt`.
+     The masking can only ever produce a subset of the exponent bits, so the operand is a non-negative integer bounded by the pattern and a single signed comparison suffices.
+   - **Binary64 on x86-64-v1**, which lacks ``pcmpgtq``: masking clears the lower half of every value, so the upper halves are compared as ``i32`` and the outcome is broadcast down.
 
    Neon
    ====
 
-   - Broadcast the largest finite value ``std::numeric_limits<T>::max()``.
-   - Compare :math:`|v| \le \mathtt{max}` via ``vabsq`` and ``vcleq``.
+   - ``vcagtq``, an absolute-value comparison, against a broadcast infinity: :math:`|v| < \infty`.
+   - **Binary16 without the FP16 extension**: test the exponent bits against all-ones directly, as above.
 
 .. _operations-make-finite-vector:
 

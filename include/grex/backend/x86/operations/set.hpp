@@ -7,26 +7,28 @@
 #ifndef INCLUDE_GREX_BACKEND_X86_OPERATIONS_SET_HPP
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SET_HPP
 
+#include <concepts>
+#include <cstddef>
+
 #include <immintrin.h>
 
 #include "grex/backend/base.hpp"
+#include "grex/backend/choosers.hpp"
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/macros/cast.hpp"
 #include "grex/backend/macros/conditional.hpp"
 #include "grex/backend/macros/for-each.hpp"
+#include "grex/backend/macros/math.hpp"
 #include "grex/backend/macros/repeat.hpp"
+#include "grex/backend/macros/types.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/macros/for-each.hpp"
 #include "grex/backend/x86/macros/intrinsics.hpp"
 #include "grex/backend/x86/operations/expand.hpp"
+#include "grex/backend/x86/operations/merge.hpp"
+#include "grex/backend/x86/sizes.hpp"
 #include "grex/backend/x86/types.hpp"
 #include "grex/base.hpp"
-
-#if GREX_X86_64_LEVEL >= 4
-#include "grex/backend/macros/math.hpp"
-#else
-#include <cstddef>
-#endif
 
 namespace grex::backend {
 // Define the very messy suffixes used by the set intrinsics
@@ -45,6 +47,7 @@ namespace grex::backend {
 
 // Helpers to define function arguments for the set-based operations
 #define GREX_SET_ARG(CNT, IDX, TYPE) GREX_COMMA_IF(IDX) TYPE v##IDX
+#define GREX_SET_VAR(CNT, IDX) GREX_COMMA_IF(IDX) v##IDX
 #define GREX_SET_VAL(CNT, IDX, KIND, BITS) GREX_SIGNED_CAST(KIND, BITS, v##IDX) GREX_COMMA_IF(IDX)
 #define GREX_SET_NEGVAL(CNT, IDX, BITS) GREX_COMMA_IF(IDX) GREX_OPCAST(i, BITS, -i##BITS(v##IDX))
 
@@ -96,7 +99,7 @@ namespace grex::backend {
     const auto r = GREX_MMASK_CAST(SIZE, GREX_CMASK_SET(PART, GREX_CAT(u, GREX_MAX(SIZE, 8)))); \
     return SubMask<KIND##BITS, PART>{r}; \
   }
-GREX_FOREACH_SUB(GREX_SUBSET_MASK)
+GREX_FOREACH_SUB_EXT(GREX_SUBSET_MASK)
 #else
 #define GREX_SET_MASK(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
   inline NativeMask<KIND##BITS, SIZE> zeros(TypeTag<NativeMask<KIND##BITS, SIZE>>) { \
@@ -143,71 +146,132 @@ inline SubMask<T, tSize> set(TypeTag<SubMask<T, tSize>> /*tag*/, Ts... values) {
               GREX_RREPEAT(SIZE, GREX_SET_VAL, KIND, BITS))}; \
   }
 
+// Binary16 vectors share `u16`’s register, making the `ph` set intrinsics a poor fit, but binary16
+// masks are plain bit patterns and are covered by the generic definitions above.
 #define GREX_SET_ALL(REGISTERBITS, BITPREFIX) \
   GREX_FOREACH_TYPE(GREX_SET_VEC, REGISTERBITS, BITPREFIX, REGISTERBITS) \
-  GREX_FOREACH_TYPE(GREX_SET_MASK, REGISTERBITS, BITPREFIX, REGISTERBITS)
+  GREX_FOREACH_TYPE_EXT(GREX_SET_MASK, REGISTERBITS, BITPREFIX, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_SET_ALL)
 
-////////////////////
-// Sub-native set //
-////////////////////
+//==================================================================================================
+// Sub-native set
+//==================================================================================================
 
-#define GREX_SUBSET_HEAD(KIND, BITS, PART, SIZE) \
-  inline SubVector<KIND##BITS, PART> set(TypeTag<SubVector<KIND##BITS, PART>>, \
-                                         GREX_REPEAT(PART, GREX_SET_ARG, KIND##BITS))
+//--------------------------------------------------------------------------------------------------
+// Two values, the base case of the unpack tree below
+//--------------------------------------------------------------------------------------------------
 
-// Basic integer strategy: convert every even-indexed value directly, insert every uneven-indexed
-// value, and unpack until everything is in place
-
-#define GREX_SUBSET_INSERT(KIND, BITS, PART, SIZE) \
-  const auto vv0 = expand(Scalar{v0}, grex::index_tag<SIZE>, grex::false_tag).r; \
-  const auto vv1 = GREX_KINDCAST_SINGLE(KIND, i, BITS, v1); \
-  return SubVector<KIND##BITS, PART>{_mm_insert_epi##BITS(vv0, vv1, 1)};
-#define GREX_SUBSET_FALLBACK(KIND, BITS, PART, SIZE) \
-  const auto vv0 = expand(Scalar{v0}, grex::index_tag<SIZE>, grex::false_tag).r; \
-  const auto vv1 = expand(Scalar{v1}, grex::index_tag<SIZE>, grex::false_tag).r; \
-  return SubVector<KIND##BITS, PART>{_mm_unpacklo_epi##BITS(vv0, vv1)};
-#define GREX_SUBSET4(KIND, BITS, PART, SIZE) \
-  using Half = SubVector<KIND##BITS, GREX_DIVIDE(PART, 2)>; \
-  const auto w0 = set(type_tag<Half>, v0, v1).registr(); \
-  const auto w1 = set(type_tag<Half>, v2, v3).registr(); \
-  const auto packed = GREX_CAT(_mm_unpacklo_epi, GREX_MULTIPLY(BITS, 2))(w0, w1); \
-  return SubVector<KIND##BITS, PART>{packed};
-#define GREX_SUBSET8(KIND, BITS, PART, SIZE) \
-  using Half = SubVector<KIND##BITS, GREX_DIVIDE(PART, 2)>; \
-  const auto w0 = set(type_tag<Half>, v0, v1, v2, v3).registr(); \
-  const auto w1 = set(type_tag<Half>, v4, v5, v6, v7).registr(); \
-  const auto packed = GREX_CAT(_mm_unpacklo_epi, GREX_MULTIPLY(BITS, 4))(w0, w1); \
-  return SubVector<KIND##BITS, PART>{packed};
-
-#define GREX_SUBSET_INT(BITS, PART, SIZE, IMPL) \
-  GREX_SUBSET_HEAD(i, BITS, PART, SIZE) { \
-    IMPL(i, BITS, PART, SIZE); \
-  } \
-  GREX_SUBSET_HEAD(u, BITS, PART, SIZE) { \
-    IMPL(u, BITS, PART, SIZE); \
+// The first value is expanded into the lowest lane and the second one is interleaved
+// (floating-point, 8-bit and 32-bit integers on level 1) or inserted (otherwise).
+#define GREX_SUBSET2_HEAD(KIND, BITS) \
+  inline SubVector<KIND##BITS, 2> set(TypeTag<SubVector<KIND##BITS, 2>>, KIND##BITS v0, \
+                                      KIND##BITS v1)
+#define GREX_SUBSET2_EXPAND(KIND, BITS, IDX) \
+  expand_any(v##IDX, index_tag<min_native_size<KIND##BITS>>).r
+#define GREX_SUBSET2_INSERT(KIND, BITS) \
+  GREX_SUBSET2_HEAD(KIND, BITS) { \
+    const auto vv0 = GREX_SUBSET2_EXPAND(KIND, BITS, 0); \
+    const auto vv1 = GREX_KINDCAST_SINGLE(KIND, i, BITS, v1); \
+    return SubVector<KIND##BITS, 2>{_mm_insert_epi##BITS(vv0, vv1, 1)}; \
   }
+// The expansions are bound to variables to fix their order: They are opaque to the compiler, so
+// leaving the order to the call, which GCC evaluates right-to-left, costs a register copy.
+#define GREX_SUBSET2_UNPACK(KIND, BITS) \
+  GREX_SUBSET2_HEAD(KIND, BITS) { \
+    const auto vv0 = GREX_SUBSET2_EXPAND(KIND, BITS, 0); \
+    const auto vv1 = GREX_SUBSET2_EXPAND(KIND, BITS, 1); \
+    return SubVector<KIND##BITS, 2>{ \
+      GREX_CAT(_mm_unpacklo_, GREX_EPI_SUFFIX(GREX_REGKIND(KIND, BITS), BITS))(vv0, vv1)}; \
+  }
+#define GREX_SUBSET2_INT(BITS, IMPL) \
+  IMPL(i, BITS) \
+  IMPL(u, BITS)
 
+GREX_SUBSET2_INT(16, GREX_SUBSET2_INSERT)
 #if GREX_X86_64_LEVEL >= 2
-GREX_SUBSET_INT(8, 2, 16, GREX_SUBSET_INSERT)
-GREX_SUBSET_INT(32, 2, 4, GREX_SUBSET_INSERT)
+GREX_SUBSET2_INT(8, GREX_SUBSET2_INSERT)
+GREX_SUBSET2_INT(32, GREX_SUBSET2_INSERT)
 #else
-GREX_SUBSET_INT(8, 2, 16, GREX_SUBSET_FALLBACK)
-GREX_SUBSET_INT(32, 2, 4, GREX_SUBSET_FALLBACK)
+GREX_SUBSET2_INT(8, GREX_SUBSET2_UNPACK)
+GREX_SUBSET2_INT(32, GREX_SUBSET2_UNPACK)
 #endif
-GREX_SUBSET_INT(16, 2, 8, GREX_SUBSET_INSERT)
+GREX_SUBSET2_UNPACK(f, 16)
+GREX_SUBSET2_UNPACK(f, 32)
 
-GREX_SUBSET_INT(8, 4, 16, GREX_SUBSET4)
-GREX_SUBSET_INT(16, 4, 8, GREX_SUBSET4)
+//--------------------------------------------------------------------------------------------------
+// More than two values, which are combined by an unpack tree
+//--------------------------------------------------------------------------------------------------
 
-GREX_SUBSET_INT(8, 8, 16, GREX_SUBSET8)
-
-// f32×2: unpcklps
-GREX_SUBSET_HEAD(f, 32, 2, 4) {
-  const auto vv0 = expand(Scalar{v0}, grex::index_tag<4>, grex::false_tag).r;
-  const auto vv1 = expand(Scalar{v1}, grex::index_tag<4>, grex::false_tag).r;
-  return SubVector<f32, 2>{_mm_unpacklo_ps(vv0, vv1)};
+/** The `tIdx`-th value of a pack, which is resolved entirely at compile time. */
+template<std::size_t tIdx, typename T, typename... Ts>
+GREX_ALWAYS_INLINE inline T pack_value(T value, Ts... rest) {
+  if constexpr (tIdx == 0) {
+    return value;
+  } else {
+    return pack_value<tIdx - 1>(rest...);
+  }
 }
+
+/**
+ * The `tSize` values starting at index `tBegin`, combined into a vector by an unpack tree: The two
+ * halves are built recursively and interleaved by `merge`, which uses a `punpckl` instruction up to
+ * the native size and `vinserti128`/`vinserti64x4` beyond it.
+ */
+template<std::size_t tBegin, std::size_t tSize, Vectorizable T, std::same_as<T>... Ts>
+requires(tSize >= 2 && sizeof...(Ts) + 1 >= tBegin + tSize)
+inline VectorFor<T, tSize> set_part(T value, Ts... rest) {
+  if constexpr (tSize == 2) {
+    return set(type_tag<SubVector<T, 2>>, pack_value<tBegin>(value, rest...),
+               pack_value<tBegin + 1>(value, rest...));
+  } else {
+    constexpr std::size_t half = tSize / 2;
+    return merge(set_part<tBegin, half>(value, rest...),
+                 set_part<tBegin + half, half>(value, rest...));
+  }
+}
+
+#define GREX_SUBSET_TREE(KIND, BITS, PART) \
+  inline SubVector<KIND##BITS, PART> set(TypeTag<SubVector<KIND##BITS, PART>>, \
+                                         GREX_REPEAT(PART, GREX_SET_ARG, KIND##BITS)) { \
+    return set_part<0, PART>(GREX_REPEAT(PART, GREX_SET_VAR)); \
+  }
+#define GREX_SUBSET_TREE_INT(BITS, PART) \
+  GREX_SUBSET_TREE(i, BITS, PART) \
+  GREX_SUBSET_TREE(u, BITS, PART)
+
+GREX_SUBSET_TREE_INT(16, 4)
+GREX_SUBSET_TREE_INT(8, 4)
+GREX_SUBSET_TREE_INT(8, 8)
+GREX_SUBSET_TREE(f, 16, 4)
+
+//==================================================================================================
+// Binary16, whose values the ABI passes in vector registers
+//==================================================================================================
+
+#define GREX_SET_F16(REGISTERBITS, BITPREFIX) \
+  inline NativeVector<f16, GREX_DIVIDE(REGISTERBITS, 16)> set( \
+    TypeTag<NativeVector<f16, GREX_DIVIDE(REGISTERBITS, 16)>>, \
+    GREX_REPEAT(GREX_DIVIDE(REGISTERBITS, 16), GREX_SET_ARG, f16)) { \
+    return set_part<0, GREX_DIVIDE(REGISTERBITS, 16)>( \
+      GREX_REPEAT(GREX_DIVIDE(REGISTERBITS, 16), GREX_SET_VAR)); \
+  }
+GREX_FOREACH_X86_64_LEVEL(GREX_SET_F16)
+
+#if GREX_X86_64_LEVEL >= 3
+#define GREX_BROADCAST_F16(REGISTERBITS, BITPREFIX) \
+  inline NativeVector<f16, GREX_DIVIDE(REGISTERBITS, 16)> broadcast( \
+    f16 value, TypeTag<NativeVector<f16, GREX_DIVIDE(REGISTERBITS, 16)>>) { \
+    return {.r = BITPREFIX##_broadcastw_epi16(expand_any(value, index_tag<8>).r)}; \
+  }
+GREX_FOREACH_X86_64_LEVEL(GREX_BROADCAST_F16)
+#else
+// Without AVX2, there is no `vpbroadcastw` reading from a vector register, so the lowest lane is
+// splatted across the low 64 bits, which are then duplicated into the upper half.
+inline NativeVector<f16, 8> broadcast(f16 value, TypeTag<NativeVector<f16, 8>> /*tag*/) {
+  const __m128i low = _mm_shufflelo_epi16(expand_any(value, index_tag<8>).r, 0);
+  return {.r = _mm_unpacklo_epi64(low, low)};
+}
+#endif
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/set.hpp" // IWYU pragma: export

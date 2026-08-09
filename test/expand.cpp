@@ -27,7 +27,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
   using VC = test::VectorChecker<T, tSize>;
 
   auto dist = test::make_distribution<T>();
-  auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+  auto dval = [&] { return dist(rng); };
 
   // expand values
   for (std::size_t i = 0; i < repetitions; ++i) {
@@ -71,7 +71,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       grex::static_apply<tDstSize>([&]<std::size_t... tDstIdxs> {
         // Super-native expansion leads to warnings on GCC
         for (std::size_t i = 0; i < repetitions; ++i) {
-          VC checker{dval(tIdxs)...};
+          VC checker = VC::random(dval);
           {
             const auto v = checker.vec.expand_any(grex::index_tag<tDstSize>);
             test::check_msg("expand_any", (... && (v[tIdxs] == checker.ref[tIdxs])), v, checker.ref,

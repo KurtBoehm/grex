@@ -184,13 +184,17 @@ Vector-Specific Operations
    * - :ref:`Expand (zero upper lanes) <operations-expand-vector-zero>`
      - :cpp:func:`Vector::expand_zero(AnyIndexTag) const <template<std::size_t tDstSize> Vector<T, tDstSize> grex::Vector::expand_zero(IndexTag<tDstSize>) const>`
 
-   * - :ref:`Shingle up <operations-shingle-up>`
-     - | :cpp:func:`Vector::shingle_up() const <Vector grex::Vector::shingle_up() const>`
-       | :cpp:func:`Vector::shingle_up(Value front) const <Vector grex::Vector::shingle_up(Value) const>`
+   * - :ref:`Shingle up (insert zero) <operations-shingle-up-zero>`
+     - :cpp:func:`Vector::shingle_up() const <Vector grex::Vector::shingle_up() const>`
 
-   * - :ref:`Shingle down <operations-shingle-down>`
-     - | :cpp:func:`Vector::shingle_down() const <Vector grex::Vector::shingle_down() const>`
-       | :cpp:func:`Vector::shingle_down(Value back) const <Vector grex::Vector::shingle_down(Value) const>`
+   * - :ref:`Shingle up (insert scalar) <operations-shingle-up-front>`
+     - :cpp:func:`Vector::shingle_up(Value front) const <Vector grex::Vector::shingle_up(Value) const>`
+
+   * - :ref:`Shingle down (insert zero) <operations-shingle-down-zero>`
+     - :cpp:func:`Vector::shingle_down() const <Vector grex::Vector::shingle_down() const>`
+
+   * - :ref:`Shingle down (insert scalar) <operations-shingle-down-back>`
+     - :cpp:func:`Vector::shingle_down(Value back) const <Vector grex::Vector::shingle_down(Value) const>`
 
    * - :ref:`Conversion to Array <operations-to-array-vector-std-array>`
      - :cpp:func:`Vector::as_array() const <std::array grex::Vector::as_array() const>`

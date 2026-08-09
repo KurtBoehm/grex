@@ -19,8 +19,11 @@
 
 // Multiply the two arguments
 #define GREX_MULTIPLY_1_2 2
+#define GREX_MULTIPLY_1_4 4
+#define GREX_MULTIPLY_1_8 8
 #define GREX_MULTIPLY_2_2 4
 #define GREX_MULTIPLY_2_4 8
+#define GREX_MULTIPLY_2_8 16
 #define GREX_MULTIPLY_4_2 8
 #define GREX_MULTIPLY_4_4 16
 #define GREX_MULTIPLY_8_2 16

@@ -17,7 +17,8 @@
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/macros/types.hpp"
-#include "grex/backend/neon/operations/expand.hpp"
+#include "grex/backend/neon/operations/expand64.hpp"
+#include "grex/backend/neon/operations/f16.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/types.hpp"
 #include "grex/base.hpp"
@@ -26,14 +27,18 @@ namespace grex::backend {
 #define GREX_LOAD(KIND, BITS, SIZE) \
   GREX_ALWAYS_INLINE inline NativeVector<KIND##BITS, SIZE> load( \
     const KIND##BITS* src, TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
-    return {.r = GREX_ISUFFIXED(vld1q, KIND, BITS)(src)}; \
-  } \
-  /* This is not actually aligned, but who cares */ \
-  GREX_ALWAYS_INLINE inline NativeVector<KIND##BITS, SIZE> load_aligned( \
-    const KIND##BITS* src, TypeTag<NativeVector<KIND##BITS, SIZE>>) { \
-    return {.r = GREX_ISUFFIXED(vld1q, KIND, BITS)(src)}; \
+    using M = GREX_MEMTYPE(KIND, BITS); \
+    const auto r = GREX_ISUFFIXED(vld1q, KIND, BITS)(reinterpret_cast<const M*>(src)); \
+    return {.r = to_stored<KIND##BITS>(r)}; \
   }
-GREX_FOREACH_TYPE(GREX_LOAD, 128)
+GREX_FOREACH_TYPE_EXT(GREX_LOAD, 128)
+
+/* This is not actually aligned, but who cares. */
+template<Vectorizable T, std::size_t tSize>
+GREX_ALWAYS_INLINE inline NativeVector<T, tSize> load_aligned(const T* src,
+                                                              TypeTag<NativeVector<T, tSize>> tag) {
+  return load(src, tag);
+}
 
 // 8-bit load
 template<typename T>

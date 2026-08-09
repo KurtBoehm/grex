@@ -7,6 +7,7 @@
 #include "convert/256-vector.hpp"
 #include "convert/512-vector.hpp"
 #include "convert/base.hpp"
+#include "convert/binary16.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_BACKEND_X86_OPERATIONS_CONVERT_HPP

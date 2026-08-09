@@ -11,6 +11,7 @@
 
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/base.hpp"
+#include "grex/format/base.hpp"
 
 #if !GREX_BACKEND_SCALAR
 #include <array>
@@ -19,9 +20,11 @@
 #include "grex/types.hpp"
 
 template<grex::Vectorizable T, std::size_t tSize>
-struct std::formatter<grex::Vector<T, tSize>> : public std::formatter<std::array<T, tSize>> {
+struct std::formatter<grex::Vector<T, tSize>>
+    : public std::formatter<std::array<grex::format_impl::Formatted<T>, tSize>> {
   std::format_context::iterator format(grex::Vector<T, tSize> v, std::format_context& ctx) const {
-    return formatter<std::array<T, tSize>>::format(v.as_array(), ctx);
+    return formatter<std::array<grex::format_impl::Formatted<T>, tSize>>::format(
+      grex::format_impl::formatted_array(v), ctx);
   }
 };
 template<grex::Vectorizable T, std::size_t tSize>

@@ -30,7 +30,7 @@ inline TVec make_finite(TVec v) {
   return blend_zero(is_finite(v), v);
 }
 template<FloatVectorizable T>
-inline T make_finite(Scalar<T> v) {
+inline T make_finite(T v) {
   const auto vec = expand_any(v, index_tag<16 / sizeof(T)>);
   return extract_single(blend_zero(is_finite(vec), vec));
 }

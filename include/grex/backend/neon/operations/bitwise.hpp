@@ -9,6 +9,7 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/types.hpp"
 #include "grex/backend/neon/macros/types.hpp"
@@ -63,7 +64,7 @@ namespace grex::backend {
   }
 
 GREX_FOREACH_INT_TYPE(GREX_BITWISE, 128)
-GREX_FOREACH_TYPE(GREX_LOGICAL, 128)
+GREX_FOREACH_TYPE_EXT(GREX_LOGICAL, 128)
 
 GREX_NNVECTOR_UNARY(bitwise_not)
 GREX_NNVECTOR_BINARY(bitwise_and)

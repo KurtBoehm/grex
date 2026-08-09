@@ -7,7 +7,7 @@
 project(
   'benchmark',
   'cpp',
-  version: '1.9.4',
+  version: '1.9.5',
   default_options: ['cpp_std=c++17'],
   license: 'Apache-2.0',
 )
@@ -38,54 +38,57 @@ benchmark_sources = files(
 benchmark_main_sources = files('src/benchmark_main.cc')
 inc = include_directories('include')
 
-args = ['-DNDEBUG']
+cpp_args = ['-DNDEBUG']
 if get_option('default_library') != 'static'
-  args += '-Dbenchmark_EXPORTS'
+  cpp_args += '-Dbenchmark_EXPORTS'
 else
-  args += '-DBENCHMARK_STATIC_DEFINE'
+  cpp_args += '-DBENCHMARK_STATIC_DEFINE'
 endif
 
 lib_benchmark_deps = [dependency('threads')]
+
 if host_machine.system() == 'windows'
-  cc = meson.get_compiler('cpp')
-  if cc.get_argument_syntax() == 'msvc'
+  cpp = meson.get_compiler('cpp')
+
+  if cpp.get_argument_syntax() == 'msvc'
     add_project_arguments('-D_CRT_SECURE_NO_WARNINGS', language: 'cpp')
   endif
-  lib_benchmark_deps += cc.find_library('shlwapi', required: true)
+
+  lib_benchmark_deps += cpp.find_library('shlwapi', required: true)
 endif
 
 lib_benchmark = library(
   'gbenchmark',
   benchmark_sources,
   include_directories: inc,
-  cpp_args: args,
-  gnu_symbol_visibility: 'hidden',
   dependencies: lib_benchmark_deps,
+  cpp_args: cpp_args,
+  gnu_symbol_visibility: 'hidden',
 )
 
-dargs = []
+dep_cpp_args = []
 if get_option('default_library') == 'static'
-  dargs += '-DBENCHMARK_STATIC_DEFINE'
+  dep_cpp_args += '-DBENCHMARK_STATIC_DEFINE'
 endif
 
 google_benchmark_dep = declare_dependency(
-  compile_args: dargs,
-  link_with: lib_benchmark,
   include_directories: inc,
+  link_with: lib_benchmark,
+  compile_args: dep_cpp_args,
 )
 
 lib_benchmark_main = library(
   'benchmark-main',
   benchmark_main_sources,
   include_directories: inc,
-  cpp_args: args,
   dependencies: google_benchmark_dep,
+  cpp_args: cpp_args,
 )
 
 google_benchmark_main_dep = declare_dependency(
-  compile_args: dargs,
-  link_with: lib_benchmark_main,
   dependencies: google_benchmark_dep,
+  link_with: lib_benchmark_main,
+  compile_args: dep_cpp_args,
 )
 
 if not get_option('tests').disabled()

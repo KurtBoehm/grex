@@ -144,6 +144,13 @@ GREX_REINTERPRET_DEFAULT(u, 8, 16, u, 32, 4)
 GREX_REINTERPRET_DEFAULT(u, 8, 16, u, 16, 8)
 GREX_REINTERPRET_NOOP(u, 8, 16, u, 8, 16)
 
+// f16 shares its register with u16 (see grex/backend/base.hpp), so reinterpreting to f16 is
+// reinterpreting to u16
+template<typename TSrc>
+inline auto reinterpret(TSrc v, TypeTag<f16> /*tag*/) {
+  return reinterpret(v, type_tag<u16>);
+}
+
 template<Vectorizable TDst, typename TSrc>
 inline auto as(TSrc src) {
   return reinterpret(src, type_tag<TDst>);

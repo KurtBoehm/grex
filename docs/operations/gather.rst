@@ -6,6 +6,7 @@ Gather
 
 Random-access element loading from scalar arrays into SIMD vectors.
 Sub-native index vectors are processed via their backing native vectors, while each native lane of a super-native index vector is processed independently and results are merged.
+Hardware gather exists only for 32- and 64-bit values, so all narrower value types, binary16 among them, use the per-lane fallback.
 
 .. _operations-gather:
 

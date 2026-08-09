@@ -27,10 +27,10 @@ struct Pcg32 {
   }
 
   constexpr u32 random() {
-    u64 oldstate = state;
+    const u64 oldstate = state;
     state = oldstate * 6364136223846793005ULL + inc;
-    auto xorshifted = u32(((oldstate >> 18U) ^ oldstate) >> 27U);
-    u32 rot = oldstate >> 59U;
+    const auto xorshifted = u32(((oldstate >> 18U) ^ oldstate) >> 27U);
+    const auto rot = u32(oldstate >> 59U);
     return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
   }
 

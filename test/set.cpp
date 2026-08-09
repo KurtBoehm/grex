@@ -31,7 +31,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
   using Mask = grex::Mask<T, tSize>;
 
   auto dist = test::make_distribution<T>();
-  auto dval = [&](std::size_t /*dummy*/) { return dist(rng); };
+  auto dval = [&] { return dist(rng); };
   std::uniform_int_distribution<int> bdist{0, 1};
   auto bval = [&](std::size_t /*dummy*/) { return bool(bdist(rng)); };
 
@@ -65,28 +65,28 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
                     false);
       }
       // set
-      VC{dval(tIdxs)...}.check("vector set", false);
+      VC::random(dval).check("vector set", false);
       // insert
       {
-        const VC base{dval(tIdxs)...};
+        const VC base = VC::random(dval);
         for (std::size_t j = 0; j < tSize; ++j) {
-          const auto val = dval(j);
+          const auto val = dval();
           VC v{base.vec.insert(j, val), std::array{((tIdxs == j) ? val : base.ref[tIdxs])...}};
           v.check("vector insert", false);
         }
       }
       {
-        const VC base{dval(tIdxs)...};
+        const VC base = VC::random(dval);
         auto f = [&](grex::AnyIndexTag auto j) {
-          const auto val = dval(j);
+          const auto val = dval();
           VC v{base.vec.insert(j, val), std::array{((tIdxs == j) ? val : base.ref[tIdxs])...}};
-          v.check("vector sinsert", false);
+          v.check(fmt::format("{}.insert(index_tag<{}>, {})", base.vec, j.value, val), false);
         };
         (..., f(grex::index_tag<tIdxs>));
       }
       // cutoff
       {
-        const VC base{dval(tIdxs)...};
+        const VC base = VC::random(dval);
         for (std::size_t j = 0; j <= tSize; ++j) {
           VC v{base.vec.cutoff(j), std::array{((tIdxs < j) ? base.ref[tIdxs] : T(0))...}};
           v.check("vector cutoff", false);

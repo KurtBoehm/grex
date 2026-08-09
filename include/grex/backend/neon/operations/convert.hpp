@@ -16,7 +16,8 @@
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/base.hpp"
 #include "grex/backend/neon/macros/types.hpp"
-#include "grex/backend/neon/operations/expand.hpp"
+#include "grex/backend/neon/operations/expand64.hpp"
+#include "grex/backend/neon/operations/f16.hpp"
 #include "grex/backend/neon/operations/mask-convert.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/base.hpp"
@@ -46,6 +47,25 @@ namespace grex::backend {
 #define GREX_CVT_f32_f64x2(...) return VectorFor<f32, 2>{expand64(vcvt_f32_f64(v.r))};
 #define GREX_CVT_f32_f64x4(...) return {.r = vcvt_high_f32_f64(vcvt_f32_f64(v.lower.r), v.upper.r)};
 
+// Binary16 ↔ binary32 is always available, binary16 ↔ `i16`/`u16` only with FP16.
+// These are then used as starting points for further conversions (if necessary).
+#define GREX_CVT_f32_f16x4(...) return {.r = vcvt_f32_f16(vget_low_f16(as_f16(v.registr())))};
+#define GREX_CVT_f32_f16x8(...) \
+  return { \
+    .lower = {.r = vcvt_f32_f16(vget_low_f16(as_f16(v.registr())))}, \
+    .upper = {.r = vcvt_high_f32_f16(as_f16(v.registr()))}, \
+  };
+#define GREX_CVT_f16_f32x4(...) return VectorFor<f16, 4>{expand64(as_u16(vcvt_f16_f32(v.r)))};
+#define GREX_CVT_f16_f32x8(...) \
+  return {.r = as_u16(vcvt_high_f16_f32(vcvt_f16_f32(v.lower.r), v.upper.r))};
+
+#if GREX_F16_NATIVE_ARITHMETIC
+#define GREX_CVT_i16_f16x8(...) return {.r = vcvtq_s16_f16(as_f16(v.r))};
+#define GREX_CVT_u16_f16x8(...) return {.r = vcvtq_u16_f16(as_f16(v.r))};
+#define GREX_CVT_f16_i16x8(...) return {.r = as_u16(vcvtq_f16_s16(v.r))};
+#define GREX_CVT_f16_u16x8(...) return {.r = as_u16(vcvtq_f16_u16(v.r))};
+#endif
+
 // Backend entry point for Neon conversions.
 // The INTRINSIC macro encodes the implementation strategy (single intrinsic, widening/narrowing
 // via movl/movn, structure-of-halves expansion, etc.).
@@ -65,6 +85,15 @@ GREX_CVT(f, 32, f, 64, 2, GREX_CVT_f32_f64x2)
 GREX_CVT(f, 32, f, 64, 4, GREX_CVT_f32_f64x4)
 GREX_CVT(f, 32, i, 32, 4, GREX_CVT_VCVTQ)
 GREX_CVT(f, 32, u, 32, 4, GREX_CVT_VCVTQ)
+GREX_CVT(f, 32, f, 16, 4, GREX_CVT_f32_f16x4)
+GREX_CVT(f, 32, f, 16, 8, GREX_CVT_f32_f16x8)
+// f16
+GREX_CVT(f, 16, f, 32, 4, GREX_CVT_f16_f32x4)
+GREX_CVT(f, 16, f, 32, 8, GREX_CVT_f16_f32x8)
+#if GREX_F16_NATIVE_ARITHMETIC
+GREX_CVT(f, 16, i, 16, 8, GREX_CVT_f16_i16x8)
+GREX_CVT(f, 16, u, 16, 8, GREX_CVT_f16_u16x8)
+#endif
 // i64
 GREX_CVT(i, 64, f, 64, 2, GREX_CVT_VCVTQ)
 GREX_CVT(i, 64, i, 32, 2, GREX_CVT_MOVL)
@@ -88,11 +117,17 @@ GREX_CVT(u, 32, u, 16, 8, GREX_CVT_MOVL2)
 // i16
 GREX_CVT(i, 16, i, 32, 8, GREX_CVT_UZP1)
 GREX_CVT(i, 16, i, 32, 4, GREX_CVT_MOVN)
+#if GREX_F16_NATIVE_ARITHMETIC
+GREX_CVT(i, 16, f, 16, 8, GREX_CVT_i16_f16x8)
+#endif
 GREX_CVT(i, 16, i, 8, 8, GREX_CVT_MOVL)
 GREX_CVT(i, 16, i, 8, 16, GREX_CVT_MOVL2)
 // u16
 GREX_CVT(u, 16, u, 32, 8, GREX_CVT_UZP1)
 GREX_CVT(u, 16, u, 32, 4, GREX_CVT_MOVN)
+#if GREX_F16_NATIVE_ARITHMETIC
+GREX_CVT(u, 16, f, 16, 8, GREX_CVT_u16_f16x8)
+#endif
 GREX_CVT(u, 16, u, 8, 8, GREX_CVT_MOVL)
 GREX_CVT(u, 16, u, 8, 16, GREX_CVT_MOVL2)
 // i8
@@ -101,6 +136,29 @@ GREX_CVT(i, 8, i, 16, 8, GREX_CVT_MOVN)
 // u8
 GREX_CVT(u, 8, u, 16, 16, GREX_CVT_UZP1)
 GREX_CVT(u, 8, u, 16, 8, GREX_CVT_MOVN)
+
+// Binary16 ↔ binary64: `f16_to_f64`/`f64_to_f16` also pass through binary32, but round only once.
+template<Float16Vector TSrc>
+inline VectorFor<f64, size_of<TSrc>> convert(TSrc v, TypeTag<f64> /*tag*/) {
+  return f16_to_f64(v);
+}
+template<TypedVector<f64> TSrc>
+inline VectorFor<f16, size_of<TSrc>> convert(TSrc v, TypeTag<f16> /*tag*/) {
+  return f64_to_f16(v);
+}
+
+#if !GREX_F16_NATIVE_ARITHMETIC
+// Integer → binary16 fallback: convert to binary32 and go from there.
+template<Float16 TDst, IntVector TSrc>
+inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
+  return convert(convert(v, type_tag<f32>), tag);
+}
+// Binary16 → integer fallback: convert to binary32 and go from there.
+template<IntVectorizable TDst, Float16Vector TSrc>
+inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
+  return convert(convert(v, type_tag<f32>), tag);
+}
+#endif
 
 // Integer → smaller integer (factor other than two):
 // narrow to the next smaller integer type with preserved signedness, then recurse.
@@ -120,7 +178,7 @@ inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
 
 // Integer → larger floating-point:
 // first convert to an integer with the destination element size, then cast to floating-point.
-template<FloatVectorizable TDst, IntVector TSrc>
+template<NativeFloatVectorizable TDst, IntVector TSrc>
 requires(sizeof(ValueOf<TSrc>) < sizeof(TDst))
 inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<ValueOf<TSrc>, sizeof(TDst)>>), tag);
@@ -128,7 +186,7 @@ inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
 
 // Floating-point → larger integer:
 // first convert to a floating-point type with the destination element size, then cast to integer.
-template<IntVectorizable TDst, FloatVector TSrc>
+template<IntVectorizable TDst, NativeFloatVector TSrc>
 requires(sizeof(ValueOf<TSrc>) < sizeof(TDst))
 inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<Float<sizeof(TDst)>>), tag);
@@ -136,7 +194,7 @@ inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
 
 // Integer → smaller floating-point:
 // first convert to a floating-point type matching the source element size, then cast down.
-template<FloatVectorizable TDst, IntVector TSrc>
+template<NativeFloatVectorizable TDst, IntVector TSrc>
 requires(sizeof(TDst) < sizeof(ValueOf<TSrc>))
 inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<Float<sizeof(ValueOf<TSrc>)>>), tag);
@@ -144,7 +202,7 @@ inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
 
 // Floating-point → smaller integer:
 // first convert to an integer type matching the destination element size, then cast down.
-template<IntVectorizable TDst, FloatVector TSrc>
+template<IntVectorizable TDst, NativeFloatVector TSrc>
 requires(sizeof(TDst) < sizeof(ValueOf<TSrc>))
 inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
   return convert(convert(v, type_tag<CopySignInt<TDst, sizeof(ValueOf<TSrc>)>>), tag);

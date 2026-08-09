@@ -64,7 +64,8 @@ if(GREX_BUILD_TESTS)
   )
   FetchContent_MakeAvailable(cmop)
 
-  find_package(OpenMP COMPONENTS CXX)
+  # Tests need OpenMP, so it’s requested here rather than unconditionally for the whole project.
+  cmop_find_openmp()
 
   FetchContent_Declare(
     fmt
@@ -90,20 +91,34 @@ if(GREX_BUILD_TESTS)
   )
   FetchContent_MakeAvailable(thesauros)
 
+  # The marches to build the tests for are detected by running a small tool on the build machine:
+  # the supported microarchitecture levels on x86-64 and, on ARM64, the ARMv8-a baseline plus
+  # ARMv8-a with FP16 if the CPU supports that extension.
   if(grex_backend STREQUAL "x86_64")
+    set(grex_detect_src "tools/cpuid.cpp")
+  elseif(grex_backend STREQUAL "neon")
+    set(grex_detect_src "tools/neon-features.cpp")
+  endif()
+
+  if(DEFINED grex_detect_src)
     try_run(
-      cpuid_run_res
-      cpuid_compile_res
-      SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/tools/cpuid.cpp"
+      grex_detect_run_res
+      grex_detect_compile_res
+      SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/${grex_detect_src}"
       CMAKE_FLAGS
         "-DINCLUDE_DIRECTORIES:STRING=${CMAKE_CURRENT_SOURCE_DIR}/include"
-      RUN_OUTPUT_VARIABLE cpuid_output
+      CXX_STANDARD 23
+      CXX_STANDARD_REQUIRED TRUE
+      RUN_OUTPUT_VARIABLE grex_detect_output
     )
-    if(NOT cpuid_compile_res)
-      message(FATAL_ERROR "CPUID failed!")
+    if(NOT grex_detect_compile_res OR NOT grex_detect_run_res EQUAL 0)
+      message(FATAL_ERROR "Detecting the CPU features via ${grex_detect_src} failed!")
     endif()
 
-    set(grex_arches ${cpuid_output})
+    # The first line holds the marches, separated by ";"; any further line (the optional x86-64
+    # extensions, which the CMake build does not test separately) is dropped.
+    string(REGEX REPLACE "\n.*" "" grex_arches "${grex_detect_output}")
+    string(STRIP "${grex_arches}" grex_arches)
   endif()
 
   include(CTest)
@@ -113,7 +128,7 @@ if(GREX_BUILD_TESTS)
     target_compile_features(${test_target} PRIVATE cxx_std_23)
     target_link_libraries(
       ${test_target}
-      PRIVATE ${PROJECT_NAME} OpenMP::OpenMP_CXX thesauros::thesauros
+      PRIVATE ${PROJECT_NAME} cmop::openmp thesauros::thesauros
       # fmt::fmt is part of thesauros::thesauros already, and linking it twice
       # (which CMake does not optimize away) leads to warnings with Apple Clang.
     )
@@ -141,6 +156,7 @@ if(GREX_BUILD_TESTS)
         test_type
         f64
         f32
+        f16
         i64
         i32
         i16
@@ -184,13 +200,16 @@ if(GREX_BUILD_TESTS)
       "componentwise;scalar;x86_64;neon"
       "expand;x86_64;neon"
       "extract;scalar;x86_64;neon"
+      "f16;scalar;x86_64;neon"
       "gather;scalar;x86_64;neon"
       "general;scalar;x86_64;neon"
       "horizontal;scalar;x86_64;neon"
-      "mem;scalar;x86_64;neon"
+      "load;scalar;x86_64;neon"
       "multibyte;scalar;x86_64;neon"
+      "nary;scalar;x86_64;neon"
       "set;scalar;x86_64;neon"
       "shingle;scalar;x86_64;neon"
+      "store;scalar;x86_64;neon"
   )
     list(GET test_info 0 test_name)
     list(SUBLIST test_info 1 -1 test_backends)

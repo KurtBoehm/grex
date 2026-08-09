@@ -9,6 +9,7 @@ Masked Arithmetic
 Element-wise arithmetic operations applied conditionally under a mask.
 For lanes where the mask is false, the value from ``a`` is preserved.
 Sub-native vectors are processed via their backing native vectors, while each native lane of a super-native vector is processed independently.
+Binary16 uses the masked intrinsics where AVX512-FP16 provides them and otherwise takes the same blend-based fallback as every other type, which inherits the binary32 emulation from the unmasked operation (see :ref:`f16-implementation`).
 
 .. _operations-mask-addition:
 

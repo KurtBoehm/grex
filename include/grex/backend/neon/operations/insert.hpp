@@ -12,21 +12,27 @@
 
 #include <arm_neon.h>
 
+#include "grex/backend/base.hpp"
 #include "grex/backend/macros/cast.hpp"
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/macros/repeat.hpp"
 #include "grex/backend/neon/macros/types.hpp"
+#include "grex/backend/neon/operations/f16.hpp"
 #include "grex/backend/neon/types.hpp"
 
+// vsetq_lane_f16 is always available irrespective of FP16 availability.
+
 namespace grex::backend {
-#define GREX_INSERT_SWITCH(SIZE, INDEX, INTRINSIC) \
-  case INDEX: return {.r = INTRINSIC(value, v.r, INDEX)};
+#define GREX_INSERT_SWITCH(SIZE, INDEX, KIND, BITS) \
+  case INDEX: \
+    return {.r = to_stored<KIND##BITS>(GREX_ISUFFIXED(vsetq_lane, KIND, BITS)(value, vr, INDEX))};
 
 #define GREX_INSERT_VEC(KIND, BITS, SIZE) \
   inline NativeVector<KIND##BITS, SIZE> insert(NativeVector<KIND##BITS, SIZE> v, \
                                                std::size_t index, KIND##BITS value) { \
+    const auto vr = from_stored<KIND##BITS>(v.r); \
     switch (index) { \
-      GREX_REPEAT(SIZE, GREX_INSERT_SWITCH, GREX_ISUFFIXED(vsetq_lane, KIND, BITS)) \
+      GREX_REPEAT(SIZE, GREX_INSERT_SWITCH, KIND, BITS) \
       default: std::unreachable(); \
     } \
   }
@@ -38,8 +44,8 @@ namespace grex::backend {
     return {.r = insert(NativeVector<u##BITS, SIZE>{m.r}, index, entry).r}; \
   }
 
-GREX_FOREACH_TYPE(GREX_INSERT_VEC, 128)
-GREX_FOREACH_TYPE(GREX_INSERT_MASK, 128)
+GREX_FOREACH_TYPE_EXT(GREX_INSERT_VEC, 128)
+GREX_FOREACH_TYPE_EXT(GREX_INSERT_MASK, 128)
 } // namespace grex::backend
 
 #include "grex/backend/shared/operations/insert.hpp" // IWYU pragma: export

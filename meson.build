@@ -59,14 +59,29 @@ if not meson.is_subproject()
 endif
 
 if get_option('build_tests')
+  # `extensions` holds optional x86-64 ISA extensions (e.g. AVX512-FP16) that are available but not
+  # implied by any `arches` entry, so that each can be tested on its own on top of the highest
+  # detected microarchitecture level.
+  extensions = []
+  cpp = meson.get_compiler('cpp')
+  fs = import('fs')
   if backend == 'x86_64'
-    cpp = meson.get_compiler('cpp')
-    cpuid = import('fs').read('tools/cpuid.cpp')
-    arches = cpp.run(
+    cpuid = fs.read('tools/cpuid.cpp')
+    # Line 1: the supported microarchitecture levels; line 2 (if present): the optional extensions.
+    cpuid_lines = cpp.run(
       cpuid,
       include_directories: include_directories('include'),
       required: true,
-    ).stdout().split(';')
+    ).stdout().strip().split('\n')
+    arches = cpuid_lines[0].split(';')
+    if cpuid_lines.length() > 1
+      extensions = cpuid_lines[1].split(';')
+    endif
+  elif backend == 'neon'
+    neon_features = fs.read('tools/neon-features.cpp')
+    # The single line of output holds the marches: the ARMv8-a baseline and, if the CPU supports the
+    # FP16 extension, ARMv8-a with FP16.
+    arches = cpp.run(neon_features, required: true).stdout().strip().split(';')
   else
     arches = []
   endif

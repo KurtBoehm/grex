@@ -40,7 +40,7 @@
 
 #define GREX_MULTIVERS_RESOLVER_I(RETURN, NAME, PARAMS) \
   RETURN NAME GREX_MULTIVERS_PARAMS PARAMS { \
-    const unsigned int level = ::grex::backend::runtime_x86_64_level(); \
+    const unsigned int level = ::grex::backend::runtime_x86_64_level().level; \
     if (level >= 4) { \
       return GREX_MULTIVERS_NS(4)::NAME GREX_MULTIVERS_ARGS PARAMS; \
     } \
