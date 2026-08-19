@@ -339,19 +339,6 @@ concept OptTypedPartVectorTag = PartVectorTag<TTag> && OptTypedTag<TTag, T>;
 template<AnyTag TTag, Vectorizable TValue>
 using TagType = TagTraits<TTag>::template AugmentedType<TValue>;
 
-template<Vectorizable TValue, typename TTag>
-struct TagValueTrait;
-template<Vectorizable TValue, AnyScalarTag TTag>
-struct TagValueTrait<TValue, TTag> {
-  using Type = TValue;
-};
-template<Vectorizable TVector, AnyVectorTag TTag>
-struct TagValueTrait<TVector, TTag> {
-  using Type = TVector::Value;
-};
-template<Vectorizable TValue, AnyTag TTag>
-using TagValue = TagValueTrait<TValue, TTag>::Type;
-
 #if !GREX_BACKEND_SCALAR
 template<Vectorizable T>
 using MinNativeTag = FullTag<min_native_size<T>>;

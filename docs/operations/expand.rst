@@ -17,7 +17,7 @@ Expand (Any)
 ============
 
 .. cpp:function:: template<Vectorizable T, std::size_t N> \
-                  Vector<T, N> backend::expand_any(Scalar<T> x, IndexTag<N>)
+                  Vector<T, N> backend::expand_any(T x, IndexTag<N>)
 
    Expands a scalar ``x`` to size ``N`` by writing it to lane 0; remaining lanes have unspecified contents.
 
@@ -33,27 +33,27 @@ Expand (Any)
    - **Floating point**: the scalar is already in a vector register, so the goal is to perform the type conversion without emitting an instruction.
 
      - **GCC**: an empty inline-assembly block that reinterprets the register; upper lanes logically unspecified.
-     - **Clang**: store to a one-element array and load it back, which Clang folds away.
+     - **Clang**: write the scalar into the first element of an otherwise uninitialized array and load the whole register back, which Clang folds away.
        For binary16, the result is additionally made opaque by an empty inline-assembly block, without which Clang traces the sole lane back to the scalar and rewrites consumers into exactly the general-purpose-register detour this expansion avoids.
      - **Binary16 known to be constant**: build the vector from the bit pattern instead, so that callers such as :cpp:func:`~backend::set` can still fold a constant argument list into one vector constant, which the opaque assembly would prevent.
 
    - **Integers**:
 
-     - **8/16/32-bit**: zero-extend to 32 bits and insert into the low 32 bits with ``_mm_cvtsi32_si128``; remaining bits are zero.
+     - **8/16/32-bit**: on GCC, widen to 32 bits without emitting code and insert into the low 32 bits with ``_mm_cvtsi32_si128``; on Clang, construct the register from the scalar through memory, which Clang folds away.
      - **64-bit**: cast to signed 64-bit and insert into the low 64 bits with ``_mm_cvtsi64_si128``; remaining bits are zero.
 
    Neon
    ----
 
-   - **Floating point**:
+   The two compilers need entirely different formulations, so the split is by compiler rather than by element type.
 
-     - **GCC**: inline assembly ``"=w"`` to move into a Neon register; upper lanes unspecified.
-     - **Clang**: store to a one-element array and load with ``vld1q_f32``/``vld1q_f64``; only lane 0 is initialized.
+   - **Clang**: assign the scalar to a one-element vector and widen that with ``__builtin_shufflevector``, whose remaining indices are ``-1`` and hence leave the upper lanes unspecified.
+     This applies to every element type alike, binary16 included, and compiles to nothing at all for floating-point values, which already occupy the lowest lane of a Neon register, and to a single ``fmov`` for integers, which arrive in a general-purpose register.
+   - **GCC**:
 
-   - **Integers**:
-
-     - **32/64-bit**: bit-cast to a floating-point type, expand via the floating-point path, then reinterpret.
-     - **8/16-bit**: widen to 32 bits (ideally no code generated), then follow the 32-bit path.
+     - **Floating point**, binary16 included: an empty inline-assembly block with a ``"=w"`` constraint, which relabels the register; upper lanes unspecified.
+     - **Integers**: that constraint only accepts floating-point values, and ``fmov`` is the cheapest way out of a general-purpose register anyway, so 32-bit and 64-bit values are bit-cast to the floating-point type of the same width and expanded as above.
+       There is no 8-bit or 16-bit ``fmov``, so those widths first widen to 32 bits, which emits no code and leaves the upper bits arbitrary.
 
 .. _operations-expand-scalar-zero:
 
@@ -61,7 +61,7 @@ Expand (Zeros)
 ==============
 
 .. cpp:function:: template<Vectorizable T, std::size_t N> \
-                  Vector<T, N> backend::expand_zero(Scalar<T> x, IndexTag<N>)
+                  Vector<T, N> backend::expand_zero(T x, IndexTag<N>)
 
    Expands scalar ``x`` to size ``N``, writing it to lane 0 and zero-filling other lanes.
 

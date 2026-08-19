@@ -28,7 +28,7 @@
 #endif
 
 namespace grex::backend {
-// The `fpclass` category set 0x99 consists of QNaN, SNaN, −∞, and +∞, i.e. of exactly the
+// The `fpclass` category set 0x99 consists of QNaN, SNaN, -∞, and +∞, i.e. of exactly the
 // non-finite values, which negating the resulting mask turns into the finite ones; based on VCL.
 #define GREX_ISFIN_AVX512(KIND, BITS, SIZE, REGISTERBITS, RKIND) \
   return {.r = GREX_CAT(_knot_mask, GREX_MAX(SIZE, 8))( \

@@ -33,18 +33,23 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
     for (std::size_t i = 0; i < repetitions; ++i) {
       {
         const VC vc = VC::random(dval);
-        test::check("vector extract run-time", std::array{vc.vec[tIdxs]...}, vc.ref, false);
+        test::check("vector extract run-time", std::array{vc.vec[tIdxs]...}, vc.ref,
+                    {.verbose = false});
         test::check("vector extract compile-time", std::array{vc.vec[grex::index_tag<tIdxs>]...},
-                    vc.ref, false);
-        test::check("vector extract tuple-like", std::array{get<tIdxs>(vc.vec)...}, vc.ref, false);
-        test::check("vector extract_single", grex::extract_single(vc.vec), vc.ref[0], false);
+                    vc.ref, {.verbose = false});
+        test::check("vector extract tuple-like", std::array{get<tIdxs>(vc.vec)...}, vc.ref,
+                    {.verbose = false});
+        test::check("vector extract_single", grex::extract_single(vc.vec), vc.ref[0],
+                    {.verbose = false});
       }
       {
         const MC mc{bval(tIdxs)...};
-        test::check("vector extract run-time", std::array{mc.mask[tIdxs]...}, mc.ref, false);
+        test::check("vector extract run-time", std::array{mc.mask[tIdxs]...}, mc.ref,
+                    {.verbose = false});
         test::check("vector extract compile-time", std::array{mc.mask[grex::index_tag<tIdxs>]...},
-                    mc.ref, false);
-        test::check("vector extract tuple-like", std::array{get<tIdxs>(mc.mask)...}, mc.ref, false);
+                    mc.ref, {.verbose = false});
+        test::check("vector extract tuple-like", std::array{get<tIdxs>(mc.mask)...}, mc.ref,
+                    {.verbose = false});
       }
     }
   });
@@ -56,7 +61,7 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
 
   for (std::size_t i = 0; i < repetitions; ++i) {
     const T value = dist(rng);
-    test::check("scalar extract", grex::extract_single(value), value, false);
+    test::check("scalar extract", grex::extract_single(value), value, {.verbose = false});
   }
 }
 

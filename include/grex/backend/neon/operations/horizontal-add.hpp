@@ -16,6 +16,7 @@
 #include "grex/backend/macros/math.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/types.hpp"
+#include "grex/f16.hpp"
 
 #if GREX_F16_NATIVE_ARITHMETIC
 #include "grex/backend/neon/operations/f16.hpp"

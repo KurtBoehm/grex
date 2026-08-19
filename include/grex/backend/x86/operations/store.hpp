@@ -109,8 +109,8 @@ GREX_ALWAYS_INLINE inline void store_bytes(u8* ptr, __m128i v) {
 
 /**
  * Scatters the `bytes ∈ [tBlock, 2·tBlock)` low bytes of `v`, made up of `tElementBytes`-byte
- * elements, to `ptr`: the two overlapping stores `ptr[0, tBlock)` and `ptr[bytes − tBlock, bytes)`
- * cover exactly `[0, bytes)`, so the latter merely needs `v` shifted down by the `bytes − tBlock`
+ * elements, to `ptr`: the two overlapping stores `ptr[0, tBlock)` and `ptr[bytes - tBlock, bytes)`
+ * cover exactly `[0, bytes)`, so the latter merely needs `v` shifted down by the `bytes - tBlock`
  * bytes the former already provides. Since `bytes` is a multiple of `tElementBytes`, the only such
  * `bytes` for `tElementBytes == tBlock` is `tBlock` itself, which the first store covers alone.
  */

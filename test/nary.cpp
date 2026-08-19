@@ -91,10 +91,10 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
               const auto b = val_arr[k];
               check_with_message(
                 [&] { return fmt::format("{}({}, {}): {} != {}", opname, val, ref, a, b); },
-                test::are_equivalent(a, b, test::Widened<T>(num.value)), a, b, false);
+                test::are_equivalent(a, b, {.bound = num.value}), a, b, false);
             }
           } else {
-            test::check(opname, val, ref, false);
+            test::check(opname, val, ref, {.verbose = false});
           }
         });
       }
@@ -123,9 +123,10 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
           if constexpr (grex::FloatVectorizable<T>) {
             check_with_message(
               [&] { return fmt::format("{}({}, {}): {} != {}", opname, val, ref, val, ref); },
-              test::are_equivalent(val, ref, test::Widened<T>(num.value)), val, ref, false);
+              test::are_equivalent(val, ref, {.bound = test::Widened<T>(num.value)}), val, ref,
+              false);
           } else {
-            test::check(opname, val, ref, false);
+            test::check(opname, val, ref, {.verbose = false});
           }
         });
       }

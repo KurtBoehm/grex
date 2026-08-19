@@ -55,7 +55,7 @@ Shingle Up (Insert Scalar)
 **************************
 
 .. cpp:function:: template<Vectorizable T, std::size_t N> \
-                  Vector<T, N> backend::shingle_up(Scalar<T> front, Vector<T, N> v)
+                  Vector<T, N> backend::shingle_up(T front, Vector<T, N> v)
 
    Analogous to :cpp:func:`backend::shingle_up(Vector\<T, N\>) <template\<Vectorizable T, std::size_t N\> Vector\<T, N\> backend::shingle_up(Vector\<T, N\> v)>`, but inserts ``front`` into the first lane:
 
@@ -73,7 +73,7 @@ Shingle Up (Insert Scalar)
    - **Native 128-bit**:
 
      - **64-bit elements**: scalar expansion of ``front``, then ``_mm_unpacklo_epi64``.
-     - **Smaller elements**: byte-wise left shift using ``_mm_slli_si128`` followed by different approaches to copy ``front``:
+     - **Smaller elements**: byte-wise left shift using ``_mm_bslli_si128`` followed by different approaches to copy ``front``:
 
        - **32/8-bit integers on x86-64-v1**: zero-extend ``front`` to 128 bits and combine with shifted vector using bitwise OR.
        - **Otherwise**: :cpp:func:`backend::insert() <template\<Vectorizable T, std::size_t N, AnyIndexTag I\> Vector\<T, N\> backend::insert(Vector\<T, N\> v, I index, T value)>` into lane 0.
@@ -138,7 +138,7 @@ Shingle Down (Insert Scalar)
 ****************************
 
 .. cpp:function:: template<Vectorizable T, std::size_t N> \
-                  Vector<T, N> backend::shingle_down(Vector<T, N> v, Scalar<T> back)
+                  Vector<T, N> backend::shingle_down(Vector<T, N> v, T back)
 
    Analogous to :cpp:func:`backend::shingle_down(Vector\<T, N\>) <template\<Vectorizable T, std::size_t N\> Vector\<T, N\> backend::shingle_down(Vector\<T, N\> v)>`, but inserts ``back`` into the last lane:
 

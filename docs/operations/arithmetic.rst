@@ -94,7 +94,7 @@ Multiplication
    - **32-bit integers**:
 
      - **x86-64-v2+**: ``mullo_epi32``.
-     - **Earlier**: emulated via two 32×32→64-bit multiplies, additions, and shuffles (from Clang-generated assembly using GCC vector extensions).
+     - **Earlier**: emulated via two 32×32→64-bit multiplies of the even and the odd elements, shifts, and shuffles (from Clang-generated assembly using GCC vector extensions).
 
    - **64-bit integers**:
 
@@ -105,7 +105,7 @@ Multiplication
    ====
 
    - **Floating point and integers ≤ 32 bits**: corresponding intrinsic.
-   - **64-bit integers**: emulated via a 32-bit multiply, 32-bit fused multiply-add, additions, and shuffling.
+   - **64-bit integers**: emulated via a 32-bit multiply for the two cross terms, a pairwise widening addition and a shift to combine them, and a widening 32×32→64-bit multiply-accumulate for the product of the low halves, plus a 32-bit reversal to line the operands up.
 
 .. _operations-division:
 

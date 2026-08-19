@@ -69,7 +69,7 @@ Finite-Value Scalar Clamp
 *************************
 
 .. cpp:function:: template<FloatVectorizable T> \
-                  T backend::make_finite(Scalar<T> v)
+                  T backend::make_finite(T v)
 
    Scalar version of :cpp:func:`make_finite() <template\<AnyVector V\> V backend::make_finite(V v)>`.
 

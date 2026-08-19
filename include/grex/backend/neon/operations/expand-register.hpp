@@ -14,11 +14,18 @@
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/for-each.hpp"
 #include "grex/backend/neon/macros/types.hpp"
-#include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/base.hpp"
 
+#if GREX_CLANG
+#include <cstddef>
+#endif
+
+#if GREX_GCC
+#include "grex/backend/neon/operations/reinterpret.hpp"
+#endif
+
 namespace grex::backend {
-// Cast TSrc to TDst with arbitrary values in the upper bits
+/** Casts from `TSrc` to `TDst` with arbitrary values in the upper bits. */
 template<IntVectorizable TDst, IntVectorizable TSrc>
 inline TDst expand_bits(TSrc src) {
   if (__builtin_constant_p(src)) {
@@ -29,21 +36,22 @@ inline TDst expand_bits(TSrc src) {
   return dst;
 }
 
-// Different ways of re-interpreting a floating-point variable as a SIMD register
-#if GREX_GCC
+#if GREX_CLANG
+#define GREX_EXPAND_REGISTER_IMPL(KIND, BITS, SIZE) \
+  using Single = KIND##BITS __attribute__((ext_vector_type(1))); \
+  const Single s = x; \
+  return static_apply<SIZE>([&]<std::size_t... tIdxs>() -> GREX_REGISTER(KIND, BITS, SIZE) { \
+    return __builtin_shufflevector(s, s, ((tIdxs == 0) ? 0 : -1)...); \
+  });
+#define GREX_EXPAND_REGISTER_f GREX_EXPAND_REGISTER_IMPL
+#define GREX_EXPAND_REGISTER_i GREX_EXPAND_REGISTER_IMPL
+#define GREX_EXPAND_REGISTER_u GREX_EXPAND_REGISTER_IMPL
+#elif GREX_GCC
 #define GREX_EXPAND_REGISTER_f(KIND, BITS, SIZE) \
   float##BITS##x##SIZE##_t r; \
   asm("" : "=w"(r) : "0"(x)); \
   return r;
-#elif GREX_CLANG
-#define GREX_EXPAND_REGISTER_f(KIND, BITS, SIZE) \
-  float##BITS##x##SIZE##_t r; \
-  r = __builtin_nondeterministic_value(r); \
-  return vsetq_lane_f##BITS(x, r, 0);
-#endif
 
-// Use a bit cast from integer to a floating-point value to generate `fmov` and go from there
-// 8-bit and 16-bit integers are re-interpreted as a 32-bit integer (with garbage in the upper bits)
 #define GREX_EXPAND_INT_BIG(KIND, BITS, SIZE) \
   return as<KIND##BITS>(expand_register(std::bit_cast<f##BITS>(x)));
 #define GREX_EXPAND_INT_SMALL(KIND, BITS, SIZE) \
@@ -55,26 +63,14 @@ inline TDst expand_bits(TSrc src) {
 #define GREX_EXPAND_INT8 GREX_EXPAND_INT_SMALL
 #define GREX_EXPAND_REGISTER_i(KIND, BITS, SIZE) GREX_EXPAND_INT##BITS(KIND, BITS, SIZE)
 #define GREX_EXPAND_REGISTER_u(KIND, BITS, SIZE) GREX_EXPAND_INT##BITS(KIND, BITS, SIZE)
+#endif
 
 #define GREX_EXPAND_REGISTER(KIND, BITS, SIZE) \
   template<std::same_as<KIND##BITS> T> \
   GREX_ALWAYS_INLINE inline GREX_REGISTER(KIND, BITS, SIZE) expand_register(T x) { \
     GREX_EXPAND_REGISTER_##KIND(KIND, BITS, SIZE) \
   }
-GREX_FOREACH_TYPE(GREX_EXPAND_REGISTER, 128)
-
-template<std::same_as<f16> T>
-GREX_ALWAYS_INLINE inline float16x8_t expand_register(T x) {
-#if GREX_GCC
-  float16x8_t r;
-  __asm__("" : "=w"(r) : "0"(x));
-  return r;
-#else
-  using f16x1 = _Float16 __attribute__((ext_vector_type(1)));
-  f16x1 s = x;
-  return __builtin_shufflevector(s, s, 0, -1, -1, -1, -1, -1, -1, -1);
-#endif
-}
+GREX_FOREACH_TYPE_EXT(GREX_EXPAND_REGISTER, 128)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_EXPAND_REGISTER_HPP

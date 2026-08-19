@@ -23,7 +23,7 @@ Absolute Value
 
    - **Floating point**:
 
-     - **x86-64-v4**: ``range`` intrinsics with an absolute-value control.
+     - **x86-64-v4**: ``range`` intrinsics with the control that computes :math:`|\min(v, v)|`.
      - **Earlier**: clear the sign bit via bitwise AND with a constant sign-mask vector (based on VCL).
      - **Binary16**: always clear the sign bit, since the compilers translate ``_mm512_abs_ph`` to the same thing.
 

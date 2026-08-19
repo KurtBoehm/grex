@@ -1,3 +1,5 @@
+.. cpp:namespace:: grex
+
 ##############
 SIMD Interface
 ##############
@@ -63,7 +65,3 @@ SIMD Interface
 
 .. doxygenstruct:: std::tuple_size< grex::Mask< T, tSize > >
 .. doxygenstruct:: std::tuple_element< tIdx, grex::Mask< T, tSize > >
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:

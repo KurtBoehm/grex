@@ -74,7 +74,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       {
         auto v2vx = [&](auto label, auto vop, auto sop) {
           VC a = VC::random(dval);
-          VC{vop(a.vec), std::array{T(sop(a.ref[tIdxs]))...}}.check(label, false);
+          VC{vop(a.vec), std::array{T(sop(a.ref[tIdxs]))...}}.check(label, {.verbose = false});
         };
         auto v2v = [&](auto label, auto op) { v2vx(label, op, op); };
 
@@ -82,7 +82,8 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
           VC a = VC::random(dval);
           VC b = VC::random(dval);
           VC checker{vop(a.vec, b.vec), std::array{T(sop(a.ref[tIdxs], b.ref[tIdxs]))...}};
-          checker.check(label, false);
+          checker.check(fmt::format("{}({}, {})", label, a.ref, b.ref),
+                        {.verbose = false, .cmp_zero_sign = false});
         };
         auto vv2v = [&](auto label, auto op) { vv2vx(label, op, op); };
 
@@ -133,9 +134,9 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
             grex::make_finite(a.vec),
             std::array{(std::isfinite(test::widen(a.ref[tIdxs])) ? a.ref[tIdxs] : T{})...},
           };
-          checker.check("make_finite", false);
+          checker.check("make_finite", {.verbose = false});
           VC gchecker{grex::make_finite(a.vec), std::array{grex::make_finite(a.ref[tIdxs])...}};
-          gchecker.check("make_finite", false);
+          gchecker.check("make_finite", {.verbose = false});
         }
 
         // min/max
@@ -173,14 +174,14 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
               grex_op(vca.vec, vcb.vec, vcc.vec),
               std::array{T(op(vca.ref[tIdxs], vcb.ref[tIdxs], vcc.ref[tIdxs]))...},
             };
-            checker.check(label, false);
+            checker.check(label, {.verbose = false});
 
             // using the scalar operation as reference
             VC gchecker{
               grex_op(vca.vec, vcb.vec, vcc.vec),
               std::array{T(grex_op(vca.ref[tIdxs], vcb.ref[tIdxs], vcc.ref[tIdxs]))...},
             };
-            gchecker.check(label, false);
+            gchecker.check(label, {.verbose = false});
           };
 
           vvv2v(
@@ -212,14 +213,14 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
             gop(m.mask, a.vec, b.vec),
             std::array{T(m.ref[tIdxs] ? sop(a.ref[tIdxs], b.ref[tIdxs]) : a.ref[tIdxs])...},
           };
-          checker.check(label, false);
+          checker.check(label, {.verbose = false});
 
           // using the scalar operation as reference
           VC gchecker{
             gop(m.mask, a.vec, b.vec),
             std::array{gop(m.ref[tIdxs], a.ref[tIdxs], b.ref[tIdxs])...},
           };
-          gchecker.check(label, false);
+          gchecker.check(label, {.verbose = false});
         };
 
         // masked arithmetic
@@ -245,12 +246,12 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
             grex::blend_zero(m.mask, a.vec),
             std::array{T(m.ref[tIdxs] ? a.ref[tIdxs] : 0)...},
           };
-          checker.check("blend_zero", false);
+          checker.check("blend_zero", {.verbose = false});
           VC gchecker{
             grex::blend_zero(m.mask, a.vec),
             std::array{grex::blend_zero(m.ref[tIdxs], a.ref[tIdxs])...},
           };
-          gchecker.check("blend_zero", false);
+          gchecker.check("blend_zero", {.verbose = false});
         }
         {
           MC m{bval(tIdxs)...};
@@ -260,12 +261,12 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
             grex::blend(m.mask, a.vec, b.vec),
             std::array<T, tSize>{T(m.ref[tIdxs] ? b.ref[tIdxs] : a.ref[tIdxs])...},
           };
-          checker.check("blend", false);
+          checker.check("blend", {.verbose = false});
           VC gchecker{
             grex::blend(m.mask, a.vec, b.vec),
             std::array<T, tSize>{grex::blend(m.ref[tIdxs], a.ref[tIdxs], b.ref[tIdxs])...},
           };
-          gchecker.check("blend", false);
+          gchecker.check("blend", {.verbose = false});
         }
       }
 
@@ -275,7 +276,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
           VC a = VC::random(dval);
           VC b = VC::random(dval);
           MC checker{op(a.vec, b.vec), std::array{op(a.ref[tIdxs], b.ref[tIdxs])...}};
-          checker.check(label, false);
+          checker.check(label, {.verbose = false});
         };
         vv2m("equal_to", std::equal_to{});
         vv2m("not_equal_to", std::not_equal_to{});
@@ -289,9 +290,9 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       if constexpr (grex::FloatVectorizable<T>) {
         VC a{nonfin(tIdxs)...};
         MC checker{grex::is_finite(a.vec), std::array{std::isfinite(test::widen(a.ref[tIdxs]))...}};
-        checker.check("is_finite", false);
+        checker.check("is_finite", {.verbose = false});
         MC gchecker{grex::is_finite(a.vec), std::array{grex::is_finite(a.ref[tIdxs])...}};
-        gchecker.check("is_finite", false);
+        gchecker.check("is_finite", {.verbose = false});
       }
 
       // mask-only operations
@@ -299,13 +300,13 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         auto m2m = [&](auto label, auto op) {
           MC a{bval(tIdxs)...};
           MC checker{op(a.mask), std::array{op(a.ref[tIdxs])...}};
-          checker.check(label, false);
+          checker.check(label, {.verbose = false});
         };
         auto mm2m = [&](auto label, auto op) {
           MC a{bval(tIdxs)...};
           MC b{bval(tIdxs)...};
           MC checker{op(a.mask, b.mask), std::array{op(a.ref[tIdxs], b.ref[tIdxs])...}};
-          checker.check(label, false);
+          checker.check(label, {.verbose = false});
         };
         m2m("logical_not", std::logical_not{});
         mm2m("logical_and", std::logical_and{});
@@ -328,12 +329,12 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
     {
       auto v2v = [&](auto label, auto vop, auto sop) {
         const T a = dist(rng);
-        test::check(label, vop(a), sop(test::widen(a)), false);
+        test::check(label, vop(a), sop(test::widen(a)), {.verbose = false});
       };
       auto vv2v = [&](auto label, auto vop, auto sop) {
         const T a = dist(rng);
         const T b = dist(rng);
-        test::check(label, vop(a, b), sop(a, b), false);
+        test::check(label, vop(a, b), sop(a, b), {.verbose = false, .cmp_zero_sign = false});
       };
 
       // abs/sqrt
@@ -369,7 +370,7 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
               return fb_op(a, b, c);
             }
           }();
-          test::check(label, grex_op(a, b, c), ref, false);
+          test::check(label, grex_op(a, b, c), ref, {.verbose = false});
         };
 
         vvv2v(
@@ -397,7 +398,7 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
         const bool m = bool(bdist(rng));
         const T a = dist(rng);
         const T b = dist(rng);
-        test::check(label, grex_op(m, a, b), m ? T(ref_op(a, b)) : a, false);
+        test::check(label, grex_op(m, a, b), m ? T(ref_op(a, b)) : a, {.verbose = false});
       };
 
       // masked arithmetic
@@ -419,13 +420,13 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
       {
         const bool m = bool(bdist(rng));
         const T a = dist(rng);
-        test::check("blend_zero", grex::blend_zero(m, a), m ? a : T{}, false);
+        test::check("blend_zero", grex::blend_zero(m, a), m ? a : T{}, {.verbose = false});
       }
       {
         const bool m = bool(bdist(rng));
         const T a = dist(rng);
         const T b = dist(rng);
-        test::check("blend", grex::blend(m, a, b), m ? b : a, false);
+        test::check("blend", grex::blend(m, a, b), m ? b : a, {.verbose = false});
       }
     }
 
@@ -434,7 +435,8 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
       const T a = bool(bdist(rng)) ? dist(rng)
                                    : (bool(bdist(rng)) ? grex::NumericTrait<T>::infinity()
                                                        : grex::NumericTrait<T>::quiet_NaN());
-      test::check("is_finite", grex::is_finite(a), std::isfinite(test::widen(a)), false);
+      test::check("is_finite", grex::is_finite(a), std::isfinite(test::widen(a)),
+                  {.verbose = false});
     }
   }
 }

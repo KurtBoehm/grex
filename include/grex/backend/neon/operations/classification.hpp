@@ -16,10 +16,6 @@
 #include "grex/backend/neon/types.hpp"
 #include "grex/base.hpp"
 
-#if GREX_F16_NATIVE_ARITHMETIC
-#include "grex/backend/neon/operations/f16.hpp"
-#endif
-
 namespace grex::backend {
 #define GREX_ISFIN(KIND, BITS, SIZE, ...) \
   inline NativeMask<KIND##BITS, SIZE> is_finite(NativeVector<KIND##BITS, SIZE> v) { \

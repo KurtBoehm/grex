@@ -35,26 +35,26 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         std::array<T, 1> buf{};
         const T val = dist(rng);
         grex::store(buf.data(), val, grex::scalar_tag);
-        test::check("store scalar", buf[0], val, false);
+        test::check("store scalar", buf[0], val, {.verbose = false});
       }
 
       // store full
       {
         std::array<T, tSize> buf{};
         checker.vec.store(buf.data());
-        test::check("store", buf, checker.ref, false);
+        test::check("store", buf, checker.ref, {.verbose = false});
       }
       {
         std::array<T, tSize> buf{};
         grex::store(buf.data(), checker.vec, grex::typed_full_tag<T, tSize>);
-        test::check("store tagged", buf, checker.ref, false);
+        test::check("store tagged", buf, checker.ref, {.verbose = false});
       }
 
       // store full aligned
       {
         alignas(64) std::array<T, tSize> buf{};
         checker.vec.store_aligned(buf.data());
-        test::check("store_aligned", buf, checker.ref, false);
+        test::check("store_aligned", buf, checker.ref, {.verbose = false});
       }
       // there is no tagged version of aligned storing
 
@@ -65,14 +65,14 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
             std::array<T, tSize> buf{};
             checker.vec.store_part(buf.data(), j);
             test::check([&] { return fmt::format("store_part({}, {})", j, checker.ref); }, buf,
-                        std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+                        std::array{((tI < j) ? checker.ref[tI] : T{})...}, {.verbose = false});
           }
           // tagged
           {
             std::array<T, tSize> buf{};
             grex::store(buf.data(), checker.vec, grex::part_tag<tSize>(j));
             test::check([&] { return fmt::format("store({}, part_tag({}))", checker.ref, j); }, buf,
-                        std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+                        std::array{((tI < j) ? checker.ref[tI] : T{})...}, {.verbose = false});
           }
         }
       }
@@ -82,13 +82,13 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
             std::array<T, tSize> buf{};
             checker.vec.store_part(buf.data(), j.value);
             test::check([&] { return fmt::format("store_part({}, {})", j.value, checker.ref); },
-                        buf, std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+                        buf, std::array{((tI < j) ? checker.ref[tI] : T{})...}, {.verbose = false});
           }
           {
             std::array<T, tSize> buf{};
             checker.vec.store_part(buf.data(), j);
             test::check([&] { return fmt::format("store_part({}, {})", j.value, checker.ref); },
-                        buf, std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+                        buf, std::array{((tI < j) ? checker.ref[tI] : T{})...}, {.verbose = false});
           }
           // tagged
           {
@@ -96,14 +96,14 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
             grex::store(buf.data(), checker.vec, grex::part_tag<tSize>(j.value));
             test::check(
               [&] { return fmt::format("store({}, part_tag({}))", checker.ref, j.value); }, buf,
-              std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+              std::array{((tI < j) ? checker.ref[tI] : T{})...}, {.verbose = false});
           }
           {
             std::array<T, tSize> buf{};
             grex::store(buf.data(), checker.vec, grex::part_tag<tSize>(j));
             test::check(
               [&] { return fmt::format("store({}, part_tag({}))", checker.ref, j.value); }, buf,
-              std::array{((tI < j) ? checker.ref[tI] : T{})...}, false);
+              std::array{((tI < j) ? checker.ref[tI] : T{})...}, {.verbose = false});
           }
         };
         grex::static_apply<tSize + 1>(
@@ -123,7 +123,7 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
       std::array<T, 1> buf{};
       const T val = dist(rng);
       grex::store(buf.data(), val, grex::scalar_tag);
-      test::check("store scalar", buf[0], val, false);
+      test::check("store scalar", buf[0], val, {.verbose = false});
     }
   }
 }

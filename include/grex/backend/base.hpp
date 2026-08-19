@@ -37,13 +37,13 @@ namespace grex::backend {
 /** Tag selecting `a · b + c`. */
 struct MultiplyAdd {};
 
-/** Tag selecting `a · b − c`. */
+/** Tag selecting `a · b - c`. */
 struct MultiplySubtract {};
 
-/** Tag selecting `−(a · b) + c`. */
+/** Tag selecting `-(a · b) + c`. */
 struct NegatedMultiplyAdd {};
 
-/** Tag selecting `−(a · b) − c`. */
+/** Tag selecting `-(a · b) - c`. */
 struct NegatedMultiplySubtract {};
 
 template<typename T>

@@ -74,7 +74,8 @@ Vector Conversion
      - **Small integers (< 32 bits)**: widen to ``i32`` first.
      - **Unsigned before x86-64-v4**: exploit that writing :math:`n` into the mantissa of a constant exponent yields :math:`n + 2^e` exactly, so subtracting :math:`2^e` as a floating-point value leaves :math:`n`.
        Where the mantissa is too narrow for the whole value — ``u32`` → ``f32`` and ``u64`` → ``f64`` — :math:`n` is split into two halves that are converted this way and added.
-       ``u64`` → ``f32`` instead halves :math:`n` with rounding to even, converts the result as a (now non-negative) ``i64``, and doubles it again, which rounds exactly as the direct conversion would.
+       ``u64`` → ``f32`` instead halves :math:`n` with rounding *to odd* — the lowest bit is set whenever a bit was discarded — converts the result as a (now non-negative) ``i64``, and doubles it again.
+       Rounding to odd keeps the halved value off the ties that the exact doubling would otherwise resolve the wrong way, so this rounds exactly as the direct conversion would.
      - ``i64`` **before x86-64-v4**: extract each lane to a scalar register, convert it there, and repack.
 
    - **Floating-point → integer**: all conversions truncate toward zero.
@@ -119,7 +120,7 @@ Vector Conversion
 
    - **Integer narrowing**:
 
-     - **Factor 2**: implemented with ``vmovn`` for native-width vectors; super-native 64→32-bit narrowing uses ``vuzp1q`` on the two native halves to select the low halves.
+     - **Factor 2**: implemented with ``vmovn`` where the source is a native vector, so that the result fits into a half register; narrowing a super-native vector instead uses ``vuzp1q`` on its two native halves, which picks the low half of every element and fills a whole register in one instruction.
      - **Factor 4/8**: multiple factor-2 narrowing steps.
 
    - **Same-width integers with different signedness**: bitwise reinterpretation between signed and unsigned types.

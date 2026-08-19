@@ -33,25 +33,26 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       // load scalar
       {
         std::array<T, 1> buf{dist(rng)};
-        test::check("load scalar", grex::load(buf.data(), grex::scalar_tag), buf[0], false);
+        test::check("load scalar", grex::load(buf.data(), grex::scalar_tag), buf[0],
+                    {.verbose = false});
       }
       // load full
       {
         std::array buf = test::random_array<T, tSize>(dval);
         VC checker{Vec::load(buf.data()), buf};
-        checker.check("load", false);
+        checker.check("load", {.verbose = false});
       }
       {
         std::array buf = test::random_array<T, tSize>(dval);
         VC checker{grex::load(buf.data(), grex::full_tag<tSize>), buf};
-        checker.check("load tagged", false);
+        checker.check("load tagged", {.verbose = false});
       }
 
       // load full aligned
       {
         alignas(64) std::array buf = test::random_array<T, tSize>(dval);
         VC checker{Vec::load_aligned(buf.data()), buf};
-        checker.check("load_aligned", false);
+        checker.check("load_aligned", {.verbose = false});
       }
       // there is no tagged version of aligned loading
 
@@ -61,13 +62,13 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         for (std::size_t j = 0; j <= tSize; ++j) {
           {
             VC checker{Vec::load_part(buf.data(), j), std::array{((tI < j) ? buf[tI] : T{})...}};
-            checker.check("load_part", j, false);
+            checker.check("load_part", j, {.verbose = false});
           }
           // tagged
           {
             VC checker{grex::load(buf.data(), grex::part_tag<tSize>(j)),
                        std::array{((tI < j) ? buf[tI] : T{})...}};
-            checker.check("load_part tagged", j, false);
+            checker.check("load_part tagged", j, {.verbose = false});
           }
         }
       }
@@ -77,22 +78,22 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
           {
             VC checker{Vec::load_part(buf.data(), j.value),
                        std::array{((tI < j) ? buf[tI] : T{})...}};
-            checker.check("load_part", j.value, false);
+            checker.check("load_part", j.value, {.verbose = false});
           }
           {
             VC checker{Vec::load_part(buf.data(), j), std::array{((tI < j) ? buf[tI] : T{})...}};
-            checker.check("load_part", j.value, false);
+            checker.check("load_part", j.value, {.verbose = false});
           }
           // tagged
           {
             VC checker{grex::load(buf.data(), grex::part_tag<tSize>(j.value)),
                        std::array{((tI < j) ? buf[tI] : T{})...}};
-            checker.check("load_part tagged", j.value, false);
+            checker.check("load_part tagged", j.value, {.verbose = false});
           }
           {
             VC checker{grex::load(buf.data(), grex::part_tag<tSize>(j)),
                        std::array{((tI < j) ? buf[tI] : T{})...}};
-            checker.check("load_part tagged", j.value, false);
+            checker.check("load_part tagged", j.value, {.verbose = false});
           }
         };
         grex::static_apply<tSize + 1>(
@@ -110,7 +111,8 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
     // load scalar
     {
       std::array<T, 1> buf{dist(rng)};
-      test::check("load scalar", grex::load(buf.data(), grex::scalar_tag), buf[0], false);
+      test::check("load scalar", grex::load(buf.data(), grex::scalar_tag), buf[0],
+                  {.verbose = false});
     }
   }
 }

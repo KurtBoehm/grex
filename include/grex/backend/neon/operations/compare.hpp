@@ -18,10 +18,13 @@
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/bitwise.hpp"
 #include "grex/backend/neon/operations/f16.hpp"
-#include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/types.hpp"
 #include "grex/backend/shared/operations/compare.hpp" // IWYU pragma: export
 #include "grex/base.hpp"
+
+#if !GREX_F16_NATIVE_ARITHMETIC
+#include "grex/backend/neon/operations/reinterpret.hpp"
+#endif
 
 namespace grex::backend {
 #define GREX_CMP_VEC(KIND, BITS, SIZE) \

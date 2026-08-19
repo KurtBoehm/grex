@@ -30,29 +30,29 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       VC base = VC::random(dval);
       // zero-inserting upwards shingling
       test::check("shingle_up zero scalar", grex::shingle_up(dist(rng), grex::scalar_tag), T{},
-                  false);
+                  {.verbose = false});
       {
         VC checker{base.vec.shingle_up(), {((tIdxs == 0) ? T{} : base.ref[tIdxs - 1])...}};
-        checker.check("shingle_up zero", false);
+        checker.check("shingle_up zero", {.verbose = false});
       }
       {
         VC checker{
           grex::shingle_up(base.vec, grex::full_tag<tSize>),
           {((tIdxs == 0) ? T{} : base.ref[tIdxs - 1])...},
         };
-        checker.check("shingle_up zero tagged", false);
+        checker.check("shingle_up zero tagged", {.verbose = false});
       }
 
       // value-inserting upwards shingling
       {
         const T front = dist(rng);
         test::check("shingle_up value scalar", grex::shingle_up(front, dist(rng), grex::scalar_tag),
-                    front, false);
+                    front, {.verbose = false});
       }
       {
         const T front = dist(rng);
         VC checker{base.vec.shingle_up(front), {((tIdxs == 0) ? front : base.ref[tIdxs - 1])...}};
-        checker.check("shingle_up value", false);
+        checker.check("shingle_up value", {.verbose = false});
       }
       {
         const T front = dist(rng);
@@ -60,32 +60,33 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
           grex::shingle_up(front, base.vec, grex::full_tag<tSize>),
           {((tIdxs == 0) ? front : base.ref[tIdxs - 1])...},
         };
-        checker.check("shingle_up value tagged", false);
+        checker.check("shingle_up value tagged", {.verbose = false});
       }
 
       // zero-inserting downwards shingling
       test::check("shingle_down zero scalar", grex::shingle_down(dist(rng), grex::scalar_tag), T{},
-                  false);
+                  {.verbose = false});
       {
         VC checker{
           base.vec.shingle_down(),
           {((tIdxs + 1 == tSize) ? T{} : base.ref[tIdxs + 1])...},
         };
-        checker.check("shingle_down zero", false);
+        checker.check("shingle_down zero", {.verbose = false});
       }
       {
         VC checker{
           grex::shingle_down(base.vec, grex::typed_full_tag<T, tSize>),
           {((tIdxs + 1 == tSize) ? T{} : base.ref[tIdxs + 1])...},
         };
-        checker.check("shingle_down zero tagged", false);
+        checker.check("shingle_down zero tagged", {.verbose = false});
       }
 
       // value-inserting downwards shingling
       {
         const T back = dist(rng);
         test::check("shingle_down value scalar",
-                    grex::shingle_down(dist(rng), back, grex::scalar_tag), back, false);
+                    grex::shingle_down(dist(rng), back, grex::scalar_tag), back,
+                    {.verbose = false});
       }
       {
         const T back = dist(rng);
@@ -93,7 +94,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
           base.vec.shingle_down(back),
           {((tIdxs + 1 == tSize) ? back : base.ref[tIdxs + 1])...},
         };
-        checker.check("shingle_down value", false);
+        checker.check("shingle_down value", {.verbose = false});
       }
       {
         const T back = dist(rng);
@@ -101,7 +102,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
           grex::shingle_down(base.vec, back, grex::typed_full_tag<T, tSize>),
           {((tIdxs + 1 == tSize) ? back : base.ref[tIdxs + 1])...},
         };
-        checker.check("shingle_down value tagged", false);
+        checker.check("shingle_down value tagged", {.verbose = false});
       }
     }
   });
@@ -113,23 +114,25 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
 
   for (std::size_t i = 0; i < repetitions; ++i) {
     // zero-inserting upwards shingling
-    test::check("shingle_up zero", grex::shingle_up(dist(rng), grex::scalar_tag), T{}, false);
+    test::check("shingle_up zero", grex::shingle_up(dist(rng), grex::scalar_tag), T{},
+                {.verbose = false});
 
     // value-inserting upwards shingling
     {
       const T front = dist(rng);
       test::check("shingle_up value", grex::shingle_up(front, dist(rng), grex::scalar_tag), front,
-                  false);
+                  {.verbose = false});
     }
 
     // zero-inserting downwards shingling
-    test::check("shingle_down zero", grex::shingle_down(dist(rng), grex::scalar_tag), T{}, false);
+    test::check("shingle_down zero", grex::shingle_down(dist(rng), grex::scalar_tag), T{},
+                {.verbose = false});
 
     // value-inserting downwards shingling
     {
       const T back = dist(rng);
       test::check("shingle_down value", grex::shingle_down(dist(rng), back, grex::scalar_tag), back,
-                  false);
+                  {.verbose = false});
     }
   }
 }

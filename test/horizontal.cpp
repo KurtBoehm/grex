@@ -59,7 +59,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
           if constexpr (grex::FloatVectorizable<T>) {
             // A tolerance factor is required due to the changed order of additions.
             const test::Widened<T> ftol = tSize;
-            const auto [same, err] = test::are_equivalent(val, ref, ftol);
+            const auto [same, err] = test::are_equivalent(val, ref, {.bound = T(ftol)});
             auto label = [&] {
               return fmt::format("horizontal_add({}) → {}/{}", checker.vec, err,
                                  ftol * test::widen(std::numeric_limits<T>::epsilon()));
@@ -67,7 +67,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
             test::check_msg(label, same, val, ref, false);
           } else {
             test::check([&] { return fmt::format("horizontal_add({})", checker.vec); }, val, ref,
-                        false);
+                        {.verbose = false});
           }
         };
 
@@ -88,15 +88,19 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         const VC checker = VC::random(dval);
         const auto ref = std::ranges::min(checker.ref);
         const auto label = [&] { return fmt::format("horizontal_min({})", checker.vec); };
-        test::check(label, grex::horizontal_min(checker.vec), ref, false);
-        test::check(label, grex::horizontal_min(checker.vec, grex::full_tag<tSize>), ref, false);
+        test::check(label, grex::horizontal_min(checker.vec), ref,
+                    {.verbose = false, .cmp_zero_sign = false});
+        test::check(label, grex::horizontal_min(checker.vec, grex::full_tag<tSize>), ref,
+                    {.verbose = false, .cmp_zero_sign = false});
       }
       {
         const VC checker = VC::random(dval);
         const auto ref = std::ranges::max(checker.ref);
         const auto label = [&] { return fmt::format("horizontal_max({})", checker.vec); };
-        test::check(label, grex::horizontal_max(checker.vec), ref, false);
-        test::check(label, grex::horizontal_max(checker.vec, grex::full_tag<tSize>), ref, false);
+        test::check(label, grex::horizontal_max(checker.vec), ref,
+                    {.verbose = false, .cmp_zero_sign = false});
+        test::check(label, grex::horizontal_max(checker.vec, grex::full_tag<tSize>), ref,
+                    {.verbose = false, .cmp_zero_sign = false});
       }
     });
     grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
@@ -104,7 +108,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         const MC checker{bval(tIdxs)...};
         const bool mref = (... && checker.mask[tIdxs]);
         const auto label = [&] { return fmt::format("horizontal_and({})", checker.mask); };
-        auto cmp = [&](bool val, bool ref) { test::check(label, val, ref, false); };
+        auto cmp = [&](bool val, bool ref) { test::check(label, val, ref, {.verbose = false}); };
         cmp(grex::horizontal_and(checker.mask), mref);
         cmp(grex::horizontal_and(checker.mask, grex::full_tag<tSize>), mref);
         // part
@@ -146,14 +150,14 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
 
       const T value = hsum_dist(rng);
       test::check([&] { return fmt::format("horizontal_add({})", value); },
-                  grex::horizontal_add(value, grex::scalar_tag), value, false);
+                  grex::horizontal_add(value, grex::scalar_tag), value, {.verbose = false});
     }
     {
       const T value = dist(rng);
       test::check([&] { return fmt::format("horizontal_min({})", value); },
-                  grex::horizontal_min(value, grex::scalar_tag), value, false);
+                  grex::horizontal_min(value, grex::scalar_tag), value, {.verbose = false});
       test::check([&] { return fmt::format("horizontal_max({})", value); },
-                  grex::horizontal_max(value, grex::scalar_tag), value, false);
+                  grex::horizontal_max(value, grex::scalar_tag), value, {.verbose = false});
     }
     {
       const bool value = bool(bdist(rng));

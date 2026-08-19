@@ -42,7 +42,7 @@ Scalar Variants
 ***************
 
 .. cpp:function:: template<FloatVectorizable T> \
-                  T backend::sqrt(Scalar<T> v)
+                  T backend::sqrt(T v)
 
    Scalar square root :math:`\sqrt{v}`.
 

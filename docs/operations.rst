@@ -4,17 +4,17 @@ Operations
 
 Most operation names below link to their dedicated documentation, which also describes backend-specific implementation details.
 
-Throughout this documentation, ``Vector<T, N>`` denotes any backend vector type with value type ``T`` and lane count ``N``, i.e. one of:
+In the documentation of each operation, ``Vector<T, N>`` denotes any backend vector type with value type ``T`` and lane count ``N``, i.e. one of:
 
 - ``backend::NativeVector<T, N>``
 - ``backend::SubVector<T, N>``
-- ``backend::SuperVector<THalf>`` where ``THalf::Value == T`` and ``2 * THalf::size == N``
+- ``backend::SuperVector<Half>`` where ``Half::Value == T`` and ``2 * Half::size == N``
 
 Similarly, ``Mask<T, N>`` denotes any backend mask type with value type ``T`` and lane count ``N``, i.e. one of:
 
 - ``backend::NativeMask<T, N>``
 - ``backend::SubMask<T, N>``
-- ``backend::SuperMask<THalf>`` where ``THalf::Value == T`` and ``2 * THalf::size == N``
+- ``backend::SuperMask<Half>`` where ``Half::Value == T`` and ``2 * Half::size == N``
 
 ##########################
 Vector-Specific Operations
@@ -57,8 +57,8 @@ Vector-Specific Operations
      - :cpp:func:`Vector::load_part(const T* ptr, AnyIndexTag auto num) <Vector grex::Vector::load_part(const T*, AnyIndexTag)>`
 
    * - :ref:`Load multibyte <operations-load-multibyte>`
-     - | :cpp:func:`Vector::load_multibyte(const std::byte* data, AnyIndexTag auto src_bytes) <template<std::size_t tSrcBytes> Vector grex::Vector::load_multibyte(const std::byte*, IndexTag<tSrcBytes>)>`
-       | :cpp:func:`Vector::load_multibyte(TIt it) <template<MultiByteIterator TIt> Vector grex::Vector::load_multibyte(TIt)>`
+     - | :cpp:func:`Vector::load_multibyte(const std::byte* data, AnyIndexTag auto src_bytes) <template\<std::size_t tSrcBytes\> Vector grex::Vector::load_multibyte(const std::byte*, IndexTag\<tSrcBytes\>)>`
+       | :cpp:func:`Vector::load_multibyte(TIt it) <template\<MultiByteIterator TIt\> Vector grex::Vector::load_multibyte(TIt)>`
 
    * - :ref:`Undefined vector <operations-undefined-vector>`
      - :cpp:func:`Vector::undefined() <Vector grex::Vector::undefined()>`
@@ -126,25 +126,25 @@ Vector-Specific Operations
        | :cpp:func:`operator^=(Value b) <Vector& grex::Vector::operator^=(Value)>`
 
    * - :ref:`Shift left <operations-shift-left>`
-     - | :cpp:func:`operator\<\<(Vector, AnyIndexTag auto) <Vector grex::Vector::operator<<(Vector, AnyIndexTag)>`
-       | :cpp:func:`operator\<\<=(AnyIndexTag auto) <Vector& grex::Vector::operator<<=(AnyIndexTag)>`
+     - | :cpp:func:`operator\<\<(Vector, AnyIndexTag auto) <Vector grex::Vector::operator\<\<(Vector, AnyIndexTag)>`
+       | :cpp:func:`operator\<\<=(AnyIndexTag auto) <Vector& grex::Vector::operator\<\<=(AnyIndexTag)>`
 
    * - :ref:`Shift right <operations-shift-right>`
-     - | :cpp:func:`operator>>(Vector, AnyIndexTag auto) <Vector grex::Vector::operator>>(Vector, AnyIndexTag)>`
-       | :cpp:func:`operator>>=(AnyIndexTag auto) <Vector& grex::Vector::operator>>=(AnyIndexTag)>`
+     - | :cpp:func:`operator\>\>(Vector, AnyIndexTag auto) <Vector grex::Vector::operator\>\>(Vector, AnyIndexTag)>`
+       | :cpp:func:`operator\>\>=(AnyIndexTag auto) <Vector& grex::Vector::operator\>\>=(AnyIndexTag)>`
 
    * - :ref:`Cut off lanes <operations-cutoff>`
      - :cpp:func:`Vector::cutoff(std::size_t i) const <Vector grex::Vector::cutoff(std::size_t) const>`
 
    * - :ref:`Convert element type <operations-convert-vector>`
-     - :cpp:func:`Vector::convert(AnyTypeTag) const <template<Vectorizable TDst> Vector<TDst, size> grex::Vector::convert(TypeTag<TDst>) const>`
+     - :cpp:func:`Vector::convert(AnyTypeTag) const <template\<Vectorizable TDst\> Vector\<TDst, size\> grex::Vector::convert(TypeTag\<TDst\>) const>`
 
    * - :ref:`Extract element (runtime index) <operations-extract-value-runtime>`
      - :cpp:func:`Vector::operator[](std::size_t i) const <T grex::Vector::operator[](std::size_t) const>`
 
    * - :ref:`Extract element (compile-time index) <operations-extract-value-ct>`
      - | :cpp:func:`Vector::operator[](AnyIndexTag auto i) const <T grex::Vector::operator[](AnyIndexTag) const>`
-       | :cpp:func:`get\<index>(const Vector&) <template<std::size_t tIdx> T grex::Vector::get(const Vector&)>`
+       | :cpp:func:`get\<index\>(const Vector&) <template\<std::size_t tIdx\> T grex::Vector::get(const Vector&)>`
 
    * - :ref:`Insert element (runtime index) <operations-insert-value-runtime>`
      - :cpp:func:`Vector::insert(std::size_t i, T value) const <Vector grex::Vector::insert(std::size_t, T) const>`
@@ -171,18 +171,18 @@ Vector-Specific Operations
      - :cpp:func:`operator!=(Vector, Vector) <Mask grex::Vector::operator!=(Vector, Vector)>`
 
    * - :ref:`Strict inequality <operations-compare-lt>`
-     - | :cpp:func:`operator\<(Vector, Vector) <Mask grex::Vector::operator<(Vector, Vector)>`
-       | :cpp:func:`operator>(Vector, Vector) <Mask grex::Vector::operator>(Vector, Vector)>`
+     - | :cpp:func:`operator\<(Vector, Vector) <Mask grex::Vector::operator\<(Vector, Vector)>`
+       | :cpp:func:`operator\>(Vector, Vector) <Mask grex::Vector::operator\>(Vector, Vector)>`
 
    * - :ref:`Non-strict inequality <operations-compare-ge>`
-     - | :cpp:func:`operator\<=(Vector, Vector) <Mask grex::Vector::operator<=(Vector, Vector)>`
-       | :cpp:func:`operator>=(Vector, Vector) <Mask grex::Vector::operator>=(Vector, Vector)>`
+     - | :cpp:func:`operator\<=(Vector, Vector) <Mask grex::Vector::operator\<=(Vector, Vector)>`
+       | :cpp:func:`operator\>=(Vector, Vector) <Mask grex::Vector::operator\>=(Vector, Vector)>`
 
    * - :ref:`Expand (undefined upper lanes) <operations-expand-vector-any>`
-     - :cpp:func:`Vector::expand_any(AnyIndexTag) const <template<std::size_t tDstSize> Vector<T, tDstSize> grex::Vector::expand_any(IndexTag<tDstSize>) const>`
+     - :cpp:func:`Vector::expand_any(AnyIndexTag) const <template\<std::size_t tDstSize\> Vector\<T, tDstSize\> grex::Vector::expand_any(IndexTag\<tDstSize\>) const>`
 
    * - :ref:`Expand (zero upper lanes) <operations-expand-vector-zero>`
-     - :cpp:func:`Vector::expand_zero(AnyIndexTag) const <template<std::size_t tDstSize> Vector<T, tDstSize> grex::Vector::expand_zero(IndexTag<tDstSize>) const>`
+     - :cpp:func:`Vector::expand_zero(AnyIndexTag) const <template\<std::size_t tDstSize\> Vector\<T, tDstSize\> grex::Vector::expand_zero(IndexTag\<tDstSize\>) const>`
 
    * - :ref:`Shingle up (insert zero) <operations-shingle-up-zero>`
      - :cpp:func:`Vector::shingle_up() const <Vector grex::Vector::shingle_up() const>`
@@ -219,7 +219,7 @@ Mask-Specific Operations
      - :cpp:func:`Mask::Mask(bool value) <Mask grex::Mask::Mask(bool)>`
 
    * - :ref:`Construct from per-lane values <operations-set-mask>`
-     - :cpp:func:`Mask::Mask(bool... values) <template<typename... Ts> Mask grex::Mask::Mask(Ts...)>`
+     - :cpp:func:`Mask::Mask(bool... values) <template\<typename... Ts\> Mask grex::Mask::Mask(Ts...)>`
 
    * - Construct from backend mask
      - :cpp:func:`Mask::Mask(Backend v) <Mask grex::Mask::Mask(Backend)>`
@@ -237,7 +237,7 @@ Mask-Specific Operations
      - :cpp:func:`Mask::single_mask(std::size_t i) <Mask grex::Mask::single_mask(std::size_t)>`
 
    * - :ref:`Convert scalar type <operations-convert-mask>`
-     - :cpp:func:`Mask::convert(AnyTypeTag) const <template<Vectorizable TDst> Mask<TDst, tSize> grex::Mask::convert(TypeTag<TDst>) const>`
+     - :cpp:func:`Mask::convert(AnyTypeTag) const <template\<Vectorizable TDst\> Mask\<TDst, tSize\> grex::Mask::convert(TypeTag\<TDst\>) const>`
 
    * - :ref:`Logical NOT <operations-logical-not>`
      - :cpp:func:`Mask::operator!() const <Mask grex::Mask::operator!() const>`
@@ -259,7 +259,7 @@ Mask-Specific Operations
 
    * - :ref:`Extract element (compile-time index) <operations-extract-mask-ct>`
      - | :cpp:func:`Mask::operator[](AnyIndexTag auto i) const <bool grex::Mask::operator[](AnyIndexTag) const>`
-       | :cpp:func:`get\<index>(const Mask&) <template<std::size_t tIdx> bool grex::Mask::get(const Mask&)>`
+       | :cpp:func:`get\<index\>(const Mask&) <template\<std::size_t tIdx\> bool grex::Mask::get(const Mask&)>`
 
    * - :ref:`Insert element (runtime index) <operations-insert-mask-runtime>`
      - :cpp:func:`Mask::insert(std::size_t i, bool value) const <Mask grex::Mask::insert(std::size_t, bool) const>`
@@ -284,71 +284,71 @@ Free-Function Utilities
      - Signature/Description
 
    * - :ref:`Logical AND NOT <operations-logical-andnot>`
-     - :cpp:func:`grex::andnot(Mask a, Mask b) <template<Vectorizable T, std::size_t tSize> Mask<T, tSize> grex::andnot(Mask<T, tSize>, Mask<T, tSize>)>`
+     - :cpp:func:`grex::andnot(Mask a, Mask b) <template\<Vectorizable T, std::size_t tSize\> Mask\<T, tSize\> grex::andnot(Mask\<T, tSize\>, Mask\<T, tSize\>)>`
 
    * - :ref:`Absolute value <operations-abs>`
-     - :cpp:func:`grex::abs(Vector v) <template<SignedVectorizable T, std::size_t tSize> Vector<T, tSize> grex::abs(Vector<T, tSize>)>`
+     - :cpp:func:`grex::abs(Vector v) <template\<SignedVectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::abs(Vector\<T, tSize\>)>`
 
    * - :ref:`Square root <operations-sqrt>`
-     - :cpp:func:`grex::sqrt(Vector v) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::sqrt(Vector<T, tSize>)>`
+     - :cpp:func:`grex::sqrt(Vector v) <template\<FloatVectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::sqrt(Vector\<T, tSize\>)>`
 
    * - :ref:`Minimum <operations-min>`
-     - :cpp:func:`grex::min(Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::min(Vector<T, tSize>, Vector<T, tSize>)>`
+     - :cpp:func:`grex::min(Vector a, Vector b) <template\<Vectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::min(Vector\<T, tSize\>, Vector\<T, tSize\>)>`
 
    * - :ref:`Maximum <operations-max>`
-     - :cpp:func:`grex::max(Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::max(Vector<T, tSize>, Vector<T, tSize>)>`
+     - :cpp:func:`grex::max(Vector a, Vector b) <template\<Vectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::max(Vector\<T, tSize\>, Vector\<T, tSize\>)>`
 
    * - :ref:`Is finite <operations-is-finite>`
-     - :cpp:func:`grex::is_finite(Vector v) <template<FloatVectorizable T, std::size_t tSize> Mask<T, tSize> grex::is_finite(Vector<T, tSize>)>`
+     - :cpp:func:`grex::is_finite(Vector v) <template\<FloatVectorizable T, std::size_t tSize\> Mask\<T, tSize\> grex::is_finite(Vector\<T, tSize\>)>`
 
    * - :ref:`Make finite <operations-make-finite-vector>`
-     - :cpp:func:`grex::make_finite(Vector v) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::make_finite(Vector<T, tSize>)>`
+     - :cpp:func:`grex::make_finite(Vector v) <template\<FloatVectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::make_finite(Vector\<T, tSize\>)>`
 
    * - :ref:`Horizontal addition <operations-horizontal-add>`
-     - :cpp:func:`grex::horizontal_add(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_add(Vector<T, tSize>)>`
+     - :cpp:func:`grex::horizontal_add(Vector v) <template\<Vectorizable T, std::size_t tSize\> T grex::horizontal_add(Vector\<T, tSize\>)>`
 
    * - :ref:`Horizontal minimum/maximum <operations-horizontal-minmax>`
-     - | :cpp:func:`grex::horizontal_min(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_min(Vector<T, tSize>)>`
-       | :cpp:func:`grex::horizontal_max(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::horizontal_max(Vector<T, tSize>)>`
+     - | :cpp:func:`grex::horizontal_min(Vector v) <template\<Vectorizable T, std::size_t tSize\> T grex::horizontal_min(Vector\<T, tSize\>)>`
+       | :cpp:func:`grex::horizontal_max(Vector v) <template\<Vectorizable T, std::size_t tSize\> T grex::horizontal_max(Vector\<T, tSize\>)>`
 
    * - :ref:`Horizontal AND <operations-horizontal-and>`
-     - :cpp:func:`grex::horizontal_and(Mask m) <template<Vectorizable T, std::size_t tSize> bool grex::horizontal_and(Mask<T, tSize>)>`
+     - :cpp:func:`grex::horizontal_and(Mask m) <template\<Vectorizable T, std::size_t tSize\> bool grex::horizontal_and(Mask\<T, tSize\>)>`
 
    * - :ref:`Fused multiply-add family <operations-fmadd-family>`
-     - | :cpp:func:`grex::fmadd(Vector a, Vector b, Vector c) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::fmadd(Vector<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
-       | :cpp:func:`grex::fmsub(Vector a, Vector b, Vector c) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::fmsub(Vector<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
-       | :cpp:func:`grex::fnmadd(Vector a, Vector b, Vector c) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::fnmadd(Vector<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
-       | :cpp:func:`grex::fnmsub(Vector a, Vector b, Vector c) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::fnmsub(Vector<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
+     - | :cpp:func:`grex::fmadd(Vector a, Vector b, Vector c) <template\<FloatVectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::fmadd(Vector\<T, tSize\>, Vector\<T, tSize\>, Vector\<T, tSize\>)>`
+       | :cpp:func:`grex::fmsub(Vector a, Vector b, Vector c) <template\<FloatVectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::fmsub(Vector\<T, tSize\>, Vector\<T, tSize\>, Vector\<T, tSize\>)>`
+       | :cpp:func:`grex::fnmadd(Vector a, Vector b, Vector c) <template\<FloatVectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::fnmadd(Vector\<T, tSize\>, Vector\<T, tSize\>, Vector\<T, tSize\>)>`
+       | :cpp:func:`grex::fnmsub(Vector a, Vector b, Vector c) <template\<FloatVectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::fnmsub(Vector\<T, tSize\>, Vector\<T, tSize\>, Vector\<T, tSize\>)>`
 
    * - :ref:`Extract single value <operations-extract-single>`
-     - :cpp:func:`grex::extract_single(Vector v) <template<Vectorizable T, std::size_t tSize> T grex::extract_single(Vector<T, tSize>)>`
+     - :cpp:func:`grex::extract_single(Vector v) <template\<Vectorizable T, std::size_t tSize\> T grex::extract_single(Vector\<T, tSize\>)>`
 
    * - :ref:`Blend zeros (masked) <operations-blend-zero>`
-     - :cpp:func:`grex::blend_zero(Mask mask, Vector v1) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend_zero(Mask<T, tSize>, Vector<T, tSize>)>`
+     - :cpp:func:`grex::blend_zero(Mask mask, Vector v1) <template\<Vectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::blend_zero(Mask\<T, tSize\>, Vector\<T, tSize\>)>`
 
    * - :ref:`Blend zeros (compile-time selectors) <operations-blend-zero-static>`
-     - :cpp:func:`grex::blend_zero\<selectors>(Vector v1) <template<BlendZeroSelector... tBzs, Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend_zero(Vector<T, tSize>)>`
+     - :cpp:func:`grex::blend_zero\<selectors\>(Vector v1) <template\<BlendZeroSelector... tBzs, Vectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::blend_zero(Vector\<T, tSize\>)>`
 
    * - :ref:`Blend (masked) <operations-blend>`
-     - :cpp:func:`grex::blend(Mask mask, Vector v0, Vector v1) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
+     - :cpp:func:`grex::blend(Mask mask, Vector v0, Vector v1) <template\<Vectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::blend(Mask\<T, tSize\>, Vector\<T, tSize\>, Vector\<T, tSize\>)>`
 
    * - :ref:`Blend (compile-time selectors) <operations-blend-static>`
-     - :cpp:func:`grex::blend\<selectors>(Vector v0, Vector v1) <template<BlendSelector... tBls, Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::blend(Vector<T, tSize>, Vector<T, tSize>)>`
+     - :cpp:func:`grex::blend\<selectors\>(Vector v0, Vector v1) <template\<BlendSelector... tBls, Vectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::blend(Vector\<T, tSize\>, Vector\<T, tSize\>)>`
 
    * - :ref:`Shuffle (indexed) <operations-shuffle-dynamic>`
-     - :cpp:func:`grex::shuffle(Vector table, Vector idxs) <template<Vectorizable T, UnsignedIntVectorizable TIdx, std::size_t tTableSize, std::size_t tIdxSize> Vector<T, tIdxSize> grex::shuffle(Vector<T, tTableSize>, Vector<TIdx, tIdxSize>)>`
+     - :cpp:func:`grex::shuffle(Vector table, Vector idxs) <template\<Vectorizable T, UnsignedIntVectorizable TIdx, std::size_t tTableSize, std::size_t tIdxSize\> Vector\<T, tIdxSize\> grex::shuffle(Vector\<T, tTableSize\>, Vector\<TIdx, tIdxSize\>)>`
 
    * - :ref:`Shuffle (compile-time indices) <operations-shuffle-static>`
-     - :cpp:func:`grex::shuffle(Vector table) <template<ShuffleIndex... tIdxs, Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::shuffle(Vector<T, tSize>)>`
+     - :cpp:func:`grex::shuffle(Vector table) <template\<ShuffleIndex... tIdxs, Vectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::shuffle(Vector\<T, tSize\>)>`
 
    * - :ref:`Masked arithmetic <operations-mask-arithmetic>`
-     - | :cpp:func:`grex::mask_add(Mask mask, Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::mask_add(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
-       | :cpp:func:`grex::mask_subtract(Mask mask, Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::mask_subtract(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
-       | :cpp:func:`grex::mask_multiply(Mask mask, Vector a, Vector b) <template<Vectorizable T, std::size_t tSize> Vector<T, tSize> grex::mask_multiply(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
-       | :cpp:func:`grex::mask_divide(Mask mask, Vector a, Vector b) <template<FloatVectorizable T, std::size_t tSize> Vector<T, tSize> grex::mask_divide(Mask<T, tSize>, Vector<T, tSize>, Vector<T, tSize>)>`
+     - | :cpp:func:`grex::mask_add(Mask mask, Vector a, Vector b) <template\<Vectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::mask_add(Mask\<T, tSize\>, Vector\<T, tSize\>, Vector\<T, tSize\>)>`
+       | :cpp:func:`grex::mask_subtract(Mask mask, Vector a, Vector b) <template\<Vectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::mask_subtract(Mask\<T, tSize\>, Vector\<T, tSize\>, Vector\<T, tSize\>)>`
+       | :cpp:func:`grex::mask_multiply(Mask mask, Vector a, Vector b) <template\<Vectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::mask_multiply(Mask\<T, tSize\>, Vector\<T, tSize\>, Vector\<T, tSize\>)>`
+       | :cpp:func:`grex::mask_divide(Mask mask, Vector a, Vector b) <template\<FloatVectorizable T, std::size_t tSize\> Vector\<T, tSize\> grex::mask_divide(Mask\<T, tSize\>, Vector\<T, tSize\>, Vector\<T, tSize\>)>`
 
    * - :ref:`Gather <operations-gather>`
-     - :cpp:func:`grex::gather(std::span\<const T, extent> data, Vector indices) <template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize> Vector<TValue, tSize> grex::gather(std::span<const TValue, tExtent>, Vector<TIndex, tSize>)>`
+     - :cpp:func:`grex::gather(std::span\<const T, extent\> data, Vector indices) <template\<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize\> Vector\<TValue, tSize\> grex::gather(std::span\<const TValue, tExtent\>, Vector\<TIndex, tSize\>)>`
 
    * - :ref:`Masked gather <operations-mask-gather>`
-     - :cpp:func:`grex::mask_gather(std::span\<const T, extent> data, Mask mask, Vector indices) <template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize> Vector<TValue, tSize> grex::mask_gather(std::span<const TValue, tExtent>, Mask<TValue, tSize>, Vector<TIndex, tSize>)>`
+     - :cpp:func:`grex::mask_gather(std::span\<const T, extent\> data, Mask mask, Vector indices) <template\<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize\> Vector\<TValue, tSize\> grex::mask_gather(std::span\<const TValue, tExtent\>, Mask\<TValue, tSize\>, Vector\<TIndex, tSize\>)>`

@@ -75,44 +75,47 @@ void run_simd(Rng& rng) {
               src.vec.convert(grex::type_tag<TDst>),
               std::array{TDst(src.ref[tIdxs])...},
             };
-            dst.check([&] { return fmt::format("vector/scalar {}", src); }, false);
+            dst.check([&] { return fmt::format("vector/scalar {}", src); }, {.verbose = false});
 
             grex::Vector<TDst, tSize> dstvec = grex::convert<TDst>(src.vec);
             test::check([&] { return fmt::format("vector/tagged vector {}", src); }, dst.vec,
-                        dstvec, false);
+                        dstvec, {.verbose = false});
 
             test::VectorChecker<TDst, tSize> dstsca{
               src.vec.convert(grex::type_tag<TDst>),
               std::array{grex::convert<TDst>(src.ref[tIdxs])...},
             };
-            dstsca.check([&] { return fmt::format("vector/tagged scalar {}", src); }, false);
+            dstsca.check([&] { return fmt::format("vector/tagged scalar {}", src); },
+                         {.verbose = false});
           }
           {
             auto src = test::VectorChecker<Src, tSize>::random(dval);
             const auto arr = src.vec.as_array();
             test::check([&] { return fmt::format("vector to array {}", src); }, arr, src.ref,
-                        false);
+                        {.verbose = false});
           }
 
           {
             test::MaskChecker<Src, tSize> src{bval(tIdxs)...};
             test::MaskChecker<TDst, tSize> dst{src.mask.convert(grex::type_tag<TDst>), src.ref};
-            dst.check([&] { return fmt::format("mask/copy {}", src); }, false);
+            dst.check([&] { return fmt::format("mask/copy {}", src); }, {.verbose = false});
 
             grex::Mask<TDst, tSize> dstmsk = grex::convert<TDst>(src.mask);
             test::check([&] { return fmt::format("mask/tagged mask {}", src); }, dst.mask, dstmsk,
-                        false);
+                        {.verbose = false});
 
             test::MaskChecker<TDst, tSize> dstsca{
               src.mask.convert(grex::type_tag<TDst>),
               std::array{grex::convert<TDst>(src.ref[tIdxs])...},
             };
-            dstsca.check([&] { return fmt::format("mask/tagged scalar {}", src); }, false);
+            dstsca.check([&] { return fmt::format("mask/tagged scalar {}", src); },
+                         {.verbose = false});
           }
           {
             test::MaskChecker<Src, tSize> src{bval(tIdxs)...};
             const auto arr = src.mask.as_array();
-            test::check([&] { return fmt::format("mask to array {}", src); }, arr, src.ref, false);
+            test::check([&] { return fmt::format("mask to array {}", src); }, arr, src.ref,
+                        {.verbose = false});
           }
         });
       }
@@ -134,7 +137,7 @@ void run_scalar(Rng& rng) {
       const Src src = dist(rng);
       const TDst dst_ref = TDst(src);
       const TDst dst_cvt = grex::convert<TDst>(src);
-      test::check([&] { return fmt::format("{}", src); }, dst_cvt, dst_ref, false);
+      test::check([&] { return fmt::format("{}", src); }, dst_cvt, dst_ref, {.verbose = false});
     }
   };
   test::for_each_type(cvt);

@@ -20,6 +20,7 @@
 #include "grex/backend/macros/types.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/expand.hpp"
+#include "grex/backend/neon/operations/expand64.hpp"
 #include "grex/backend/neon/types.hpp"
 #include "grex/base.hpp"
 

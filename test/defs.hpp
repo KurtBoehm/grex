@@ -12,7 +12,6 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdlib>
-#include <limits>
 #include <random>
 #include <string_view>
 #include <tuple>
@@ -34,49 +33,16 @@
 namespace grex::test {
 using Rng = pcg64;
 
-template<typename T>
-inline auto make_distribution() {
-  using Limits = std::numeric_limits<T>;
-  if constexpr (Float16<T>) {
-    // Binary16 is generated in binary32 and rounded, as the standard distributions do not support
-    // it.
-    return [](Rng& rng) {
-      using Trait = NumericTrait<T>;
-      const int sign = std::uniform_int_distribution<int>{0, 1}(rng) * 2 - 1;
-      const auto base = std::uniform_real_distribution<f32>{0.5F, 1}(rng);
-      const int expo =
-        std::uniform_int_distribution<int>{Trait::min_exponent, Trait::max_exponent}(rng);
-      return f32_to_f16(f32(sign) * std::ldexp(base, expo));
-    };
-  } else if constexpr (FloatVectorizable<T>) {
-    return [](Rng& rng) {
-      const int sign = std::uniform_int_distribution<int>{0, 1}(rng) * 2 - 1;
-      const T base = std::uniform_real_distribution<T>{T(0.5), T(1)}(rng);
-      const int expo =
-        std::uniform_int_distribution<int>{Limits::min_exponent, Limits::max_exponent}(rng);
-      return T(sign) * std::ldexp(base, expo);
-    };
-  } else {
-    return std::uniform_int_distribution<T>{Limits::min(), Limits::max()};
-  }
-}
-
 /**
- * Promotes a binary16 value to binary32 (exact), passing every other type through unchanged.
+ * Widens binary16 to binary32 and leaves any other value unchanged.
  *
- * Intended to wrap arguments to `std::` `<cmath>` functions used as an independent reference
- * implementation: `std::numeric_limits` and the `<cmath>` functions are not guaranteed to support
- * `_Float16`, whereas binary16-to-binary32 promotion is exact and always available, and every
- * `<cmath>` function used in tests already has a `float` overload.
+ * This is useful for interfacing between standard-library functionality (math functions,
+ * random-number generation, etc.), which is not guaranteed to be support binary16, and binary16.
  */
 template<Vectorizable T>
 using Widened = std::conditional_t<Float16<T>, f32, T>;
 
-/**
- * Promotes a binary16 value to binary32 (exact), passing every other type through unchanged.
- *
- * See `Widened` for details.
- */
+/** Widens binary16 to binary32 and leaves any other value unchanged. See `Widened` for details. */
 template<Vectorizable T>
 inline Widened<T> widen(T x) {
   if constexpr (Float16<T>) {
@@ -86,8 +52,42 @@ inline Widened<T> widen(T x) {
   }
 }
 
-struct Empty {};
+/**
+ * Makes a distribution that is appropriate for testing `T`.
+ *
+ * For integers, a uniform distribution between the minimum and maximum value of `T` is returned.
+ * For floating-point value, the values are sampled such that each possible exponent is drawn with
+ * equal probability, which is combined with a value between `0.5` and `1` drawn with a uniform
+ * distribution via `ldexp`.
+ */
+template<typename T>
+inline auto make_distribution() {
+  using W = Widened<T>;
+  using Trait = NumericTrait<T>;
 
+  if constexpr (FloatVectorizable<T>) {
+    return [](Rng& rng) {
+      const int mode = std::uniform_int_distribution<int>{0, 2}(rng);
+      switch (mode) {
+        case 0: return T(-0.0);
+        case 1: return T(0.0);
+        default: break;
+      }
+
+      const int sign = std::uniform_int_distribution<int>{0, 1}(rng) * 2 - 1;
+      const W base = std::uniform_real_distribution<W>{W(0.5), W(1)}(rng);
+      const int expo =
+        std::uniform_int_distribution<int>{Trait::min_exponent, Trait::max_exponent}(rng);
+      return T(W(sign) * std::ldexp(base, expo));
+    };
+  } else {
+    return std::uniform_int_distribution<T>{Trait::min(), Trait::max()};
+  }
+}
+
+/**
+ * Whether two values are equivalent (`result`) together with the error (if a bound was specified).
+ */
 template<typename T>
 struct EquivVal {
   bool result{};
@@ -97,50 +97,48 @@ struct EquivVal {
     return result;
   }
 };
-template<FullFloatVectorizable T>
-inline EquivVal<T> are_equivalent(T val, T ref, T f = T{}) {
-  if (std::isnan(val) && std::isnan(ref)) {
+
+/** Parameters for `are_equivalent`. */
+template<typename T>
+struct EquivParams {
+  /** The multiple of `epsilon` used as the error bound (applies only to floating-point values). */
+  T bound = {};
+  /**
+   * Whether equivalence requires that zeros have the same sign (applies only to floating-point
+   * values).
+   */
+  bool cmp_zero_sign = false;
+};
+
+/** Checks whether `val` and `ref` are equivalent using the parameters `eq`. */
+template<FloatVectorizable T>
+inline EquivVal<T> are_equivalent(T val, T ref, EquivParams<T> eq = {}) {
+  using W = Widened<T>;
+  const W xval = widen(val);
+  const W xref = widen(ref);
+
+  if (std::isnan(xval) && std::isnan(xref)) {
     return {.result = true, .err = 0};
   }
-  if (val == ref) {
+  if (xval == xref && (!eq.cmp_zero_sign || std::signbit(xval) == std::signbit(xref))) {
     return {.result = true, .err = 0};
   }
-  if (f > T{}) {
-    const T denom = (ref != 0 && std::isfinite(ref)) ? ref : T{1};
-    const T err = std::abs((val - ref) / denom);
-    return {.result = err <= f * std::numeric_limits<T>::epsilon(), .err = err};
-  }
-  return {};
-}
-/**
- * Binary16 values are compared in binary32 (which is exact), but the tolerance `f` is still
- * expressed in binary16 epsilons (`NumericTrait<f16>::epsilon()`, about 9.8e-4), not binary32 ones
- * (about 1.2e-7): delegating to the binary32 overload with the same `f` would demand roughly four
- * orders of magnitude more precision than a binary16 result can actually provide.
- */
-inline EquivVal<f32> are_equivalent(f16 val, f16 ref, f32 f = 0) {
-  if (f16_bits(val) == f16_bits(ref)) {
-    return {.result = true, .err = 0};
-  }
-  const f32 fval = f16_to_f32(val);
-  const f32 fref = f16_to_f32(ref);
-  if (std::isnan(fval) && std::isnan(fref)) {
-    return {.result = true, .err = 0};
-  }
-  if (f > 0) {
-    const f32 denom = (fref != 0 && std::isfinite(fref)) ? fref : f32{1};
-    const f32 err = std::abs((fval - fref) / denom);
-    return {.result = err <= f * widen(NumericTrait<f16>::epsilon()), .err = err};
+  if (eq.bound > T{}) {
+    const W denom = (xref != 0 && std::isfinite(xref)) ? xref : W{1};
+    const W err = std::abs((xval - xref) / denom);
+    return {.result = err <= W(eq.bound) * W(NumericTrait<T>::epsilon()), .err = T(err)};
   }
   return {};
 }
 
+/** For non-floating-point values, equivalence is equality. */
 template<typename T>
 requires(!FloatVectorizable<T>)
-inline bool are_equivalent(T val, T ref) {
+inline bool are_equivalent(T val, T ref, EquivParams<T> /*eq*/ = {}) {
   return val == ref;
 }
 
+/** Returns `label()` if `label` is invocable without arguments and `label` itself otherwise. */
 template<typename T>
 inline decltype(auto) resolve_label(const T& label) {
   if constexpr (std::invocable<T>) {
@@ -150,12 +148,24 @@ inline decltype(auto) resolve_label(const T& label) {
   }
 }
 
+/** Parameters for the `check` family of operations. */
+struct Check {
+  /** Whether the check should always print the result. */
+  bool verbose = true;
+  /**
+   * Whether to ensure that the sign of two zeros is the same.
+   *
+   * Only meaningful for floating-point values.
+   */
+  bool cmp_zero_sign = true;
+};
+
 /**
- * Reports a failed comparison and terminates.
+ * Prints an error message showing that `a` and `b` are not equivalent with `label` as the label and
+ * exits with a non-zero error code.
  *
- * Kept out of line and cold: `label` is typically a lambda that formats whole vectors, and the
- * mismatch branch is the only one that cannot be folded away when `verbose` is a literal `false`.
- * Inlining it would instantiate and optimize that formatting code at every comparison site.
+ * To avoid the compiler wasting time on optimizing this function, which should not be executed
+ * during normal operation, inlining is disabled and it is marked as cols.
  */
 template<typename T1, typename T2, typename TLabel>
 [[gnu::cold, gnu::noinline]] inline void fail_msg(const TLabel& label, const T1& a, const T2& b) {
@@ -163,6 +173,10 @@ template<typename T1, typename T2, typename TLabel>
   std::exit(EXIT_FAILURE);
 }
 
+/**
+ * If `same` and `verbose` are true, prints `label`, `a`, and `b` in green; if `same` is false,
+ * calls `fail_msg`, which prints the same information in red and exits with a non-zero error code.
+ */
 template<typename T1, typename T2, typename TLabel>
 inline void check_msg(const TLabel& label, bool same, T1 a, T2 b, bool verbose = true) {
   if (same) [[likely]] {
@@ -181,54 +195,58 @@ struct IsCompleteTrait<T, sizeof(T) / sizeof(T)> : public std::true_type {}; // 
 template<typename T>
 concept CompleteType = IsCompleteTrait<T>::value;
 
+// Checks that two non-tuple-like values, i.e. scalars, are equivalent.
 template<typename T>
 requires(requires(T a) {
   { a == a } -> std::same_as<bool>;
   requires !CompleteType<std::tuple_size<T>>;
 })
-inline void check(const auto& label, T a, T b, bool verbose = true) {
-  check_msg(label, are_equivalent(a, b), a, b, verbose);
+inline void check(const auto& label, T a, T b, Check check = {}) {
+  check_msg(label, are_equivalent(a, b, {.cmp_zero_sign = check.cmp_zero_sign}), a, b,
+            check.verbose);
 }
+// Checks that two tuple-like values, which includes vectors and masks, are equivalent.
 template<typename T1, typename T2>
 requires(requires {
   std::tuple_size<T1>::value; // NOLINT
   std::tuple_size<T2>::value; // NOLINT
   requires std::tuple_size_v<T1> == std::tuple_size_v<T2>;
 })
-inline void check(const auto& label, T1 a, T2 b, bool verbose = true) {
+inline void check(const auto& label, T1 a, T2 b, Check check = {}) {
   constexpr std::size_t size = std::tuple_size_v<T1>;
   bool same = true;
   for (std::size_t i = 0; i < size; ++i) {
-    if (!are_equivalent(a[i], b[i])) {
+    if (!are_equivalent(a[i], b[i], {.cmp_zero_sign = check.cmp_zero_sign})) {
       same = false;
       break;
     }
   }
-  check_msg(label, same, a, b, verbose);
+  check_msg(label, same, a, b, check.verbose);
 }
+// Checks that two tuple-like values, which includes vectors and masks, are equivalent up to index
+// `size - 1`.
 template<typename T1, typename T2>
 requires(requires {
   requires CompleteType<std::tuple_size<T1>>;
   requires CompleteType<std::tuple_size<T2>>;
   requires std::tuple_size_v<T1> == std::tuple_size_v<T2>;
 })
-inline void check(const auto& label, T1 a, T2 b, std::size_t size, bool verbose = true) {
+inline void check(const auto& label, T1 a, T2 b, std::size_t size, Check check = {}) {
   bool same = true;
   for (std::size_t i = 0; i < size; ++i) {
-    if (!are_equivalent(a[i], b[i])) {
+    if (!are_equivalent(a[i], b[i], {.cmp_zero_sign = check.cmp_zero_sign})) {
       same = false;
       break;
     }
   }
-  check_msg(label, same, a, b, verbose);
+  check_msg(label, same, a, b, check.verbose);
 }
 
 /**
- * Returns an array whose elements are drawn, in order, from the nullary generator `gen`.
+ * Generates `tSize` values of type `T` using `gen` and places them into an array in order.
  *
- * The array is filled in a loop rather than by expanding a pack of `tSize` calls to `gen`, as
- * expanding the pack inlines the generator once per element into the caller, which dominates
- * compile time once `tSize` grows beyond a few dozen elements.
+ * This function uses a loop instead of pack expansion two minimize the amount of inlining and,
+ * thereby, to minimize the compile-time cost.
  */
 template<typename T, std::size_t tSize>
 inline std::array<T, tSize> random_array(auto&& gen) {
@@ -265,11 +283,11 @@ struct VectorChecker {
   explicit VectorChecker(Ts... values) : vec{values...}, ref{values...} {}
   VectorChecker(Vector<T, tSize> v, std::array<T, tSize> a) : vec{v}, ref{a} {}
 
-  void check(const auto& label, bool verbose = true) const {
-    test::check(label, vec.as_array(), ref, verbose);
+  void check(const auto& label, Check check = {}) const {
+    test::check(label, vec.as_array(), ref, check);
   }
-  void check(const auto& label, std::size_t size, bool verbose = true) const {
-    test::check(label, vec.as_array(), ref, size, verbose);
+  void check(const auto& label, std::size_t size, Check check = {}) const {
+    test::check(label, vec.as_array(), ref, size, check);
   }
 };
 template<Vectorizable T, std::size_t tSize>
@@ -292,8 +310,8 @@ struct MaskChecker {
   explicit MaskChecker(Ts... values) : mask{values...}, ref{values...} {}
   MaskChecker(Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
 
-  void check(const auto& label, bool verbose = true) const {
-    test::check(label, mask.as_array(), ref, verbose);
+  void check(const auto& label, Check check = {}) const {
+    test::check(label, mask.as_array(), ref, check);
   }
 };
 template<Vectorizable T, std::size_t tSize>

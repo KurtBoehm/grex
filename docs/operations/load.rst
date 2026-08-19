@@ -108,10 +108,12 @@ Load Partial (Runtime Length)
      - **128-bit vectors otherwise**: the byte-wise prefix load described below.
      - **Wider vectors**: super-native, hence split into halves.
 
-   Both element counts of the byte-wise prefix load are compile-time constants, which prunes the cases the caller cannot reach:
+   The element size and count of the byte-wise prefix load are compile-time constants, which prunes the cases the caller cannot reach; the sequence itself is the same on x86-64-v1 and x86-64-v2 and is also what x86-64-v3 uses for 128-bit vectors of 8/16-bit elements:
 
-   - **x86-64-v2**: two overlapping loads of the largest block (8 or 4 bytes) that fits into the requested byte count, packed into a 128-bit register and gathered by a single ``pshufb`` with a precomputed control row; three bytes use a 16-bit load completed by ``pinsrb``, and fewer bytes a single narrow load.
-   - **x86-64-v1**: accumulate the bytes into one or two 64-bit temporaries via ``std::memcpy``, then assemble with ``_mm_set_epi64x``.
+   - Two overlapping loads of the largest power-of-two block that fits into the requested byte count cover it entirely, since the second one starts at the last block boundary below the end.
+     The bytes the first load does not already provide are the top ones of the second, so it is shifted down by ``_mm_srl_epi64`` and interleaved above the first with an ``unpack``.
+     A shift by 64 bits or more yields zero, so a byte count equal to the block size needs no special case.
+   - The block size is halved until it fits, down to a single byte, which is loaded on its own; an empty load yields zeros.
 
    Sub-native vectors
    ------------------

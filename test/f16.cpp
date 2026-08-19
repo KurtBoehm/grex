@@ -226,19 +226,19 @@ void run_scalar_operations(test::Rng& rng) {
       check_f16("fnmadd", grex::fnmadd(a, b, b), reference_bits(f64(std::fma(-fa32, fb32, fb32))));
       check_f16("fnmsub", grex::fnmsub(a, b, b), reference_bits(f64(std::fma(-fa32, fb32, -fb32))));
     }
-    test::check("is_finite", grex::is_finite(a), std::isfinite(fa), false);
-    test::check("convert to f32", grex::convert<f32>(a), f32(fa), false);
+    test::check("is_finite", grex::is_finite(a), std::isfinite(fa), {.verbose = false});
+    test::check("convert to f32", grex::convert<f32>(a), f32(fa), {.verbose = false});
     check_f16("convert from f32", grex::convert<f16>(f32(fa)), grex::f16_bits(a));
   }
 
   // Non-finite values.
   const f16 inf = grex::f32_to_f16(std::numeric_limits<f32>::infinity());
   const f16 nan = grex::f32_to_f16(std::numeric_limits<f32>::quiet_NaN());
-  test::check("is_finite(∞)", grex::is_finite(inf), false, false);
-  test::check("is_finite(nan)", grex::is_finite(nan), false, false);
+  test::check("is_finite(∞)", grex::is_finite(inf), false, {.verbose = false});
+  test::check("is_finite(nan)", grex::is_finite(nan), false, {.verbose = false});
   check_f16("make_finite(∞)", grex::make_finite(inf), 0);
   check_f16("make_finite(nan)", grex::make_finite(nan), 0);
-  check_f16("−∞", grex::f32_to_f16(-std::numeric_limits<f32>::infinity()), 0xFC00);
+  check_f16("-∞", grex::f32_to_f16(-std::numeric_limits<f32>::infinity()), 0xFC00);
   check_f16("overflow", grex::f32_to_f16(1e30F), 0x7C00);
   check_f16("underflow", grex::f32_to_f16(1e-30F), 0x0000);
   check_f16("max", grex::NumericTrait<f16>::max(), 0x7BFF);
@@ -274,7 +274,7 @@ void run_software_conversion(test::Rng& rng) {
     const auto in = F16Vec::load(halves.data());
     const SingleVec out{grex::backend::f16_to_f32(in.backend())};
     const auto ref = in.convert(grex::type_tag<f32>);
-    test::check("f16_to_f32", out.as_array(), ref.as_array(), false);
+    test::check("f16_to_f32", out.as_array(), ref.as_array(), {.verbose = false});
   }
 
   // Binary32 → binary16: All binary16 values, their neighbourhoods, the ties, and random values.

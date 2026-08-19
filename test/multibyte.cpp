@@ -65,21 +65,21 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
             grex::Vector<Dst, tSize>::load_multibyte(it),
             std::array{it[tIdxs]...},
           };
-          checker.check("load_multibyte vector/thesauros", false);
+          checker.check("load_multibyte vector/thesauros", {.verbose = false});
         }
         {
           test::VectorChecker<Dst, tSize> checker{
             grex::Vector<Dst, tSize>::load_multibyte(it),
             std::array{grex::load_multibyte(it + tIdxs, grex::scalar_tag)...},
           };
-          checker.check("load_multibyte vector/tagged scalar", false);
+          checker.check("load_multibyte vector/tagged scalar", {.verbose = false});
         }
         {
           test::VectorChecker<Dst, tSize> checker{
             grex::load_multibyte(it, grex::full_tag<tSize>),
             std::array{grex::load_multibyte(it + tIdxs, grex::scalar_tag)...},
           };
-          checker.check("load_multibyte tagged vector/tagged scalar", false);
+          checker.check("load_multibyte tagged vector/tagged scalar", {.verbose = false});
         }
       }
     });
@@ -113,8 +113,8 @@ void run_scalar(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
     const auto a = grex::load_multibyte(it, grex::scalar_tag);
     const auto b = *it;
     const auto c = it[0];
-    test::check("load_multibyte", a, b, false);
-    test::check("load_multibyte", a, c, false);
+    test::check("load_multibyte", a, b, {.verbose = false});
+    test::check("load_multibyte", a, c, {.verbose = false});
   }
 }
 

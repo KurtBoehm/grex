@@ -103,9 +103,9 @@ Since all of this resolves during template instantiation, the generated code con
 
 .. _expensive-operations-dispatch:
 
-****************
+*************
 Size Dispatch
-****************
+*************
 
 Cost-based selection only decides *how* to implement an operation on a register that the hardware actually has.
 Choosing between native, sub-native, and super-native handling happens one level up, through partial specializations of the dispatch trait constrained on the total pattern width:

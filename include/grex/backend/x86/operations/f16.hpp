@@ -179,7 +179,7 @@ GREX_ALWAYS_INLINE inline __m128i narrow(__m128i lo, __m128i hi) {
  */
 GREX_ALWAYS_INLINE inline __m128 to_f32(__m128i bits) {
   const __m128i sign = _mm_slli_epi32(_mm_and_si128(bits, _mm_set1_epi32(0x8000)), 16);
-  // Exponent and mantissa moved into their binary32 positions
+  // Exponent and mantissa moved into their binary32 positions.
   const __m128i rest = _mm_slli_epi32(_mm_and_si128(bits, _mm_set1_epi32(0x7FFF)), 13);
   const __m128i expo = _mm_and_si128(rest, _mm_set1_epi32(0x0F800000));
 
@@ -208,7 +208,7 @@ GREX_ALWAYS_INLINE inline __m128i from_f32(__m128 v) {
   // The magnitude, i.e. the input without its sign.
   const __m128i mag = _mm_xor_si128(bits, sign);
 
-  // |x| ≥ 2¹⁶ rounds to infinity, unless the input is a not-a-number, which stays one
+  // |x| ≥ 2¹⁶ rounds to infinity, unless the input is a not-a-number, which stays one.
   const __m128i is_nan = _mm_cmpgt_epi32(mag, _mm_set1_epi32(0x7F800000));
   const __m128i saturated = select(is_nan, _mm_set1_epi32(0x7C00), _mm_set1_epi32(0x7E00));
 

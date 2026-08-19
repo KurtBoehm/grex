@@ -30,7 +30,7 @@ Since ``_Float16`` is not one of the standard floating-point types, neither ``st
    The subset of ``std::numeric_limits`` that Grex requires, specialized for :cpp:type:`f16` and falling back to ``std::numeric_limits`` for every other type.
 
 The free functions :cpp:func:`f16_bits`, :cpp:func:`f16_from_bits`, :cpp:func:`f16_to_f32`, :cpp:func:`f32_to_f16`, :cpp:func:`f16_to_f64`, and :cpp:func:`f64_to_f16` convert between :cpp:type:`f16`, its bit pattern, binary32, and binary64 independently of which implementation is in use.
-The concepts :cpp:concept:`F16Vectorizable` (only :cpp:type:`f16`) and :cpp:concept:`FullFloatVectorizable` (:cpp:type:`f32` and :cpp:type:`f64`) partition :cpp:concept:`FloatVectorizable`.
+The concepts :cpp:concept:`Float16` (only :cpp:type:`f16`) and :cpp:concept:`FullFloatVectorizable` (:cpp:type:`f32` and :cpp:type:`f64`) partition :cpp:concept:`FloatVectorizable`.
 
 .. _f16-accuracy:
 
@@ -48,10 +48,10 @@ Comparisons and classification are exact for the same reason, and so is every co
 
 Conversion *to* binary16 rounds exactly once as well, including from binary64, which only AVX512-FP16 narrows in a single instruction: everywhere else the emulation rounds to odd on the way through binary32, which makes the subsequent rounding to binary16 the correctly rounded one (see :ref:`operations-convert-f16`).
 
-The fused operations are the sole exception, and only where :cpp:var:`has_fma\<f16> <has_fma>` is ``false``.
+The fused operations are the sole exception, and only where :cpp:var:`has_fma\<f16\> <has_fma>` is ``false``.
 They are then carried out with a single binary32 fused multiply-add and rounded once back down to binary16.
 Unlike for a single arithmetic operation, this is not always correctly rounded, because the exact value of :math:`a \cdot b + c` can lie arbitrarily close to a binary16 rounding boundary; the residual error is rare and never exceeds one unit in the last place.
-Computing the fallback this way needs no more precision than the hardware already provides via :cpp:var:`has_fma\<f32> <has_fma>` and avoids rounding twice within binary16, which would be strictly less accurate for no benefit.
+Computing the fallback this way needs no more precision than the hardware already provides via :cpp:var:`has_fma\<f32\> <has_fma>` and avoids rounding twice within binary16, which would be strictly less accurate for no benefit.
 
 ***********
 Performance

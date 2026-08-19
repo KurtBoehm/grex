@@ -38,41 +38,44 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
   grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
     for (std::size_t i = 0; i < repetitions; ++i) {
       // zeros
-      test::check("scalar zeros", grex::zeros<T>(grex::scalar_tag), T{}, false);
-      VC{}.check("vector zeros", false);
-      test::check("vector zeros tagged", grex::zeros<T>(grex::full_tag<tSize>), Vec{}, false);
+      test::check("scalar zeros", grex::zeros<T>(grex::scalar_tag), T{}, {.verbose = false});
+      VC{}.check("vector zeros", {.verbose = false});
+      test::check("vector zeros tagged", grex::zeros<T>(grex::full_tag<tSize>), Vec{},
+                  {.verbose = false});
       // broadcast
       {
         const T value = dist(rng);
-        test::check("scalar broadcast", grex::broadcast(value, grex::scalar_tag), value, false);
-        VC{value}.check("vector broadcast", false);
+        test::check("scalar broadcast", grex::broadcast(value, grex::scalar_tag), value,
+                    {.verbose = false});
+        VC{value}.check("vector broadcast", {.verbose = false});
         test::check("vector broadcast tagged", grex::broadcast(value, grex::full_tag<tSize>),
-                    Vec{value}, false);
+                    Vec{value}, {.verbose = false});
       }
       // zero-based indices
-      test::check("scalar indices", grex::indices<T>(grex::scalar_tag), T{}, false);
-      VC{Vec::indices(), std::array{T(tIdxs)...}}.check("vector indices", false);
+      test::check("scalar indices", grex::indices<T>(grex::scalar_tag), T{}, {.verbose = false});
+      VC{Vec::indices(), std::array{T(tIdxs)...}}.check("vector indices", {.verbose = false});
       test::check("vector indices tagged", grex::indices<T>(grex::typed_full_tag<T, tSize>),
-                  Vec::indices(), false);
+                  Vec::indices(), {.verbose = false});
       // value-based indices
       {
         const T base = dist(rng);
-        test::check("scalar value indices", grex::indices<T>(base, grex::scalar_tag), base, false);
+        test::check("scalar value indices", grex::indices<T>(base, grex::scalar_tag), base,
+                    {.verbose = false});
         VC{Vec::indices(base), std::array{T(base + T(tIdxs))...}}.check("vector value indices",
-                                                                        false);
+                                                                        {.verbose = false});
         test::check("vector value indices tagged",
                     grex::indices<T>(base, grex::typed_full_tag<T, tSize>), Vec::indices(base),
-                    false);
+                    {.verbose = false});
       }
       // set
-      VC::random(dval).check("vector set", false);
+      VC::random(dval).check("vector set", {.verbose = false});
       // insert
       {
         const VC base = VC::random(dval);
         for (std::size_t j = 0; j < tSize; ++j) {
           const auto val = dval();
           VC v{base.vec.insert(j, val), std::array{((tIdxs == j) ? val : base.ref[tIdxs])...}};
-          v.check("vector insert", false);
+          v.check("vector insert", {.verbose = false});
         }
       }
       {
@@ -80,7 +83,8 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         auto f = [&](grex::AnyIndexTag auto j) {
           const auto val = dval();
           VC v{base.vec.insert(j, val), std::array{((tIdxs == j) ? val : base.ref[tIdxs])...}};
-          v.check(fmt::format("{}.insert(index_tag<{}>, {})", base.vec, j.value, val), false);
+          v.check(fmt::format("{}.insert(index_tag<{}>, {})", base.vec, j.value, val),
+                  {.verbose = false});
         };
         (..., f(grex::index_tag<tIdxs>));
       }
@@ -89,34 +93,34 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         const VC base = VC::random(dval);
         for (std::size_t j = 0; j <= tSize; ++j) {
           VC v{base.vec.cutoff(j), std::array{((tIdxs < j) ? base.ref[tIdxs] : T(0))...}};
-          v.check("vector cutoff", false);
+          v.check("vector cutoff", {.verbose = false});
         }
       }
 
       // mask
-      MC{}.check("mask zeros", false);
-      MC{Mask::ones(), std::array{(tIdxs < tSize)...}}.check("mask ones", false);
-      MC{false}.check("mask broadcast false", false);
-      MC{true}.check("mask broadcast true", false);
-      MC{bval(tIdxs)...}.check("mask set", false);
+      MC{}.check("mask zeros", {.verbose = false});
+      MC{Mask::ones(), std::array{(tIdxs < tSize)...}}.check("mask ones", {.verbose = false});
+      MC{false}.check("mask broadcast false", {.verbose = false});
+      MC{true}.check("mask broadcast true", {.verbose = false});
+      MC{bval(tIdxs)...}.check("mask set", {.verbose = false});
       {
         const MC base{bval(tIdxs)...};
         for (std::size_t j = 0; j < tSize; ++j) {
           const bool val = bval(j);
           MC v{base.mask.insert(j, val), std::array{((tIdxs == j) ? val : base.ref[tIdxs])...}};
-          v.check("mask insert", false);
+          v.check("mask insert", {.verbose = false});
         }
       }
       {
         for (std::size_t j = 0; j <= tSize; ++j) {
           MC v{Mask::cutoff_mask(j), std::array{(tIdxs < j)...}};
-          v.check("mask cutoff_mask", false);
+          v.check("mask cutoff_mask", {.verbose = false});
         }
       }
       {
         for (std::size_t j = 0; j < tSize; ++j) {
           MC v{Mask::single_mask(j), std::array{(tIdxs == j)...}};
-          v.check("mask single_mask", false);
+          v.check("mask single_mask", {.verbose = false});
         }
       }
     }
@@ -130,18 +134,20 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
 
   for (std::size_t i = 0; i < repetitions; ++i) {
     // zeros
-    test::check("scalar zeros", grex::zeros<T>(grex::scalar_tag), T{}, false);
+    test::check("scalar zeros", grex::zeros<T>(grex::scalar_tag), T{}, {.verbose = false});
     // broadcast
     {
       const T value = dist(rng);
-      test::check("scalar broadcast", grex::broadcast(value, grex::scalar_tag), value, false);
+      test::check("scalar broadcast", grex::broadcast(value, grex::scalar_tag), value,
+                  {.verbose = false});
     }
     // zero-based indices
-    test::check("scalar indices", grex::indices<T>(grex::scalar_tag), T{}, false);
+    test::check("scalar indices", grex::indices<T>(grex::scalar_tag), T{}, {.verbose = false});
     // value-based indices
     {
       const T base = dist(rng);
-      test::check("scalar value indices", grex::indices<T>(base, grex::scalar_tag), base, false);
+      test::check("scalar value indices", grex::indices<T>(base, grex::scalar_tag), base,
+                  {.verbose = false});
     }
   }
 }

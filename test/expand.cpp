@@ -32,11 +32,11 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
   // expand values
   for (std::size_t i = 0; i < repetitions; ++i) {
     const T value = dist(rng);
-    test::check("expanded_any", value, Vec::expanded_any(value)[0], false);
+    test::check("expanded_any", value, Vec::expanded_any(value)[0], {.verbose = false});
     test::check("expand_any vector tagged", value, expand_any(value, grex::full_tag<tSize>)[0],
-                false);
+                {.verbose = false});
     test::check("expand_any both tagged", expand_any(value, grex::scalar_tag),
-                expand_any(value, grex::full_tag<tSize>)[0], false);
+                expand_any(value, grex::full_tag<tSize>)[0], {.verbose = false});
   }
   grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
     for (std::size_t i = 0; i < repetitions; ++i) {
@@ -46,19 +46,19 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         Vec::expanded_zero(value),
         std::array{((tIdxs == 0) ? value : T{})...},
       };
-      checker.check("expanded_zero", false);
+      checker.check("expanded_zero", {.verbose = false});
 
       const test::VectorChecker<T, tSize> checker_tagged_vec{
         grex::expand_zero(value, grex::full_tag<tSize>),
         std::array{((tIdxs == 0) ? value : T{})...},
       };
-      checker_tagged_vec.check("expanded_zero vector tagged", false);
+      checker_tagged_vec.check("expanded_zero vector tagged", {.verbose = false});
 
       const test::VectorChecker<T, tSize> checker_tagged_both{
         grex::expand_zero(value, grex::full_tag<tSize>),
         std::array{((tIdxs == 0) ? grex::expand_zero(value, grex::scalar_tag) : T{})...},
       };
-      checker_tagged_both.check("expanded_zero both tagged", false);
+      checker_tagged_both.check("expanded_zero both tagged", {.verbose = false});
     }
   });
 
@@ -82,7 +82,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
               checker.vec.expand_zero(grex::index_tag<tDstSize>),
               {((tDstIdxs < tSize) ? checker.ref[tDstIdxs] : T{})...},
             };
-            dchecker.check("expand_zero", false);
+            dchecker.check("expand_zero", {.verbose = false});
           }
         }
       });

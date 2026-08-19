@@ -68,14 +68,14 @@ void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
               grex::gather(sdata, idxs.vec),
               {sdata[std::size_t(idxs.ref[tIdxs])]...},
             };
-            gathered.check("gather", false);
+            gathered.check("gather", {.verbose = false});
           }
           {
             test::VectorChecker<TValue, tSize> gathered{
               grex::gather(sdata, idxs.vec, grex::typed_full_tag<TValue, tSize>),
               {sdata[std::size_t(idxs.ref[tIdxs])]...},
             };
-            gathered.check("gather tagged", false);
+            gathered.check("gather tagged", {.verbose = false});
           }
           // mask_gather
           {
@@ -84,7 +84,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
               grex::mask_gather(sdata, m.mask, idxs.vec),
               {(m.ref[tIdxs] ? sdata[std::size_t(idxs.ref[tIdxs])] : TValue{})...},
             };
-            gathered.check("mask_gather", false);
+            gathered.check("mask_gather", {.verbose = false});
           }
           {
             const std::size_t part = pdist(rng);
@@ -92,7 +92,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
               grex::gather(sdata, idxs.vec, grex::part_tag<tSize>(part)),
               {((tIdxs < part) ? sdata[std::size_t(idxs.ref[tIdxs])] : TValue{})...},
             };
-            gathered.check("gather part tagged", false);
+            gathered.check("gather part tagged", {.verbose = false});
           }
           {
             test::MaskChecker<TValue, tSize> m{mval(tIdxs)...};
@@ -100,7 +100,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
               grex::gather(sdata, idxs.vec, grex::typed_masked_tag(m.mask)),
               {(m.ref[tIdxs] ? sdata[std::size_t(idxs.ref[tIdxs])] : TValue{})...},
             };
-            gathered.check("gather masked tagged", false);
+            gathered.check("gather masked tagged", {.verbose = false});
           }
         });
       }
@@ -142,14 +142,14 @@ void run_scalar(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
       {
         const TValue a = grex::gather(sdata, idx, grex::scalar_tag);
         const TValue b = sdata[std::size_t(idx)];
-        test::check("gather scalar", a, b, false);
+        test::check("gather scalar", a, b, {.verbose = false});
       }
       // mask_gather
       {
         const bool m = bool(bdist(rng));
         const TValue a = grex::mask_gather(sdata, m, idx, grex::scalar_tag);
         const TValue b = m ? sdata[std::size_t(idx)] : TValue{};
-        test::check("mask_gather scalar", a, b, false);
+        test::check("mask_gather scalar", a, b, {.verbose = false});
       }
     }
   };

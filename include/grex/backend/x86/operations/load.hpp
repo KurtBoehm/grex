@@ -98,7 +98,7 @@ GREX_FOREACH_SUB_EXT(GREX_LOAD_SUB)
 namespace partload {
 #if GREX_X86_64_LEVEL == 3
 /**
- * Byte indices whose 16-byte window starting at `16 − n` is the `pshufb` control row that moves the
+ * Byte indices whose 16-byte window starting at `16 - n` is the `pshufb` control row that moves the
  * top `n` bytes of a register down to the bottom, zeroing the bytes above them.
  */
 inline constexpr std::array<u8, 32> shift_down_idxs = [] {
@@ -135,8 +135,8 @@ GREX_ALWAYS_INLINE inline __m128i load_bytes(const u8* ptr) {
 /**
  * Gathers the `bytes ∈ [tBlock, 2·tBlock)` bytes at `ptr`, made up of `tElementBytes`-byte
  * elements, into the low bytes of a 128-bit register, zeroing the bytes above them: the two
- * overlapping loads `lo = src[0, tBlock)` and `src[bytes − tBlock, bytes)` cover everything, so the
- * top `bytes − tBlock` bytes of the latter, the only ones `lo` does not provide, are shifted down
+ * overlapping loads `lo = src[0, tBlock)` and `src[bytes - tBlock, bytes)` cover everything, so the
+ * top `bytes - tBlock` bytes of the latter, the only ones `lo` does not provide, are shifted down
  * to the bottom and interleaved above `lo`. Since a shift by 64 bits or more yields zero,
  * `bytes == tBlock` needs no special treatment.
  */
@@ -253,8 +253,8 @@ GREX_ALWAYS_INLINE inline __m128i load_prefix(const void* base, std::size_t coun
   if (size >= SIZE) [[unlikely]] { \
     return load(ptr, type_tag<NativeVector<KIND##BITS, SIZE>>); \
   } \
-  /* The requested elements end at `ptr[size]`, so the whole 16-byte load below stays in bounds */ \
-  /* and the upper half only has to be moved down by the bytes the lower half already covers. */ \
+  /* The requested elements end at `ptr[size]`, so the whole 16-byte load below stays in bounds, \
+   * and the upper half only has to be moved down by the bytes the lower half already covers. */ \
   const auto lo = load(ptr, type_tag<Half>); \
   const __m128i hi = _mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr + (size - half))); \
   return merge(lo, Half{GREX_KINDCAST(i, RKIND, BITS, 128, \

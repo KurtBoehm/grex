@@ -27,12 +27,14 @@ Equality (Vectors)
    - **x86-64-v4**: ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
+     - **Floating point, 256-bit (x86-64-v3)**: ``cmp_ps``/``cmp_pd`` with the equality predicate as an immediate, exactly as on x86-64-v4.
+     - **Floating point, 128-bit**: ``cmpeq`` intrinsics.
      - **64-bit integers**:
 
        - **x86-64-v2+**: ``cmpeq_epi64``.
        - **x86-64-v1**: emulated via two 32-bit equality comparisons, shuffles, and AND to ensure both 32-bit halves match.
 
-     - **Other integer and floating-point**: ``cmpeq`` intrinsics.
+     - **Other integers**: ``cmpeq`` intrinsics.
 
    Neon
    ====
@@ -78,7 +80,8 @@ Inequality (Vectors)
    - **x86-64-v4**: ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
-     - **Floating point**: ``cmpneq`` intrinsics.
+     - **Floating point, 256-bit (x86-64-v3)**: ``cmp_ps``/``cmp_pd`` with the inequality predicate as an immediate, exactly as on x86-64-v4.
+     - **Floating point, 128-bit**: ``cmpneq`` intrinsics.
      - **Integer**: :cpp:func:`~backend::logical_not` of :cpp:func:`~backend::compare_eq`.
 
    Neon
@@ -103,7 +106,8 @@ Less Than
    - **x86-64-v4**: ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
-     - **Floating point**: ``cmpgt`` intrinsics with operands swapped.
+     - **Floating point, 256-bit (x86-64-v3)**: ``cmp_ps``/``cmp_pd`` with the less-than predicate as an immediate, exactly as on x86-64-v4, so the operands stay in order.
+     - **Floating point, 128-bit**: ``cmpgt`` intrinsics with operands swapped.
      - **Signed integers**:
 
        - **8/16/32-bit**: ``cmpgt`` intrinsics with operands swapped.
@@ -141,7 +145,8 @@ Greater or Equal
    - **x86-64-v4**: ``cmp_*_mask`` intrinsics.
    - **Earlier**:
 
-     - **Floating point**: ``cmpge`` intrinsics.
+     - **Floating point, 256-bit (x86-64-v3)**: ``cmp_ps``/``cmp_pd`` with the greater-or-equal predicate as an immediate, exactly as on x86-64-v4.
+     - **Floating point, 128-bit**: ``cmpge`` intrinsics.
      - **Signed integers**: :cpp:func:`~backend::logical_not` of :cpp:func:`~backend::compare_lt`.
      - **Unsigned integers**:
 

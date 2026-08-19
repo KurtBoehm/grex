@@ -71,7 +71,7 @@ Scalar Variant
 **************
 
 .. cpp:function:: template<FloatVectorizable T> \
-                  T backend::fused(Scalar<T> a, Scalar<T> b, Scalar<T> c, FusedTag auto tag)
+                  T backend::fused(T a, T b, T c, FusedTag auto tag)
 
    Scalar counterpart of the above, with the same sign conventions.
 
