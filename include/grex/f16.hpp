@@ -66,9 +66,9 @@ struct FormatBase {
 template<WideFloat TFloat>
 struct Format;
 template<>
-struct Format<f32> : public FormatBase<u32, 23, 127> {};
+struct Format<f32> : FormatBase<u32, 23, 127> {};
 template<>
-struct Format<f64> : public FormatBase<u64, 52, 1023> {};
+struct Format<f64> : FormatBase<u64, 52, 1023> {};
 
 /** The unsigned integer type holding the bits of `TFloat`. */
 template<WideFloat TFloat>

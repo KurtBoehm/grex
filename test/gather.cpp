@@ -34,8 +34,8 @@ using Distribution =
 #if !GREX_BACKEND_SCALAR
 template<grex::Vectorizable TValue>
 void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
-  fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::text_style(fmt::emphasis::bold),
-             "value: {}\n", test::type_name<TValue>());
+  fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::emphasis::bold, "value: {}\n",
+             test::type_name<TValue>());
   constexpr std::size_t data_size = 3 * (std::size_t(1) << 32) / sizeof(TValue);
 
   const auto data = std::make_unique<TValue[]>(data_size);
@@ -47,8 +47,8 @@ void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
   const std::span<const TValue, data_size> sdata{data.get(), data_size};
 
   auto outer = [&]<grex::Vectorizable TIndex>(grex::TypeTag<TIndex> /*tag*/) {
-    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::text_style(fmt::emphasis::bold),
-               "index: {}\n", test::type_name<TIndex>());
+    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::emphasis::bold, "index: {}\n",
+               test::type_name<TIndex>());
 
     const auto imax = std::size_t(std::numeric_limits<TIndex>::max());
     std::uniform_int_distribution<TIndex> idist{0, std::min(data_size - 1, imax)};
@@ -116,8 +116,8 @@ void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
 #endif
 template<grex::Vectorizable TValue>
 void run_scalar(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
-  fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::text_style(fmt::emphasis::bold),
-             "value: {}\n", test::type_name<TValue>());
+  fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::emphasis::bold, "value: {}\n",
+             test::type_name<TValue>());
   constexpr std::size_t data_size = 3 * (std::size_t(1) << 32) / sizeof(TValue);
 
   const auto data = std::make_unique<TValue[]>(data_size);
@@ -129,8 +129,8 @@ void run_scalar(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
   const std::span<const TValue, data_size> sdata{data.get(), data_size};
 
   auto outer = [&]<grex::Vectorizable TIndex>(grex::TypeTag<TIndex> /*tag*/) {
-    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::text_style(fmt::emphasis::bold),
-               "index: {}\n", test::type_name<TIndex>());
+    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::emphasis::bold, "index: {}\n",
+               test::type_name<TIndex>());
 
     const auto imax = std::size_t(std::numeric_limits<TIndex>::max());
     std::uniform_int_distribution<TIndex> idist{0, std::min(data_size - 1, imax)};

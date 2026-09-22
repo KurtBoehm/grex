@@ -189,11 +189,11 @@ inline void check_msg(const TLabel& label, bool same, T1 a, T2 b, bool verbose =
 }
 
 template<typename T, std::size_t tSize = 1>
-struct IsCompleteTrait : public std::false_type {};
+inline constexpr bool is_complete = false;
 template<typename T>
-struct IsCompleteTrait<T, sizeof(T) / sizeof(T)> : public std::true_type {}; // NOLINT
+inline constexpr bool is_complete<T, sizeof(T) / sizeof(T)> = true; // NOLINT
 template<typename T>
-concept CompleteType = IsCompleteTrait<T>::value;
+concept CompleteType = is_complete<T>;
 
 // Checks that two non-tuple-like values, i.e. scalars, are equivalent.
 template<typename T>

@@ -190,7 +190,9 @@ struct NumericTrait<f16> {
 };
 
 template<typename T>
-struct TypeTag {};
+struct TypeTag {
+  using Type = T;
+};
 template<typename T>
 inline constexpr TypeTag<T> type_tag{};
 

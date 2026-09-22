@@ -33,7 +33,7 @@ inline constexpr std::size_t repetitions = 256;
 template<std::size_t tSize>
 [[gnu::noinline]] void announce_shuffle(const std::array<grex::ShuffleIndex, tSize>& idxs,
                                         const grex::Vector<Value, tSize>& base) {
-  fmt::print("grex::shuffle<{}>({}x{}{{{}}});\n", fmt::join(idxs, ", "), test::type_name<Value>(),
+  fmt::print("grex::shuffle<{}>({}×{}{{{}}});\n", fmt::join(idxs, ", "), test::type_name<Value>(),
              tSize, fmt::join(base, ", "));
 }
 

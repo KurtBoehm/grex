@@ -69,7 +69,7 @@ GREX_ALWAYS_INLINE inline SuperVector<THalf> fused(SuperVector<THalf> a, SuperVe
     .upper = fused(a.upper, b.upper, c.upper, tag),
   };
 }
-template<NativeFloatVectorizable T, std ::size_t tSize>
+template<NativeFloatVectorizable T, std::size_t tSize>
 GREX_ALWAYS_INLINE inline SubVector<T, tSize> fused(SubVector<T, tSize> a, SubVector<T, tSize> b,
                                                     SubVector<T, tSize> c, FusedTag auto tag) {
   return SubVector<T, tSize>{fused(a.full, b.full, c.full, tag)};

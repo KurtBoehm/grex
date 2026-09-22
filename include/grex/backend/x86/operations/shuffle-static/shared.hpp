@@ -19,7 +19,7 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-struct ShufflerExtractSet : public BaseExpensiveOp {
+struct ShufflerExtractSet : BaseExpensiveOp {
   template<AnyShuffleIndices auto tSh>
   static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
     return true;

@@ -184,7 +184,7 @@ private:
 
 /** Generic SIMD vector type of type `T` with `tSize` lanes. */
 template<Vectorizable T, std::size_t tSize>
-struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
+struct Vector : VectorBase<T, std::make_index_sequence<tSize>> {
   /** Scalar value type. */
   using Value = T;
   /** Corresponding `Mask` type. */
@@ -349,6 +349,13 @@ struct Vector : public VectorBase<T, std::make_index_sequence<tSize>> {
     return Vector<TDst, size>{backend::convert(vec_, type_tag<TDst>)};
   }
 
+  /** Reinterprets to another value type with the same size. */
+  template<Vectorizable TDst>
+  requires(sizeof(Value) == sizeof(TDst))
+  GREX_ALWAYS_INLINE Vector<TDst, size> bit_cast(TypeTag<TDst> /*tag*/ = {}) const {
+    return Vector<TDst, size>{backend::as<TDst>(vec_)};
+  }
+
   /** Returns lane `i`. */
   GREX_ALWAYS_INLINE T operator[](std::size_t i) const {
     return backend::extract(vec_, i);
@@ -474,24 +481,36 @@ private:
   using Base::vec_;
 };
 
+/** Trait that determines the underlying vectorizable type. */
+template<typename T>
+struct VectorizableOfTrait;
+template<Vectorizable T>
+struct VectorizableOfTrait<T> : TypeTag<T> {};
+template<Vectorizable T, std::size_t tSize>
+struct VectorizableOfTrait<Vector<T, tSize>> : TypeTag<T> {};
+
+/** The underlying vectorizable type of a vector or a vectorizable type itself. */
+template<typename T>
+using VectorizableOf = VectorizableOfTrait<T>::Type;
+
 /** Trait indicating whether `T` is a `Mask` type. */
 template<typename T>
-struct MaskTrait : public std::false_type {};
+struct MaskTrait : std::false_type {};
 
 /** `MaskTrait` specialization for `Mask`. */
 template<Vectorizable T, std::size_t tSize>
-struct MaskTrait<Mask<T, tSize>> : public std::true_type {
+struct MaskTrait<Mask<T, tSize>> : std::true_type {
   /** Corresponding vector type. */
   using VectorFor = Vector<T, tSize>;
 };
 
 /** Trait indicating whether `T` is a `Vector` type. */
 template<typename T>
-struct VectorTrait : public std::false_type {};
+struct VectorTrait : std::false_type {};
 
 /** `VectorTrait` specialization for `Vector`. */
 template<Vectorizable T, std::size_t tSize>
-struct VectorTrait<Vector<T, tSize>> : public std::true_type {
+struct VectorTrait<Vector<T, tSize>> : std::true_type {
   /** Corresponding mask type. */
   using MaskFor = Mask<T, tSize>;
 };
@@ -731,8 +750,7 @@ GREX_ALWAYS_INLINE inline Vector<TValue, tSize> mask_gather(std::span<const TVal
 
 /** `tuple_size` specialization for `grex::Vector` (for tuple-like access). */
 template<grex::Vectorizable T, std::size_t tSize>
-struct std::tuple_size<grex::Vector<T, tSize>> : public std::integral_constant<std::size_t, tSize> {
-};
+struct std::tuple_size<grex::Vector<T, tSize>> : std::integral_constant<std::size_t, tSize> {};
 
 /** `tuple_element` specialization for `grex::Vector` (for tuple-like access). */
 template<std::size_t tIdx, grex::Vectorizable T, std::size_t tSize>
@@ -743,7 +761,7 @@ struct std::tuple_element<tIdx, grex::Vector<T, tSize>> {
 
 /** `tuple_size` specialization for `grex::Mask` (for tuple-like access). */
 template<grex::Vectorizable T, std::size_t tSize>
-struct std::tuple_size<grex::Mask<T, tSize>> : public std::integral_constant<std::size_t, tSize> {};
+struct std::tuple_size<grex::Mask<T, tSize>> : std::integral_constant<std::size_t, tSize> {};
 
 /** `tuple_element` specialization for `grex::Mask` (for tuple-like access). */
 template<std::size_t tIdx, grex::Vectorizable T, std::size_t tSize>

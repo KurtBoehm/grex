@@ -21,14 +21,14 @@
 
 template<grex::Vectorizable T, std::size_t tSize>
 struct std::formatter<grex::Vector<T, tSize>>
-    : public std::formatter<std::array<grex::format_impl::Formatted<T>, tSize>> {
+    : std::formatter<std::array<grex::format_impl::Formatted<T>, tSize>> {
   std::format_context::iterator format(grex::Vector<T, tSize> v, std::format_context& ctx) const {
     return formatter<std::array<grex::format_impl::Formatted<T>, tSize>>::format(
       grex::format_impl::formatted_array(v), ctx);
   }
 };
 template<grex::Vectorizable T, std::size_t tSize>
-struct std::formatter<grex::Mask<T, tSize>> : public std::formatter<std::array<bool, tSize>> {
+struct std::formatter<grex::Mask<T, tSize>> : std::formatter<std::array<bool, tSize>> {
   std::format_context::iterator format(grex::Mask<T, tSize> m, std::format_context& ctx) const {
     return formatter<std::array<bool, tSize>>::format(m.as_array(), ctx);
   }

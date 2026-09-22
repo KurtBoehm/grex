@@ -49,7 +49,7 @@ struct ScalarTag {
 inline constexpr ScalarTag scalar_tag{};
 
 template<Vectorizable T>
-struct TypedScalarTag : public ScalarTag {
+struct TypedScalarTag : ScalarTag {
   using Value = T;
 };
 template<Vectorizable T>
@@ -103,7 +103,7 @@ template<std::size_t tSize>
 inline constexpr FullTag<tSize> full_tag{};
 
 template<Vectorizable T, std::size_t tSize>
-struct TypedFullTag : public FullTag<tSize> {
+struct TypedFullTag : FullTag<tSize> {
   using Value = T;
 
   using FullTag<tSize>::mask;
@@ -355,6 +355,19 @@ template<Vectorizable T>
 inline constexpr MinNativeTag<T> min_native_tag{};
 template<Vectorizable T>
 inline constexpr MaxNativeTag<T> max_native_tag{};
+
+template<typename T>
+struct FullTagForTrait;
+template<Vectorizable T>
+struct FullTagForTrait<T> : TypeTag<TypedScalarTag<T>> {};
+#if !GREX_BACKEND_SCALAR
+template<Vectorizable T, std::size_t tSize>
+struct FullTagForTrait<Vector<T, tSize>> : TypeTag<TypedFullTag<T, tSize>> {};
+#endif
+template<typename T>
+using FullTagFor = FullTagForTrait<T>::Type;
+template<typename T>
+inline constexpr FullTagFor<T> full_tag_for{};
 } // namespace grex
 
 #endif // INCLUDE_GREX_TAGS_HPP

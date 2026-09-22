@@ -37,8 +37,8 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
   using Dst = grex::UnsignedInt<dst_bytes>;
   static constexpr auto sizes = grex::native_sizes<Dst>;
   static constexpr auto padding = grex::register_bits.back() / 8;
-  fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::text_style(fmt::emphasis::bold),
-             "{} → {}, {}\n", src_bytes, dst_bytes, test::type_name<Dst>());
+  fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::emphasis::bold, "{} → {}, {}\n",
+             src_bytes, dst_bytes, test::type_name<Dst>());
 
   std::uniform_int_distribution<Dst> dist{
     Dst{},
@@ -93,8 +93,8 @@ void run_scalar(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
   static constexpr std::size_t src_bytes = tSrc;
   static constexpr std::size_t dst_bytes = std::bit_ceil(src_bytes);
   using Dst = grex::UnsignedInt<dst_bytes>;
-  fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::text_style(fmt::emphasis::bold),
-             "{} → {}, {}\n", src_bytes, dst_bytes, test::type_name<Dst>());
+  fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::emphasis::bold, "{} → {}, {}\n",
+             src_bytes, dst_bytes, test::type_name<Dst>());
 
   std::uniform_int_distribution<Dst> dist{
     Dst{},

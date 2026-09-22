@@ -21,12 +21,12 @@
 
 namespace grex {
 /**
-  Indicates whether the backend supports fused multiply-add.
-
-  If `false`, fused multiply-addition is emulated:
-  - `f64`/`f32`: multiplication, addition/subtraction, and negation (if required).
-  - `f16`: widen to `f32`, perform `f32` FMA (which may be emulated), and round back.
-*/
+ * Indicates whether the backend supports fused multiply-add.
+ *
+ *  If `false`, fused multiply-addition is emulated:
+ * - `f64`/`f32`: multiplication, addition/subtraction, and negation (if required).
+ * - `f16`: widen to `f32`, perform `f32` FMA (which may be emulated), and round back.
+ */
 template<FloatVectorizable T>
 inline constexpr bool has_fma = std::same_as<T, f16> ? backend::has_f16_fma : backend::has_fma;
 
@@ -105,6 +105,46 @@ inline T make_finite(T a) {
   return backend::make_finite(a);
 }
 
+//==================================================================================================
+// Horizontal Operations
+//==================================================================================================
+
+inline bool horizontal_and(bool value) {
+  return value;
+}
+template<Vectorizable T>
+inline T horizontal_add(T value) {
+  return value;
+}
+template<Vectorizable T>
+inline T horizontal_max(T value) {
+  return value;
+}
+
+//==================================================================================================
+// Reinterpret
+//==================================================================================================
+
+/** Reinterprets to another value type, retaining the overall byte count of the vector. */
+template<Vectorizable TDst, Vectorizable TSrc>
+requires(sizeof(TSrc) == sizeof(TDst))
+GREX_ALWAYS_INLINE inline TDst bit_cast(TSrc src) {
+  return std::bit_cast<TDst>(src);
+}
+
+#if !GREX_BACKEND_SCALAR
+/** Reinterprets to another value type, retaining the overall byte count of the vector. */
+template<Vectorizable TDst, AnyVector TSrc>
+requires(sizeof(typename TSrc::Value) == sizeof(TDst))
+GREX_ALWAYS_INLINE inline Vector<TDst, TSrc::size> bit_cast(TSrc src) {
+  return src.bit_cast(type_tag<TDst>);
+}
+#endif
+
+//==================================================================================================
+// Conversions
+//==================================================================================================
+
 // To determine whether a conversion is safe, i.e. guaranteed not to change finite values,
 // there are two cases to consider:
 // - floating-point → integer: Always unsafe, since max(f32) ≈ 2^128
@@ -118,7 +158,6 @@ concept SafeConversion = (!FloatVectorizable<TSrc> || FloatVectorizable<TDst>) &
                          (SignedVectorizable<TDst> || UnsignedVectorizable<TSrc>) &&
                          NumericTrait<TDst>::digits >= NumericTrait<TSrc>::digits;
 
-// convert
 template<Vectorizable TDst, Vectorizable TSrc>
 inline TDst convert(TSrc src) {
   return TDst(src);
@@ -160,6 +199,10 @@ inline Mask<TDst, TSrc::size> convert(TSrc src, AnyBoolTag auto /*tag*/) {
   return src.convert(type_tag<TDst>);
 }
 #endif
+
+//==================================================================================================
+// Pack reductions
+//==================================================================================================
 
 GREX_ALWAYS_INLINE inline auto add(auto... values) {
   return backend::nary_add(values...);

@@ -58,8 +58,8 @@ inline auto make_distribution() {
 #if !GREX_BACKEND_SCALAR
 void run_simd(Rng& rng) {
   auto cvt = [&]<typename TDst>(grex::TypeTag<TDst> /*tag*/) {
-    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::text_style(fmt::emphasis::bold),
-               "{} → {}\n", test::type_name<Src>(), test::type_name<TDst>());
+    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::emphasis::bold, "{} → {}\n",
+               test::type_name<Src>(), test::type_name<TDst>());
     auto op = [&]<std::size_t tSize>(grex::IndexTag<tSize> /*tag*/) {
       fmt::print(fmt::fg(fmt::terminal_color::magenta), "{}\n", tSize);
       auto dist = make_distribution<Src, TDst>();
@@ -130,8 +130,8 @@ void run_simd(Rng& rng) {
 #endif
 void run_scalar(Rng& rng) {
   auto cvt = [&]<typename TDst>(grex::TypeTag<TDst> /*tag*/) {
-    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::text_style(fmt::emphasis::bold),
-               "{} → {}\n", test::type_name<Src>(), test::type_name<TDst>());
+    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::emphasis::bold, "{} → {}\n",
+               test::type_name<Src>(), test::type_name<TDst>());
     auto dist = make_distribution<Src, TDst>();
     for (std::size_t i = 0; i < repetitions; ++i) {
       const Src src = dist(rng);

@@ -30,31 +30,30 @@ inline constexpr std::size_t repetitions = 256;
  * inlined and optimized into each of the `repetitions` unrolled copies of the test body.
  */
 template<std::size_t tSize, typename TBlended>
-[[gnu::cold, gnu::noinline]] void fail_blend_zero(
-  const std::array<grex::BlendZeroSelector, tSize>& sels, const grex::Vector<Value, tSize>& a,
-  const std::array<Value, tSize>& aref, const TBlended& blended) {
+[[gnu::cold, gnu::noinline]] void
+fail_blend_zero(const std::array<grex::BlendZeroSelector, tSize>& sels,
+                const grex::Vector<Value, tSize>& a, const std::array<Value, tSize>& aref,
+                const TBlended& blended) {
   std::array<Value, tSize> ref{};
   for (std::size_t i = 0; i < tSize; ++i) {
     ref[i] = (sels[i] == grex::keep_bz) ? aref[i] : Value{};
   }
-  fmt::print("grex::blend_zero<{}>({}x{}, {}) == {}, ref={};\n", fmt::join(sels, ", "),
+  fmt::print("grex::blend_zero<{}>({}×{}, {}) == {}, ref={};\n", fmt::join(sels, ", "),
              test::type_name<Value>(), tSize, a, blended, ref);
   std::exit(EXIT_FAILURE);
 }
 
 /** Reports a failed `blend` and terminates, see `fail_blend_zero`. */
 template<std::size_t tSize, typename TBlended>
-[[gnu::cold, gnu::noinline]] void fail_blend(const std::array<grex::BlendSelector, tSize>& sels,
-                                             const grex::Vector<Value, tSize>& a,
-                                             const std::array<Value, tSize>& aref,
-                                             const grex::Vector<Value, tSize>& b,
-                                             const std::array<Value, tSize>& bref,
-                                             const TBlended& blended) {
+[[gnu::cold, gnu::noinline]] void
+fail_blend(const std::array<grex::BlendSelector, tSize>& sels, const grex::Vector<Value, tSize>& a,
+           const std::array<Value, tSize>& aref, const grex::Vector<Value, tSize>& b,
+           const std::array<Value, tSize>& bref, const TBlended& blended) {
   std::array<Value, tSize> ref{};
   for (std::size_t i = 0; i < tSize; ++i) {
     ref[i] = (sels[i] != grex::rhs_bl) ? aref[i] : bref[i];
   }
-  fmt::print("grex::blend<{}>({}x{}, {}, {}) == {}, ref={};\n", fmt::join(sels, ", "),
+  fmt::print("grex::blend<{}>({}×{}, {}, {}) == {}, ref={};\n", fmt::join(sels, ", "),
              test::type_name<Value>(), tSize, a, b, blended, ref);
   std::exit(EXIT_FAILURE);
 }

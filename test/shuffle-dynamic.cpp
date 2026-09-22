@@ -40,9 +40,8 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
     auto idst = std::uniform_int_distribution<Index>(0, Index(tSize - 1));
     auto ival = [&] { return idst(rng); };
 
-    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::text_style(fmt::emphasis::bold),
-               "[{}x{}, {}x{}]\n", test::type_name<Value>(), tSize, test::type_name<Index>(),
-               tIdxSize);
+    fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::emphasis::bold, "[{}×{}, {}×{}]\n",
+               test::type_name<Value>(), tSize, test::type_name<Index>(), tIdxSize);
 
     for (std::size_t i = 0; i < repetitions; ++i) {
       const VC table = VC::random(dval);
@@ -56,7 +55,7 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
       SVC shuffled{grex::shuffle(table.vec, idxs.vec), ref};
       shuffled.check(
         [&] {
-          return fmt::format("shuffle<{}x{}, {}x{}>({}, {})", test::type_name<Value>(), tSize,
+          return fmt::format("shuffle<{}×{}, {}×{}>({}, {})", test::type_name<Value>(), tSize,
                              test::type_name<Index>(), tIdxSize, idxs.vec, table.vec);
         },
         false);
