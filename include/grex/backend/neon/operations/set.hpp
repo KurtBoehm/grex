@@ -45,29 +45,29 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 2> set64(T v0, T v1) {
   return set64(expand_any(v0, index_tag<2>), expand_any(v1, index_tag<2>));
 }
 
-template<std::size_t tOffset, IntVectorizable TDst, IntVectorizable T>
-GREX_ALWAYS_INLINE inline TDst merge_ints(T v0, T v1) {
-  auto dst = TDst(v0);
-  std::memcpy(reinterpret_cast<u8*>(&dst) + tOffset, &v1, tOffset);
+template<std::size_t Offset, IntVectorizable Dst, IntVectorizable T>
+GREX_ALWAYS_INLINE inline Dst merge_ints(T v0, T v1) {
+  auto dst = Dst(v0);
+  std::memcpy(reinterpret_cast<u8*>(&dst) + Offset, &v1, Offset);
   return dst;
 }
 
-template<IntVectorizable TDst, Int8 T>
-GREX_ALWAYS_INLINE inline TDst merge8(T v0, T v1) {
+template<IntVectorizable Dst, Int8 T>
+GREX_ALWAYS_INLINE inline Dst merge8(T v0, T v1) {
   if (__builtin_constant_p(v0) == 0 && __builtin_constant_p(v1) == 0) {
-    auto dst = TDst(v0);
-    auto src = TDst(v1);
+    auto dst = Dst(v0); // NOLINT(*-const-correctness)
+    auto src = Dst(v1); // NOLINT(*-const-correctness)
     asm("bfi %w0, %w1, %2, %3" : "+r"(dst) : "r"(src), "i"(8), "i"(8)); // NOLINT
     return dst;
   }
-  return merge_ints<1, TDst>(v0, v1);
+  return merge_ints<1, Dst>(v0, v1);
 }
 template<IntVectorizable T>
 GREX_ALWAYS_INLINE inline CopySignInt<T, 4> merge16(T v0, T v1) {
   using Dst = CopySignInt<T, 4>;
   if (__builtin_constant_p(v0) == 0 && __builtin_constant_p(v1) == 0) {
-    auto dst = Dst(v0);
-    auto src = Dst(v1);
+    auto dst = Dst(v0); // NOLINT(*-const-correctness)
+    auto src = Dst(v1); // NOLINT(*-const-correctness)
     asm("bfi %w0, %w1, %2, %3" : "+r"(dst) : "r"(src), "i"(16), "i"(16)); // NOLINT
     return dst;
   }
@@ -167,8 +167,8 @@ GREX_ALWAYS_INLINE inline f16x8 set16(f16 v0, f16 v1, f16 v2, f16 v3, f16 v4, f1
 
 // f32
 GREX_ALWAYS_INLINE inline f32x4 set32(f32 v0, f32 v1) {
-  auto a0 = expand_any(v0, index_tag<4>);
-  auto a1 = expand_any(v1, index_tag<4>);
+  const auto a0 = expand_any(v0, index_tag<4>);
+  const auto a1 = expand_any(v1, index_tag<4>);
   return f32x4{.r = vzip1q_f32(a0.r, a1.r)};
 }
 GREX_ALWAYS_INLINE inline f32x4 set32(f32 v0, f32 v1, f32 v2, f32 v3) {
@@ -177,8 +177,8 @@ GREX_ALWAYS_INLINE inline f32x4 set32(f32 v0, f32 v1, f32 v2, f32 v3) {
 
 // f64
 GREX_ALWAYS_INLINE inline f64x2 set64(f64 v0, f64 v1) {
-  auto vec0 = expand_any(v0, index_tag<2>);
-  auto vec1 = expand_any(v1, index_tag<2>);
+  const auto vec0 = expand_any(v0, index_tag<2>);
+  const auto vec1 = expand_any(v1, index_tag<2>);
   return f64x2{.r = vzip1q_f64(vec0.r, vec1.r)};
 }
 

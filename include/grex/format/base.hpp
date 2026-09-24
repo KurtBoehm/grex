@@ -30,8 +30,8 @@ template<Vectorizable T>
 using Formatted = std::conditional_t<std::same_as<T, f16>, f32, T>;
 
 /** The lanes of `v` as an array of formattable values. */
-template<Vectorizable T, std::size_t tSize>
-inline std::array<Formatted<T>, tSize> formatted_array(Vector<T, tSize> v) {
+template<Vectorizable T, std::size_t N>
+inline std::array<Formatted<T>, N> formatted_array(Vector<T, N> v) {
   if constexpr (std::same_as<T, f16>) {
     return v.convert(type_tag<f32>).as_array();
   } else {

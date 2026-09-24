@@ -29,64 +29,63 @@ inline constexpr std::size_t repetitions = 256;
  * Kept out of line and cold: the reporting code formats whole vectors, and would otherwise be
  * inlined and optimized into each of the `repetitions` unrolled copies of the test body.
  */
-template<std::size_t tSize, typename TBlended>
+template<std::size_t N, typename Blended>
 [[gnu::cold, gnu::noinline]] void
-fail_blend_zero(const std::array<grex::BlendZeroSelector, tSize>& sels,
-                const grex::Vector<Value, tSize>& a, const std::array<Value, tSize>& aref,
-                const TBlended& blended) {
-  std::array<Value, tSize> ref{};
-  for (std::size_t i = 0; i < tSize; ++i) {
+fail_blend_zero(const std::array<grex::BlendZeroSelector, N>& sels, const grex::Vector<Value, N>& a,
+                const std::array<Value, N>& aref, const Blended& blended) {
+  std::array<Value, N> ref{};
+  for (std::size_t i = 0; i < N; ++i) {
     ref[i] = (sels[i] == grex::keep_bz) ? aref[i] : Value{};
   }
   fmt::print("grex::blend_zero<{}>({}×{}, {}) == {}, ref={};\n", fmt::join(sels, ", "),
-             test::type_name<Value>(), tSize, a, blended, ref);
+             test::type_name<Value>(), N, a, blended, ref);
   std::exit(EXIT_FAILURE);
 }
 
 /** Reports a failed `blend` and terminates, see `fail_blend_zero`. */
-template<std::size_t tSize, typename TBlended>
+template<std::size_t N, typename Blended>
 [[gnu::cold, gnu::noinline]] void
-fail_blend(const std::array<grex::BlendSelector, tSize>& sels, const grex::Vector<Value, tSize>& a,
-           const std::array<Value, tSize>& aref, const grex::Vector<Value, tSize>& b,
-           const std::array<Value, tSize>& bref, const TBlended& blended) {
-  std::array<Value, tSize> ref{};
-  for (std::size_t i = 0; i < tSize; ++i) {
+fail_blend(const std::array<grex::BlendSelector, N>& sels, const grex::Vector<Value, N>& a,
+           const std::array<Value, N>& aref, const grex::Vector<Value, N>& b,
+           const std::array<Value, N>& bref, const Blended& blended) {
+  std::array<Value, N> ref{};
+  for (std::size_t i = 0; i < N; ++i) {
     ref[i] = (sels[i] != grex::rhs_bl) ? aref[i] : bref[i];
   }
   fmt::print("grex::blend<{}>({}×{}, {}, {}) == {}, ref={};\n", fmt::join(sels, ", "),
-             test::type_name<Value>(), tSize, a, b, blended, ref);
+             test::type_name<Value>(), N, a, b, blended, ref);
   std::exit(EXIT_FAILURE);
 }
 
-template<std::size_t tSize>
-void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
-  using VC = test::VectorChecker<Value, tSize>;
+template<std::size_t N>
+void run_simd(test::Rng& rng, grex::IndexTag<N> /*tag*/) {
+  using VC = test::VectorChecker<Value, N>;
 
   auto dist = test::make_distribution<Value>();
   auto dval = [&] { return dist(rng); };
 
-  grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
+  grex::static_apply<N>([&]<std::size_t... I> {
     VC vca = VC::random(dval);
     VC vcb = VC::random(dval);
 
-    constexpr auto bzs = grex::static_apply<repetitions>([&]<std::size_t... tReps>() {
+    constexpr auto bzs = grex::static_apply<repetitions>([&]<std::size_t... Reps> {
       test::Pcg32 pcg{};
       auto r = [&](auto /*dummy*/) { return grex::BlendZeroSelector(pcg.bounded_random(3)); };
-      auto arr = [&](auto /*dummy*/) { return std::array{r(tIdxs)...}; };
-      return std::array<std::array<grex::BlendZeroSelector, tSize>, repetitions>{arr(tReps)...};
+      auto arr = [&](auto /*dummy*/) { return std::array{r(I)...}; };
+      return std::array<std::array<grex::BlendZeroSelector, N>, repetitions>{arr(Reps)...};
     });
-    constexpr auto bls = grex::static_apply<repetitions>([&]<std::size_t... tReps>() {
+    constexpr auto bls = grex::static_apply<repetitions>([&]<std::size_t... Reps> {
       test::Pcg32 pcg{};
       auto r = [&](auto /*dummy*/) { return grex::BlendSelector(pcg.bounded_random(3)); };
-      auto arr = [&](auto /*dummy*/) { return std::array{r(tIdxs)...}; };
-      return std::array<std::array<grex::BlendSelector, tSize>, repetitions>{arr(tReps)...};
+      auto arr = [&](auto /*dummy*/) { return std::array{r(I)...}; };
+      return std::array<std::array<grex::BlendSelector, N>, repetitions>{arr(Reps)...};
     });
 
     auto fix = [&](grex::AnyIndexTag auto rep) {
       {
-        const auto blended = grex::blend_zero<bzs[rep][tIdxs]...>(vca.vec);
+        const auto blended = grex::blend_zero<bzs[rep][I]...>(vca.vec);
         bool same = true;
-        for (std::size_t i = 0; i < tSize; ++i) {
+        for (std::size_t i = 0; i < N; ++i) {
           const grex::BlendZeroSelector bz = bzs[rep][i];
           switch (bz) {
             case grex::keep_bz: same = same && blended[i] == vca.ref[i]; break;
@@ -100,9 +99,9 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
         }
       }
       {
-        const auto blended = grex::blend<bls[rep][tIdxs]...>(vca.vec, vcb.vec);
+        const auto blended = grex::blend<bls[rep][I]...>(vca.vec, vcb.vec);
         bool same = true;
-        for (std::size_t i = 0; i < tSize; ++i) {
+        for (std::size_t i = 0; i < N; ++i) {
           const grex::BlendSelector bl = bls[rep][i];
           switch (bl) {
             case grex::lhs_bl: same = same && blended[i] == vca.ref[i]; break;
@@ -117,7 +116,7 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
       }
     };
     grex::static_apply<repetitions>(
-      [&]<std::size_t... tReps>() { (..., fix(grex::index_tag<tReps>)); });
+      [&]<std::size_t... Reps> { (..., fix(grex::index_tag<Reps>)); });
   });
 }
 

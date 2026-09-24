@@ -28,12 +28,12 @@ namespace grex::backend {
   }
 GREX_FOREACH_TYPE_EXT(GREX_EXTRINGLE, 128)
 
-template<Vectorizable T, std::size_t tSize>
-inline T extract_single(SubVector<T, tSize> v) {
+template<Vectorizable T, std::size_t N>
+inline T extract_single(SubVector<T, N> v) {
   return extract_single(v.full);
 }
-template<typename THalf>
-inline ValueOf<THalf> extract_single(SuperVector<THalf> v) {
+template<typename Half>
+inline ValueOf<Half> extract_single(SuperVector<Half> v) {
   return extract_single(v.lower);
 }
 } // namespace grex::backend

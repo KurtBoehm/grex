@@ -65,12 +65,12 @@ namespace grex::backend {
   GREX_FOREACH_TYPE_EXT(GREX_EXTRINGLE, REGISTERBITS, REGISTERBITS)
 GREX_FOREACH_X86_64_LEVEL(GREX_EXTRINGLE_ALL)
 
-template<Vectorizable T, std::size_t tSize>
-inline T extract_single(SubVector<T, tSize> v) {
+template<Vectorizable T, std::size_t N>
+inline T extract_single(SubVector<T, N> v) {
   return extract_single(v.full);
 }
-template<typename THalf>
-inline typename THalf::Value extract_single(SuperVector<THalf> v) {
+template<typename Half>
+inline typename Half::Value extract_single(SuperVector<Half> v) {
   return extract_single(v.lower);
 }
 } // namespace grex::backend

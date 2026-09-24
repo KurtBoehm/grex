@@ -59,10 +59,10 @@ inline __m512i as_u16(__m512h r) {
  * Convert an x86 register to its stored type, which maps `f16` to the same-width unsigned-integer
  * register (see `as_u16` above) and returns the input unchanged otherwise.
  */
-template<typename TValue>
+template<typename V>
 GREX_ALWAYS_INLINE inline auto to_stored(auto r) {
 #if GREX_F16_NATIVE_ARITHMETIC
-  if constexpr (std::same_as<TValue, f16>) {
+  if constexpr (std::same_as<V, f16>) {
     return as_u16(r);
   } else
 #endif
@@ -73,12 +73,12 @@ GREX_ALWAYS_INLINE inline auto to_stored(auto r) {
 
 /**
  * Convert an x86 register from its stored type, which maps the same-width unsigned-integer register
- * to `f16` (see `as_ph` above) if `TValue` is `f16` and returns the input unchanged otherwise.
+ * to `f16` (see `as_ph` above) if `V` is `f16` and returns the input unchanged otherwise.
  */
-template<typename TValue>
+template<typename V>
 GREX_ALWAYS_INLINE inline auto from_stored(auto r) {
 #if GREX_F16_NATIVE_ARITHMETIC
-  if constexpr (std::same_as<TValue, f16>) {
+  if constexpr (std::same_as<V, f16>) {
     return as_ph(r);
   } else
 #endif
@@ -90,15 +90,15 @@ GREX_ALWAYS_INLINE inline auto from_stored(auto r) {
 // Native conversions are only available through F16C, which is part of level 3, or AVX512-FP16,
 // which is handled separately.
 #if GREX_X86_64_LEVEL >= 3
-template<std::size_t tSize>
-requires(tSize < 8)
-GREX_ALWAYS_INLINE inline VectorFor<f32, tSize> f16_to_f32(SubVector<f16, tSize> v) {
-  return VectorFor<f32, tSize>{_mm_cvtph_ps(v.full.r)};
+template<std::size_t N>
+requires(N < 8)
+GREX_ALWAYS_INLINE inline VectorFor<f32, N> f16_to_f32(SubVector<f16, N> v) {
+  return VectorFor<f32, N>{_mm_cvtph_ps(v.full.r)};
 }
-template<TypedVector<f32> TVec>
-requires(size_of<TVec> < 8)
-GREX_ALWAYS_INLINE inline SubVector<f16, size_of<TVec>> f32_to_f16(TVec v) {
-  return SubVector<f16, size_of<TVec>>{mm::cvtps_ph(v.registr())};
+template<TypedVector<f32> Vec>
+requires(size_of<Vec> < 8)
+GREX_ALWAYS_INLINE inline SubVector<f16, size_of<Vec>> f32_to_f16(Vec v) {
+  return SubVector<f16, size_of<Vec>>{mm::cvtps_ph(v.registr())};
 }
 
 GREX_ALWAYS_INLINE inline VectorFor<f32, 8> f16_to_f32(NativeVector<f16, 8> v) {
@@ -233,10 +233,10 @@ GREX_ALWAYS_INLINE inline __m128i from_f32(__m128 v) {
 
 // Sub-native binary16 vectors are converted through the native register they wrap, which is the
 // only one that is ever actually populated.
-template<std::size_t tSize>
-requires(tSize == 2 || tSize == 4)
-GREX_ALWAYS_INLINE inline VectorFor<f32, tSize> f16_to_f32(SubVector<f16, tSize> v) {
-  return VectorFor<f32, tSize>{f16_convert::to_f32(f16_convert::widen_lo(v.registr()))};
+template<std::size_t N>
+requires(N == 2 || N == 4)
+GREX_ALWAYS_INLINE inline VectorFor<f32, N> f16_to_f32(SubVector<f16, N> v) {
+  return VectorFor<f32, N>{f16_convert::to_f32(f16_convert::widen_lo(v.registr()))};
 }
 GREX_ALWAYS_INLINE inline SubVector<f16, 4> f32_to_f16(f32x4 v) {
   const __m128i bits = f16_convert::from_f32(v.r);
@@ -348,8 +348,8 @@ GREX_ALWAYS_INLINE inline NativeVector<f32, 8> f64_to_f32_odd(NativeVector<f64, 
 }
 #endif
 /** Narrow a binary64 vector to binary32, rounding to odd (see `f16_convert::round_odd`). */
-template<TypedVector<f64> THalf>
-GREX_ALWAYS_INLINE inline VectorFor<f32, 2 * THalf::size> f64_to_f32_odd(SuperVector<THalf> v) {
+template<TypedVector<f64> Half>
+GREX_ALWAYS_INLINE inline VectorFor<f32, 2 * Half::size> f64_to_f32_odd(SuperVector<Half> v) {
   return merge(f64_to_f32_odd(v.lower), f64_to_f32_odd(v.upper));
 }
 
@@ -370,9 +370,9 @@ GREX_ALWAYS_INLINE inline NativeVector<f64, 8> f32_to_f64(NativeVector<f32, 8> v
 }
 #endif
 /** Widen a binary32 vector to binary64, which is always exact. */
-template<TypedVector<f32> TVec>
-requires(is_supernative<f64, size_of<TVec>>)
-GREX_ALWAYS_INLINE inline VectorFor<f64, size_of<TVec>> f32_to_f64(TVec v) {
+template<TypedVector<f32> Vec>
+requires(is_supernative<f64, size_of<Vec>>)
+GREX_ALWAYS_INLINE inline VectorFor<f64, size_of<Vec>> f32_to_f64(Vec v) {
   return {.lower = f32_to_f64(get_low(v)), .upper = f32_to_f64(get_high(v))};
 }
 
@@ -380,13 +380,13 @@ GREX_ALWAYS_INLINE inline VectorFor<f64, size_of<TVec>> f32_to_f64(TVec v) {
  * Convert a binary16 vector into the binary64 vector with the same values, which is always
  * exact.
  */
-template<Float16Vector TVec>
-GREX_ALWAYS_INLINE inline VectorFor<f64, size_of<TVec>> f16_to_f64(TVec v) {
+template<Float16Vector Vec>
+GREX_ALWAYS_INLINE inline VectorFor<f64, size_of<Vec>> f16_to_f64(Vec v) {
   return f32_to_f64(f16_to_f32(v));
 }
 /** Convert a binary64 vector into the binary16 vector with the nearest values, ties to even. */
-template<TypedVector<f64> TVec>
-GREX_ALWAYS_INLINE inline VectorFor<f16, size_of<TVec>> f64_to_f16(TVec v) {
+template<TypedVector<f64> Vec>
+GREX_ALWAYS_INLINE inline VectorFor<f16, size_of<Vec>> f64_to_f16(Vec v) {
   return f32_to_f16(f64_to_f32_odd(v));
 }
 #endif

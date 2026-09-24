@@ -14,8 +14,8 @@ Hardware gather exists only for 32- and 64-bit values, so all narrower value typ
 Gather
 ******
 
-.. cpp:function:: template<Vectorizable TValue, std::size_t Extent, IntVectorizable TIndex, std::size_t N> \
-                  VectorFor<TValue, N> backend::gather(std::span<const TValue, Extent> data, Vector<TIndex, N> idxs)
+.. cpp:function:: template<Vectorizable V, std::size_t Extent, IntVectorizable I, std::size_t N> \
+                  VectorFor<V, N> backend::gather(std::span<const V, Extent> data, Vector<I, N> idxs)
 
    Loads elements from ``data`` at positions given by ``idxs``:
 
@@ -64,8 +64,8 @@ Gather
 Masked Gather
 *************
 
-.. cpp:function:: template<Vectorizable TValue, std::size_t Extent, Vectorizable TIndex, std::size_t N> \
-                  VectorFor<TValue, N> backend::mask_gather(std::span<const TValue, Extent> data, MaskFor<TValue, N> m, Vector<TIndex, N> idxs)
+.. cpp:function:: template<Vectorizable V, std::size_t Extent, Vectorizable I, std::size_t N> \
+                  VectorFor<V, N> backend::mask_gather(std::span<const V, Extent> data, MaskFor<V, N> m, Vector<I, N> idxs)
 
    Masked variant of :cpp:func:`~backend::gather`:
 

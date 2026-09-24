@@ -31,19 +31,19 @@
 
 namespace grex::backend {
 // N == M: trivial case, just load and rewrap.
-template<std::size_t tSrc, AnyVector TDst>
-requires(!AnySuperNativeVector<TDst> && tSrc == sizeof(typename TDst::Value))
-inline TDst load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/, TypeTag<TDst> /*dst*/) {
-  const auto raw = load(ptr, type_tag<VectorFor<u8, tSrc * TDst::size>>).registr();
-  return TDst{as<typename TDst::Value>(raw)};
+template<std::size_t Src, AnyVector Dst>
+requires(!AnySuperNativeVector<Dst> && Src == sizeof(typename Dst::Value))
+inline Dst load_multibyte(const u8* ptr, IndexTag<Src> /*src*/, TypeTag<Dst> /*dst*/) {
+  const auto raw = load(ptr, type_tag<VectorFor<u8, Src * Dst::size>>).registr();
+  return Dst{as<typename Dst::Value>(raw)};
 }
 
-template<std::size_t tSrc>
-requires(tSrc < 8)
-inline u64x2 load_multibyte(const u8* ptr, IndexTag<tSrc> /*src*/, TypeTag<u64x2> /*dst*/) {
+template<std::size_t Src>
+requires(Src < 8)
+inline u64x2 load_multibyte(const u8* ptr, IndexTag<Src> /*src*/, TypeTag<u64x2> /*dst*/) {
   // The comments assume M == 5; M == 6 and 7 are analogous.
   // offset = dst_bytes - src_bytes = 8 - 5 = 3
-  constexpr std::size_t offset = 8 - tSrc;
+  constexpr std::size_t offset = 8 - Src;
   // ...00000|11111... (raw bytes padded around the two 5-byte integers)
   const uint64x2_t raw = vreinterpretq_u64_u8(vld1q_u8(ptr - offset));
   // ···...00|···11111 (shift each 64-bit lane left so that the lower integer becomes top-aligned)

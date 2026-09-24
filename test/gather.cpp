@@ -24,6 +24,7 @@
 #include <bit>
 #endif
 
+namespace {
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 template<typename T>
@@ -32,73 +33,73 @@ using Distribution =
                      std::uniform_int_distribution<T>>;
 
 #if !GREX_BACKEND_SCALAR
-template<grex::Vectorizable TValue>
-void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
+template<grex::Vectorizable V>
+void run_simd(test::Rng& rng, grex::TypeTag<V> /*tag*/) {
   fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::emphasis::bold, "value: {}\n",
-             test::type_name<TValue>());
-  constexpr std::size_t data_size = 3 * (std::size_t(1) << 32) / sizeof(TValue);
+             test::type_name<V>());
+  constexpr std::size_t data_size = 3 * (1UZ << 32UZ) / sizeof(V);
 
-  const auto data = std::make_unique<TValue[]>(data_size);
-  auto vdist = test::make_distribution<TValue>();
-#pragma omp parallel for default(shared) private(vdist, rng) schedule(guided)
+  const auto data = std::make_unique<V[]>(data_size);
+  auto vdist = test::make_distribution<V>(); // NOLINT(*-const-correctness)
+#pragma omp parallel for default(none) shared(data) private(vdist, rng) schedule(guided)
   for (std::size_t i = 0; i < data_size; ++i) {
     data[i] = vdist(rng);
   }
-  const std::span<const TValue, data_size> sdata{data.get(), data_size};
+  const std::span<const V, data_size> sdata{data.get(), data_size};
 
-  auto outer = [&]<grex::Vectorizable TIndex>(grex::TypeTag<TIndex> /*tag*/) {
+  const auto outer = [&]<grex::Vectorizable Index>(grex::TypeTag<Index> /*tag*/) {
     fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::emphasis::bold, "index: {}\n",
-               test::type_name<TIndex>());
+               test::type_name<Index>());
 
-    const auto imax = std::size_t(std::numeric_limits<TIndex>::max());
-    std::uniform_int_distribution<TIndex> idist{0, std::min(data_size - 1, imax)};
+    const auto imax = std::size_t(std::numeric_limits<Index>::max());
+    std::uniform_int_distribution<Index> idist{0, std::min(data_size - 1, imax)};
     auto ival = [&] { return idist(rng); };
     std::uniform_int_distribution<int> mdist{0, 1};
-    auto mval = [&](std::size_t /*dummy*/) { return bool(mdist(rng)); };
+    auto mval = [&](std::size_t /*dummy*/) { return static_cast<bool>(mdist(rng)); };
 
-    auto op = [&]<std::size_t tSize>(grex::IndexTag<tSize> /*tag*/) {
-      std::uniform_int_distribution<std::size_t> pdist{0, tSize};
+    auto op = [&]<std::size_t N>(grex::IndexTag<N> /*tag*/) {
+      std::uniform_int_distribution<std::size_t> pdist{0, N};
 
       for (std::size_t i = 0; i < repetitions; ++i) {
-        grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
-          auto idxs = test::VectorChecker<TIndex, tSize>::random(ival);
+        grex::static_apply<N>([&]<std::size_t... I> {
+          auto idxs = test::VectorChecker<Index, N>::random(ival);
           // gather
           {
-            test::VectorChecker<TValue, tSize> gathered{
+            const test::VectorChecker<V, N> gathered{
               grex::gather(sdata, idxs.vec),
-              {sdata[std::size_t(idxs.ref[tIdxs])]...},
+              {sdata[std::size_t(idxs.ref[I])]...},
             };
             gathered.check("gather", {.verbose = false});
           }
           {
-            test::VectorChecker<TValue, tSize> gathered{
-              grex::gather(sdata, idxs.vec, grex::typed_full_tag<TValue, tSize>),
-              {sdata[std::size_t(idxs.ref[tIdxs])]...},
+            const test::VectorChecker<V, N> gathered{
+              grex::gather(sdata, idxs.vec, grex::typed_full_tag<V, N>),
+              {sdata[std::size_t(idxs.ref[I])]...},
             };
             gathered.check("gather tagged", {.verbose = false});
           }
           // mask_gather
           {
-            test::MaskChecker<TValue, tSize> m{mval(tIdxs)...};
-            test::VectorChecker<TValue, tSize> gathered{
+            const test::MaskChecker<V, N> m{mval(I)...};
+            const test::VectorChecker<V, N> gathered{
               grex::mask_gather(sdata, m.mask, idxs.vec),
-              {(m.ref[tIdxs] ? sdata[std::size_t(idxs.ref[tIdxs])] : TValue{})...},
+              {(m.ref[I] ? sdata[std::size_t(idxs.ref[I])] : V{})...},
             };
             gathered.check("mask_gather", {.verbose = false});
           }
           {
             const std::size_t part = pdist(rng);
-            const test::VectorChecker<TValue, tSize> gathered{
-              grex::gather(sdata, idxs.vec, grex::part_tag<tSize>(part)),
-              {((tIdxs < part) ? sdata[std::size_t(idxs.ref[tIdxs])] : TValue{})...},
+            const test::VectorChecker<V, N> gathered{
+              grex::gather(sdata, idxs.vec, grex::part_tag<N>(part)),
+              {((I < part) ? sdata[std::size_t(idxs.ref[I])] : V{})...},
             };
             gathered.check("gather part tagged", {.verbose = false});
           }
           {
-            test::MaskChecker<TValue, tSize> m{mval(tIdxs)...};
-            test::VectorChecker<TValue, tSize> gathered{
+            const test::MaskChecker<V, N> m{mval(I)...};
+            const test::VectorChecker<V, N> gathered{
               grex::gather(sdata, idxs.vec, grex::typed_masked_tag(m.mask)),
-              {(m.ref[tIdxs] ? sdata[std::size_t(idxs.ref[tIdxs])] : TValue{})...},
+              {(m.ref[I] ? sdata[std::size_t(idxs.ref[I])] : V{})...},
             };
             gathered.check("gather masked tagged", {.verbose = false});
           }
@@ -106,55 +107,55 @@ void run_simd(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
       }
     };
 
-    constexpr std::size_t size =
-      std::min(grex::max_native_size<TValue>, grex::max_native_size<TIndex>);
+    constexpr std::size_t size = std::min(grex::max_native_size<V>, grex::max_native_size<Index>);
     grex::static_apply<1, std::bit_width(size) + 2>(
-      [&]<std::size_t... tSizes> { (..., op(grex::index_tag<1ULL << tSizes>)); });
+      [&]<std::size_t... Ns> { (..., op(grex::index_tag<1ULL << Ns>)); });
   };
   test::for_each_integral(outer);
 }
 #endif
-template<grex::Vectorizable TValue>
-void run_scalar(test::Rng& rng, grex::TypeTag<TValue> /*tag*/) {
+template<grex::Vectorizable V>
+void run_scalar(test::Rng& rng, grex::TypeTag<V> /*tag*/) {
   fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::emphasis::bold, "value: {}\n",
-             test::type_name<TValue>());
-  constexpr std::size_t data_size = 3 * (std::size_t(1) << 32) / sizeof(TValue);
+             test::type_name<V>());
+  constexpr std::size_t data_size = 3 * (1UZ << 32UZ) / sizeof(V);
 
-  const auto data = std::make_unique<TValue[]>(data_size);
-  auto vdist = test::make_distribution<TValue>();
-#pragma omp parallel for default(shared) private(vdist, rng) schedule(guided)
+  const auto data = std::make_unique<V[]>(data_size);
+  auto vdist = test::make_distribution<V>(); // NOLINT(*-const-correctness)
+#pragma omp parallel for default(none) shared(data) private(vdist, rng) schedule(guided)
   for (std::size_t i = 0; i < data_size; ++i) {
     data[i] = vdist(rng);
   }
-  const std::span<const TValue, data_size> sdata{data.get(), data_size};
+  const std::span<const V, data_size> sdata{data.get(), data_size};
 
-  auto outer = [&]<grex::Vectorizable TIndex>(grex::TypeTag<TIndex> /*tag*/) {
+  const auto outer = [&]<grex::Vectorizable Index>(grex::TypeTag<Index> /*tag*/) {
     fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::emphasis::bold, "index: {}\n",
-               test::type_name<TIndex>());
+               test::type_name<Index>());
 
-    const auto imax = std::size_t(std::numeric_limits<TIndex>::max());
-    std::uniform_int_distribution<TIndex> idist{0, std::min(data_size - 1, imax)};
+    const auto imax = std::size_t(std::numeric_limits<Index>::max());
+    std::uniform_int_distribution<Index> idist{0, std::min(data_size - 1, imax)};
     std::uniform_int_distribution<int> bdist{0, 1};
 
     for (std::size_t i = 0; i < repetitions; ++i) {
-      const TIndex idx = idist(rng);
+      const Index idx = idist(rng);
       // gather
       {
-        const TValue a = grex::gather(sdata, idx, grex::scalar_tag);
-        const TValue b = sdata[std::size_t(idx)];
+        const V a = grex::gather(sdata, idx, grex::scalar_tag);
+        const V b = sdata[std::size_t(idx)];
         test::check("gather scalar", a, b, {.verbose = false});
       }
       // mask_gather
       {
-        const bool m = bool(bdist(rng));
-        const TValue a = grex::mask_gather(sdata, m, idx, grex::scalar_tag);
-        const TValue b = m ? sdata[std::size_t(idx)] : TValue{};
+        const bool m = static_cast<bool>(bdist(rng));
+        const V a = grex::mask_gather(sdata, m, idx, grex::scalar_tag);
+        const V b = m ? sdata[std::size_t(idx)] : V{};
         test::check("mask_gather scalar", a, b, {.verbose = false});
       }
     }
   };
   test::for_each_integral(outer);
 }
+} // namespace
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};

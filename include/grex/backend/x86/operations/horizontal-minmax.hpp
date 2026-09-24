@@ -201,8 +201,8 @@ GREX_FOREACH_SUB(GREX_HMINMAX_SUB_ALL)
     /* [v0 + v1, -, -, -, -, -, -, -][0] */ \
     return _mm_cvtsh_h(_mm_##OP##_sh(_mm_castsi128_ph(v.registr()), shuf)); \
   } \
-  template<Float16Vector TVec> \
-  GREX_ALWAYS_INLINE inline f16 horizontal_##OP(TVec v) { \
+  template<Float16Vector Vec> \
+  GREX_ALWAYS_INLINE inline f16 horizontal_##OP(Vec v) { \
     return horizontal_##OP(OP(get_low(v), get_high(v))); \
   }
 

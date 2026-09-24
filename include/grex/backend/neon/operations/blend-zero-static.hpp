@@ -25,20 +25,19 @@ namespace grex::backend {
 // - Inserting one value into zeros
 // - A contiguous ranges of non-zeros/zeros
 struct ZeroBlenderAnd : public BaseExpensiveOp {
-  template<AnyBlendZeroSelectors auto tBzs>
-  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+  template<AnyBlendZeroSelectors auto BZS>
+  static constexpr bool is_applicable(AutoTag<BZS> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
-  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr std::size_t size = TVec::size;
+  template<AnyVector Vec, BlendZeroSelectorsFor<Vec> BZS>
+  static Vec apply(Vec vec, AutoTag<BZS> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr std::size_t size = Vec::size;
     using Int = SignedInt<sizeof(Value)>;
     using IVec = NativeVector<Int, size>;
-    static constexpr std::array<Int, size> mask_idxs =
-      static_apply<size>([]<std::size_t... tIdxs>() {
-        return std::array<Int, size>{((tBzs[tIdxs] == keep_bz) ? Int(-1) : Int(0))...};
-      });
+    static constexpr std::array<Int, size> mask_idxs = static_apply<size>([]<std::size_t... I> {
+      return std::array<Int, size>{((BZS[I] == keep_bz) ? Int(-1) : Int(0))...};
+    });
 
     const IVec ivec = {.r = reinterpret(vec.r, type_tag<Int>)};
     const IVec mask = load(mask_idxs.data(), type_tag<IVec>);
@@ -49,10 +48,10 @@ struct ZeroBlenderAnd : public BaseExpensiveOp {
   }
 };
 
-template<AnyBlendZeroSelectors auto tBzs>
-requires((tBzs.value_size * tBzs.size == 16))
-struct ZeroBlenderTrait<tBzs> {
-  using Type = CheapestType<tBzs, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderAnd>;
+template<AnyBlendZeroSelectors auto BZS>
+requires((BZS.value_size * BZS.size == 16)) // NOLINT(*-redundant-parentheses)
+struct ZeroBlenderTrait<BZS> {
+  using Type = CheapestType<BZS, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderAnd>;
 };
 } // namespace grex::backend
 

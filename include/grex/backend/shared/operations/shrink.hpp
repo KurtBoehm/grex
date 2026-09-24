@@ -16,34 +16,33 @@
 
 namespace grex::backend {
 // Shrink to same size: No-op
-template<AnyVector TVec>
-inline TVec shrink(TVec v, IndexTag<TVec::size> /*dst_size*/) {
+template<AnyVector Vec>
+inline Vec shrink(Vec v, IndexTag<Vec::size> /*dst_size*/) {
   return v;
 }
 // Shrink native to sub-native: Shrink to smallest native and convert to sub-native
-template<Vectorizable T, std::size_t tSrcSize, std::size_t tDstSize>
-requires(is_subnative<T, tDstSize>)
-inline VectorFor<T, tDstSize> shrink(NativeVector<T, tSrcSize> v, IndexTag<tDstSize> /*dst_size*/) {
+template<Vectorizable T, std::size_t SrcN, std::size_t DstN>
+requires(is_subnative<T, DstN>)
+inline VectorFor<T, DstN> shrink(NativeVector<T, SrcN> v, IndexTag<DstN> /*dst_size*/) {
   const auto min_native = shrink(v, index_tag<16 / sizeof(T)>);
-  return VectorFor<T, tDstSize>{min_native};
+  return VectorFor<T, DstN>{min_native};
 }
 // Shrink super-native: Shrink the lower half
-template<AnyVector THalf, std::size_t tDstSize>
-requires(tDstSize <= THalf::size)
-inline VectorFor<typename THalf::Value, tDstSize> shrink(SuperVector<THalf> v,
-                                                         IndexTag<tDstSize> dst_size) {
+template<AnyVector Half, std::size_t DstN>
+requires(DstN <= Half::size)
+inline VectorFor<typename Half::Value, DstN> shrink(SuperVector<Half> v, IndexTag<DstN> dst_size) {
   return shrink(v.lower, dst_size);
 }
 // Shrink sub-native: Change the wrapper class
-template<Vectorizable T, std::size_t tSrcSize, std::size_t tDstSize>
-requires(tDstSize < tSrcSize)
-inline VectorFor<T, tDstSize> shrink(SubVector<T, tSrcSize> v, IndexTag<tDstSize> /*dst_size*/) {
-  return SubVector<T, tDstSize>{v.full};
+template<Vectorizable T, std::size_t SrcN, std::size_t DstN>
+requires(DstN < SrcN)
+inline VectorFor<T, DstN> shrink(SubVector<T, SrcN> v, IndexTag<DstN> /*dst_size*/) {
+  return SubVector<T, DstN>{v.full};
 }
 
-template<std::size_t tDstSize, AnyVector TVec>
-inline VectorFor<typename TVec::Value, tDstSize> shrink(TVec v) {
-  return shrink(v, index_tag<tDstSize>);
+template<std::size_t DstN, AnyVector Vec>
+inline VectorFor<typename Vec::Value, DstN> shrink(Vec v) {
+  return shrink(v, index_tag<DstN>);
 }
 } // namespace grex::backend
 

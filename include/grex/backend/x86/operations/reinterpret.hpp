@@ -33,35 +33,35 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_REINTERPRET_ALL)
 
 // f16 shares its register with u16, so reinterpreting from/to f16 is reinterpreting from/to u16.
-template<Vectorizable TDst, std::size_t tSize>
-inline auto reinterpret(NativeVector<f16, tSize> v, TypeTag<TDst> tag) {
-  return reinterpret(NativeVector<u16, tSize>{.r = v.r}, tag);
+template<Vectorizable Dst, std::size_t N>
+inline auto reinterpret(NativeVector<f16, N> v, TypeTag<Dst> tag) {
+  return reinterpret(NativeVector<u16, N>{.r = v.r}, tag);
 }
-template<Vectorizable TSrc, std::size_t tSize>
-inline NativeVector<f16, tSize * sizeof(TSrc) / 2> reinterpret(NativeVector<TSrc, tSize> v,
-                                                               TypeTag<f16> /*tag*/) {
-  return NativeVector<f16, tSize * sizeof(TSrc) / 2>{.r = reinterpret(v, type_tag<u16>).r};
+template<Vectorizable Src, std::size_t N>
+inline NativeVector<f16, N * sizeof(Src) / 2> reinterpret(NativeVector<Src, N> v,
+                                                          TypeTag<f16> /*tag*/) {
+  return NativeVector<f16, N * sizeof(Src) / 2>{.r = reinterpret(v, type_tag<u16>).r};
 }
-template<std::size_t tSize>
-inline NativeVector<f16, tSize> reinterpret(NativeVector<f16, tSize> v, TypeTag<f16> /*tag*/) {
+template<std::size_t N>
+inline NativeVector<f16, N> reinterpret(NativeVector<f16, N> v, TypeTag<f16> /*tag*/) {
   return v;
 }
 
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-inline SubVector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)> reinterpret(SubVector<TSrc, tSize> v,
-                                                                        TypeTag<TDst> tag) {
-  using Dst = SubVector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)>;
+template<Vectorizable Dst, Vectorizable Src, std::size_t N>
+inline SubVector<Dst, N * sizeof(Src) / sizeof(Dst)> reinterpret(SubVector<Src, N> v,
+                                                                 TypeTag<Dst> tag) {
+  using Dst = SubVector<Dst, N * sizeof(Src) / sizeof(Dst)>;
   return Dst{reinterpret(v.full, tag)};
 }
-template<Vectorizable TDst, typename THalf>
-inline VectorFor<TDst, 2 * THalf::size * sizeof(typename THalf::Value) / sizeof(TDst)>
-reinterpret(SuperVector<THalf> v, TypeTag<TDst> tag) {
+template<Vectorizable Dst, typename Half>
+inline VectorFor<Dst, 2 * Half::size * sizeof(typename Half::Value) / sizeof(Dst)>
+reinterpret(SuperVector<Half> v, TypeTag<Dst> tag) {
   return {.lower = reinterpret(v.lower, tag), .upper = reinterpret(v.upper, tag)};
 }
 
-template<Vectorizable TDst, typename TSrc>
-inline auto as(TSrc src) {
-  return reinterpret(src, type_tag<TDst>);
+template<Vectorizable Dst, typename Src>
+inline auto as(Src src) {
+  return reinterpret(src, type_tag<Dst>);
 }
 } // namespace grex::backend
 

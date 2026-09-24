@@ -153,18 +153,18 @@ GREX_NNVECTOR_BINARY(multiply)
 GREX_NNVECTOR_BINARY(divide)
 
 // Binary16: always XOR the sign bit, which is what GCC and Clang do on their own, too.
-template<std::size_t tSize>
-inline NativeVector<f16, tSize> negate(NativeVector<f16, tSize> a) {
-  return {.r = bitwise_xor(NativeVector<u16, tSize>{a.r},
-                           broadcast(u16(0x8000), type_tag<NativeVector<u16, tSize>>))
+template<std::size_t N>
+inline NativeVector<f16, N> negate(NativeVector<f16, N> a) {
+  return {.r = bitwise_xor(NativeVector<u16, N>{a.r},
+                           broadcast(u16(0x8000), type_tag<NativeVector<u16, N>>))
                  .r};
 }
 
 // Binary16 without AVX512-FP16: round-trip through binary32.
 #if !GREX_F16_NATIVE_ARITHMETIC
 #define GREX_F16_ARITH(NAME) \
-  template<std::size_t tSize> \
-  inline NativeVector<f16, tSize> NAME(NativeVector<f16, tSize> a, NativeVector<f16, tSize> b) { \
+  template<std::size_t N> \
+  inline NativeVector<f16, N> NAME(NativeVector<f16, N> a, NativeVector<f16, N> b) { \
     return f32_to_f16(NAME(f16_to_f32(a), f16_to_f32(b))); \
   }
 GREX_F16_ARITH(add)

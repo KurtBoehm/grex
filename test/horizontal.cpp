@@ -21,22 +21,23 @@
 #include <limits>
 #endif
 
+namespace {
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 65536;
 
 #if !GREX_BACKEND_SCALAR
-template<grex::Vectorizable T, std::size_t tSize>
-void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
-  using VC = test::VectorChecker<T, tSize>;
-  using MC = test::MaskChecker<T, tSize>;
+template<grex::Vectorizable T, std::size_t N>
+void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<N> /*tag*/) {
+  using VC = test::VectorChecker<T, N>;
+  using MC = test::MaskChecker<T, N>;
 
   auto dist = test::make_distribution<T>();
   auto dval = [&] { return dist(rng); };
   std::uniform_int_distribution<int> bdist{0, 1};
-  auto bval = [&](std::size_t /*dummy*/) { return bool(bdist(rng)); };
+  const auto bval = [&](std::size_t /*dummy*/) { return static_cast<bool>(bdist(rng)); };
 
   for (std::size_t i = 0; i < repetitions; ++i) {
-    grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+    grex::static_apply<N>([&]<std::size_t... I> {
       {
         auto hsum_dist = [&] {
           if constexpr (grex::Float16<T>) {
@@ -53,14 +54,14 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
             return dist;
           }
         }();
-        auto hsum_val = [&](std::size_t /*dummy*/) { return hsum_dist(rng); };
-        VC checker{hsum_val(tIdxs)...};
-        auto cmp = [&](auto val, auto ref) {
+        const auto hsum_val = [&](std::size_t /*dummy*/) { return hsum_dist(rng); };
+        VC checker{hsum_val(I)...};
+        const auto cmp = [&](auto val, auto ref) {
           if constexpr (grex::FloatVectorizable<T>) {
             // A tolerance factor is required due to the changed order of additions.
-            const test::Widened<T> ftol = tSize;
+            const test::Widened<T> ftol = N;
             const auto [same, err] = test::are_equivalent(val, ref, {.bound = T(ftol)});
-            auto label = [&] {
+            const auto label = [&] {
               return fmt::format("horizontal_add({}) → {}/{}", checker.vec, err,
                                  ftol * test::widen(std::numeric_limits<T>::epsilon()));
             };
@@ -73,16 +74,16 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
 
         const auto ref_full = std::reduce(checker.ref.begin(), checker.ref.end(), T{}, std::plus{});
         cmp(grex::horizontal_add(checker.vec), ref_full);
-        cmp(grex::horizontal_add(checker.vec, grex::full_tag<tSize>), ref_full);
+        cmp(grex::horizontal_add(checker.vec, grex::full_tag<N>), ref_full);
         // part
-        for (std::size_t j = 0; j <= tSize; ++j) {
-          cmp(grex::horizontal_add(checker.vec, grex::part_tag<tSize>(j)),
+        for (std::size_t j = 0; j <= N; ++j) {
+          cmp(grex::horizontal_add(checker.vec, grex::part_tag<N>(j)),
               std::reduce(checker.ref.begin(), checker.ref.begin() + j, T{}, std::plus{}));
         }
         // masked
-        MC mchecker{bval(tIdxs)...};
+        MC mchecker{bval(I)...};
         cmp(grex::horizontal_add(checker.vec, grex::typed_masked_tag(mchecker.mask)),
-            T((... + ((mchecker.ref[tIdxs]) ? checker.ref[tIdxs] : T{}))));
+            T((... + (mchecker.ref[I] ? checker.ref[I] : T{}))));
       }
       {
         const VC checker = VC::random(dval);
@@ -90,7 +91,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         const auto label = [&] { return fmt::format("horizontal_min({})", checker.vec); };
         test::check(label, grex::horizontal_min(checker.vec), ref,
                     {.verbose = false, .cmp_zero_sign = false});
-        test::check(label, grex::horizontal_min(checker.vec, grex::full_tag<tSize>), ref,
+        test::check(label, grex::horizontal_min(checker.vec, grex::full_tag<N>), ref,
                     {.verbose = false, .cmp_zero_sign = false});
       }
       {
@@ -99,27 +100,29 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         const auto label = [&] { return fmt::format("horizontal_max({})", checker.vec); };
         test::check(label, grex::horizontal_max(checker.vec), ref,
                     {.verbose = false, .cmp_zero_sign = false});
-        test::check(label, grex::horizontal_max(checker.vec, grex::full_tag<tSize>), ref,
+        test::check(label, grex::horizontal_max(checker.vec, grex::full_tag<N>), ref,
                     {.verbose = false, .cmp_zero_sign = false});
       }
     });
-    grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+    grex::static_apply<N>([&]<std::size_t... I> {
       {
-        const MC checker{bval(tIdxs)...};
-        const bool mref = (... && checker.mask[tIdxs]);
+        const MC checker{bval(I)...};
+        const bool mref = (... && checker.mask[I]);
         const auto label = [&] { return fmt::format("horizontal_and({})", checker.mask); };
-        auto cmp = [&](bool val, bool ref) { test::check(label, val, ref, {.verbose = false}); };
+        const auto cmp = [&](bool val, bool ref) {
+          test::check(label, val, ref, {.verbose = false});
+        };
         cmp(grex::horizontal_and(checker.mask), mref);
-        cmp(grex::horizontal_and(checker.mask, grex::full_tag<tSize>), mref);
+        cmp(grex::horizontal_and(checker.mask, grex::full_tag<N>), mref);
         // part
-        for (std::size_t j = 0; j <= tSize; ++j) {
-          cmp(grex::horizontal_and(checker.mask, grex::part_tag<tSize>(j)),
+        for (std::size_t j = 0; j <= N; ++j) {
+          cmp(grex::horizontal_and(checker.mask, grex::part_tag<N>(j)),
               std::reduce(checker.ref.begin(), checker.ref.begin() + j, true, std::logical_and{}));
         }
         // masked
-        MC mchecker{bval(tIdxs)...};
+        MC mchecker{bval(I)...};
         cmp(grex::horizontal_and(checker.mask, grex::typed_masked_tag(mchecker.mask)),
-            (... && (checker.ref[tIdxs] || !mchecker.ref[tIdxs])));
+            (... && (checker.ref[I] || !mchecker.ref[I])));
       }
     });
   }
@@ -127,11 +130,12 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
 #endif
 template<grex::Vectorizable T>
 void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
-  auto dist = test::make_distribution<T>();
+  auto dist = test::make_distribution<T>(); // NOLINT(*-const-correctness)
   std::uniform_int_distribution<int> bdist{0, 1};
 
   for (std::size_t i = 0; i < repetitions; ++i) {
     {
+      // NOLINTNEXTLINE(*-const-correctness)
       auto hsum_dist = [&] {
         if constexpr (grex::Float16<T>) {
           // Binary16 is generated in binary32 and rounded, as the standard distributions do not
@@ -160,12 +164,13 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
                   grex::horizontal_max(value, grex::scalar_tag), value, {.verbose = false});
     }
     {
-      const bool value = bool(bdist(rng));
+      const bool value = static_cast<bool>(bdist(rng));
       test::check([&] { return fmt::format("horizontal_and({})", value); },
                   grex::horizontal_and(value, grex::scalar_tag), value);
     }
   }
 }
+} // namespace
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};

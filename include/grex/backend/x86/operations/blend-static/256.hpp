@@ -23,14 +23,14 @@
 
 namespace grex::backend {
 struct BlenderBlend32x8 : public BaseExpensiveOp {
-  template<AnyBlendSelectors auto tBls>
-  static constexpr bool is_applicable(AutoTag<tBls> /*tag*/) {
-    return convert<4>(tBls).has_value();
+  template<AnyBlendSelectors auto BS>
+  static constexpr bool is_applicable(AutoTag<BS> /*tag*/) {
+    return convert<4>(BS).has_value();
   }
-  template<AnyVector TVec, BlendSelectorsFor<TVec> tBls>
-  static TVec apply(TVec a, TVec b, AutoTag<tBls> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr int imm8 = convert<4>(tBls).value().imm8();
+  template<AnyVector Vec, BlendSelectorsFor<Vec> BS>
+  static Vec apply(Vec a, Vec b, AutoTag<BS> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr int imm8 = convert<4>(BS).value().imm8();
     const f32x8 fa = reinterpret(a, type_tag<f32>);
     const f32x8 fb = reinterpret(b, type_tag<f32>);
     return reinterpret(f32x8{_mm256_blend_ps(fa.r, fb.r, imm8)}, type_tag<Value>);
@@ -41,18 +41,18 @@ struct BlenderBlend32x8 : public BaseExpensiveOp {
 };
 
 struct BlenderBlend16x16 : public BaseExpensiveOp {
-  template<AnyBlendSelectors auto tBls>
-  static constexpr bool is_applicable(AutoTag<tBls> /*tag*/) {
-    const auto base = convert<2>(tBls);
+  template<AnyBlendSelectors auto BS>
+  static constexpr bool is_applicable(AutoTag<BS> /*tag*/) {
+    const auto base = convert<2>(BS);
     if (!base.has_value()) {
       return false;
     }
     return base.value().single_lane().has_value();
   }
-  template<AnyVector TVec, BlendSelectorsFor<TVec> tBls>
-  static TVec apply(TVec a, TVec b, AutoTag<tBls> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr int imm8 = convert<2>(tBls).value().single_lane().value().imm8();
+  template<AnyVector Vec, BlendSelectorsFor<Vec> BS>
+  static Vec apply(Vec a, Vec b, AutoTag<BS> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr int imm8 = convert<2>(BS).value().single_lane().value().imm8();
     const i16x16 ia = reinterpret(a, type_tag<i16>);
     const i16x16 ib = reinterpret(b, type_tag<i16>);
     return reinterpret(i16x16{_mm256_blend_epi16(ia.r, ib.r, imm8)}, type_tag<Value>);
@@ -62,11 +62,11 @@ struct BlenderBlend16x16 : public BaseExpensiveOp {
   }
 };
 
-template<AnyBlendSelectors auto tBls>
-requires((tBls.value_size * tBls.size == 32))
-struct BlenderTrait<tBls> {
+template<AnyBlendSelectors auto BS>
+requires((BS.value_size * BS.size == 32))
+struct BlenderTrait<BS> {
   using Type =
-    CheapestType<tBls, BlenderConstant, BlenderBlend32x8, BlenderBlend16x16, BlenderVariable>;
+    CheapestType<BS, BlenderConstant, BlenderBlend32x8, BlenderBlend16x16, BlenderVariable>;
 };
 } // namespace grex::backend
 #endif

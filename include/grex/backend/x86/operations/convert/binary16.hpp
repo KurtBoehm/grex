@@ -70,17 +70,17 @@ GREX_F16_CVT16_SUB(4, u, pu)
 // Binary16 ↔ 32-bit values
 //--------------------------------------------------------------------------------------------------
 
-template<std::size_t tSize>
-inline VectorFor<f32, tSize> convert(SubVector<f16, tSize> v, TypeTag<f32> /*tag*/) {
-  return VectorFor<f32, tSize>{_mm_cvtph_ps(v.full.r)};
+template<std::size_t N>
+inline VectorFor<f32, N> convert(SubVector<f16, N> v, TypeTag<f32> /*tag*/) {
+  return VectorFor<f32, N>{_mm_cvtph_ps(v.full.r)};
 }
-template<std::size_t tSize>
-inline VectorFor<i32, tSize> convert(SubVector<f16, tSize> v, TypeTag<i32> /*tag*/) {
-  return VectorFor<i32, tSize>{_mm_cvttph_epi32(_mm_castsi128_ph(v.full.r))};
+template<std::size_t N>
+inline VectorFor<i32, N> convert(SubVector<f16, N> v, TypeTag<i32> /*tag*/) {
+  return VectorFor<i32, N>{_mm_cvttph_epi32(_mm_castsi128_ph(v.full.r))};
 }
-template<std::size_t tSize>
-inline VectorFor<u32, tSize> convert(SubVector<f16, tSize> v, TypeTag<u32> /*tag*/) {
-  return VectorFor<u32, tSize>{_mm_cvttph_epu32(_mm_castsi128_ph(v.full.r))};
+template<std::size_t N>
+inline VectorFor<u32, N> convert(SubVector<f16, N> v, TypeTag<u32> /*tag*/) {
+  return VectorFor<u32, N>{_mm_cvttph_epu32(_mm_castsi128_ph(v.full.r))};
 }
 
 inline SubVector<f16, 4> convert(f32x4 v, TypeTag<f16> /*tag*/) {
@@ -185,23 +185,23 @@ inline f16x8 convert(u64x8 v, TypeTag<f16> /*tag*/) {
 //==================================================================================================
 
 // Native binary16 → super-native: split the input vector and go from there.
-template<Float16Vector TSrc, Vectorizable TDst>
-requires(AnyNativeVector<TSrc> && is_supernative<TDst, size_of<TSrc>>)
-inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> /*tag*/) {
+template<Float16Vector Src, Vectorizable Dst>
+requires(AnyNativeVector<Src> && is_supernative<Dst, size_of<Src>>)
+inline VectorFor<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> /*tag*/) {
   return {.lower = convert(get_low(v)), .upper = convert(get_high(v))};
 }
 
 // Binary16 → 8-bit integers: convert with 16-bit integers as the intermediary.
-template<Float16Vector TSrc, Int8 TDst>
-inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<CopySignInt<TDst, 2>>), tag);
+template<Float16Vector Src, Int8 Dst>
+inline VectorFor<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<Dst, 2>>), tag);
 }
 
 // 8-bit integers → native binary16: convert with 16-bit integers as the intermediary.
-template<Int8Vector TSrc>
-requires(is_native<f16, size_of<TSrc>>)
-inline VectorFor<f16, size_of<TSrc>> convert(TSrc v, TypeTag<f16> tag) {
-  return convert(convert(v, type_tag<CopySignInt<ValueOf<TSrc>, 2>>), tag);
+template<Int8Vector Src>
+requires(is_native<f16, size_of<Src>>)
+inline VectorFor<f16, size_of<Src>> convert(Src v, TypeTag<f16> tag) {
+  return convert(convert(v, type_tag<CopySignInt<ValueOf<Src>, 2>>), tag);
 }
 #else
 //==================================================================================================
@@ -214,31 +214,27 @@ inline VectorFor<f16, size_of<TSrc>> convert(TSrc v, TypeTag<f16> tag) {
 // These overloads fix both the source and the destination value type, which makes them more
 // specialized than the generic conversions above and thus unambiguously preferred.
 
-template<std::size_t tSize>
-GREX_ALWAYS_INLINE inline VectorFor<f32, tSize> convert(NativeVector<f16, tSize> v,
-                                                        TypeTag<f32> /*tag*/) {
+template<std::size_t N>
+GREX_ALWAYS_INLINE inline VectorFor<f32, N> convert(NativeVector<f16, N> v, TypeTag<f32> /*tag*/) {
   return f16_to_f32(v);
 }
-template<std::size_t tSize>
-GREX_ALWAYS_INLINE inline VectorFor<f32, tSize> convert(SubVector<f16, tSize> v,
-                                                        TypeTag<f32> /*tag*/) {
+template<std::size_t N>
+GREX_ALWAYS_INLINE inline VectorFor<f32, N> convert(SubVector<f16, N> v, TypeTag<f32> /*tag*/) {
   return f16_to_f32(v);
 }
 
-template<std::size_t tSize>
-GREX_ALWAYS_INLINE inline VectorFor<f16, tSize> convert(NativeVector<f32, tSize> v,
-                                                        TypeTag<f16> /*tag*/) {
+template<std::size_t N>
+GREX_ALWAYS_INLINE inline VectorFor<f16, N> convert(NativeVector<f32, N> v, TypeTag<f16> /*tag*/) {
   return f32_to_f16(v);
 }
-template<std::size_t tSize>
-GREX_ALWAYS_INLINE inline VectorFor<f16, tSize> convert(SubVector<f32, tSize> v,
-                                                        TypeTag<f16> /*tag*/) {
+template<std::size_t N>
+GREX_ALWAYS_INLINE inline VectorFor<f16, N> convert(SubVector<f32, N> v, TypeTag<f16> /*tag*/) {
   return f32_to_f16(v);
 }
-template<typename THalf>
-requires(std::same_as<ValueOf<THalf>, f32> && !is_supernative<f16, 2 * THalf::size>)
-GREX_ALWAYS_INLINE inline VectorFor<f16, 2 * THalf::size> convert(SuperVector<THalf> v,
-                                                                  TypeTag<f16> /*tag*/) {
+template<typename Half>
+requires(std::same_as<ValueOf<Half>, f32> && !is_supernative<f16, 2 * Half::size>)
+GREX_ALWAYS_INLINE inline VectorFor<f16, 2 * Half::size> convert(SuperVector<Half> v,
+                                                                 TypeTag<f16> /*tag*/) {
   return f32_to_f16(v);
 }
 
@@ -248,64 +244,60 @@ GREX_ALWAYS_INLINE inline VectorFor<f16, 2 * THalf::size> convert(SuperVector<TH
 // Binary64 is the exception: `f16_to_f64`/`f64_to_f16` also pass through binary32, but round only
 // once, whereas two plain conversions would round twice.
 
-template<Vectorizable TDst, std::size_t tSize>
-requires(!std::same_as<TDst, f16>)
-GREX_ALWAYS_INLINE inline VectorFor<TDst, tSize> convert(NativeVector<f16, tSize> v,
-                                                         TypeTag<TDst> tag) {
-  if constexpr (std::same_as<TDst, f64>) {
+template<Vectorizable Dst, std::size_t N>
+requires(!std::same_as<Dst, f16>)
+GREX_ALWAYS_INLINE inline VectorFor<Dst, N> convert(NativeVector<f16, N> v, TypeTag<Dst> tag) {
+  if constexpr (std::same_as<Dst, f64>) {
     return f16_to_f64(v);
   } else {
     return convert(f16_to_f32(v), tag);
   }
 }
-template<Vectorizable TDst, std::size_t tSize>
-requires(!std::same_as<TDst, f16>)
-GREX_ALWAYS_INLINE inline VectorFor<TDst, tSize> convert(SubVector<f16, tSize> v,
-                                                         TypeTag<TDst> tag) {
-  if constexpr (std::same_as<TDst, f64>) {
+template<Vectorizable Dst, std::size_t N>
+requires(!std::same_as<Dst, f16>)
+GREX_ALWAYS_INLINE inline VectorFor<Dst, N> convert(SubVector<f16, N> v, TypeTag<Dst> tag) {
+  if constexpr (std::same_as<Dst, f64>) {
     return f16_to_f64(v);
   } else {
     return convert(f16_to_f32(v), tag);
   }
 }
 
-template<typename THalf>
-requires(!std::same_as<ValueOf<THalf>, f16> && !std::same_as<ValueOf<THalf>, f32> &&
-         !is_supernative<f16, 2 * THalf::size>)
-GREX_ALWAYS_INLINE inline VectorFor<f16, 2 * THalf::size> convert(SuperVector<THalf> v,
-                                                                  TypeTag<f16> tag) {
-  if constexpr (std::same_as<ValueOf<THalf>, f64>) {
+template<typename Half>
+requires(!std::same_as<ValueOf<Half>, f16> && !std::same_as<ValueOf<Half>, f32> &&
+         !is_supernative<f16, 2 * Half::size>)
+GREX_ALWAYS_INLINE inline VectorFor<f16, 2 * Half::size> convert(SuperVector<Half> v,
+                                                                 TypeTag<f16> tag) {
+  if constexpr (std::same_as<ValueOf<Half>, f64>) {
     return f64_to_f16(v);
   } else {
     return convert(convert(v, type_tag<f32>), tag);
   }
 }
 
-template<Vectorizable TSrc, std::size_t tSize>
-requires(!std::same_as<TSrc, f16> && !std::same_as<TSrc, f32>)
-GREX_ALWAYS_INLINE inline VectorFor<f16, tSize> convert(NativeVector<TSrc, tSize> v,
-                                                        TypeTag<f16> tag) {
-  if constexpr (std::same_as<TSrc, f64>) {
+template<Vectorizable Src, std::size_t N>
+requires(!std::same_as<Src, f16> && !std::same_as<Src, f32>)
+GREX_ALWAYS_INLINE inline VectorFor<f16, N> convert(NativeVector<Src, N> v, TypeTag<f16> tag) {
+  if constexpr (std::same_as<Src, f64>) {
     return f64_to_f16(v);
   } else {
     return convert(convert(v, type_tag<f32>), tag);
   }
 }
-template<Vectorizable TSrc, std::size_t tSize>
-requires(!std::same_as<TSrc, f16> && !std::same_as<TSrc, f32>)
-GREX_ALWAYS_INLINE inline VectorFor<f16, tSize> convert(SubVector<TSrc, tSize> v,
-                                                        TypeTag<f16> tag) {
-  if constexpr (std::same_as<TSrc, f64>) {
+template<Vectorizable Src, std::size_t N>
+requires(!std::same_as<Src, f16> && !std::same_as<Src, f32>)
+GREX_ALWAYS_INLINE inline VectorFor<f16, N> convert(SubVector<Src, N> v, TypeTag<f16> tag) {
+  if constexpr (std::same_as<Src, f64>) {
     return f64_to_f16(v);
   } else {
     return convert(convert(v, type_tag<f32>), tag);
   }
 }
 
-template<IntVectorizable TDst, Float16Vector THalf>
-requires(!is_supernative<TDst, 2 * THalf::size>)
-GREX_ALWAYS_INLINE inline VectorFor<TDst, 2 * THalf::size> convert(SuperVector<THalf> v,
-                                                                   TypeTag<TDst> tag) {
+template<IntVectorizable Dst, Float16Vector Half>
+requires(!is_supernative<Dst, 2 * Half::size>)
+GREX_ALWAYS_INLINE inline VectorFor<Dst, 2 * Half::size> convert(SuperVector<Half> v,
+                                                                 TypeTag<Dst> tag) {
   return convert(convert(v, type_tag<f32>), tag);
 }
 #endif

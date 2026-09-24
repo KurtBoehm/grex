@@ -14,29 +14,29 @@
 
 namespace grex::backend {
 // SubVector/SubMask
-template<Vectorizable T, std::size_t tSize>
-inline T extract(SubVector<T, tSize> v, std::size_t index) {
+template<Vectorizable T, std::size_t N>
+inline T extract(SubVector<T, N> v, std::size_t index) {
   return extract(v.full, index);
 }
-template<Vectorizable T, std::size_t tSize>
-inline bool extract(SubMask<T, tSize> v, std::size_t index) {
+template<Vectorizable T, std::size_t N>
+inline bool extract(SubMask<T, N> v, std::size_t index) {
   return extract(v.full, index);
 }
 
 // SuperVector/SuperMask
-template<typename THalf>
-inline THalf::Value extract(SuperVector<THalf> v, std::size_t i) {
-  if (i < THalf::size) {
+template<typename Half>
+inline Half::Value extract(SuperVector<Half> v, std::size_t i) {
+  if (i < Half::size) {
     return extract(v.lower, i);
   }
-  return extract(v.upper, i - THalf::size);
+  return extract(v.upper, i - Half::size);
 }
-template<typename THalf>
-inline bool extract(SuperMask<THalf> m, std::size_t i) {
-  if (i < THalf::size) {
+template<typename Half>
+inline bool extract(SuperMask<Half> m, std::size_t i) {
+  if (i < Half::size) {
     return extract(m.lower, i);
   }
-  return extract(m.upper, i - THalf::size);
+  return extract(m.upper, i - Half::size);
 }
 } // namespace grex::backend
 

@@ -7,7 +7,6 @@
 #include <cstddef>
 #include <random>
 
-#include <fmt/base.h>
 #include <fmt/format.h>
 #include <pcg_extras.hpp>
 
@@ -19,28 +18,29 @@
 #include <array>
 #endif
 
+namespace {
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
 #if !GREX_BACKEND_SCALAR
-template<grex::Vectorizable T, std::size_t tSize>
-void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
-  using VC = test::VectorChecker<T, tSize>;
-  using Vec = grex::Vector<T, tSize>;
-  using MC = test::MaskChecker<T, tSize>;
-  using Mask = grex::Mask<T, tSize>;
+template<grex::Vectorizable T, std::size_t N>
+void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<N> /*tag*/) {
+  using VC = test::VectorChecker<T, N>;
+  using Vec = grex::Vector<T, N>;
+  using MC = test::MaskChecker<T, N>;
+  using Mask = grex::Mask<T, N>;
 
   auto dist = test::make_distribution<T>();
   auto dval = [&] { return dist(rng); };
   std::uniform_int_distribution<int> bdist{0, 1};
-  auto bval = [&](std::size_t /*dummy*/) { return bool(bdist(rng)); };
+  auto bval = [&](std::size_t /*dummy*/) { return static_cast<bool>(bdist(rng)); };
 
-  grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+  grex::static_apply<N>([&]<std::size_t... I> {
     for (std::size_t i = 0; i < repetitions; ++i) {
       // zeros
       test::check("scalar zeros", grex::zeros<T>(grex::scalar_tag), T{}, {.verbose = false});
       VC{}.check("vector zeros", {.verbose = false});
-      test::check("vector zeros tagged", grex::zeros<T>(grex::full_tag<tSize>), Vec{},
+      test::check("vector zeros tagged", grex::zeros<T>(grex::full_tag<N>), Vec{},
                   {.verbose = false});
       // broadcast
       {
@@ -48,23 +48,23 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
         test::check("scalar broadcast", grex::broadcast(value, grex::scalar_tag), value,
                     {.verbose = false});
         VC{value}.check("vector broadcast", {.verbose = false});
-        test::check("vector broadcast tagged", grex::broadcast(value, grex::full_tag<tSize>),
+        test::check("vector broadcast tagged", grex::broadcast(value, grex::full_tag<N>),
                     Vec{value}, {.verbose = false});
       }
       // zero-based indices
       test::check("scalar indices", grex::indices<T>(grex::scalar_tag), T{}, {.verbose = false});
-      VC{Vec::indices(), std::array{T(tIdxs)...}}.check("vector indices", {.verbose = false});
-      test::check("vector indices tagged", grex::indices<T>(grex::typed_full_tag<T, tSize>),
+      VC{Vec::indices(), std::array{T(I)...}}.check("vector indices", {.verbose = false});
+      test::check("vector indices tagged", grex::indices<T>(grex::typed_full_tag<T, N>),
                   Vec::indices(), {.verbose = false});
       // value-based indices
       {
         const T base = dist(rng);
         test::check("scalar value indices", grex::indices<T>(base, grex::scalar_tag), base,
                     {.verbose = false});
-        VC{Vec::indices(base), std::array{T(base + T(tIdxs))...}}.check("vector value indices",
-                                                                        {.verbose = false});
+        VC{Vec::indices(base), std::array{T(base + T(I))...}}.check("vector value indices",
+                                                                    {.verbose = false});
         test::check("vector value indices tagged",
-                    grex::indices<T>(base, grex::typed_full_tag<T, tSize>), Vec::indices(base),
+                    grex::indices<T>(base, grex::typed_full_tag<T, N>), Vec::indices(base),
                     {.verbose = false});
       }
       // set
@@ -72,54 +72,54 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       // insert
       {
         const VC base = VC::random(dval);
-        for (std::size_t j = 0; j < tSize; ++j) {
+        for (std::size_t j = 0; j < N; ++j) {
           const auto val = dval();
-          VC v{base.vec.insert(j, val), std::array{((tIdxs == j) ? val : base.ref[tIdxs])...}};
+          const VC v{base.vec.insert(j, val), std::array{((I == j) ? val : base.ref[I])...}};
           v.check("vector insert", {.verbose = false});
         }
       }
       {
         const VC base = VC::random(dval);
-        auto f = [&](grex::AnyIndexTag auto j) {
+        const auto f = [&](grex::AnyIndexTag auto j) {
           const auto val = dval();
-          VC v{base.vec.insert(j, val), std::array{((tIdxs == j) ? val : base.ref[tIdxs])...}};
+          const VC v{base.vec.insert(j, val), std::array{((I == j) ? val : base.ref[I])...}};
           v.check(fmt::format("{}.insert(index_tag<{}>, {})", base.vec, j.value, val),
                   {.verbose = false});
         };
-        (..., f(grex::index_tag<tIdxs>));
+        (..., f(grex::index_tag<I>));
       }
       // cutoff
       {
         const VC base = VC::random(dval);
-        for (std::size_t j = 0; j <= tSize; ++j) {
-          VC v{base.vec.cutoff(j), std::array{((tIdxs < j) ? base.ref[tIdxs] : T(0))...}};
+        for (std::size_t j = 0; j <= N; ++j) {
+          const VC v{base.vec.cutoff(j), std::array{((I < j) ? base.ref[I] : T(0))...}};
           v.check("vector cutoff", {.verbose = false});
         }
       }
 
       // mask
       MC{}.check("mask zeros", {.verbose = false});
-      MC{Mask::ones(), std::array{(tIdxs < tSize)...}}.check("mask ones", {.verbose = false});
+      MC{Mask::ones(), std::array{(I < N)...}}.check("mask ones", {.verbose = false});
       MC{false}.check("mask broadcast false", {.verbose = false});
       MC{true}.check("mask broadcast true", {.verbose = false});
-      MC{bval(tIdxs)...}.check("mask set", {.verbose = false});
+      MC{bval(I)...}.check("mask set", {.verbose = false});
       {
-        const MC base{bval(tIdxs)...};
-        for (std::size_t j = 0; j < tSize; ++j) {
+        const MC base{bval(I)...};
+        for (std::size_t j = 0; j < N; ++j) {
           const bool val = bval(j);
-          MC v{base.mask.insert(j, val), std::array{((tIdxs == j) ? val : base.ref[tIdxs])...}};
+          const MC v{base.mask.insert(j, val), std::array{((I == j) ? val : base.ref[I])...}};
           v.check("mask insert", {.verbose = false});
         }
       }
       {
-        for (std::size_t j = 0; j <= tSize; ++j) {
-          MC v{Mask::cutoff_mask(j), std::array{(tIdxs < j)...}};
+        for (std::size_t j = 0; j <= N; ++j) {
+          const MC v{Mask::cutoff_mask(j), std::array{(I < j)...}};
           v.check("mask cutoff_mask", {.verbose = false});
         }
       }
       {
-        for (std::size_t j = 0; j < tSize; ++j) {
-          MC v{Mask::single_mask(j), std::array{(tIdxs == j)...}};
+        for (std::size_t j = 0; j < N; ++j) {
+          const MC v{Mask::single_mask(j), std::array{(I == j)...}};
           v.check("mask single_mask", {.verbose = false});
         }
       }
@@ -129,8 +129,8 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
 #endif
 template<grex::Vectorizable T>
 void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
-  auto dist = test::make_distribution<T>();
-  std::uniform_int_distribution<int> bdist{0, 1};
+  auto dist = test::make_distribution<T>(); // NOLINT(*-const-correctness)
+  std::uniform_int_distribution<int> bdist{0, 1}; // NOLINT(*-const-correctness
 
   for (std::size_t i = 0; i < repetitions; ++i) {
     // zeros
@@ -151,6 +151,7 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
     }
   }
 }
+} // namespace
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};

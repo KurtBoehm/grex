@@ -18,16 +18,16 @@
 
 namespace grex::backend {
 // Super-native: Compute the horizontal sum of the sum of the two halves
-template<AnyVector THalf>
-inline THalf::Value horizontal_add(SuperVector<THalf> v) {
+template<AnyVector Half>
+inline Half::Value horizontal_add(SuperVector<Half> v) {
   return horizontal_add(add(v.lower, v.upper));
 }
 
 #if !GREX_F16_NATIVE_ARITHMETIC
 // Binary16 without hardware support: round-trip through binary32.
-template<Float16Vector TVec>
-requires(!AnySuperNativeVector<TVec>)
-inline f16 horizontal_add(TVec v) {
+template<Float16Vector Vec>
+requires(!AnySuperNativeVector<Vec>)
+inline f16 horizontal_add(Vec v) {
   return grex::f32_to_f16(horizontal_add(f16_to_f32(v)));
 }
 #endif

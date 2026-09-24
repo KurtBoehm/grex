@@ -30,9 +30,9 @@ namespace grex {
 template<FloatVectorizable T>
 inline constexpr bool has_fma = std::same_as<T, f16> ? backend::has_f16_fma : backend::has_fma;
 
-template<IntVectorizable TDst>
-inline TDst expand_any(IntVectorizable auto value) {
-  return backend::expand_any<TDst>(value);
+template<IntVectorizable Dst>
+inline Dst expand_any(IntVectorizable auto value) {
+  return backend::expand_any<Dst>(value);
 }
 template<UnsignedIntVectorizable T>
 inline bool bit_test(T a, T b) {
@@ -126,18 +126,18 @@ inline T horizontal_max(T value) {
 //==================================================================================================
 
 /** Reinterprets to another value type, retaining the overall byte count of the vector. */
-template<Vectorizable TDst, Vectorizable TSrc>
-requires(sizeof(TSrc) == sizeof(TDst))
-GREX_ALWAYS_INLINE inline TDst bit_cast(TSrc src) {
-  return std::bit_cast<TDst>(src);
+template<Vectorizable Dst, Vectorizable Src>
+requires(sizeof(Src) == sizeof(Dst))
+GREX_ALWAYS_INLINE inline Dst bit_cast(Src src) {
+  return std::bit_cast<Dst>(src);
 }
 
 #if !GREX_BACKEND_SCALAR
 /** Reinterprets to another value type, retaining the overall byte count of the vector. */
-template<Vectorizable TDst, AnyVector TSrc>
-requires(sizeof(typename TSrc::Value) == sizeof(TDst))
-GREX_ALWAYS_INLINE inline Vector<TDst, TSrc::size> bit_cast(TSrc src) {
-  return src.bit_cast(type_tag<TDst>);
+template<Vectorizable Dst, AnyVector Src>
+requires(sizeof(typename Src::Value) == sizeof(Dst))
+GREX_ALWAYS_INLINE inline Vector<Dst, Src::size> bit_cast(Src src) {
+  return src.bit_cast(type_tag<Dst>);
 }
 #endif
 
@@ -148,55 +148,55 @@ GREX_ALWAYS_INLINE inline Vector<TDst, TSrc::size> bit_cast(TSrc src) {
 // To determine whether a conversion is safe, i.e. guaranteed not to change finite values,
 // there are two cases to consider:
 // - floating-point → integer: Always unsafe, since max(f32) ≈ 2^128
-// - otherwise: digits(TDst) >= digits(TSrc), signed(Dst) || unsigned(Src)
+// - otherwise: digits(Dst) >= digits(Src), signed(Dst) || unsigned(Src)
 // One of the underlying assumptions is that the number of bits for the mantissa and the exponent
 // grow/shrink together, which is true for f16/f32/f64 (there is no support for bf16, whose exponent
 // is as wide as that of f32 while its mantissa is narrower than that of f16). `grex::NumericTrait`
 // is used instead of `std::numeric_limits`, which is not specialized for `f16`.
-template<typename TDst, typename TSrc>
-concept SafeConversion = (!FloatVectorizable<TSrc> || FloatVectorizable<TDst>) &&
-                         (SignedVectorizable<TDst> || UnsignedVectorizable<TSrc>) &&
-                         NumericTrait<TDst>::digits >= NumericTrait<TSrc>::digits;
+template<typename Dst, typename Src>
+concept SafeConversion = (!FloatVectorizable<Src> || FloatVectorizable<Dst>) &&
+                         (SignedVectorizable<Dst> || UnsignedVectorizable<Src>) &&
+                         NumericTrait<Dst>::digits >= NumericTrait<Src>::digits;
 
-template<Vectorizable TDst, Vectorizable TSrc>
-inline TDst convert(TSrc src) {
-  return TDst(src);
+template<Vectorizable Dst, Vectorizable Src>
+inline Dst convert(Src src) {
+  return Dst(src);
 }
-template<Vectorizable TDst, Vectorizable TSrc, bool tSafe>
-requires(!tSafe || SafeConversion<TDst, TSrc>)
-inline TDst convert(TSrc src, CastTag<tSafe> /*tag*/) {
-  return convert<TDst>(src);
+template<Vectorizable Dst, Vectorizable Src, bool Safe>
+requires(!Safe || SafeConversion<Dst, Src>)
+inline Dst convert(Src src, CastTag<Safe> /*tag*/) {
+  return convert<Dst>(src);
 }
 
 #if !GREX_BACKEND_SCALAR
-template<Vectorizable TDst, AnyVector TSrc>
-inline Vector<TDst, TSrc::size> convert(TSrc src) {
-  return src.convert(type_tag<TDst>);
+template<Vectorizable Dst, AnyVector Src>
+inline Vector<Dst, Src::size> convert(Src src) {
+  return src.convert(type_tag<Dst>);
 }
-template<Vectorizable TDst, AnyVector TSrc, bool tSafe>
-requires(!tSafe || SafeConversion<TDst, typename TSrc::Value>)
-inline Vector<TDst, TSrc::size> convert(TSrc src, CastTag<tSafe> /*tag*/) {
-  return src.convert(type_tag<TDst>);
+template<Vectorizable Dst, AnyVector Src, bool Safe>
+requires(!Safe || SafeConversion<Dst, typename Src::Value>)
+inline Vector<Dst, Src::size> convert(Src src, CastTag<Safe> /*tag*/) {
+  return src.convert(type_tag<Dst>);
 }
 
 // Mask conversions are always safe if each entry is filled with 0 or 1
 // (which the provided operations ensure)
-template<Vectorizable TDst>
+template<Vectorizable Dst>
 inline bool convert(bool src) {
   return src;
 }
-template<Vectorizable TDst>
+template<Vectorizable Dst>
 inline bool convert(bool src, AnyBoolTag auto /*tag*/) {
   return src;
 }
 
-template<Vectorizable TDst, AnyMask TSrc>
-inline Mask<TDst, TSrc::size> convert(TSrc src) {
-  return src.convert(type_tag<TDst>);
+template<Vectorizable Dst, AnyMask Src>
+inline Mask<Dst, Src::size> convert(Src src) {
+  return src.convert(type_tag<Dst>);
 }
-template<Vectorizable TDst, AnyMask TSrc>
-inline Mask<TDst, TSrc::size> convert(TSrc src, AnyBoolTag auto /*tag*/) {
-  return src.convert(type_tag<TDst>);
+template<Vectorizable Dst, AnyMask Src>
+inline Mask<Dst, Src::size> convert(Src src, AnyBoolTag auto /*tag*/) {
+  return src.convert(type_tag<Dst>);
 }
 #endif
 

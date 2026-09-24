@@ -41,49 +41,49 @@ concept WideFloat = std::same_as<T, f32> || std::same_as<T, f64>;
 
 /**
  * The parameters of the IEEE 754 binary format whose bits are held by the unsigned integer type
- * `TBits` and which stores `tMantissaBits` mantissa bits with the exponent bias `tExponentBias`.
+ * `B` and which stores `MantissaBits` mantissa bits with the exponent bias `ExponentBias`.
  */
-template<typename TBits, TBits tMantissaBits, TBits tExponentBias>
+template<typename B, B MantissaBits, B ExponentBias>
 struct FormatBase {
-  using Bits = TBits;
+  using Bits = B;
 
-  static constexpr Bits mantissa_bits = tMantissaBits;
-  static constexpr Bits exponent_bias = tExponentBias;
+  static constexpr Bits mantissa_bits = MantissaBits;
+  static constexpr Bits exponent_bias = ExponentBias;
   /** The all-ones exponent, which denotes infinities and not-a-numbers. */
-  static constexpr Bits exponent_max = 2 * tExponentBias + 1;
-  static constexpr Bits mantissa_mask = (Bits{1} << tMantissaBits) - 1;
+  static constexpr Bits exponent_max = 2 * ExponentBias + 1;
+  static constexpr Bits mantissa_mask = (Bits{1} << MantissaBits) - 1;
   /** The implicit leading mantissa bit of a normal value. */
-  static constexpr Bits implicit_bit = Bits{1} << tMantissaBits;
+  static constexpr Bits implicit_bit = Bits{1} << MantissaBits;
   /** The bit pattern of positive infinity. */
-  static constexpr Bits infinity = exponent_max << tMantissaBits;
+  static constexpr Bits infinity = exponent_max << MantissaBits;
   /** The shift between the binary16 sign bit and this format’s sign bit. */
   static constexpr Bits sign_shift = 8 * sizeof(Bits) - 16;
   /** The shift between the binary16 mantissa and the top of this format’s mantissa. */
-  static constexpr Bits mantissa_shift = tMantissaBits - 10;
+  static constexpr Bits mantissa_shift = MantissaBits - 10;
 };
 
-/** The parameters of the IEEE 754 binary format of `TFloat`. */
-template<WideFloat TFloat>
+/** The parameters of the IEEE 754 binary format of `T`. */
+template<WideFloat T>
 struct Format;
 template<>
 struct Format<f32> : FormatBase<u32, 23, 127> {};
 template<>
 struct Format<f64> : FormatBase<u64, 52, 1023> {};
 
-/** The unsigned integer type holding the bits of `TFloat`. */
-template<WideFloat TFloat>
-using BitsOf = Format<TFloat>::Bits;
+/** The unsigned integer type holding the bits of `T`. */
+template<WideFloat T>
+using BitsOf = Format<T>::Bits;
 
 /**
- * Converts the bits of an IEEE 754 binary16 value into the bits of the equal `TFloat` value.
+ * Converts the bits of an IEEE 754 binary16 value into the bits of the equal `T` value.
  *
  * This conversion is always exact: Every binary16 value, including subnormals, infinities, and
  * quiet/signalling not-a-numbers, has an exact counterpart in every wider format.
  */
-template<WideFloat TFloat>
-constexpr BitsOf<TFloat> f16_bits_to_wide_bits(u16 half) {
-  using Fmt = Format<TFloat>;
-  using Bits = BitsOf<TFloat>;
+template<WideFloat T>
+constexpr BitsOf<T> f16_bits_to_wide_bits(u16 half) {
+  using Fmt = Format<T>;
+  using Bits = BitsOf<T>;
 
   const Bits sign = (Bits{half} & 0x8000U) << Fmt::sign_shift;
   const Bits expo = (Bits{half} >> 10U) & 0x1FU;
@@ -113,31 +113,31 @@ constexpr BitsOf<TFloat> f16_bits_to_wide_bits(u16 half) {
 }
 
 /**
- * Converts the bits of an IEEE 754 `TFloat` value into the bits of the nearest binary16 value,
+ * Converts the bits of an IEEE 754 `T` value into the bits of the nearest binary16 value,
  * rounding ties to even, which is the default rounding mode.
  */
-template<WideFloat TFloat>
-constexpr u16 wide_bits_to_f16_bits(BitsOf<TFloat> wide) {
-  using Fmt = Format<TFloat>;
-  using Bits = BitsOf<TFloat>;
+template<WideFloat T>
+constexpr u16 wide_bits_to_f16_bits(BitsOf<T> wide) {
+  using Fmt = Format<T>;
+  using Bits = BitsOf<T>;
 
-  const auto sign = u16((wide >> Fmt::sign_shift) & 0x8000U);
+  const auto sign = static_cast<u16>((wide >> Fmt::sign_shift) & 0x8000U);
   const Bits biased = (wide >> Fmt::mantissa_bits) & Fmt::exponent_max;
   const Bits mant = wide & Fmt::mantissa_mask;
 
   if (biased == Fmt::exponent_max) {
     if (mant == 0) {
-      return u16(sign | 0x7C00U);
+      return static_cast<u16>(sign | 0x7C00U);
     }
     // Not-a-number: Make quiet and ensure that the mantissa does not become zero, which would turn
     // the value into an infinity.
-    return u16(sign | 0x7E00U | u16(mant >> Fmt::mantissa_shift));
+    return static_cast<u16>(sign | 0x7E00U | static_cast<u16>(mant >> Fmt::mantissa_shift));
   }
 
   const i32 expo = i32(biased) - i32(Fmt::exponent_bias) + 15;
   if (expo >= 0x1F) {
     // Overflow (including the case that the source is already infinite) → ±∞.
-    return u16(sign | 0x7C00U);
+    return static_cast<u16>(sign | 0x7C00U);
   }
   if (expo <= 0) {
     if (expo < -10) {
@@ -155,7 +155,7 @@ constexpr u16 wide_bits_to_f16_bits(BitsOf<TFloat> wide) {
     if (rest > tie || (rest == tie && (out & 1U) != 0)) {
       ++out;
     }
-    return u16(sign | u16(out));
+    return static_cast<u16>(sign | static_cast<u16>(out));
   }
 
   // A carry out of the mantissa increments the exponent, which is exactly the desired behaviour and
@@ -166,18 +166,18 @@ constexpr u16 wide_bits_to_f16_bits(BitsOf<TFloat> wide) {
   if (rest > tie || (rest == tie && (out & 1U) != 0)) {
     ++out;
   }
-  return u16(sign | u16(out));
+  return static_cast<u16>(sign | static_cast<u16>(out));
 }
 
-/** Converts the bits of an IEEE 754 binary16 value into the equal `TFloat` value. */
-template<WideFloat TFloat>
-constexpr TFloat f16_bits_to_wide(u16 half) {
-  return std::bit_cast<TFloat>(f16_bits_to_wide_bits<TFloat>(half));
+/** Converts the bits of an IEEE 754 binary16 value into the equal `T` value. */
+template<WideFloat T>
+constexpr T f16_bits_to_wide(u16 half) {
+  return std::bit_cast<T>(f16_bits_to_wide_bits<T>(half));
 }
-/** Converts a `TFloat` value into the bits of the nearest binary16 value, rounding ties to even. */
-template<WideFloat TFloat>
-constexpr u16 wide_to_f16_bits(TFloat wide) {
-  return wide_bits_to_f16_bits<TFloat>(std::bit_cast<BitsOf<TFloat>>(wide));
+/** Converts a `T` value into the bits of the nearest binary16 value, rounding ties to even. */
+template<WideFloat T>
+constexpr u16 wide_to_f16_bits(T wide) {
+  return wide_bits_to_f16_bits<T>(std::bit_cast<BitsOf<T>>(wide));
 }
 
 /**
@@ -282,7 +282,7 @@ constexpr f16 f16_from_bits(std::uint16_t bits) {
 /** Converts a binary16 value to binary32, which is always exact. */
 constexpr float f16_to_f32(f16 value) {
 #if GREX_NATIVE_F16
-  return float(value);
+  return static_cast<float>(value);
 #else
   return f16_impl::f16_bits_to_wide<float>(value.bits);
 #endif
@@ -290,7 +290,7 @@ constexpr float f16_to_f32(f16 value) {
 /** Converts a binary32 value to the nearest binary16 value, rounding ties to even. */
 constexpr f16 f32_to_f16(float value) {
 #if GREX_NATIVE_F16
-  return f16(value);
+  return static_cast<f16>(value);
 #else
   return f16{value};
 #endif
@@ -299,7 +299,7 @@ constexpr f16 f32_to_f16(float value) {
 /** Converts a binary16 value to binary64, which is always exact. */
 constexpr double f16_to_f64(f16 value) {
 #if GREX_NATIVE_F16
-  return double(value);
+  return static_cast<double>(value);
 #else
   return f16_impl::f16_bits_to_wide<double>(value.bits);
 #endif
@@ -311,7 +311,7 @@ constexpr double f16_to_f64(f16 value) {
  */
 constexpr f16 f64_to_f16(double value) {
 #if GREX_NATIVE_F16
-  return f16(value);
+  return static_cast<f16>(value);
 #else
   return f16{value};
 #endif

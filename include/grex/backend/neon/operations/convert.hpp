@@ -138,85 +138,85 @@ GREX_CVT(u, 8, u, 16, 16, GREX_CVT_UZP1)
 GREX_CVT(u, 8, u, 16, 8, GREX_CVT_MOVN)
 
 // Binary16 ↔ binary64: `f16_to_f64`/`f64_to_f16` also pass through binary32, but round only once.
-template<Float16Vector TSrc>
-inline VectorFor<f64, size_of<TSrc>> convert(TSrc v, TypeTag<f64> /*tag*/) {
+template<Float16Vector Src>
+inline VectorFor<f64, size_of<Src>> convert(Src v, TypeTag<f64> /*tag*/) {
   return f16_to_f64(v);
 }
-template<TypedVector<f64> TSrc>
-inline VectorFor<f16, size_of<TSrc>> convert(TSrc v, TypeTag<f16> /*tag*/) {
+template<TypedVector<f64> Src>
+inline VectorFor<f16, size_of<Src>> convert(Src v, TypeTag<f16> /*tag*/) {
   return f64_to_f16(v);
 }
 
 #if !GREX_F16_NATIVE_ARITHMETIC
 // Integer → binary16 fallback: convert to binary32 and go from there.
-template<Float16 TDst, IntVector TSrc>
-inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
+template<Float16 Dst, IntVector Src>
+inline VectorFor<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> tag) {
   return convert(convert(v, type_tag<f32>), tag);
 }
 // Binary16 → integer fallback: convert to binary32 and go from there.
-template<IntVectorizable TDst, Float16Vector TSrc>
-inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
+template<IntVectorizable Dst, Float16Vector Src>
+inline VectorFor<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> tag) {
   return convert(convert(v, type_tag<f32>), tag);
 }
 #endif
 
 // Integer → smaller integer (factor other than two):
 // narrow to the next smaller integer type with preserved signedness, then recurse.
-template<IntVectorizable TDst, IntVector TSrc>
-requires(sizeof(TDst) < sizeof(ValueOf<TSrc>))
-inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<CopySignInt<ValueOf<TSrc>, sizeof(ValueOf<TSrc>) / 2>>), tag);
+template<IntVectorizable Dst, IntVector Src>
+requires(sizeof(Dst) < sizeof(ValueOf<Src>))
+inline VectorFor<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<ValueOf<Src>, sizeof(ValueOf<Src>) / 2>>), tag);
 }
 
 // Integer → larger integer (factor other than two):
 // widen to the next larger integer type with preserved signedness, then recurse.
-template<IntVectorizable TDst, IntVector TSrc>
-requires(sizeof(ValueOf<TSrc>) < sizeof(TDst))
-inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<CopySignInt<ValueOf<TSrc>, sizeof(ValueOf<TSrc>) * 2>>), tag);
+template<IntVectorizable Dst, IntVector Src>
+requires(sizeof(ValueOf<Src>) < sizeof(Dst))
+inline VectorFor<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<ValueOf<Src>, sizeof(ValueOf<Src>) * 2>>), tag);
 }
 
 // Integer → larger floating-point:
 // first convert to an integer with the destination element size, then cast to floating-point.
-template<NativeFloatVectorizable TDst, IntVector TSrc>
-requires(sizeof(ValueOf<TSrc>) < sizeof(TDst))
-inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<CopySignInt<ValueOf<TSrc>, sizeof(TDst)>>), tag);
+template<NativeFloatVectorizable Dst, IntVector Src>
+requires(sizeof(ValueOf<Src>) < sizeof(Dst))
+inline VectorFor<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<ValueOf<Src>, sizeof(Dst)>>), tag);
 }
 
 // Floating-point → larger integer:
 // first convert to a floating-point type with the destination element size, then cast to integer.
-template<IntVectorizable TDst, NativeFloatVector TSrc>
-requires(sizeof(ValueOf<TSrc>) < sizeof(TDst))
-inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<Float<sizeof(TDst)>>), tag);
+template<IntVectorizable Dst, NativeFloatVector Src>
+requires(sizeof(ValueOf<Src>) < sizeof(Dst))
+inline VectorFor<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> tag) {
+  return convert(convert(v, type_tag<Float<sizeof(Dst)>>), tag);
 }
 
 // Integer → smaller floating-point:
 // first convert to a floating-point type matching the source element size, then cast down.
-template<NativeFloatVectorizable TDst, IntVector TSrc>
-requires(sizeof(TDst) < sizeof(ValueOf<TSrc>))
-inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<Float<sizeof(ValueOf<TSrc>)>>), tag);
+template<NativeFloatVectorizable Dst, IntVector Src>
+requires(sizeof(Dst) < sizeof(ValueOf<Src>))
+inline VectorFor<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> tag) {
+  return convert(convert(v, type_tag<Float<sizeof(ValueOf<Src>)>>), tag);
 }
 
 // Floating-point → smaller integer:
 // first convert to an integer type matching the destination element size, then cast down.
-template<IntVectorizable TDst, NativeFloatVector TSrc>
-requires(sizeof(TDst) < sizeof(ValueOf<TSrc>))
-inline VectorFor<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<CopySignInt<TDst, sizeof(ValueOf<TSrc>)>>), tag);
+template<IntVectorizable Dst, NativeFloatVector Src>
+requires(sizeof(Dst) < sizeof(ValueOf<Src>))
+inline VectorFor<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<Dst, sizeof(ValueOf<Src>)>>), tag);
 }
 
 // Mask → mask: convert via the corresponding signed integer vector.
-template<AnyMask TMask, typename TDst>
-inline auto convert(TMask mask, TypeTag<TDst> /*tag*/) {
-  return vector2mask(convert(mask2vector(mask), type_tag<SignedInt<sizeof(TDst)>>), type_tag<TDst>);
+template<AnyMask Mask, typename Dst>
+inline auto convert(Mask mask, TypeTag<Dst> /*tag*/) {
+  return vector2mask(convert(mask2vector(mask), type_tag<SignedInt<sizeof(Dst)>>), type_tag<Dst>);
 }
 
 // Super-mask → mask: convert both halves and merge.
-template<Vectorizable TDst, typename THalf>
-inline MaskFor<TDst, 2 * THalf::size> convert(SuperMask<THalf> m, TypeTag<TDst> tag) {
+template<Vectorizable Dst, typename Half>
+inline MaskFor<Dst, 2 * Half::size> convert(SuperMask<Half> m, TypeTag<Dst> tag) {
   return merge(convert(m.lower, tag), convert(m.upper, tag));
 }
 } // namespace grex::backend

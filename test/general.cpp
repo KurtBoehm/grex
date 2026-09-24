@@ -29,37 +29,35 @@ int main() {
                 grex::transform([](auto j) { return int{j}; }, grex::scalar_tag), 0);
 #if !GREX_BACKEND_SCALAR
     // vectorized
-    auto op = [](grex::AnyIndexTag auto size) {
+    const auto op = [](grex::AnyIndexTag auto size) {
       fmt::print("{}\n", size.value);
       // full
       {
-        test::VectorChecker<int, size> checker{
+        const test::VectorChecker<int, size> checker{
           grex::transform([](auto j) { return int{j}; }, grex::full_tag<size>),
-          grex::static_apply<size>(
-            []<std::size_t... tIdxs>() { return std::array{int{tIdxs}...}; }),
+          grex::static_apply<size>([]<std::size_t... I> { return std::array{int{I}...}; }),
         };
         checker.check("transform full");
       }
       // part
       for (std::size_t i = 0; i <= size; ++i) {
-        test::VectorChecker<int, size> checker{
+        const test::VectorChecker<int, size> checker{
           grex::transform([](auto j) { return int{j + 1}; }, grex::part_tag<size>(i)),
-          grex::static_apply<size>([&]<std::size_t... tIdxs>() {
-            return std::array{((tIdxs < i) ? int{tIdxs + 1} : 0)...};
-          }),
+          grex::static_apply<size>(
+            [&]<std::size_t... I> { return std::array{((I < i) ? int{I + 1} : 0)...}; }),
         };
         checker.check("transform part", false);
       }
     };
     grex::static_apply<1, 8>(
-      [&]<std::size_t... tIdxs>() { (..., op(grex::index_tag<std::size_t{1} << tIdxs>)); });
+      [&]<std::size_t... I> { (..., op(grex::index_tag<std::size_t{1} << I>)); });
 #endif
   }
   // for_each
   {
     // scalar
     {
-      auto op = [](grex::TypedValueTag<grex::IterDirection> auto dir) {
+      const auto op = [](grex::TypedValueTag<grex::IterDirection> auto dir) {
         std::array<int, 1> dst{0};
         grex::for_each([&](auto j) { dst.at(j) = int(j + 1); }, dir, grex::scalar_tag);
         test::check(fmt::format("for_each scalar {}", dir.value), dst, std::array{1});
@@ -76,8 +74,8 @@ int main() {
         std::size_t i = 0;
         grex::for_each([&](auto j) { dst.at(i++) = int(j + 1); }, dir,
                        grex::typed_full_tag<grex::u64, size>);
-        const auto ref = grex::static_apply<size>([&]<std::size_t... tIdxs>() {
-          return std::array{int{(dir == forward) ? (tIdxs + 1) : (size - tIdxs)}...};
+        const auto ref = grex::static_apply<size>([&]<std::size_t... I> {
+          return std::array{int{(dir == forward) ? (I + 1) : (size - I)}...};
         });
         test::check(fmt::format("for_each full {}", dir.value), dst, ref);
       }
@@ -86,9 +84,8 @@ int main() {
         std::array<int, size> dst{};
         std::size_t i = 0;
         grex::for_each([&](auto j) { dst.at(i++) = int(j + 1); }, dir, grex::part_tag<size>(part));
-        const auto ref = grex::static_apply<size>([&]<std::size_t... tIdxs>() {
-          return std::array{
-            ((tIdxs < part) ? int((dir == forward) ? (tIdxs + 1) : (part - tIdxs)) : 0)...};
+        const auto ref = grex::static_apply<size>([&]<std::size_t... I> {
+          return std::array{((I < part) ? int((dir == forward) ? (I + 1) : (part - I)) : 0)...};
         });
         test::check(fmt::format("for_each part {}", dir.value), dst, ref, false);
       }
@@ -99,7 +96,7 @@ int main() {
       opo(size, grex::auto_tag<backward>);
     };
     grex::static_apply<1, 8>(
-      [&]<std::size_t... tIdxs>() { (..., op(grex::index_tag<std::size_t{1} << tIdxs>)); });
+      [&]<std::size_t... I> { (..., op(grex::index_tag<std::size_t{1} << I>)); });
 #endif
   }
 }

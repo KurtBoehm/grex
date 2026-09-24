@@ -13,23 +13,22 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<Vectorizable T, std::size_t tSize>
-inline SubVector<T, tSize> blend_zero(SubMask<T, tSize> m, SubVector<T, tSize> v1) {
-  return SubVector<T, tSize>{blend_zero(m.full, v1.full)};
+template<Vectorizable T, std::size_t N>
+inline SubVector<T, N> blend_zero(SubMask<T, N> m, SubVector<T, N> v1) {
+  return SubVector<T, N>{blend_zero(m.full, v1.full)};
 }
-template<Vectorizable T, std::size_t tSize>
-inline SubVector<T, tSize> blend(SubMask<T, tSize> m, SubVector<T, tSize> v0,
-                                 SubVector<T, tSize> v1) {
-  return SubVector<T, tSize>{blend(m.full, v0.full, v1.full)};
+template<Vectorizable T, std::size_t N>
+inline SubVector<T, N> blend(SubMask<T, N> m, SubVector<T, N> v0, SubVector<T, N> v1) {
+  return SubVector<T, N>{blend(m.full, v0.full, v1.full)};
 }
 
-template<typename TVecHalf, typename TMaskHalf>
-inline SuperVector<TVecHalf> blend_zero(SuperMask<TMaskHalf> m, SuperVector<TVecHalf> v1) {
+template<typename VecHalf, typename MaskHalf>
+inline SuperVector<VecHalf> blend_zero(SuperMask<MaskHalf> m, SuperVector<VecHalf> v1) {
   return {.lower = blend_zero(m.lower, v1.lower), .upper = blend_zero(m.upper, v1.upper)};
 }
-template<typename TVecHalf, typename TMaskHalf>
-inline SuperVector<TVecHalf> blend(SuperMask<TMaskHalf> m, SuperVector<TVecHalf> v0,
-                                   SuperVector<TVecHalf> v1) {
+template<typename VecHalf, typename MaskHalf>
+inline SuperVector<VecHalf> blend(SuperMask<MaskHalf> m, SuperVector<VecHalf> v0,
+                                  SuperVector<VecHalf> v1) {
   return {.lower = blend(m.lower, v0.lower, v1.lower), .upper = blend(m.upper, v0.upper, v1.upper)};
 }
 } // namespace grex::backend

@@ -7,38 +7,39 @@
 #include <cstddef>
 #include <random>
 
-#include <fmt/base.h>
+#include <fmt/base.h> // IWYU pragma: keep
 #include <pcg_extras.hpp>
 
 #include "grex/grex.hpp"
 
 #include "defs.hpp"
 
+namespace {
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
 #if !GREX_BACKEND_SCALAR
-template<grex::Vectorizable T, std::size_t tSize>
-void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
-  using VC = test::VectorChecker<T, tSize>;
+template<grex::Vectorizable T, std::size_t N>
+void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<N> /*tag*/) {
+  using VC = test::VectorChecker<T, N>;
 
   auto dist = test::make_distribution<T>();
   auto dval = [&] { return dist(rng); };
 
-  grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
+  grex::static_apply<N>([&]<std::size_t... I> {
     for (std::size_t i = 0; i < repetitions; ++i) {
       VC base = VC::random(dval);
       // zero-inserting upwards shingling
       test::check("shingle_up zero scalar", grex::shingle_up(dist(rng), grex::scalar_tag), T{},
                   {.verbose = false});
       {
-        VC checker{base.vec.shingle_up(), {((tIdxs == 0) ? T{} : base.ref[tIdxs - 1])...}};
+        const VC checker{base.vec.shingle_up(), {((I == 0) ? T{} : base.ref[I - 1])...}};
         checker.check("shingle_up zero", {.verbose = false});
       }
       {
-        VC checker{
-          grex::shingle_up(base.vec, grex::full_tag<tSize>),
-          {((tIdxs == 0) ? T{} : base.ref[tIdxs - 1])...},
+        const VC checker{
+          grex::shingle_up(base.vec, grex::full_tag<N>),
+          {((I == 0) ? T{} : base.ref[I - 1])...},
         };
         checker.check("shingle_up zero tagged", {.verbose = false});
       }
@@ -51,14 +52,14 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       }
       {
         const T front = dist(rng);
-        VC checker{base.vec.shingle_up(front), {((tIdxs == 0) ? front : base.ref[tIdxs - 1])...}};
+        const VC checker{base.vec.shingle_up(front), {((I == 0) ? front : base.ref[I - 1])...}};
         checker.check("shingle_up value", {.verbose = false});
       }
       {
         const T front = dist(rng);
-        VC checker{
-          grex::shingle_up(front, base.vec, grex::full_tag<tSize>),
-          {((tIdxs == 0) ? front : base.ref[tIdxs - 1])...},
+        const VC checker{
+          grex::shingle_up(front, base.vec, grex::full_tag<N>),
+          {((I == 0) ? front : base.ref[I - 1])...},
         };
         checker.check("shingle_up value tagged", {.verbose = false});
       }
@@ -67,16 +68,16 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       test::check("shingle_down zero scalar", grex::shingle_down(dist(rng), grex::scalar_tag), T{},
                   {.verbose = false});
       {
-        VC checker{
+        const VC checker{
           base.vec.shingle_down(),
-          {((tIdxs + 1 == tSize) ? T{} : base.ref[tIdxs + 1])...},
+          {((I + 1 == N) ? T{} : base.ref[I + 1])...},
         };
         checker.check("shingle_down zero", {.verbose = false});
       }
       {
-        VC checker{
-          grex::shingle_down(base.vec, grex::typed_full_tag<T, tSize>),
-          {((tIdxs + 1 == tSize) ? T{} : base.ref[tIdxs + 1])...},
+        const VC checker{
+          grex::shingle_down(base.vec, grex::typed_full_tag<T, N>),
+          {((I + 1 == N) ? T{} : base.ref[I + 1])...},
         };
         checker.check("shingle_down zero tagged", {.verbose = false});
       }
@@ -90,17 +91,17 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       }
       {
         const T back = dist(rng);
-        VC checker{
+        const VC checker{
           base.vec.shingle_down(back),
-          {((tIdxs + 1 == tSize) ? back : base.ref[tIdxs + 1])...},
+          {((I + 1 == N) ? back : base.ref[I + 1])...},
         };
         checker.check("shingle_down value", {.verbose = false});
       }
       {
         const T back = dist(rng);
-        VC checker{
-          grex::shingle_down(base.vec, back, grex::typed_full_tag<T, tSize>),
-          {((tIdxs + 1 == tSize) ? back : base.ref[tIdxs + 1])...},
+        const VC checker{
+          grex::shingle_down(base.vec, back, grex::typed_full_tag<T, N>),
+          {((I + 1 == N) ? back : base.ref[I + 1])...},
         };
         checker.check("shingle_down value tagged", {.verbose = false});
       }
@@ -110,7 +111,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
 #endif
 template<grex::Vectorizable T>
 void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
-  auto dist = test::make_distribution<T>();
+  auto dist = test::make_distribution<T>(); // NOLINT(*-const-correctness)
 
   for (std::size_t i = 0; i < repetitions; ++i) {
     // zero-inserting upwards shingling
@@ -136,6 +137,7 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
     }
   }
 }
+} // namespace
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};

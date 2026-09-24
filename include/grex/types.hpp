@@ -40,17 +40,17 @@ static constexpr std::array register_bits = backend::register_bits;
 /** The number of bytes in each kind of native vector register. */
 static constexpr std::array register_bytes = backend::register_bytes;
 
-/** Boolean mask for `Vector<T, tSize>`. */
-template<Vectorizable T, std::size_t tSize>
+/** Boolean mask for `Vector<T, N>`. */
+template<Vectorizable T, std::size_t N>
 struct Mask {
   /** %Value type of the mask. */
   using Value = bool;
   /** %Value type of the vector that this mask applies to. */
   using VectorValue = T;
   /** %Backend mask type. */
-  using Backend = backend::MaskFor<T, tSize>;
+  using Backend = backend::MaskFor<T, N>;
   /** Number of lanes. */
-  static constexpr std::size_t size = tSize;
+  static constexpr std::size_t size = N;
 
   /** Constructs an all-false mask. */
   GREX_ALWAYS_INLINE Mask() : mask_{backend::zeros(type_tag<Backend>)} {}
@@ -61,7 +61,7 @@ struct Mask {
 
   /** Constructs a mask from per-lane values. */
   template<typename... Ts>
-  requires(((sizeof...(Ts) == tSize) && ... && std::same_as<Ts, bool>))
+  requires(((sizeof...(Ts) == N) && ... && std::same_as<Ts, bool>))
   GREX_ALWAYS_INLINE explicit Mask(Ts... values)
       : mask_{backend::set(type_tag<Backend>, values...)} {}
 
@@ -69,89 +69,89 @@ struct Mask {
   GREX_ALWAYS_INLINE explicit Mask(Backend v) : mask_(v) {}
 
   /** Returns an all-false mask. */
-  GREX_ALWAYS_INLINE static Mask zeros() {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Mask zeros() {
     return Mask{backend::zeros(type_tag<Backend>)};
   }
 
   /** Returns an all-true mask. */
-  GREX_ALWAYS_INLINE static Mask ones() {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Mask ones() {
     return Mask{backend::ones(type_tag<Backend>)};
   }
 
   /** Returns a mask with the first `i` lanes set and the rest cleared. */
-  GREX_ALWAYS_INLINE static Mask cutoff_mask(std::size_t i) {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Mask cutoff_mask(std::size_t i) {
     return Mask{backend::cutoff_mask(i, type_tag<Backend>)};
   }
 
   /** Returns a mask with lane `i` set and the rest cleared. */
-  GREX_ALWAYS_INLINE static Mask single_mask(std::size_t i) {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Mask single_mask(std::size_t i) {
     return Mask{backend::single_mask(i, type_tag<Backend>)};
   }
 
   /** Converts mask to a mask for another type with the same lane count. */
-  template<Vectorizable TDst>
-  GREX_ALWAYS_INLINE Mask<TDst, tSize> convert(TypeTag<TDst> /*tag*/ = {}) const {
-    return Mask<TDst, tSize>{backend::convert(mask_, type_tag<TDst>)};
+  template<Vectorizable Dst>
+  [[nodiscard]] GREX_ALWAYS_INLINE Mask<Dst, N> convert(TypeTag<Dst> /*tag*/ = {}) const {
+    return Mask<Dst, N>{backend::convert(mask_, type_tag<Dst>)};
   }
 
   /** Lane-wise logical _NOT_. */
-  GREX_ALWAYS_INLINE Mask operator!() const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Mask operator!() const {
     return Mask{backend::logical_not(mask_)};
   }
 
   /** Lane-wise logical _AND_ of two masks. */
-  GREX_ALWAYS_INLINE friend Mask operator&&(Mask a, Mask b) {
+  [[nodiscard]] GREX_ALWAYS_INLINE friend Mask operator&&(Mask a, Mask b) {
     return Mask{backend::logical_and(a.mask_, b.mask_)};
   }
 
   /** Lane-wise logical _OR_ of two masks. */
-  GREX_ALWAYS_INLINE friend Mask operator||(Mask a, Mask b) {
+  [[nodiscard]] GREX_ALWAYS_INLINE friend Mask operator||(Mask a, Mask b) {
     return Mask{backend::logical_or(a.mask_, b.mask_)};
   }
 
   /** Lane-wise logical _XOR_ of two masks. */
-  GREX_ALWAYS_INLINE friend Mask operator!=(Mask a, Mask b) {
+  [[nodiscard]] GREX_ALWAYS_INLINE friend Mask operator!=(Mask a, Mask b) {
     return Mask{backend::logical_xor(a.mask_, b.mask_)};
   }
 
   /** Lane-wise equality comparison. */
-  GREX_ALWAYS_INLINE friend Mask operator==(Mask a, Mask b) {
+  [[nodiscard]] GREX_ALWAYS_INLINE friend Mask operator==(Mask a, Mask b) {
     return Mask{backend::compare_eq(a.mask_, b.mask_)};
   }
 
   /** Returns lane `i`. */
-  GREX_ALWAYS_INLINE bool operator[](std::size_t i) const {
+  [[nodiscard]] GREX_ALWAYS_INLINE bool operator[](std::size_t i) const {
     return backend::extract(mask_, i);
   }
 
   /** Returns lane `i` with a compile-time index. */
-  GREX_ALWAYS_INLINE bool operator[](AnyIndexTag auto i) const {
+  [[nodiscard]] GREX_ALWAYS_INLINE bool operator[](AnyIndexTag auto i) const {
     return backend::extract(mask_, i);
   }
 
-  /** Returns lane `tIdx` (for tuple-like access). */
-  template<std::size_t tIdx>
-  GREX_ALWAYS_INLINE friend bool get(const Mask& m) {
-    return backend::extract(m.mask_, index_tag<tIdx>);
+  /** Returns lane `I` (for tuple-like access). */
+  template<std::size_t I>
+  [[nodiscard]] GREX_ALWAYS_INLINE friend bool get(const Mask& m) {
+    return backend::extract(m.mask_, index_tag<I>);
   }
 
   /** Returns a copy with lane `i` replaced by `value`. */
-  GREX_ALWAYS_INLINE Mask insert(std::size_t i, bool value) const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Mask insert(std::size_t i, bool value) const {
     return Mask{backend::insert(mask_, i, value)};
   }
 
   /** Returns a copy with lane `i` replaced by `value` with a compile-time index. */
-  GREX_ALWAYS_INLINE Mask insert(AnyIndexTag auto i, bool value) const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Mask insert(AnyIndexTag auto i, bool value) const {
     return Mask{backend::insert(mask_, i, value)};
   }
 
   /** Returns underlying backend mask. */
-  GREX_ALWAYS_INLINE Backend backend() const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Backend backend() const {
     return mask_;
   }
 
   /** Returns contents as `std::array<bool, size>`. */
-  GREX_ALWAYS_INLINE std::array<bool, size> as_array() const {
+  [[nodiscard]] GREX_ALWAYS_INLINE std::array<bool, size> as_array() const {
     return backend::to_array(mask_);
   }
 
@@ -159,20 +159,20 @@ private:
   Backend mask_;
 };
 
-template<Vectorizable T, std::size_t tSize>
+template<Vectorizable T, std::size_t N>
 struct Vector;
 
 /** Base class to implement the variadic constructor with typed values for `Vector`. */
 template<Vectorizable T, typename TIdxs>
 struct VectorBase;
-template<Vectorizable T, std::size_t... tIdxs>
-struct VectorBase<T, std::index_sequence<tIdxs...>> {
-  static constexpr std::size_t size = sizeof...(tIdxs);
+template<Vectorizable T, std::size_t... I>
+struct VectorBase<T, std::index_sequence<I...>> {
+  static constexpr std::size_t size = sizeof...(I);
   using Backend = backend::VectorFor<T, size>;
   friend Vector<T, size>;
 
   /** Constructs a vector from typed per-lane values. */
-  GREX_ALWAYS_INLINE explicit VectorBase(IdxType<tIdxs, T>... values)
+  GREX_ALWAYS_INLINE explicit VectorBase(IdxType<I, T>... values)
       : vec_{backend::set(type_tag<Backend>, values...)} {}
 
   /** Constructs a vector from a backend vector. */
@@ -182,20 +182,20 @@ private:
   Backend vec_;
 };
 
-/** Generic SIMD vector type of type `T` with `tSize` lanes. */
-template<Vectorizable T, std::size_t tSize>
-struct Vector : VectorBase<T, std::make_index_sequence<tSize>> {
+/** Generic SIMD vector type of type `T` with `N` lanes. */
+template<Vectorizable T, std::size_t N>
+struct Vector : VectorBase<T, std::make_index_sequence<N>> {
   /** Scalar value type. */
   using Value = T;
   /** Corresponding `Mask` type. */
-  using Mask = grex::Mask<T, tSize>;
+  using Mask = grex::Mask<T, N>;
   /** %Backend vector type. */
-  using Backend = backend::VectorFor<T, tSize>;
+  using Backend = backend::VectorFor<T, N>;
   /** Number of lanes. */
-  static constexpr std::size_t size = tSize;
+  static constexpr std::size_t size = N;
 
   /** %Base class providing storage and basic constructors. */
-  using Base = VectorBase<T, std::make_index_sequence<tSize>>;
+  using Base = VectorBase<T, std::make_index_sequence<N>>;
   using Base::Base;
 
   /** Constructs a zero vector. */
@@ -206,42 +206,41 @@ struct Vector : VectorBase<T, std::make_index_sequence<tSize>> {
       : Base{backend::broadcast(value, type_tag<Backend>)} {}
 
   /** Expands scalar `x` into a vector with undefined upper lanes. */
-  GREX_ALWAYS_INLINE static Vector expanded_any(T value) {
-    return Vector{backend::expand_any(value, index_tag<tSize>)};
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector expanded_any(T value) {
+    return Vector{backend::expand_any(value, index_tag<N>)};
   }
 
   /** Expands scalar `x` into a vector with upper lanes filled with zeros. */
-  GREX_ALWAYS_INLINE static Vector expanded_zero(T value) {
-    return Vector{backend::expand_zero(value, index_tag<tSize>)};
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector expanded_zero(T value) {
+    return Vector{backend::expand_zero(value, index_tag<N>)};
   }
 
   /** Loads a vector from unaligned memory. */
-  GREX_ALWAYS_INLINE static Vector load(const T* ptr) {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector load(const T* ptr) {
     return Vector{backend::load(ptr, type_tag<Backend>)};
   }
 
   /** Loads a vector from aligned memory. */
-  GREX_ALWAYS_INLINE static Vector load_aligned(const T* ptr) {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector load_aligned(const T* ptr) {
     return Vector{backend::load_aligned(ptr, type_tag<Backend>)};
   }
 
   /** Loads `num` (up to `size`) elements from memory with undefined upper lanes. */
-  GREX_ALWAYS_INLINE static Vector load_part(const T* ptr, std::size_t num) {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector load_part(const T* ptr, std::size_t num) {
     return Vector{backend::load_part(ptr, num, type_tag<Backend>)};
   }
   /** Loads `num` (up to `size`) elements from memory with undefined upper lanes. */
-  GREX_ALWAYS_INLINE static Vector load_part(const T* ptr, AnyIndexTag auto num) {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector load_part(const T* ptr, AnyIndexTag auto num) {
     return Vector{backend::load_part(ptr, num, type_tag<Backend>)};
   }
 
   /**
-   * Loads `size` unsigned integers stored using `tSrcBytes` bytes each
-   * and converts each to `Value`.
+   * Loads `size` unsigned integers stored using `SrcBytes` bytes each and converts each to `Value`.
    */
-  template<std::size_t tSrcBytes>
+  template<std::size_t SrcBytes>
   GREX_ALWAYS_INLINE static Vector load_multibyte(const std::byte* data,
-                                                  IndexTag<tSrcBytes> src_bytes)
-  requires(UnsignedIntVectorizable<T> && tSrcBytes <= sizeof(Value))
+                                                  IndexTag<SrcBytes> src_bytes)
+  requires(UnsignedIntVectorizable<T> && SrcBytes <= sizeof(Value))
   {
     const auto* raw = reinterpret_cast<const u8*>(data);
     return Vector{backend::load_multibyte(raw, src_bytes, type_tag<Backend>)};
@@ -251,43 +250,43 @@ struct Vector : VectorBase<T, std::make_index_sequence<tSize>> {
    * Loads `size` unsigned integers starting at `it` and converts each to `Value`.
    *
    * This convenience overload is intended to be used with iterators to a data structure that stores
-   * unsigned integers with `TIt::Container::element_bytes` bytes each and provides a pointer to
+   * unsigned integers with `It::Container::element_bytes` bytes each and provides a pointer to
    * the underlying bytes (represented using `std::byte`) through `it.raw()`.
    */
-  template<MultiByteIterator TIt>
-  GREX_ALWAYS_INLINE static Vector load_multibyte(TIt it)
+  template<MultiByteIterator It>
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector load_multibyte(It it)
   requires(UnsignedIntVectorizable<T>)
   {
-    return load_multibyte(it.raw(), index_tag<TIt::Container::element_bytes>);
+    return load_multibyte(it.raw(), index_tag<It::Container::element_bytes>);
   }
 
   /** Returns an undefined vector. */
-  GREX_ALWAYS_INLINE static Vector undefined() {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector undefined() {
     return Vector{backend::undefined(type_tag<Backend>)};
   }
 
   /** Returns a zero vector. */
-  GREX_ALWAYS_INLINE static Vector zeros() {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector zeros() {
     return Vector{backend::zeros(type_tag<Backend>)};
   }
 
   /** Returns a vector of lane indices `[0, 1, ..., size - 1]`. */
-  GREX_ALWAYS_INLINE static Vector indices() {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector indices() {
     return Vector{backend::indices(type_tag<Backend>)};
   }
 
   /** Returns a vector of offset lane indices `[start, start + 1, ..., start + size - 1]`. */
-  GREX_ALWAYS_INLINE static Vector indices(T start) {
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector indices(T start) {
     return indices() + Vector{start};
   }
 
   /** Lane-wise unary minus. */
-  GREX_ALWAYS_INLINE Vector operator-() const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector operator-() const {
     return Vector{backend::negate(vec_)};
   }
 
   /** Lane-wise bitwise negation (integer vectors only). */
-  GREX_ALWAYS_INLINE Vector operator~() const
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector operator~() const
   requires(IntVectorizable<T>)
   {
     return Vector{backend::bitwise_not(vec_)};
@@ -295,15 +294,15 @@ struct Vector : VectorBase<T, std::make_index_sequence<tSize>> {
 
 #define GREX_VECTOR_BINOP(OP, REQ, NAME, COMMENT_NAME) \
   /** Lane-wise COMMENT_NAME between vectors. */ \
-  GREX_ALWAYS_INLINE friend Vector operator OP(Vector a, Vector b) REQ { \
+  [[nodiscard]] GREX_ALWAYS_INLINE friend Vector operator OP(Vector a, Vector b) REQ { \
     return Vector{backend::NAME(a.vec_, b.vec_)}; \
   } \
   /** Lane-wise COMMENT_NAME with a scalar on the right. */ \
-  GREX_ALWAYS_INLINE friend Vector operator OP(Vector a, Value b) REQ { \
+  [[nodiscard]] GREX_ALWAYS_INLINE friend Vector operator OP(Vector a, Value b) REQ { \
     return a OP Vector{b}; \
   } \
   /** Lane-wise COMMENT_NAME with a scalar on the left. */ \
-  GREX_ALWAYS_INLINE friend Vector operator OP(Value a, Vector b) REQ { \
+  [[nodiscard]] GREX_ALWAYS_INLINE friend Vector operator OP(Value a, Vector b) REQ { \
     return Vector{a} OP b; \
   } \
   /** Compound lane-wise COMMENT_NAME assignment with vector. */ \
@@ -339,46 +338,46 @@ struct Vector : VectorBase<T, std::make_index_sequence<tSize>> {
 #undef GREX_VECTOR_SHOP
 
   /** Zeroes out lanes starting at `i`. */
-  GREX_ALWAYS_INLINE Vector cutoff(std::size_t i) const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector cutoff(std::size_t i) const {
     return Vector{backend::cutoff(i, vec_)};
   }
 
   /** Converts to another type with the same lane count. */
-  template<Vectorizable TDst>
-  GREX_ALWAYS_INLINE Vector<TDst, size> convert(TypeTag<TDst> /*tag*/ = {}) const {
-    return Vector<TDst, size>{backend::convert(vec_, type_tag<TDst>)};
+  template<Vectorizable Dst>
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector<Dst, size> convert(TypeTag<Dst> /*tag*/ = {}) const {
+    return Vector<Dst, size>{backend::convert(vec_, type_tag<Dst>)};
   }
 
   /** Reinterprets to another value type with the same size. */
-  template<Vectorizable TDst>
-  requires(sizeof(Value) == sizeof(TDst))
-  GREX_ALWAYS_INLINE Vector<TDst, size> bit_cast(TypeTag<TDst> /*tag*/ = {}) const {
-    return Vector<TDst, size>{backend::as<TDst>(vec_)};
+  template<Vectorizable Dst>
+  requires(sizeof(Value) == sizeof(Dst))
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector<Dst, size> bit_cast(TypeTag<Dst> /*tag*/ = {}) const {
+    return Vector<Dst, size>{backend::as<Dst>(vec_)};
   }
 
   /** Returns lane `i`. */
-  GREX_ALWAYS_INLINE T operator[](std::size_t i) const {
+  [[nodiscard]] GREX_ALWAYS_INLINE T operator[](std::size_t i) const {
     return backend::extract(vec_, i);
   }
 
   /** Returns lane `i` with a compile-time index. */
-  GREX_ALWAYS_INLINE T operator[](AnyIndexTag auto i) const {
+  [[nodiscard]] GREX_ALWAYS_INLINE T operator[](AnyIndexTag auto i) const {
     return backend::extract(vec_, i);
   }
 
-  /** Returns lane `tIdx` for tuple-like access. */
-  template<std::size_t tIdx>
-  GREX_ALWAYS_INLINE friend T get(const Vector& v) {
-    return backend::extract(v.vec_, index_tag<tIdx>);
+  /** Returns lane `I` for tuple-like access. */
+  template<std::size_t I>
+  [[nodiscard]] GREX_ALWAYS_INLINE friend T get(const Vector& v) {
+    return backend::extract(v.vec_, index_tag<I>);
   }
 
   /** Returns a copy with lane `i` replaced by `value`. */
-  GREX_ALWAYS_INLINE Vector insert(std::size_t i, T value) const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector insert(std::size_t i, T value) const {
     return Vector{backend::insert(vec_, i, value)};
   }
 
   /** Returns a copy with lane `i` replaced by `value` with a compile-time index. */
-  GREX_ALWAYS_INLINE Vector insert(AnyIndexTag auto i, T value) const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector insert(AnyIndexTag auto i, T value) const {
     return Vector{backend::insert(vec_, i, value)};
   }
 
@@ -403,15 +402,15 @@ struct Vector : VectorBase<T, std::make_index_sequence<tSize>> {
 
 #define GREX_VECTOR_CMP_BINOP(OP, REQ, BACKEND, COMMENT_NAME) \
   /** Lane-wise COMMENT_NAME comparison between vectors. */ \
-  GREX_ALWAYS_INLINE friend Mask operator OP(Vector a, Vector b) REQ { \
+  [[nodiscard]] GREX_ALWAYS_INLINE friend Mask operator OP(Vector a, Vector b) REQ { \
     return Mask{BACKEND}; \
   } \
   /** Lane-wise COMMENT_NAME comparison with a scalar on the right. */ \
-  GREX_ALWAYS_INLINE friend Mask operator OP(Vector a, Value b) REQ { \
+  [[nodiscard]] GREX_ALWAYS_INLINE friend Mask operator OP(Vector a, Value b) REQ { \
     return a OP Vector{b}; \
   } \
   /** Lane-wise COMMENT_NAME comparison with a scalar on the left. */ \
-  GREX_ALWAYS_INLINE friend Mask operator OP(Value a, Vector b) REQ { \
+  [[nodiscard]] GREX_ALWAYS_INLINE friend Mask operator OP(Value a, Vector b) REQ { \
     return Vector{a} OP b; \
   }
 
@@ -423,23 +422,23 @@ struct Vector : VectorBase<T, std::make_index_sequence<tSize>> {
   GREX_VECTOR_CMP_BINOP(>=, , backend::compare_ge(a.vec_, b.vec_), _greater than or equal to_)
 #undef GREX_VECTOR_CMP_BINOP
 
-  /** Expands this vector to size `tDstSize` with undefined upper lanes. */
-  template<std::size_t tDstSize>
-  GREX_ALWAYS_INLINE Vector<T, tDstSize> expand_any(IndexTag<tDstSize> /*size*/) const {
-    return Vector<T, tDstSize>{backend::expand_any(vec_, index_tag<tDstSize>)};
+  /** Expands this vector to size `DstN` with undefined upper lanes. */
+  template<std::size_t DstN>
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector<T, DstN> expand_any(IndexTag<DstN> /*size*/) const {
+    return Vector<T, DstN>{backend::expand_any(vec_, index_tag<DstN>)};
   }
 
-  /** Expands this vector to size `tDstSize` with upper lanes filled with zeros. */
-  template<std::size_t tDstSize>
-  GREX_ALWAYS_INLINE Vector<T, tDstSize> expand_zero(IndexTag<tDstSize> /*size*/) const {
-    return Vector<T, tDstSize>{backend::expand_zero(vec_, index_tag<tDstSize>)};
+  /** Expands this vector to size `DstN` with upper lanes filled with zeros. */
+  template<std::size_t DstN>
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector<T, DstN> expand_zero(IndexTag<DstN> /*size*/) const {
+    return Vector<T, DstN>{backend::expand_zero(vec_, index_tag<DstN>)};
   }
 
   /**
    * Shifts values up by one lane and inserts a zero into the first lane:
    * `result[i] = (i > 0) ? (*this)[i - 1] : 0`.
    */
-  GREX_ALWAYS_INLINE Vector shingle_up() const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector shingle_up() const {
     return Vector{backend::shingle_up(vec_)};
   }
 
@@ -447,7 +446,7 @@ struct Vector : VectorBase<T, std::make_index_sequence<tSize>> {
    * Shifts values up by one lane and inserts `front` into the first lane:
    * `result[i] = (i > 0) ? (*this)[i - 1] : front`.
    */
-  GREX_ALWAYS_INLINE Vector shingle_up(Value front) const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector shingle_up(Value front) const {
     return Vector{backend::shingle_up(front, vec_)};
   }
 
@@ -455,7 +454,7 @@ struct Vector : VectorBase<T, std::make_index_sequence<tSize>> {
    * Shifts values down by one lane and inserts a zero into the last lane:
    * `result[i] = (i + 1 < size) ? (*this)[i + 1] : 0`.
    */
-  GREX_ALWAYS_INLINE Vector shingle_down() const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector shingle_down() const {
     return Vector{backend::shingle_down(vec_)};
   }
 
@@ -463,17 +462,17 @@ struct Vector : VectorBase<T, std::make_index_sequence<tSize>> {
    * Shifts values down by one lane and inserts `back` into the last lane:
    * `result[i] = (i + 1 < size) ? (*this)[i + 1] : back`.
    */
-  GREX_ALWAYS_INLINE Vector shingle_down(Value back) const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector shingle_down(Value back) const {
     return Vector{backend::shingle_down(vec_, back)};
   }
 
   /** Returns underlying backend vector. */
-  GREX_ALWAYS_INLINE Backend backend() const {
+  [[nodiscard]] GREX_ALWAYS_INLINE Backend backend() const {
     return vec_;
   }
 
   /** Returns contents as `std::array<Value, size>`. */
-  GREX_ALWAYS_INLINE std::array<Value, size> as_array() const {
+  [[nodiscard]] GREX_ALWAYS_INLINE std::array<Value, size> as_array() const {
     return backend::to_array(vec_);
   }
 
@@ -486,8 +485,8 @@ template<typename T>
 struct VectorizableOfTrait;
 template<Vectorizable T>
 struct VectorizableOfTrait<T> : TypeTag<T> {};
-template<Vectorizable T, std::size_t tSize>
-struct VectorizableOfTrait<Vector<T, tSize>> : TypeTag<T> {};
+template<Vectorizable T, std::size_t N>
+struct VectorizableOfTrait<Vector<T, N>> : TypeTag<T> {};
 
 /** The underlying vectorizable type of a vector or a vectorizable type itself. */
 template<typename T>
@@ -498,10 +497,10 @@ template<typename T>
 struct MaskTrait : std::false_type {};
 
 /** `MaskTrait` specialization for `Mask`. */
-template<Vectorizable T, std::size_t tSize>
-struct MaskTrait<Mask<T, tSize>> : std::true_type {
+template<Vectorizable T, std::size_t N>
+struct MaskTrait<Mask<T, N>> : std::true_type {
   /** Corresponding vector type. */
-  using VectorFor = Vector<T, tSize>;
+  using VectorFor = Vector<T, N>;
 };
 
 /** Trait indicating whether `T` is a `Vector` type. */
@@ -509,10 +508,10 @@ template<typename T>
 struct VectorTrait : std::false_type {};
 
 /** `VectorTrait` specialization for `Vector`. */
-template<Vectorizable T, std::size_t tSize>
-struct VectorTrait<Vector<T, tSize>> : std::true_type {
+template<Vectorizable T, std::size_t N>
+struct VectorTrait<Vector<T, N>> : std::true_type {
   /** Corresponding mask type. */
-  using MaskFor = Mask<T, tSize>;
+  using MaskFor = Mask<T, N>;
 };
 
 /** Concept for any `Mask` type. */
@@ -520,168 +519,163 @@ template<typename T>
 concept AnyMask = MaskTrait<T>::value;
 
 /** Concept for a mask with a specific lane count. */
-template<typename T, std::size_t tSize>
-concept SizedMask = AnyMask<T> && T::size == tSize;
+template<typename T, std::size_t N>
+concept SizedMask = AnyMask<T> && T::size == N;
 
 /** Concept for any `Vector` type. */
-template<typename TVec>
-concept AnyVector = VectorTrait<TVec>::value;
+template<typename Vec>
+concept AnyVector = VectorTrait<Vec>::value;
 
 /** Concept for a `Vector` whose value type is `TVal`. */
-template<typename TVec, typename TVal>
-concept ValuedVector = AnyVector<TVec> && std::same_as<typename TVec::Value, TVal>;
+template<typename Vec, typename TVal>
+concept ValuedVector = AnyVector<Vec> && std::same_as<typename Vec::Value, TVal>;
 
 /** Concept for a `Vector` with a specific lane count. */
-template<typename TVec, std::size_t tSize>
-concept SizedVector = AnyVector<TVec> && TVec::size == tSize;
+template<typename Vec, std::size_t N>
+concept SizedVector = AnyVector<Vec> && Vec::size == N;
 
 /** Concept for a `Vector` with integer elements. */
-template<typename TVec>
-concept IntVector = AnyVector<TVec> && IntVectorizable<typename TVec::Value>;
+template<typename Vec>
+concept IntVector = AnyVector<Vec> && IntVectorizable<typename Vec::Value>;
 
 /** Concept for a `Vector` with floating-point elements. */
-template<typename TVec>
-concept FpVector = AnyVector<TVec> && FloatVectorizable<typename TVec::Value>;
+template<typename Vec>
+concept FpVector = AnyVector<Vec> && FloatVectorizable<typename Vec::Value>;
 
 /** Convenience alias for the `Mask` type corresponding to a `Vector` type. */
-template<AnyVector TVec>
-using MaskFor = VectorTrait<TVec>::MaskFor;
+template<AnyVector Vec>
+using MaskFor = VectorTrait<Vec>::MaskFor;
 
 /** Convenience alias for the `Vector` type corresponding to a `Mask` type. */
-template<AnyMask TMask>
-using VectorFor = MaskTrait<TMask>::VectorFor;
+template<AnyMask Mask>
+using VectorFor = MaskTrait<Mask>::VectorFor;
 
 /** Lane-wise logical _AND NOT_ between two masks. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Mask<T, tSize> andnot(Mask<T, tSize> a, Mask<T, tSize> b) {
-  return Mask<T, tSize>{backend::logical_andnot(a.backend(), b.backend())};
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Mask<T, N> andnot(Mask<T, N> a, Mask<T, N> b) {
+  return Mask<T, N>{backend::logical_andnot(a.backend(), b.backend())};
 }
 
 /** Lane-wise absolute value. */
-template<SignedVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> abs(Vector<T, tSize> v) {
-  return Vector<T, tSize>{backend::abs(v.backend())};
+template<SignedVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> abs(Vector<T, N> v) {
+  return Vector<T, N>{backend::abs(v.backend())};
 }
 
 /** Lane-wise square root. */
-template<FloatVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> sqrt(Vector<T, tSize> v) {
-  return Vector<T, tSize>{backend::sqrt(v.backend())};
+template<FloatVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> sqrt(Vector<T, N> v) {
+  return Vector<T, N>{backend::sqrt(v.backend())};
 }
 
 /** Lane-wise minimum. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> min(Vector<T, tSize> a, Vector<T, tSize> b) {
-  return Vector<T, tSize>{backend::min(a.backend(), b.backend())};
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> min(Vector<T, N> a, Vector<T, N> b) {
+  return Vector<T, N>{backend::min(a.backend(), b.backend())};
 }
 
 /** Lane-wise maximum. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> max(Vector<T, tSize> a, Vector<T, tSize> b) {
-  return Vector<T, tSize>{backend::max(a.backend(), b.backend())};
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> max(Vector<T, N> a, Vector<T, N> b) {
+  return Vector<T, N>{backend::max(a.backend(), b.backend())};
 }
 
 /** Returns mask of lanes with finite values. */
-template<FloatVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Mask<T, tSize> is_finite(Vector<T, tSize> v) {
-  return Mask<T, tSize>{backend::is_finite(v.backend())};
+template<FloatVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Mask<T, N> is_finite(Vector<T, N> v) {
+  return Mask<T, N>{backend::is_finite(v.backend())};
 }
 
 /** Replaces non-finite lanes (not-a-number/infinities) with finite values. */
-template<FloatVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> make_finite(Vector<T, tSize> v) {
-  return Vector<T, tSize>{backend::make_finite(v.backend())};
+template<FloatVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> make_finite(Vector<T, N> v) {
+  return Vector<T, N>{backend::make_finite(v.backend())};
 }
 
 /** Horizontal sum of all lanes. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline T horizontal_add(Vector<T, tSize> v) {
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline T horizontal_add(Vector<T, N> v) {
   return backend::horizontal_add(v.backend());
 }
 
 /** Horizontal minimum across all lanes. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline T horizontal_min(Vector<T, tSize> v) {
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline T horizontal_min(Vector<T, N> v) {
   return backend::horizontal_min(v.backend());
 }
 
 /** Horizontal maximum across all lanes. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline T horizontal_max(Vector<T, tSize> v) {
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline T horizontal_max(Vector<T, N> v) {
   return backend::horizontal_max(v.backend());
 }
 
 /** Horizontal logical _AND_ over all mask lanes. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline bool horizontal_and(Mask<T, tSize> m) {
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline bool horizontal_and(Mask<T, N> m) {
   return backend::horizontal_and(m.backend());
 }
 
 /** Lane-wise fused multiply-add: @f$ a \cdot b + c @f$. */
-template<FloatVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> fmadd(Vector<T, tSize> a, Vector<T, tSize> b,
-                                                 Vector<T, tSize> c) {
-  return Vector<T, tSize>{
+template<FloatVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> fmadd(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c) {
+  return Vector<T, N>{
     backend::fused(a.backend(), b.backend(), c.backend(), backend::MultiplyAdd{}),
   };
 }
 
 /** Lane-wise fused multiply-subtract: @f$ a \cdot b - c @f$. */
-template<FloatVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> fmsub(Vector<T, tSize> a, Vector<T, tSize> b,
-                                                 Vector<T, tSize> c) {
-  return Vector<T, tSize>{
+template<FloatVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> fmsub(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c) {
+  return Vector<T, N>{
     backend::fused(a.backend(), b.backend(), c.backend(), backend::MultiplySubtract{}),
   };
 }
 
 /** Lane-wise negative fused multiply-add: @f$ -(a \cdot b) + c @f$. */
-template<FloatVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> fnmadd(Vector<T, tSize> a, Vector<T, tSize> b,
-                                                  Vector<T, tSize> c) {
-  return Vector<T, tSize>{
+template<FloatVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> fnmadd(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c) {
+  return Vector<T, N>{
     backend::fused(a.backend(), b.backend(), c.backend(), backend::NegatedMultiplyAdd{}),
   };
 }
 
 /** Lane-wise negative fused multiply-subtract: @f$ -(a \cdot b) - c @f$. */
-template<FloatVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> fnmsub(Vector<T, tSize> a, Vector<T, tSize> b,
-                                                  Vector<T, tSize> c) {
-  return Vector<T, tSize>{
+template<FloatVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> fnmsub(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c) {
+  return Vector<T, N>{
     backend::fused(a.backend(), b.backend(), c.backend(), backend::NegatedMultiplySubtract{}),
   };
 }
 
 /** Extracts `v[0]`. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline T extract_single(Vector<T, tSize> v) {
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline T extract_single(Vector<T, N> v) {
   return backend::extract_single(v.backend());
 }
 
 /** Blends `v1` with zeros: `result[i] = mask[i] ? v1[i] : 0`. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> blend_zero(Mask<T, tSize> mask, Vector<T, tSize> v1) {
-  return Vector<T, tSize>{backend::blend_zero(mask.backend(), v1.backend())};
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> blend_zero(Mask<T, N> mask, Vector<T, N> v1) {
+  return Vector<T, N>{backend::blend_zero(mask.backend(), v1.backend())};
 }
 
 /** Blends `v1` with zeros using compile-time selectors. */
-template<BlendZeroSelector... tBzs, Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> blend_zero(Vector<T, tSize> v1) {
-  return Vector<T, tSize>{backend::blend_zero<tBzs...>(v1.backend())};
+template<BlendZeroSelector... BZS, Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> blend_zero(Vector<T, N> v1) {
+  return Vector<T, N>{backend::blend_zero<BZS...>(v1.backend())};
 }
 
 /** Blends between `v0` and `v1`: `result[i] = mask[i] ? v1[i] : v0[i]`. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> blend(Mask<T, tSize> mask, Vector<T, tSize> v0,
-                                                 Vector<T, tSize> v1) {
-  return Vector<T, tSize>{backend::blend(mask.backend(), v0.backend(), v1.backend())};
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> blend(Mask<T, N> mask, Vector<T, N> v0, Vector<T, N> v1) {
+  return Vector<T, N>{backend::blend(mask.backend(), v0.backend(), v1.backend())};
 }
 
 /** Blends between `v0` and `v1` using compile-time selectors. */
-template<BlendSelector... tBls, Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> blend(Vector<T, tSize> v0, Vector<T, tSize> v1) {
-  return Vector<T, tSize>{backend::blend<tBls...>(v0.backend(), v1.backend())};
+template<BlendSelector... BS, Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> blend(Vector<T, N> v0, Vector<T, N> v1) {
+  return Vector<T, N>{backend::blend<BS...>(v0.backend(), v1.backend())};
 }
 
 /**
@@ -689,84 +683,81 @@ GREX_ALWAYS_INLINE inline Vector<T, tSize> blend(Vector<T, tSize> v0, Vector<T, 
  *
  * The value in `result[i]` is undefined if `idxs[i] >= size`.
  */
-template<Vectorizable T, UnsignedIntVectorizable TIdx, std::size_t tTableSize, std::size_t tIdxSize>
-GREX_ALWAYS_INLINE inline Vector<T, tIdxSize> shuffle(Vector<T, tTableSize> table,
-                                                      Vector<TIdx, tIdxSize> idxs) {
-  return Vector<T, tIdxSize>{backend::shuffle(table.backend(), idxs.backend())};
+template<Vectorizable T, UnsignedIntVectorizable Idx, std::size_t TableN, std::size_t IdxN>
+GREX_ALWAYS_INLINE inline Vector<T, IdxN> shuffle(Vector<T, TableN> table, Vector<Idx, IdxN> idxs) {
+  return Vector<T, IdxN>{backend::shuffle(table.backend(), idxs.backend())};
 }
 
 /** Shuffles `table` using compile-time indices. */
-template<ShuffleIndex... tIdxs, Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> shuffle(Vector<T, tSize> table) {
-  return Vector<T, tSize>{backend::shuffle<tIdxs...>(table.backend())};
+template<ShuffleIndex... I, Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> shuffle(Vector<T, N> table) {
+  return Vector<T, N>{backend::shuffle<I...>(table.backend())};
 }
 
 /** Masked add: `result[i] = mask[i] ? a[i] + b[i] : a[i]`. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> mask_add(Mask<T, tSize> mask, Vector<T, tSize> a,
-                                                    Vector<T, tSize> b) {
-  return Vector<T, tSize>{backend::mask_add(mask.backend(), a.backend(), b.backend())};
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> mask_add(Mask<T, N> mask, Vector<T, N> a, Vector<T, N> b) {
+  return Vector<T, N>{backend::mask_add(mask.backend(), a.backend(), b.backend())};
 }
 
 /** Masked subtract: `result[i] = mask[i] ? a[i] - b[i] : a[i]`. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> mask_subtract(Mask<T, tSize> mask, Vector<T, tSize> a,
-                                                         Vector<T, tSize> b) {
-  return Vector<T, tSize>{backend::mask_subtract(mask.backend(), a.backend(), b.backend())};
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> mask_subtract(Mask<T, N> mask, Vector<T, N> a,
+                                                     Vector<T, N> b) {
+  return Vector<T, N>{backend::mask_subtract(mask.backend(), a.backend(), b.backend())};
 }
 
 /** Masked multiply: `result[i] = mask[i] ? a[i] * b[i] : a[i]`. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> mask_multiply(Mask<T, tSize> mask, Vector<T, tSize> a,
-                                                         Vector<T, tSize> b) {
-  return Vector<T, tSize>{backend::mask_multiply(mask.backend(), a.backend(), b.backend())};
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> mask_multiply(Mask<T, N> mask, Vector<T, N> a,
+                                                     Vector<T, N> b) {
+  return Vector<T, N>{backend::mask_multiply(mask.backend(), a.backend(), b.backend())};
 }
 
 /** Masked divide: `result[i] = mask[i] ? a[i] / b[i] : a[i]`. */
-template<FloatVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<T, tSize> mask_divide(Mask<T, tSize> mask, Vector<T, tSize> a,
-                                                       Vector<T, tSize> b) {
-  return Vector<T, tSize>{backend::mask_divide(mask.backend(), a.backend(), b.backend())};
+template<FloatVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<T, N> mask_divide(Mask<T, N> mask, Vector<T, N> a,
+                                                   Vector<T, N> b) {
+  return Vector<T, N>{backend::mask_divide(mask.backend(), a.backend(), b.backend())};
 }
 
 /** Gathers elements from `data` at `indices` into a vector: `result[i] = data[indices[i]]`. */
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<TValue, tSize> gather(std::span<const TValue, tExtent> data,
-                                                       Vector<TIndex, tSize> indices) {
-  return Vector<TValue, tSize>{backend::gather(data, indices.backend())};
+template<Vectorizable TValue, std::size_t Extent, Vectorizable TIndex, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<TValue, N> gather(std::span<const TValue, Extent> data,
+                                                   Vector<TIndex, N> indices) {
+  return Vector<TValue, N>{backend::gather(data, indices.backend())};
 }
 
 /**
  * Gathers values from `data` at `indices` where `mask` is set:
  * `result[i] = mask[i] ? data[indices[i]] : 0`.
  */
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
-GREX_ALWAYS_INLINE inline Vector<TValue, tSize> mask_gather(std::span<const TValue, tExtent> data,
-                                                            Mask<TValue, tSize> mask,
-                                                            Vector<TIndex, tSize> indices) {
-  return Vector<TValue, tSize>{backend::mask_gather(data, mask.backend(), indices.backend())};
+template<Vectorizable TValue, std::size_t Extent, Vectorizable TIndex, std::size_t N>
+GREX_ALWAYS_INLINE inline Vector<TValue, N>
+mask_gather(std::span<const TValue, Extent> data, Mask<TValue, N> mask, Vector<TIndex, N> indices) {
+  return Vector<TValue, N>{backend::mask_gather(data, mask.backend(), indices.backend())};
 }
 } // namespace grex
 
 /** `tuple_size` specialization for `grex::Vector` (for tuple-like access). */
-template<grex::Vectorizable T, std::size_t tSize>
-struct std::tuple_size<grex::Vector<T, tSize>> : std::integral_constant<std::size_t, tSize> {};
+template<grex::Vectorizable T, std::size_t N>
+struct std::tuple_size<grex::Vector<T, N>> : std::integral_constant<std::size_t, N> {};
 
 /** `tuple_element` specialization for `grex::Vector` (for tuple-like access). */
-template<std::size_t tIdx, grex::Vectorizable T, std::size_t tSize>
-struct std::tuple_element<tIdx, grex::Vector<T, tSize>> {
-  /** Element type at index `tIdx`. */
+template<std::size_t I, grex::Vectorizable T, std::size_t N>
+struct std::tuple_element<I, grex::Vector<T, N>> {
+  /** Element type at index `I`. */
   using type = const T; // NOLINT
 };
 
 /** `tuple_size` specialization for `grex::Mask` (for tuple-like access). */
-template<grex::Vectorizable T, std::size_t tSize>
-struct std::tuple_size<grex::Mask<T, tSize>> : std::integral_constant<std::size_t, tSize> {};
+template<grex::Vectorizable T, std::size_t N>
+struct std::tuple_size<grex::Mask<T, N>> : std::integral_constant<std::size_t, N> {};
 
 /** `tuple_element` specialization for `grex::Mask` (for tuple-like access). */
-template<std::size_t tIdx, grex::Vectorizable T, std::size_t tSize>
-struct std::tuple_element<tIdx, grex::Mask<T, tSize>> {
-  /** Element type at index `tIdx`. */
+template<std::size_t I, grex::Vectorizable T, std::size_t N>
+struct std::tuple_element<I, grex::Mask<T, N>> {
+  /** Element type at index `I`. */
   using type = const bool; // NOLINT
 };
 #endif

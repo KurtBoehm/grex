@@ -28,49 +28,49 @@
 
 namespace grex::backend {
 struct ShufflerShuffle8x16 : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
     return GREX_X86_64_LEVEL >= 2;
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr ShuffleIndices<1, 16> idxs = convert<1>(tSh).value();
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr ShuffleIndices<1, 16> idxs = convert<1>(SI).value();
 
     const i8x16 ivec = reinterpret(vec, type_tag<i8>);
     return reinterpret(i8x16{_mm_shuffle_epi8(ivec.r, idxs.vector().r)}, type_tag<Value>);
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
     return {.inv_throughput = 0.5, .latency = 4};
   }
 };
 
 struct ShufflerShuffle32x4 : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
-    return convert<4>(tSh).has_value();
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    return convert<4>(SI).has_value();
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr int imm8 = convert<4>(tSh).value().imm8();
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr int imm8 = convert<4>(SI).value().imm8();
 
     const i32x4 ivec = reinterpret(vec, type_tag<i32>);
-    const TVec shuffled = reinterpret(i32x4{_mm_shuffle_epi32(ivec.r, imm8)}, type_tag<Value>);
-    return ZeroBlender<tSh.blend_zeros()>::apply(shuffled, auto_tag<tSh.blend_zeros()>);
+    const Vec shuffled = reinterpret(i32x4{_mm_shuffle_epi32(ivec.r, imm8)}, type_tag<Value>);
+    return ZeroBlender<SI.blend_zeros()>::apply(shuffled, auto_tag<SI.blend_zeros()>);
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
-    const auto [c0, c1] = ZeroBlender<tSh.blend_zeros()>::cost(auto_tag<tSh>);
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
+    const auto [c0, c1] = ZeroBlender<SI.blend_zeros()>::cost(auto_tag<SI>);
     return {.inv_throughput = 0.5 + c0, .latency = std::max<f64>(c1, 1)};
   }
 };
 
-template<AnyShuffleIndices auto tIdxs>
-requires((tIdxs.value_size * tIdxs.size == 16))
-struct ShufflerTrait<tIdxs> {
-  using Shuffler = CheapestType<tIdxs, ShufflerBlendZero, ShufflerShuffle8x16, ShufflerShuffle32x4,
+template<AnyShuffleIndices auto I>
+requires((I.value_size * I.size == 16))
+struct ShufflerTrait<I> {
+  using Shuffler = CheapestType<I, ShufflerBlendZero, ShufflerShuffle8x16, ShufflerShuffle32x4,
                                 ShufflerExtractSet>;
 };
 } // namespace grex::backend

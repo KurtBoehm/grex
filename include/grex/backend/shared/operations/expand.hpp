@@ -20,26 +20,26 @@ namespace grex::backend {
 //==================================================================================================
 
 // Sub-native: Delegate to the native version
-template<Vectorizable T, std::size_t tSize, bool tZero>
-requires(tSize < min_native_size<T>)
-inline VectorFor<T, tSize> expand(T x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
-  return VectorFor<T, tSize>{expand(x, index_tag<min_native_size<T>>, zero)};
+template<Vectorizable T, std::size_t N, bool Zero>
+requires(N < min_native_size<T>)
+inline VectorFor<T, N> expand(T x, IndexTag<N> /*tag*/, BoolTag<Zero> zero) {
+  return VectorFor<T, N>{expand(x, index_tag<min_native_size<T>>, zero)};
 }
 
 // Larger than the smallest native size: Merge with zero/undefined
-template<Vectorizable T, std::size_t tSize, bool tZero>
-requires(tSize > min_native_size<T>)
-inline VectorFor<T, tSize> expand(T x, IndexTag<tSize> /*tag*/, BoolTag<tZero> zero) {
-  constexpr std::size_t half = tSize / 2;
-  return expand(expand(x, index_tag<half>, zero), index_tag<tSize>, zero);
+template<Vectorizable T, std::size_t N, bool Zero>
+requires(N > min_native_size<T>)
+inline VectorFor<T, N> expand(T x, IndexTag<N> /*tag*/, BoolTag<Zero> zero) {
+  constexpr std::size_t half = N / 2;
+  return expand(expand(x, index_tag<half>, zero), index_tag<N>, zero);
 }
 
-template<Vectorizable T, std::size_t tSize>
-inline VectorFor<T, tSize> expand_any(T x, IndexTag<tSize> size) {
+template<Vectorizable T, std::size_t N>
+inline VectorFor<T, N> expand_any(T x, IndexTag<N> size) {
   return expand(x, size, false_tag);
 }
-template<Vectorizable T, std::size_t tSize>
-inline VectorFor<T, tSize> expand_zero(T x, IndexTag<tSize> size) {
+template<Vectorizable T, std::size_t N>
+inline VectorFor<T, N> expand_zero(T x, IndexTag<N> size) {
   return expand(x, size, true_tag);
 }
 
@@ -48,46 +48,46 @@ inline VectorFor<T, tSize> expand_zero(T x, IndexTag<tSize> size) {
 //==================================================================================================
 
 // unchanged size: no-op
-template<AnyVector TVec, bool tZero>
-inline TVec expand(TVec v, IndexTag<TVec::size> /*size*/, BoolTag<tZero> /*zero*/) {
+template<AnyVector Vec, bool Zero>
+inline Vec expand(Vec v, IndexTag<Vec::size> /*size*/, BoolTag<Zero> /*zero*/) {
   return v;
 }
 
 // sub-native → sub-native/native
-template<typename T, std::size_t tSize, std::size_t tDstSize, bool tZero>
-inline VectorFor<T, tDstSize> expand(SubVector<T, tSize> v, IndexTag<tDstSize> size_tag,
-                                     BoolTag<tZero> zero_tag) {
-  using Work = VectorFor<T, std::min(tDstSize, min_native_size<T>)>;
-  Work work = [&] {
-    if constexpr (tZero) {
+template<typename T, std::size_t N, std::size_t DstN, bool Zero>
+inline VectorFor<T, DstN> expand(SubVector<T, N> v, IndexTag<DstN> size_tag,
+                                 BoolTag<Zero> zero_tag) {
+  using Work = VectorFor<T, std::min(DstN, min_native_size<T>)>;
+  const Work work = [&] {
+    if constexpr (Zero) {
       return Work{full_cutoff(v).r};
     } else {
       return Work{v.registr()};
     }
   }();
-  if constexpr (tDstSize <= min_native_size<T>) {
+  if constexpr (DstN <= min_native_size<T>) {
     return work;
   } else {
     return expand(work, size_tag, zero_tag);
   }
 }
 
-template<AnyVector TVec, std::size_t tSize>
-inline VectorFor<typename TVec::Value, tSize> expand_any(TVec v, IndexTag<tSize> size) {
+template<AnyVector Vec, std::size_t N>
+inline VectorFor<typename Vec::Value, N> expand_any(Vec v, IndexTag<N> size) {
   return expand(v, size, false_tag);
 }
-template<std::size_t tSize, AnyVector TVec>
-inline VectorFor<typename TVec::Value, tSize> expand_any(TVec v) {
-  return expand(v, index_tag<tSize>, false_tag);
+template<std::size_t N, AnyVector Vec>
+inline VectorFor<typename Vec::Value, N> expand_any(Vec v) {
+  return expand(v, index_tag<N>, false_tag);
 }
 
-template<AnyVector TVec, std::size_t tSize>
-inline VectorFor<typename TVec::Value, tSize> expand_zero(TVec v, IndexTag<tSize> size) {
+template<AnyVector Vec, std::size_t N>
+inline VectorFor<typename Vec::Value, N> expand_zero(Vec v, IndexTag<N> size) {
   return expand(v, size, true_tag);
 }
-template<std::size_t tSize, AnyVector TVec>
-inline VectorFor<typename TVec::Value, tSize> expand_zero(TVec v) {
-  return expand(v, index_tag<tSize>, true_tag);
+template<std::size_t N, AnyVector Vec>
+inline VectorFor<typename Vec::Value, N> expand_zero(Vec v) {
+  return expand(v, index_tag<N>, true_tag);
 }
 } // namespace grex::backend
 

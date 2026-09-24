@@ -31,37 +31,37 @@ SIMD Interface
 .. doxygentypedef:: grex::MaskFor
 .. doxygentypedef:: grex::VectorFor
 
-.. doxygenfunction:: andnot(Mask<T, tSize> a, Mask<T, tSize> b)
-.. doxygenfunction:: abs(Vector<T, tSize> v)
-.. doxygenfunction:: sqrt(Vector<T, tSize> v)
-.. doxygenfunction:: min(Vector<T, tSize> a, Vector<T, tSize> b)
-.. doxygenfunction:: max(Vector<T, tSize> a, Vector<T, tSize> b)
-.. doxygenfunction:: is_finite(Vector<T, tSize> v)
-.. doxygenfunction:: make_finite(Vector<T, tSize> v)
-.. doxygenfunction:: horizontal_add(Vector<T, tSize> v)
-.. doxygenfunction:: horizontal_min(Vector<T, tSize> v)
-.. doxygenfunction:: horizontal_max(Vector<T, tSize> v)
-.. doxygenfunction:: horizontal_and(Mask<T, tSize> m)
-.. doxygenfunction:: fmadd(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c)
-.. doxygenfunction:: fmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c)
-.. doxygenfunction:: fnmadd(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c)
-.. doxygenfunction:: fnmsub(Vector<T, tSize> a, Vector<T, tSize> b, Vector<T, tSize> c)
-.. doxygenfunction:: extract_single(Vector<T, tSize> v)
-.. doxygenfunction:: blend_zero(Mask<T, tSize> mask, Vector<T, tSize> v1)
-.. doxygenfunction:: blend_zero(Vector<T, tSize> v1)
-.. doxygenfunction:: blend(Mask<T, tSize> mask, Vector<T, tSize> v0, Vector<T, tSize> v1)
-.. doxygenfunction:: blend(Vector<T, tSize> v0, Vector<T, tSize> v1)
-.. doxygenfunction:: shuffle(Vector<T, tTableSize> table, Vector<TIdx, tIdxSize> idxs)
-.. doxygenfunction:: shuffle(Vector<T, tSize> table)
-.. doxygenfunction:: mask_add(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b)
-.. doxygenfunction:: mask_subtract(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b)
-.. doxygenfunction:: mask_multiply(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b)
-.. doxygenfunction:: mask_divide(Mask<T, tSize> mask, Vector<T, tSize> a, Vector<T, tSize> b)
-.. doxygenfunction:: gather(std::span<const TValue, tExtent> data, Vector<TIndex, tSize> indices)
-.. doxygenfunction:: mask_gather(std::span<const TValue, tExtent> data, Mask<TValue, tSize> mask, Vector<TIndex, tSize> indices)
+.. doxygenfunction:: andnot(Mask<T, N> a, Mask<T, N> b)
+.. doxygenfunction:: abs(Vector<T, N> v)
+.. doxygenfunction:: sqrt(Vector<T, N> v)
+.. doxygenfunction:: min(Vector<T, N> a, Vector<T, N> b)
+.. doxygenfunction:: max(Vector<T, N> a, Vector<T, N> b)
+.. doxygenfunction:: is_finite(Vector<T, N> v)
+.. doxygenfunction:: make_finite(Vector<T, N> v)
+.. doxygenfunction:: horizontal_add(Vector<T, N> v)
+.. doxygenfunction:: horizontal_min(Vector<T, N> v)
+.. doxygenfunction:: horizontal_max(Vector<T, N> v)
+.. doxygenfunction:: horizontal_and(Mask<T, N> m)
+.. doxygenfunction:: fmadd(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
+.. doxygenfunction:: fmsub(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
+.. doxygenfunction:: fnmadd(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
+.. doxygenfunction:: fnmsub(Vector<T, N> a, Vector<T, N> b, Vector<T, N> c)
+.. doxygenfunction:: extract_single(Vector<T, N> v)
+.. doxygenfunction:: blend_zero(Mask<T, N> mask, Vector<T, N> v1)
+.. doxygenfunction:: blend_zero(Vector<T, N> v1)
+.. doxygenfunction:: blend(Mask<T, N> mask, Vector<T, N> v0, Vector<T, N> v1)
+.. doxygenfunction:: blend(Vector<T, N> v0, Vector<T, N> v1)
+.. doxygenfunction:: shuffle(Vector<T, TableSize> table, Vector<TIdx, IdxSize> idxs)
+.. doxygenfunction:: shuffle(Vector<T, N> table)
+.. doxygenfunction:: mask_add(Mask<T, N> mask, Vector<T, N> a, Vector<T, N> b)
+.. doxygenfunction:: mask_subtract(Mask<T, N> mask, Vector<T, N> a, Vector<T, N> b)
+.. doxygenfunction:: mask_multiply(Mask<T, N> mask, Vector<T, N> a, Vector<T, N> b)
+.. doxygenfunction:: mask_divide(Mask<T, N> mask, Vector<T, N> a, Vector<T, N> b)
+.. doxygenfunction:: gather(std::span<const V, Extent> data, Vector<TIndex, N> indices)
+.. doxygenfunction:: mask_gather(std::span<const V, Extent> data, Mask<V, N> mask, Vector<TIndex, N> indices)
 
-.. doxygenstruct:: std::tuple_size< grex::Vector< T, tSize > >
-.. doxygenstruct:: std::tuple_element< tIdx, grex::Vector< T, tSize > >
+.. doxygenstruct:: std::tuple_size< grex::Vector< T, N > >
+.. doxygenstruct:: std::tuple_element< I, grex::Vector< T, N > >
 
-.. doxygenstruct:: std::tuple_size< grex::Mask< T, tSize > >
-.. doxygenstruct:: std::tuple_element< tIdx, grex::Mask< T, tSize > >
+.. doxygenstruct:: std::tuple_size< grex::Mask< T, N > >
+.. doxygenstruct:: std::tuple_element< I, grex::Mask< T, N > >

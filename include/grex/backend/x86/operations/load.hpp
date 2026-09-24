@@ -117,15 +117,15 @@ GREX_ALWAYS_INLINE inline __m128i shift_down(__m128i v, std::size_t tail) {
 }
 #endif
 
-/** Loads exactly `tBytes` bytes at `ptr` into the low bytes of a 128-bit register. */
-template<std::size_t tBytes>
-requires(tBytes == 2 || tBytes == 4 || tBytes == 8 || tBytes == 16)
+/** Loads exactly `Bytes` bytes at `ptr` into the low bytes of a 128-bit register. */
+template<std::size_t Bytes>
+requires(Bytes == 2 || Bytes == 4 || Bytes == 8 || Bytes == 16)
 GREX_ALWAYS_INLINE inline __m128i load_bytes(const u8* ptr) {
-  if constexpr (tBytes == 16) {
+  if constexpr (Bytes == 16) {
     return _mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr));
-  } else if constexpr (tBytes == 8) {
+  } else if constexpr (Bytes == 8) {
     return _mm_loadu_si64(ptr);
-  } else if constexpr (tBytes == 4) {
+  } else if constexpr (Bytes == 4) {
     return _mm_loadu_si32(ptr);
   } else {
     return _mm_loadu_si16(ptr);
@@ -133,26 +133,26 @@ GREX_ALWAYS_INLINE inline __m128i load_bytes(const u8* ptr) {
 }
 
 /**
- * Gathers the `bytes ∈ [tBlock, 2·tBlock)` bytes at `ptr`, made up of `tElementBytes`-byte
+ * Gathers the `bytes ∈ [Block, 2·Block)` bytes at `ptr`, made up of `ElementBytes`-byte
  * elements, into the low bytes of a 128-bit register, zeroing the bytes above them: the two
- * overlapping loads `lo = src[0, tBlock)` and `src[bytes - tBlock, bytes)` cover everything, so the
- * top `bytes - tBlock` bytes of the latter, the only ones `lo` does not provide, are shifted down
+ * overlapping loads `lo = src[0, Block)` and `src[bytes - Block, bytes)` cover everything, so the
+ * top `bytes - Block` bytes of the latter, the only ones `lo` does not provide, are shifted down
  * to the bottom and interleaved above `lo`. Since a shift by 64 bits or more yields zero,
- * `bytes == tBlock` needs no special treatment.
+ * `bytes == Block` needs no special treatment.
  */
-template<std::size_t tBlock, std::size_t tElementBytes>
-requires((tBlock == 2 || tBlock == 4 || tBlock == 8) && tElementBytes <= tBlock)
+template<std::size_t Block, std::size_t ElementBytes>
+requires((Block == 2 || Block == 4 || Block == 8) && ElementBytes <= Block)
 GREX_ALWAYS_INLINE inline __m128i gather_blocks(const u8* ptr, std::size_t bytes) {
-  const __m128i lo = load_bytes<tBlock>(ptr);
-  if constexpr (tElementBytes == tBlock) {
-    // The only multiple of `tBlock` in `[tBlock, 2·tBlock)` is `tBlock`, so `lo` is everything.
+  const __m128i lo = load_bytes<Block>(ptr);
+  if constexpr (ElementBytes == Block) {
+    // The only multiple of `Block` in `[Block, 2·Block)` is `Block`, so `lo` is everything.
     return lo;
   } else {
-    const __m128i hi = _mm_srl_epi64(load_bytes<tBlock>(ptr + bytes - tBlock),
-                                     _mm_cvtsi32_si128(int(8 * (2 * tBlock - bytes))));
-    if constexpr (tBlock == 8) {
+    const __m128i hi = _mm_srl_epi64(load_bytes<Block>(ptr + bytes - Block),
+                                     _mm_cvtsi32_si128(int(8 * (2 * Block - bytes))));
+    if constexpr (Block == 8) {
       return _mm_unpacklo_epi64(lo, hi);
-    } else if constexpr (tBlock == 4) {
+    } else if constexpr (Block == 4) {
       return _mm_unpacklo_epi32(lo, hi);
     } else {
       return _mm_unpacklo_epi16(lo, hi);
@@ -161,40 +161,40 @@ GREX_ALWAYS_INLINE inline __m128i gather_blocks(const u8* ptr, std::size_t bytes
 }
 
 /**
- * Loads the first `min(count, tCount)` elements of `tElementBytes` bytes each at `base` into the
+ * Loads the first `min(count, Count)` elements of `ElementBytes` bytes each at `base` into the
  * low bytes of a 128-bit register, zeroing the bytes above them and reading no memory beyond them.
  * The element size and count are compile-time constants so that the unreachable cases, which are
  * the majority for all but 8-bit elements, are pruned.
  */
-template<std::size_t tElementBytes, std::size_t tCount>
-requires((tElementBytes * tCount) <= 16)
+template<std::size_t ElementBytes, std::size_t Count>
+requires((ElementBytes * Count) <= 16)
 GREX_ALWAYS_INLINE inline __m128i load_prefix(const void* base, std::size_t count) {
-  static constexpr std::size_t total = tElementBytes * tCount;
+  static constexpr std::size_t total = ElementBytes * Count;
 
   const auto* ptr = static_cast<const u8*>(base);
-  if (count >= tCount) [[unlikely]] {
+  if (count >= Count) [[unlikely]] {
     return load_bytes<total>(ptr);
   }
-  // Cannot overflow, since `count < tCount` and `total ≤ 16`.
-  const std::size_t bytes = tElementBytes * count;
+  // Cannot overflow, since `count < Count` and `total ≤ 16`.
+  const std::size_t bytes = ElementBytes * count;
 
   // Two overlapping loads of the largest block that fits, halved down to a single byte.
   if constexpr (total > 8) {
     if (bytes >= 8) {
-      return gather_blocks<8, tElementBytes>(ptr, bytes);
+      return gather_blocks<8, ElementBytes>(ptr, bytes);
     }
   }
-  if constexpr (tElementBytes <= 4 && total > 4) {
+  if constexpr (ElementBytes <= 4 && total > 4) {
     if (bytes >= 4) {
-      return gather_blocks<4, tElementBytes>(ptr, bytes);
+      return gather_blocks<4, ElementBytes>(ptr, bytes);
     }
   }
-  if constexpr (tElementBytes <= 2 && total > 2) {
+  if constexpr (ElementBytes <= 2 && total > 2) {
     if (bytes >= 2) {
-      return gather_blocks<2, tElementBytes>(ptr, bytes);
+      return gather_blocks<2, ElementBytes>(ptr, bytes);
     }
   }
-  if constexpr (tElementBytes == 1) {
+  if constexpr (ElementBytes == 1) {
     if (bytes == 1) {
       return _mm_cvtsi32_si128(ptr[0]);
     }

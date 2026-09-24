@@ -20,27 +20,27 @@
 
 #include "grex/types.hpp"
 
-template<grex::Vectorizable T, std::size_t tSize>
-struct fmt::formatter<grex::Vector<T, tSize>>
-    : fmt::formatter<std::array<grex::format_impl::Formatted<T>, tSize>> {
-  fmt::format_context::iterator format(grex::Vector<T, tSize> v, fmt::format_context& ctx) const {
-    return fmt::formatter<std::array<grex::format_impl::Formatted<T>, tSize>>::format(
+template<grex::Vectorizable T, std::size_t N>
+struct fmt::formatter<grex::Vector<T, N>>
+    : fmt::formatter<std::array<grex::format_impl::Formatted<T>, N>> {
+  fmt::format_context::iterator format(grex::Vector<T, N> v, fmt::format_context& ctx) const {
+    return fmt::formatter<std::array<grex::format_impl::Formatted<T>, N>>::format(
       grex::format_impl::formatted_array(v), ctx);
   }
 };
-template<grex::Vectorizable T, std::size_t tSize, typename TChar>
-struct fmt::is_tuple_formattable<grex::Vector<T, tSize>, TChar> {
+template<grex::Vectorizable T, std::size_t N, typename Char>
+struct fmt::is_tuple_formattable<grex::Vector<T, N>, Char> {
   static constexpr bool value = false;
 };
 
-template<grex::Vectorizable T, std::size_t tSize>
-struct fmt::formatter<grex::Mask<T, tSize>> : fmt::formatter<std::array<bool, tSize>> {
-  fmt::format_context::iterator format(grex::Mask<T, tSize> m, fmt::format_context& ctx) const {
-    return fmt::formatter<std::array<bool, tSize>>::format(m.as_array(), ctx);
+template<grex::Vectorizable T, std::size_t N>
+struct fmt::formatter<grex::Mask<T, N>> : fmt::formatter<std::array<bool, N>> {
+  fmt::format_context::iterator format(grex::Mask<T, N> m, fmt::format_context& ctx) const {
+    return fmt::formatter<std::array<bool, N>>::format(m.as_array(), ctx);
   }
 };
-template<grex::Vectorizable T, std::size_t tSize, typename TChar>
-struct fmt::is_tuple_formattable<grex::Mask<T, tSize>, TChar> {
+template<grex::Vectorizable T, std::size_t N, typename Char>
+struct fmt::is_tuple_formattable<grex::Mask<T, N>, Char> {
   static constexpr bool value = false;
 };
 
@@ -53,7 +53,7 @@ struct fmt::formatter<grex::ShuffleIndex> {
     switch (sh) {
       case grex::any_sh: return fmt::format_to(ctx.out(), "any_sh");
       case grex::zero_sh: return fmt::format_to(ctx.out(), "zero_sh");
-      default: return fmt::format_to(ctx.out(), "{}_sh", int(sh));
+      default: return fmt::format_to(ctx.out(), "{}_sh", static_cast<int>(sh));
     }
   }
 };

@@ -46,11 +46,11 @@ GREX_ALWAYS_INLINE inline VectorFor<f32, 8> f16_to_f32(NativeVector<f16, 8> v) {
   };
 }
 /** Widen a binary16 vector into the binary32 vector. */
-template<std::size_t tSize>
-requires(std::has_single_bit(tSize) && tSize < 8)
-GREX_ALWAYS_INLINE inline VectorFor<f32, tSize> f16_to_f32(SubVector<f16, tSize> v) {
+template<std::size_t N>
+requires(std::has_single_bit(N) && N < 8)
+GREX_ALWAYS_INLINE inline VectorFor<f32, N> f16_to_f32(SubVector<f16, N> v) {
   const float16x4_t half = vget_low_f16(vreinterpretq_f16_u16(v.full.r));
-  return VectorFor<f32, tSize>{vcvt_f32_f16(half)};
+  return VectorFor<f32, N>{vcvt_f32_f16(half)};
 }
 
 /** Convert a binary32 vector into the binary16 vector, rounding ties to even. */
@@ -78,7 +78,7 @@ GREX_ALWAYS_INLINE inline SubVector<f16, 2> f32_to_f16(SubVector<f32, 2> v) {
 
 namespace f16_convert {
 // A binary64 significand stores 52 bits and a binary32 one 23, so narrowing discards the low 29.
-inline constexpr u64 f64_discarded = (u64{1} << 29) - 1;
+inline constexpr u64 f64_discarded = (u64{1} << 29U) - 1;
 
 /**
  * Round the binary64 lanes of `v` to the significand of binary32, breaking ties towards an odd
@@ -108,8 +108,8 @@ GREX_ALWAYS_INLINE inline NativeVector<f32, 4> f64_to_f32_odd(SuperVector<Native
   return {.r = vcvt_high_f32_f64(lower, f16_convert::round_odd(v.upper.r))};
 }
 /** Narrow a binary64 vector to binary32, rounding to odd (see `f16_convert::round_odd`). */
-template<TypedVector<f64> THalf>
-GREX_ALWAYS_INLINE inline VectorFor<f32, 2 * size_of<THalf>> f64_to_f32_odd(SuperVector<THalf> v) {
+template<TypedVector<f64> Half>
+GREX_ALWAYS_INLINE inline VectorFor<f32, 2 * size_of<Half>> f64_to_f32_odd(SuperVector<Half> v) {
   return merge(f64_to_f32_odd(v.lower), f64_to_f32_odd(v.upper));
 }
 
@@ -125,8 +125,8 @@ GREX_ALWAYS_INLINE inline VectorFor<f64, 4> f32_to_f64(NativeVector<f32, 4> v) {
   };
 }
 /** Widen a binary32 vector to binary64, which is always exact. */
-template<TypedVector<f32> THalf>
-GREX_ALWAYS_INLINE inline VectorFor<f64, 2 * THalf::size> f32_to_f64(SuperVector<THalf> v) {
+template<TypedVector<f32> Half>
+GREX_ALWAYS_INLINE inline VectorFor<f64, 2 * Half::size> f32_to_f64(SuperVector<Half> v) {
   return {.lower = f32_to_f64(v.lower), .upper = f32_to_f64(v.upper)};
 }
 
@@ -134,13 +134,13 @@ GREX_ALWAYS_INLINE inline VectorFor<f64, 2 * THalf::size> f32_to_f64(SuperVector
  * Convert a binary16 vector into the binary64 vector with the same values, which is always
  * exact.
  */
-template<Float16Vector TVec>
-GREX_ALWAYS_INLINE inline VectorFor<f64, size_of<TVec>> f16_to_f64(TVec v) {
+template<Float16Vector Vec>
+GREX_ALWAYS_INLINE inline VectorFor<f64, size_of<Vec>> f16_to_f64(Vec v) {
   return f32_to_f64(f16_to_f32(v));
 }
 /** Convert a binary64 vector into the binary16 vector with the nearest values, ties to even. */
-template<TypedVector<f64> TVec>
-GREX_ALWAYS_INLINE inline VectorFor<f16, size_of<TVec>> f64_to_f16(TVec v) {
+template<TypedVector<f64> Vec>
+GREX_ALWAYS_INLINE inline VectorFor<f16, size_of<Vec>> f64_to_f16(Vec v) {
   return f32_to_f16(f64_to_f32_odd(v));
 }
 
@@ -148,9 +148,9 @@ GREX_ALWAYS_INLINE inline VectorFor<f16, size_of<TVec>> f64_to_f16(TVec v) {
  * Convert a Neon type to its stored type, which maps `f16` to `u16` and returns the input unchanged
  * otherwise.
  */
-template<typename TValue, typename TVec>
-GREX_ALWAYS_INLINE inline auto to_stored(TVec v) {
-  if constexpr (std::same_as<TValue, f16>) {
+template<typename Value, typename Vec>
+GREX_ALWAYS_INLINE inline auto to_stored(Vec v) {
+  if constexpr (std::same_as<Value, f16>) {
     return as_u16(v);
   } else {
     return v;
@@ -158,12 +158,12 @@ GREX_ALWAYS_INLINE inline auto to_stored(TVec v) {
 }
 
 /**
- * Convert a Neon type from its stored type, which maps `u16` to `f16` if `TValue` is `f16` and
+ * Convert a Neon type from its stored type, which maps `u16` to `f16` if `Value` is `f16` and
  * returns the input unchanged otherwise.
  */
-template<typename TValue, typename TVec>
-GREX_ALWAYS_INLINE inline auto from_stored(TVec v) {
-  if constexpr (std::same_as<TValue, f16>) {
+template<typename Value, typename Vec>
+GREX_ALWAYS_INLINE inline auto from_stored(Vec v) {
+  if constexpr (std::same_as<Value, f16>) {
     return as_f16(v);
   } else {
     return v;

@@ -59,9 +59,9 @@ inline bool bit_test(T a, T b) {
   return ((a >> b) & 1) != 0;
 }
 
-template<IntVectorizable TDst, IntVectorizable TSrc>
-inline TDst expand_any(TSrc src) {
-  return TDst(src);
+template<IntVectorizable Dst, IntVectorizable Src>
+inline Dst expand_any(Src src) {
+  return Dst(src);
 }
 } // namespace grex::backend
 

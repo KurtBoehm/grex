@@ -51,8 +51,8 @@ GREX_FOREACH_TYPE(GREX_CMP_VEC, 128)
 // Binary16 is included, since mask comparisons are bitwise anyway.
 GREX_FOREACH_TYPE_EXT(GREX_CMP_MSK, 128)
 
-template<Vectorizable T, std::size_t tSize>
-inline NativeMask<T, tSize> compare_neq(NativeVector<T, tSize> a, NativeVector<T, tSize> b) {
+template<Vectorizable T, std::size_t N>
+inline NativeMask<T, N> compare_neq(NativeVector<T, N> a, NativeVector<T, N> b) {
   return logical_not(compare_eq(a, b));
 }
 

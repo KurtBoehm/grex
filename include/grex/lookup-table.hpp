@@ -22,57 +22,55 @@
 #endif
 
 namespace grex {
-template<Vectorizable T, std::size_t tSize>
+template<Vectorizable T, std::size_t N>
 struct LookupTable {
   LookupTable() = default;
-  explicit LookupTable(std::array<T, tSize> data) : data_{std::move(data)} {}
+  explicit LookupTable(std::array<T, N> data) : data_{std::move(data)} {}
 
   T lookup(std::size_t i) const {
     return data_[i];
   }
-  template<UnsignedIntVectorizable TIdx>
-  T lookup(TIdx i, grex::AnyScalarTag auto /*vtag*/) const {
+  template<UnsignedIntVectorizable Idx>
+  T lookup(Idx i, grex::AnyScalarTag auto /*vtag*/) const {
     return data_[i];
   }
 
 #if !GREX_BACKEND_SCALAR
-  template<UnsignedIntVectorizable TIdx, std::size_t tVecSize>
-  grex::Vector<T, tVecSize> lookup(grex::Vector<TIdx, tVecSize> i,
-                                   grex::AnyVectorTag auto vtag) const {
+  template<UnsignedIntVectorizable Idx, std::size_t IN>
+  grex::Vector<T, IN> lookup(grex::Vector<Idx, IN> i, grex::AnyVectorTag auto vtag) const {
     return grex::gather(std::span{data_}, i, vtag);
   }
 #endif
 
 private:
-  std::array<T, tSize> data_{};
+  std::array<T, N> data_{};
 };
 
 #if !GREX_BACKEND_SCALAR
-template<Vectorizable T, std::size_t tSize>
-requires(sizeof(T) * tSize <= 64)
-struct LookupTable<T, tSize> {
-  using VectorData = grex::Vector<T, tSize>;
+template<Vectorizable T, std::size_t N>
+requires(sizeof(T) * N <= 64)
+struct LookupTable<T, N> {
+  using VectorData = grex::Vector<T, N>;
 
   LookupTable() = default;
-  explicit LookupTable(std::array<T, tSize> data)
+  explicit LookupTable(std::array<T, N> data)
       : data_{std::move(data)}, vdata_{VectorData::load(data_.data())} {}
 
   T lookup(std::size_t i) const {
     return data_[i];
   }
-  template<UnsignedIntVectorizable TIdx>
-  T lookup(TIdx i, grex::AnyScalarTag auto /*vtag*/) const {
+  template<UnsignedIntVectorizable Idx>
+  T lookup(Idx i, grex::AnyScalarTag auto /*vtag*/) const {
     return data_[i];
   }
 
-  template<UnsignedIntVectorizable TIdx, std::size_t tVecSize>
-  grex::Vector<T, tVecSize> lookup(grex::Vector<TIdx, tVecSize> i,
-                                   grex::AnyVectorTag auto vtag) const {
+  template<UnsignedIntVectorizable Idx, std::size_t IN>
+  grex::Vector<T, IN> lookup(grex::Vector<Idx, IN> i, grex::AnyVectorTag auto vtag) const {
     return vtag.mask(grex::shuffle(vdata_, i));
   }
 
 private:
-  std::array<T, tSize> data_{};
+  std::array<T, N> data_{};
   VectorData vdata_ = VectorData::zeros();
 };
 #endif

@@ -10,22 +10,22 @@
 #include "grex/grex.hpp"
 
 namespace grex::backend {
-template<std::size_t tSrc, typename TDst, std::size_t tSize>
-requires(tSrc < sizeof(TDst) && (sizeof(TDst) * tSize) == 64)
-inline NativeVector<TDst, tSize> ldmb(const u8* ptr, IndexTag<tSrc> /*src*/,
-                                      TypeTag<NativeVector<TDst, tSize>> /*dst*/) {
+template<std::size_t Src, typename Dst, std::size_t N>
+requires(Src < sizeof(Dst) && (sizeof(Dst) * N) == 64)
+inline NativeVector<Dst, N> ldmb(const u8* ptr, IndexTag<Src> /*src*/,
+                                 TypeTag<NativeVector<Dst, N>> /*dst*/) {
   // The comments are based on M == 5; M == 6 and 7 are analogous.
 
-  static constexpr std::size_t src_bytes = tSrc;
-  static constexpr std::size_t dst_bytes = sizeof(TDst);
+  static constexpr std::size_t src_bytes = Src;
+  static constexpr std::size_t dst_bytes = sizeof(Dst);
   // Total padding across all elements; always a multiple of 8.
-  // offset = (dst_bytes - src_bytes) * tSize = (8 - 5) * 8 = 24
-  static constexpr std::size_t offset = (dst_bytes - src_bytes) * tSize;
+  // offset = (dst_bytes - src_bytes) * N = (8 - 5) * 8 = 24
+  static constexpr std::size_t offset = (dst_bytes - src_bytes) * N;
 
   // Load with an offset of half the total padding so that each half of the elements ends up in the
   // correct 256-bit half of the 512-bit register.
   // ........|....0000|01111122|22233333|44444555|55666667|7777....|........
-  __m512i out = load(ptr - offset / 2, type_tag<NativeVector<u8, dst_bytes * tSize>>).r;
+  __m512i out = load(ptr - offset / 2, type_tag<NativeVector<u8, dst_bytes * N>>).r;
 
   // First, permute 32-bit chunks into the correct 128-bit lanes.
   //
@@ -35,10 +35,9 @@ inline NativeVector<TDst, tSize> ldmb(const u8* ptr, IndexTag<tSrc> /*src*/,
   // After this, lanes 0 and 2 (even indices) are bottom-aligned, while lanes 1 and 3
   // are top-aligned within their 128-bit lanes.
   // 00000111|11222223|01111122|22233333|44444555|55666667|45555566|66677777
-  const __m512i idxs32 = static_apply<16>([]<std::size_t... tIdxs>() {
+  const __m512i idxs32 = static_apply<16>([]<std::size_t... I> {
     return set(type_tag<NativeVector<i32, 16>>,
-               i32{(tIdxs < 4) ? (tIdxs + offset / 8)
-                               : ((tIdxs >= 12) ? (tIdxs - offset / 8) : tIdxs)}...)
+               i32{(I < 4) ? (I + offset / 8) : ((I >= 12) ? (I - offset / 8) : I)}...)
       .r;
   });
   out = _mm512_permutexvar_epi32(idxs32, out);
@@ -52,15 +51,15 @@ inline NativeVector<TDst, tSize> ldmb(const u8* ptr, IndexTag<tSrc> /*src*/,
   //    (b) element offset within the 128-bit lane,
   //    (c) additional offset for top-aligned lanes (odd lane indices).
   //
-  // In the example (M == 5, N == 8, tSize == 8), these components look like:
+  // In the example (M == 5, N == 8, N == 8), these components look like:
   // (a) 01234...|01234...|01234...|01234...|01234...|01234...|01234...|01234...
   // (b) 00000...|55555...|00000...|55555...|00000...|55555...|00000...|55555...
   // (c) 00000...|00000...|66666...|66666...|00000...|00000...|66666...|66666...
-  const __m512i idxs8 = static_apply<64>([]<std::size_t... tIdxs>() {
+  const __m512i idxs8 = static_apply<64>([]<std::size_t... I> {
     return set(type_tag<NativeVector<i8, 64>>,
-               ((tIdxs % dst_bytes < src_bytes)
-                  ? i8{tIdxs % dst_bytes + ((tIdxs % 16) / dst_bytes) * src_bytes +
-                       ((tIdxs / 16) % 2) * (offset / 4)}
+               ((I % dst_bytes < src_bytes)
+                  ? i8{I % dst_bytes + ((I % 16) / dst_bytes) * src_bytes +
+                       ((I / 16) % 2) * (offset / 4)}
                   : i8{-1})...)
       .r;
   });
@@ -68,53 +67,51 @@ inline NativeVector<TDst, tSize> ldmb(const u8* ptr, IndexTag<tSrc> /*src*/,
 }
 
 #if GREX_HAS_AVX512VBMI
-template<std::size_t tSrc, typename TDst, std::size_t tSize>
-requires(tSrc < sizeof(TDst) && (sizeof(TDst) * tSize) == 64)
-inline NativeVector<TDst, tSize> ldmb_vpermb(const u8* ptr, IndexTag<tSrc> /*src*/,
-                                             TypeTag<NativeVector<TDst, tSize>> /*dst*/) {
+template<std::size_t Src, typename Dst, std::size_t N>
+requires(Src < sizeof(Dst) && (sizeof(Dst) * N) == 64)
+inline NativeVector<Dst, N> ldmb_vpermb(const u8* ptr, IndexTag<Src> /*src*/,
+                                        TypeTag<NativeVector<Dst, N>> /*dst*/) {
   // The comments are based on M == 5; M == 6 and 7 are analogous.
 
-  static constexpr std::size_t src_bytes = tSrc;
-  static constexpr std::size_t dst_bytes = sizeof(TDst);
+  static constexpr std::size_t src_bytes = Src;
+  static constexpr std::size_t dst_bytes = sizeof(Dst);
 
   // Load a full 512-bit vector.
   // 00000111|11222223|33334444|45555566|66677777|........|........|........
-  __m512i src = load(ptr, type_tag<NativeVector<u8, dst_bytes * tSize>>).r;
+  __m512i src = load(ptr, type_tag<NativeVector<u8, dst_bytes * N>>).r;
 
   // Mask out the padding bits.
   constexpr __mmask64 k = static_apply<64>(
-    []<std::size_t... tI>() { return (... | (__mmask64(tI % dst_bytes < src_bytes) << tI)); });
+    []<std::size_t... I> { return (... | (__mmask64(I % dst_bytes < src_bytes) << I)); });
 
   // Perform a byte-wise shuffle across 128-bit lanes.
-  const __m512i idxs8 = static_apply<64>([]<std::size_t... tIdxs>() {
+  const __m512i idxs8 = static_apply<64>([]<std::size_t... I> {
     return set(type_tag<NativeVector<i8, 64>>,
-               ((tIdxs % dst_bytes < src_bytes)
-                  ? i8{tIdxs % dst_bytes + (tIdxs / dst_bytes) * src_bytes}
-                  : i8{-1})...)
+               ((I % dst_bytes < src_bytes) ? i8{I % dst_bytes + (I / dst_bytes) * src_bytes}
+                                            : i8{-1})...)
       .r;
   });
   return {.r = _mm512_maskz_permutexvar_epi8(k, idxs8, src)};
 }
 
-template<std::size_t tSrc, typename TDst, std::size_t tSize>
-requires(tSrc < sizeof(TDst) && (sizeof(TDst) * tSize) == 64)
-inline NativeVector<TDst, tSize> ldmb_vpermt2b(const u8* ptr, IndexTag<tSrc> /*src*/,
-                                               TypeTag<NativeVector<TDst, tSize>> /*dst*/) {
+template<std::size_t Src, typename Dst, std::size_t N>
+requires(Src < sizeof(Dst) && (sizeof(Dst) * N) == 64)
+inline NativeVector<Dst, N> ldmb_vpermt2b(const u8* ptr, IndexTag<Src> /*src*/,
+                                          TypeTag<NativeVector<Dst, N>> /*dst*/) {
   // The comments are based on M == 5; M == 6 and 7 are analogous.
 
-  static constexpr std::size_t src_bytes = tSrc;
-  static constexpr std::size_t dst_bytes = sizeof(TDst);
+  static constexpr std::size_t src_bytes = Src;
+  static constexpr std::size_t dst_bytes = sizeof(Dst);
 
   // Load a full 512-bit vector.
   // 00000111|11222223|33334444|45555566|66677777|........|........|........
-  __m512i src = load(ptr, type_tag<NativeVector<u8, dst_bytes * tSize>>).r;
+  __m512i src = load(ptr, type_tag<NativeVector<u8, dst_bytes * N>>).r;
 
   // Perform a byte-wise shuffle across 128-bit lanes.
-  const __m512i idxs8 = static_apply<64>([]<std::size_t... tIdxs>() {
+  const __m512i idxs8 = static_apply<64>([]<std::size_t... I> {
     return set(type_tag<NativeVector<i8, 64>>,
-               ((tIdxs % dst_bytes < src_bytes)
-                  ? i8{tIdxs % dst_bytes + (tIdxs / dst_bytes) * src_bytes}
-                  : i8{-1})...)
+               ((I % dst_bytes < src_bytes) ? i8{I % dst_bytes + (I / dst_bytes) * src_bytes}
+                                            : i8{-1})...)
       .r;
   });
   return {.r = _mm512_permutex2var_epi8(src, idxs8, _mm512_setzero_si512())};
@@ -143,17 +140,17 @@ std::unique_ptr<u8[]> make_buffer(std::size_t size) {
   return buf;
 }
 
-template<std::size_t tSrc, typename TDst, std::size_t tSize>
+template<std::size_t Src, typename Dst, std::size_t N>
 void bm_ldmb_base(benchmark::State& state, auto op) {
   auto buffer = make_buffer(buffer_size); // 1 MiB
   const u8* base = buffer.get() + vector_bytes;
 
   std::size_t pos = 0;
-  be::NativeVector<TDst, tSize> acc{};
+  be::NativeVector<Dst, N> acc{};
 
   for (auto _ : state) {
     const u8* ptr = base + pos;
-    acc = op(ptr, grex::index_tag<tSrc>, grex::type_tag<be::NativeVector<TDst, tSize>>);
+    acc = op(ptr, grex::index_tag<Src>, grex::type_tag<be::NativeVector<Dst, N>>);
     pos += vector_bytes;
     if (pos + vector_bytes >= buffer_size) {
       pos = 0;

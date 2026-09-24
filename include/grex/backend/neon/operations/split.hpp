@@ -34,45 +34,42 @@ namespace grex::backend {
 GREX_FOREACH_SUB(GREX_SPLIT)
 
 // super-native vectors
-template<typename THalf>
-inline THalf get_low(SuperVector<THalf> v) {
+template<typename Half>
+inline Half get_low(SuperVector<Half> v) {
   return v.lower;
 }
-template<typename THalf>
-inline THalf get_high(SuperVector<THalf> v) {
+template<typename Half>
+inline Half get_high(SuperVector<Half> v) {
   return v.upper;
 }
 
 // native masks
-template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tSize / 2> get_low(NativeMask<T, tSize> m) {
-  return MaskFor<T, tSize / 2>{get_low(NativeVector<UnsignedInt<sizeof(T)>, tSize>{m.r}).registr()};
+template<Vectorizable T, std::size_t N>
+inline MaskFor<T, N / 2> get_low(NativeMask<T, N> m) {
+  return MaskFor<T, N / 2>{get_low(NativeVector<UnsignedInt<sizeof(T)>, N>{m.r}).registr()};
 }
-template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tSize / 2> get_high(NativeMask<T, tSize> m) {
-  return MaskFor<T, tSize / 2>{
-    get_high(NativeVector<UnsignedInt<sizeof(T)>, tSize>{m.r}).registr()};
+template<Vectorizable T, std::size_t N>
+inline MaskFor<T, N / 2> get_high(NativeMask<T, N> m) {
+  return MaskFor<T, N / 2>{get_high(NativeVector<UnsignedInt<sizeof(T)>, N>{m.r}).registr()};
 }
 
 // sub-native masks
-template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tSize / 2> get_low(SubMask<T, tSize> m) {
-  return MaskFor<T, tSize / 2>{
-    get_low(SubVector<UnsignedInt<sizeof(T)>, tSize>{m.registr()}).registr()};
+template<Vectorizable T, std::size_t N>
+inline MaskFor<T, N / 2> get_low(SubMask<T, N> m) {
+  return MaskFor<T, N / 2>{get_low(SubVector<UnsignedInt<sizeof(T)>, N>{m.registr()}).registr()};
 }
-template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tSize / 2> get_high(SubMask<T, tSize> m) {
-  return MaskFor<T, tSize / 2>{
-    get_high(SubVector<UnsignedInt<sizeof(T)>, tSize>{m.registr()}).registr()};
+template<Vectorizable T, std::size_t N>
+inline MaskFor<T, N / 2> get_high(SubMask<T, N> m) {
+  return MaskFor<T, N / 2>{get_high(SubVector<UnsignedInt<sizeof(T)>, N>{m.registr()}).registr()};
 }
 
 // super-native masks
-template<typename THalf>
-inline THalf get_low(SuperMask<THalf> v) {
+template<typename Half>
+inline Half get_low(SuperMask<Half> v) {
   return v.lower;
 }
-template<typename THalf>
-inline THalf get_high(SuperMask<THalf> v) {
+template<typename Half>
+inline Half get_high(SuperMask<Half> v) {
   return v.upper;
 }
 } // namespace grex::backend

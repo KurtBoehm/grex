@@ -14,13 +14,13 @@
 
 namespace grex::backend {
 #define GREX_SUBSUPER(NAME) \
-  template<typename THalf> \
-  inline SuperVector<THalf> NAME(SuperVector<THalf> v, AnyIndexTag auto offset) { \
+  template<typename Half> \
+  inline SuperVector<Half> NAME(SuperVector<Half> v, AnyIndexTag auto offset) { \
     return {.lower = NAME(v.lower, offset), .upper = NAME(v.upper, offset)}; \
   } \
-  template<IntVectorizable T, std::size_t tSize> \
-  inline SubVector<T, tSize> NAME(SubVector<T, tSize> v, AnyIndexTag auto offset) { \
-    return SubVector<T, tSize>{NAME(v.full, offset)}; \
+  template<IntVectorizable T, std::size_t N> \
+  inline SubVector<T, N> NAME(SubVector<T, N> v, AnyIndexTag auto offset) { \
+    return SubVector<T, N>{NAME(v.full, offset)}; \
   }
 
 GREX_SUBSUPER(shift_left)

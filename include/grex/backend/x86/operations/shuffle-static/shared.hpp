@@ -20,22 +20,21 @@
 
 namespace grex::backend {
 struct ShufflerExtractSet : BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr std::size_t size = TVec::size;
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr std::size_t size = Vec::size;
 
-    auto f = [&](std::size_t i) { return is_index(tSh[i]) ? extract(vec, u8(tSh[i])) : Value{}; };
-    return static_apply<size>(
-      [&]<std::size_t... tIdxs>() { return set(type_tag<TVec>, f(tIdxs)...); });
+    auto f = [&](std::size_t i) { return is_index(SI[i]) ? extract(vec, u8(SI[i])) : Value{}; };
+    return static_apply<size>([&]<std::size_t... I> { return set(type_tag<Vec>, f(I)...); });
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
-    return {.inv_throughput = f64(tSh.size * 2), .latency = 1};
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
+    return {.inv_throughput = f64(SI.size * 2), .latency = 1};
   }
 };
 } // namespace grex::backend

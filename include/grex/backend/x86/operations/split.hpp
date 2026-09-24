@@ -112,51 +112,51 @@ GREX_SPLIT_SUB_ALL(i, 8, 4, GREX_SPLIT_i16x2)
 GREX_SPLIT_SUB_ALL(u, 8, 4, GREX_SPLIT_i16x2)
 
 // Split super-native vector
-template<typename THalf>
-inline THalf split(SuperVector<THalf> v, IndexTag<0> /*tag*/) {
+template<typename Half>
+inline Half split(SuperVector<Half> v, IndexTag<0> /*tag*/) {
   return v.lower;
 }
-template<typename THalf>
-inline THalf split(SuperVector<THalf> v, IndexTag<1> /*tag*/) {
+template<typename Half>
+inline Half split(SuperVector<Half> v, IndexTag<1> /*tag*/) {
   return v.upper;
 }
 
 // Mask splitting
 #if GREX_X86_64_LEVEL >= 4
 // AVX-512: No-op for the lower half, bit shift for the upper
-template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tSize / 2> split(NativeMask<T, tSize> m, IndexTag<0> /*tag*/) {
-  using Out = MaskFor<T, tSize / 2>;
+template<Vectorizable T, std::size_t N>
+inline MaskFor<T, N / 2> split(NativeMask<T, N> m, IndexTag<0> /*tag*/) {
+  using Out = MaskFor<T, N / 2>;
   using Register = Out::Register;
   return Out{Register(m.r)};
 }
-template<Vectorizable T, std::size_t tSize>
-inline MaskFor<T, tSize / 2> split(NativeMask<T, tSize> m, IndexTag<1> /*tag*/) {
-  using Out = MaskFor<T, tSize / 2>;
+template<Vectorizable T, std::size_t N>
+inline MaskFor<T, N / 2> split(NativeMask<T, N> m, IndexTag<1> /*tag*/) {
+  using Out = MaskFor<T, N / 2>;
   using Register = Out::Register;
-  return Out{Register(m.r >> (tSize / 2))};
+  return Out{Register(m.r >> (N / 2))};
 }
 #else
 // Pre-AVX-512: Reinterpret as signed integer and split that way
-template<Vectorizable T, std::size_t tSize, std::size_t tIdx>
-inline MaskFor<T, tSize / 2> split(NativeMask<T, tSize> m, IndexTag<tIdx> tag) {
-  const auto r = split(VectorFor<SignedInt<sizeof(T)>, tSize>{m.registr()}, tag).registr();
-  return MaskFor<T, tSize / 2>{r};
+template<Vectorizable T, std::size_t N, std::size_t I>
+inline MaskFor<T, N / 2> split(NativeMask<T, N> m, IndexTag<I> tag) {
+  const auto r = split(VectorFor<SignedInt<sizeof(T)>, N>{m.registr()}, tag).registr();
+  return MaskFor<T, N / 2>{r};
 }
-template<Vectorizable T, std::size_t tSize, std::size_t tIdx>
-inline MaskFor<T, tSize / 2> split(SubMask<T, tSize> m, IndexTag<tIdx> tag) {
-  const auto r = split(VectorFor<SignedInt<sizeof(T)>, tSize>{m.registr()}, tag).registr();
-  return MaskFor<T, tSize / 2>{r};
+template<Vectorizable T, std::size_t N, std::size_t I>
+inline MaskFor<T, N / 2> split(SubMask<T, N> m, IndexTag<I> tag) {
+  const auto r = split(VectorFor<SignedInt<sizeof(T)>, N>{m.registr()}, tag).registr();
+  return MaskFor<T, N / 2>{r};
 }
 #endif
 
 // Split super-native mask
-template<typename THalf>
-inline THalf split(SuperMask<THalf> m, IndexTag<0> /*tag*/) {
+template<typename Half>
+inline Half split(SuperMask<Half> m, IndexTag<0> /*tag*/) {
   return m.lower;
 }
-template<typename THalf>
-inline THalf split(SuperMask<THalf> m, IndexTag<1> /*tag*/) {
+template<typename Half>
+inline Half split(SuperMask<Half> m, IndexTag<1> /*tag*/) {
   return m.upper;
 }
 

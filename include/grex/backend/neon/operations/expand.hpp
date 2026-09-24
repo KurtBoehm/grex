@@ -30,21 +30,21 @@ namespace grex::backend {
   }
 GREX_FOREACH_TYPE_EXT(GREX_EXPAND_ANY, 128)
 
-template<Vectorizable T, std::size_t tSize>
-inline VectorFor<T, tSize> expand(T x, IndexTag<tSize> /*size*/, BoolTag<true> /*tag*/) {
-  return insert(zeros(type_tag<VectorFor<T, tSize>>), index_tag<0>, x);
+template<Vectorizable T, std::size_t N>
+inline VectorFor<T, N> expand(T x, IndexTag<N> /*size*/, BoolTag<true> /*tag*/) {
+  return insert(zeros(type_tag<VectorFor<T, N>>), index_tag<0>, x);
 }
 
 // native/super-native → super-native
-template<AnyVector TVec, std::size_t tDstSize, bool tZero>
-requires(tDstSize > TVec::size && is_supernative<typename TVec::Value, tDstSize> &&
-         (AnyNativeVector<TVec> || AnySuperNativeVector<TVec>))
-inline VectorFor<typename TVec::Value, tDstSize> expand(TVec v, IndexTag<tDstSize> /*size*/,
-                                                        BoolTag<tZero> zero_tag) {
-  using Value = TVec::Value;
-  using Half = VectorFor<Value, tDstSize / 2>;
+template<AnyVector Vec, std::size_t DstN, bool Zero>
+requires(DstN > Vec::size && is_supernative<typename Vec::Value, DstN> &&
+         (AnyNativeVector<Vec> || AnySuperNativeVector<Vec>))
+inline VectorFor<typename Vec::Value, DstN> expand(Vec v, IndexTag<DstN> /*size*/,
+                                                   BoolTag<Zero> zero_tag) {
+  using Value = Vec::Value;
+  using Half = VectorFor<Value, DstN / 2>;
   using Out = SuperVector<Half>;
-  if constexpr (tZero) {
+  if constexpr (Zero) {
     return Out{
       .lower = expand(v, index_tag<Half::size>, zero_tag),
       .upper = zeros(type_tag<Half>),

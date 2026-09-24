@@ -57,7 +57,7 @@ namespace grex::backend {
 #define GREX_HADD_i8_SUB(KIND, BITS, PART, SIZE) \
   /* mask out all components above PART */ \
   const __m128i masked = static_apply<SIZE>( \
-    [&]<std::size_t... tI>() { return blend_zero<((tI < PART) ? keep_bz : zero_bz)...>(vf).r; }); \
+    [&]<std::size_t... I> { return blend_zero<((I < PART) ? keep_bz : zero_bz)...>(vf).r; }); \
   /* [v0 + … + v7, -, -, -, -, -, -, -] as u16x8 */ \
   const __m128i sad = _mm_sad_epu8(masked, _mm_setzero_si128()); \
   /* extract low 32 bits and cast the upper 24 bits away */ \
@@ -167,8 +167,8 @@ GREX_ALWAYS_INLINE inline f16 horizontal_add(SubVector<f16, 2> v) {
   // [v0 + v1, -, -, -, -, -, -, -][0]
   return _mm_cvtsh_h(_mm_add_sh(_mm_castsi128_ph(v.registr()), shuf));
 }
-template<Float16Vector TVec>
-GREX_ALWAYS_INLINE inline f16 horizontal_add(TVec v) {
+template<Float16Vector Vec>
+GREX_ALWAYS_INLINE inline f16 horizontal_add(Vec v) {
   return horizontal_add(add(get_low(v), get_high(v)));
 }
 #endif

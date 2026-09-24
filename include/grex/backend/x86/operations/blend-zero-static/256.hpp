@@ -24,14 +24,14 @@
 
 namespace grex::backend {
 struct ZeroBlenderBlend32x8 : public BaseExpensiveOp {
-  template<AnyBlendZeroSelectors auto tBzs>
-  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
-    return convert<4>(tBzs).has_value();
+  template<AnyBlendZeroSelectors auto BZS>
+  static constexpr bool is_applicable(AutoTag<BZS> /*tag*/) {
+    return convert<4>(BZS).has_value();
   }
-  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
-  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr int imm8 = convert<4>(tBzs).value().imm8();
+  template<AnyVector Vec, BlendZeroSelectorsFor<Vec> BZS>
+  static Vec apply(Vec vec, AutoTag<BZS> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr int imm8 = convert<4>(BZS).value().imm8();
     const f32x8 fvec = reinterpret(vec, type_tag<f32>);
     return reinterpret(f32x8{_mm256_blend_ps(_mm256_setzero_ps(), fvec.r, imm8)}, type_tag<Value>);
   }
@@ -41,18 +41,18 @@ struct ZeroBlenderBlend32x8 : public BaseExpensiveOp {
 };
 
 struct ZeroBlenderBlend16x16 : public BaseExpensiveOp {
-  template<AnyBlendZeroSelectors auto tBzs>
-  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
-    const auto base = convert<2>(tBzs);
+  template<AnyBlendZeroSelectors auto BZS>
+  static constexpr bool is_applicable(AutoTag<BZS> /*tag*/) {
+    const auto base = convert<2>(BZS);
     if (!base.has_value()) {
       return false;
     }
     return base.value().single_lane().has_value();
   }
-  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
-  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr int imm8 = convert<2>(tBzs).value().single_lane().value().imm8();
+  template<AnyVector Vec, BlendZeroSelectorsFor<Vec> BZS>
+  static Vec apply(Vec vec, AutoTag<BZS> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr int imm8 = convert<2>(BZS).value().single_lane().value().imm8();
     const i16x16 ivec = reinterpret(vec, type_tag<i16>);
     return reinterpret(i16x16{_mm256_blend_epi16(_mm256_setzero_si256(), ivec.r, imm8)},
                        type_tag<Value>);
@@ -62,10 +62,10 @@ struct ZeroBlenderBlend16x16 : public BaseExpensiveOp {
   }
 };
 
-template<AnyBlendZeroSelectors auto tBzs>
-requires((tBzs.value_size * tBzs.size == 32))
-struct ZeroBlenderTrait<tBzs> {
-  using Type = CheapestType<tBzs, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderBlend32x8,
+template<AnyBlendZeroSelectors auto BZS>
+requires((BZS.value_size * BZS.size == 32))
+struct ZeroBlenderTrait<BZS> {
+  using Type = CheapestType<BZS, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderBlend32x8,
                             ZeroBlenderBlend16x16, ZeroBlenderAnd>;
 };
 } // namespace grex::backend

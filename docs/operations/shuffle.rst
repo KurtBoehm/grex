@@ -75,8 +75,8 @@ Shuffle Index Conversion (Neon)
 Table Shuffle
 *************
 
-.. cpp:function:: template<AnyVectorizable TTbl, std::size_t NTbl, UnsignedIntVectorizable TIdx, std::size_t NIdx, std::size_t UpperBound, std::size_t Offset> \
-                  Vector<TTbl, NIdx> backend::shuffle(Vector<TTbl, NTbl> table, Vector<TIdx, NIdx> idxs, IndexTag<UpperBound> index_ub, IndexTag<Offset> index_offset)
+.. cpp:function:: template<AnyVectorizable Table, std::size_t TableN, UnsignedIntVectorizable Idx, std::size_t IdxN, std::size_t UpperBound, std::size_t Offset> \
+                  Vector<Table, IdxN> backend::shuffle(Vector<Table, TableN> table, Vector<Idx, IdxN> idxs, IndexTag<UpperBound> index_ub, IndexTag<Offset> index_offset)
 
    Element-wise table lookup.
 
@@ -87,19 +87,19 @@ Table Shuffle
          This overload is used internally to implement large-table shuffles by splitting tables into chunks.
          Higher-level code always calls the simpler two-argument form.
 
-.. cpp:function:: template<AnyVectorizable TTbl, std::size_t NTbl, UnsignedIntVectorizable TIdx, std::size_t NIdx> \
-                  Vector<TTbl, NIdx> backend::shuffle(Vector<TTbl, NTbl> table, Vector<TIdx, NIdx> idxs)
+.. cpp:function:: template<AnyVectorizable Table, std::size_t TableN, UnsignedIntVectorizable Idx, std::size_t IdxN> \
+                  Vector<Table, IdxN> backend::shuffle(Vector<Table, TableN> table, Vector<Idx, IdxN> idxs)
 
    Convenience overload equivalent to:
 
    .. code-block:: cpp
 
-      return shuffle(table, idxs, index_tag<NTbl>, index_tag<0>);
+      return shuffle(table, idxs, index_tag<TableN>, index_tag<0>);
 
    Shared
    ======
 
-   - **Index range smaller than table size**: if the index type cannot address the full table (:math:`\mathtt{NTbl} > 2^{\mathrm{bits}(\mathtt{TIndex})}`), the table is first shrunk to the largest addressable prefix.
+   - **Index range smaller than table size**: if the index type cannot address the full table (:math:`\mathtt{TableN} > 2^{\mathrm{bits}(\mathtt{Idx})}`), the table is first shrunk to the largest addressable prefix.
    - **Super-native output**: split ``idxs`` into low/high halves, shuffle each half, then merge.
    - **Super-native table**:
 

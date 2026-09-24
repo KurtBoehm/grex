@@ -11,28 +11,29 @@
 
 #include "grex/grex.hpp"
 
+namespace {
 using namespace grex::primitives;
 namespace be = grex::backend;
 
-template<be::AnyVector TVec>
-requires(be::AnyNativeVector<TVec> || be::AnySubNativeVector<TVec>)
-GREX_ALWAYS_INLINE inline TVec load_part_ifs(const typename TVec::Value* ptr, std::size_t size,
-                                             grex::TypeTag<TVec> tag) {
-  using Value = TVec::Value;
-  constexpr std::size_t bytes = sizeof(Value) * TVec::size;
+template<be::AnyVector Vec>
+requires(be::AnyNativeVector<Vec> || be::AnySubNativeVector<Vec>)
+GREX_ALWAYS_INLINE inline Vec load_part_ifs(const typename Vec::Value* ptr, std::size_t size,
+                                            grex::TypeTag<Vec> tag) {
+  using Value = Vec::Value;
+  constexpr std::size_t bytes = sizeof(Value) * Vec::size;
 
   if (__builtin_constant_p(size)) {
     auto result = zeros(tag);
     bool matched = false;
-    grex::static_apply<TVec::size>([&]<std::size_t... tI>() {
+    grex::static_apply<Vec::size>([&]<std::size_t... I> {
       matched =
-        (((tI == size) ? (result = be::load_part(ptr, grex::index_tag<tI>, tag), true) : false) ||
+        (((I == size) ? (result = be::load_part(ptr, grex::index_tag<I>, tag), true) : false) ||
          ...);
     });
     return matched ? result : load(ptr, tag);
   }
 
-  if (size >= TVec::size) [[unlikely]] {
+  if (size >= Vec::size) [[unlikely]] {
     return be::load(ptr, tag);
   }
   auto out = be::zeros(tag).registr();
@@ -60,7 +61,7 @@ GREX_ALWAYS_INLINE inline TVec load_part_ifs(const typename TVec::Value* ptr, st
     const auto lo = be::load_first<8>(ptr).r;
     out = be::as<Value>(vzip1q_u64(be::as<u64>(lo), be::as<u64>(out)));
   }
-  return TVec{out};
+  return Vec{out};
 }
 
 #define BM_PARTLOAD_ATTR_0
@@ -146,5 +147,6 @@ BM_OPS_WRAP(f32, 4)
 BM_OPS_WRAP(u16, 8)
 BM_OPS_WRAP(u8, 16)
 // NOLINTEND
+} // namespace
 
 BENCHMARK_MAIN();

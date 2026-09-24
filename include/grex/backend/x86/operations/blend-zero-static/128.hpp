@@ -24,20 +24,20 @@
 
 namespace grex::backend {
 struct ZeroBlenderMovq : public BaseExpensiveOp {
-  template<AnyBlendZeroSelectors auto tBzs>
-  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
-    constexpr std::optional<BlendZeroSelectors<8, 2>> obz64 = convert<8>(tBzs);
+  template<AnyBlendZeroSelectors auto BZS>
+  static constexpr bool is_applicable(AutoTag<BZS> /*tag*/) {
+    constexpr std::optional<BlendZeroSelectors<8, 2>> obz64 = convert<8>(BZS);
     if (!obz64.has_value()) {
       return false;
     }
     const BlendZeroSelectors<8, 2> bz64 = obz64.value();
     return (bz64[0] == keep_bz || bz64[0] == any_bz) && (bz64[1] == zero_bz || bz64[1] == any_bz);
   }
-  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
-  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
-    static_assert(is_applicable(auto_tag<tBzs>));
+  template<AnyVector Vec, BlendZeroSelectorsFor<Vec> BZS>
+  static Vec apply(Vec vec, AutoTag<BZS> /*tag*/) {
+    static_assert(is_applicable(auto_tag<BZS>));
     return reinterpret(i64x2{_mm_move_epi64(reinterpret(vec, type_tag<i64>).r)},
-                       type_tag<ValueOf<TVec>>);
+                       type_tag<ValueOf<Vec>>);
   }
   static constexpr Cost cost(auto /*bzs*/) {
     return {.inv_throughput = 0.5, .latency = 1};
@@ -45,18 +45,18 @@ struct ZeroBlenderMovq : public BaseExpensiveOp {
 };
 
 struct ZeroBlenderBlend32x4 : public BaseExpensiveOp {
-  template<AnyBlendZeroSelectors auto tBzs>
-  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+  template<AnyBlendZeroSelectors auto BZS>
+  static constexpr bool is_applicable(AutoTag<BZS> /*tag*/) {
 #if GREX_X86_64_LEVEL >= 2
-    return convert<4>(tBzs).has_value();
+    return convert<4>(BZS).has_value();
 #else
     return false;
 #endif
   }
-  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
-  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr int imm8 = convert<4>(tBzs).value().imm8();
+  template<AnyVector Vec, BlendZeroSelectorsFor<Vec> BZS>
+  static Vec apply(Vec vec, AutoTag<BZS> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr int imm8 = convert<4>(BZS).value().imm8();
     const f32x4 fvec = reinterpret(vec, type_tag<f32>);
     return reinterpret(f32x4{_mm_blend_ps(_mm_setzero_ps(), fvec.r, imm8)}, type_tag<Value>);
   }
@@ -66,18 +66,18 @@ struct ZeroBlenderBlend32x4 : public BaseExpensiveOp {
 };
 
 struct ZeroBlenderBlend16x8 : public BaseExpensiveOp {
-  template<AnyBlendZeroSelectors auto tBzs>
-  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+  template<AnyBlendZeroSelectors auto BZS>
+  static constexpr bool is_applicable(AutoTag<BZS> /*tag*/) {
 #if GREX_X86_64_LEVEL >= 2
-    return convert<2>(tBzs).has_value();
+    return convert<2>(BZS).has_value();
 #else
     return false;
 #endif
   }
-  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
-  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr int imm8 = convert<2>(tBzs).value().imm8();
+  template<AnyVector Vec, BlendZeroSelectorsFor<Vec> BZS>
+  static Vec apply(Vec vec, AutoTag<BZS> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr int imm8 = convert<2>(BZS).value().imm8();
     const i16x8 ivec = reinterpret(vec, type_tag<i16>);
     return reinterpret(i16x8{_mm_blend_epi16(_mm_setzero_si128(), ivec.r, imm8)}, type_tag<Value>);
   }
@@ -86,10 +86,10 @@ struct ZeroBlenderBlend16x8 : public BaseExpensiveOp {
   }
 };
 
-template<AnyBlendZeroSelectors auto tBzs>
-requires((tBzs.value_size * tBzs.size == 16))
-struct ZeroBlenderTrait<tBzs> {
-  using Type = CheapestType<tBzs, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderMovq,
+template<AnyBlendZeroSelectors auto BZS>
+requires((BZS.value_size * BZS.size == 16))
+struct ZeroBlenderTrait<BZS> {
+  using Type = CheapestType<BZS, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderMovq,
                             ZeroBlenderBlend32x4, ZeroBlenderBlend16x8, ZeroBlenderAnd>;
 };
 } // namespace grex::backend

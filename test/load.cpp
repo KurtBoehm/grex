@@ -8,28 +8,28 @@
 #include <cstddef>
 #include <random>
 
-#include <fmt/base.h>
-#include <fmt/format.h>
+#include <fmt/base.h> // IWYU pragma: keep
 #include <pcg_extras.hpp>
 
 #include "grex/grex.hpp"
 
 #include "defs.hpp"
 
+namespace {
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
 #if !GREX_BACKEND_SCALAR
-template<grex::Vectorizable T, std::size_t tSize>
-void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
-  using VC = test::VectorChecker<T, tSize>;
-  using Vec = grex::Vector<T, tSize>;
+template<grex::Vectorizable T, std::size_t N>
+void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<N> /*tag*/) {
+  using VC = test::VectorChecker<T, N>;
+  using Vec = grex::Vector<T, N>;
 
   auto dist = test::make_distribution<T>();
   auto dval = [&] { return dist(rng); };
 
   for (std::size_t i = 0; i < repetitions; ++i) {
-    grex::static_apply<tSize>([&]<std::size_t... tI>() {
+    grex::static_apply<N>([&]<std::size_t... I> {
       // load scalar
       {
         std::array<T, 1> buf{dist(rng)};
@@ -38,66 +38,80 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
       }
       // load full
       {
-        std::array buf = test::random_array<T, tSize>(dval);
-        VC checker{Vec::load(buf.data()), buf};
+        std::array buf = test::random_array<T, N>(dval);
+        const VC checker{Vec::load(buf.data()), buf};
         checker.check("load", {.verbose = false});
       }
       {
-        std::array buf = test::random_array<T, tSize>(dval);
-        VC checker{grex::load(buf.data(), grex::full_tag<tSize>), buf};
+        std::array buf = test::random_array<T, N>(dval);
+        const VC checker{grex::load(buf.data(), grex::full_tag<N>), buf};
         checker.check("load tagged", {.verbose = false});
       }
 
       // load full aligned
       {
-        alignas(64) std::array buf = test::random_array<T, tSize>(dval);
-        VC checker{Vec::load_aligned(buf.data()), buf};
+        alignas(64) std::array buf = test::random_array<T, N>(dval);
+        const VC checker{Vec::load_aligned(buf.data()), buf};
         checker.check("load_aligned", {.verbose = false});
       }
       // there is no tagged version of aligned loading
 
       // load part
       {
-        std::array buf = test::random_array<T, tSize>(dval);
-        for (std::size_t j = 0; j <= tSize; ++j) {
+        std::array buf = test::random_array<T, N>(dval);
+        for (std::size_t j = 0; j <= N; ++j) {
           {
-            VC checker{Vec::load_part(buf.data(), j), std::array{((tI < j) ? buf[tI] : T{})...}};
+            const VC checker{
+              Vec::load_part(buf.data(), j),
+              std::array{((I < j) ? buf[I] : T{})...},
+            };
             checker.check("load_part", j, {.verbose = false});
           }
           // tagged
           {
-            VC checker{grex::load(buf.data(), grex::part_tag<tSize>(j)),
-                       std::array{((tI < j) ? buf[tI] : T{})...}};
+            const VC checker{
+              grex::load(buf.data(), grex::part_tag<N>(j)),
+              std::array{((I < j) ? buf[I] : T{})...},
+            };
             checker.check("load_part tagged", j, {.verbose = false});
           }
         }
       }
       {
-        std::array buf = test::random_array<T, tSize>(dval);
+        std::array buf = test::random_array<T, N>(dval);
         auto load_part_wrap = [&](grex::AnyIndexTag auto j) {
           {
-            VC checker{Vec::load_part(buf.data(), j.value),
-                       std::array{((tI < j) ? buf[tI] : T{})...}};
+            const VC checker{
+              Vec::load_part(buf.data(), j.value),
+              std::array{((I < j) ? buf[I] : T{})...},
+            };
             checker.check("load_part", j.value, {.verbose = false});
           }
           {
-            VC checker{Vec::load_part(buf.data(), j), std::array{((tI < j) ? buf[tI] : T{})...}};
+            const VC checker{
+              Vec::load_part(buf.data(), j),
+              std::array{((I < j) ? buf[I] : T{})...},
+            };
             checker.check("load_part", j.value, {.verbose = false});
           }
           // tagged
           {
-            VC checker{grex::load(buf.data(), grex::part_tag<tSize>(j.value)),
-                       std::array{((tI < j) ? buf[tI] : T{})...}};
+            const VC checker{
+              grex::load(buf.data(), grex::part_tag<N>(j.value)),
+              std::array{((I < j) ? buf[I] : T{})...},
+            };
             checker.check("load_part tagged", j.value, {.verbose = false});
           }
           {
-            VC checker{grex::load(buf.data(), grex::part_tag<tSize>(j)),
-                       std::array{((tI < j) ? buf[tI] : T{})...}};
+            const VC checker{
+              grex::load(buf.data(), grex::part_tag<N>(j)),
+              std::array{((I < j) ? buf[I] : T{})...},
+            };
             checker.check("load_part tagged", j.value, {.verbose = false});
           }
         };
-        grex::static_apply<tSize + 1>(
-          [&]<std::size_t... tJ>() { (..., load_part_wrap(grex::index_tag<tJ>)); });
+        grex::static_apply<N + 1>(
+          [&]<std::size_t... J> { (..., load_part_wrap(grex::index_tag<J>)); });
       }
     });
   }
@@ -105,7 +119,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
 #endif
 template<grex::Vectorizable T>
 void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
-  auto dist = test::make_distribution<T>();
+  auto dist = test::make_distribution<T>(); // NOLINT(*-const-correctness)
 
   for (std::size_t i = 0; i < repetitions; ++i) {
     // load scalar
@@ -116,6 +130,7 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
     }
   }
 }
+} // namespace
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};

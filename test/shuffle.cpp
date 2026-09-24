@@ -20,6 +20,7 @@
 #include "defs.hpp"
 #include "rng.hpp"
 
+namespace {
 namespace test = grex::test;
 using Value = grex::GREX_TEST_TYPE;
 inline constexpr std::size_t repetitions = 256;
@@ -30,20 +31,20 @@ inline constexpr std::size_t repetitions = 256;
  * Kept out of line: formatting the index list and the whole vector would otherwise be inlined and
  * optimized into each of the `repetitions` unrolled copies of the test body.
  */
-template<std::size_t tSize>
-[[gnu::noinline]] void announce_shuffle(const std::array<grex::ShuffleIndex, tSize>& idxs,
-                                        const grex::Vector<Value, tSize>& base) {
+template<std::size_t N>
+[[gnu::noinline]] void announce_shuffle(const std::array<grex::ShuffleIndex, N>& idxs,
+                                        const grex::Vector<Value, N>& base) {
   fmt::print("grex::shuffle<{}>({}×{}{{{}}});\n", fmt::join(idxs, ", "), test::type_name<Value>(),
-             tSize, fmt::join(base, ", "));
+             N, fmt::join(base, ", "));
 }
 
 /** Reports a failed `shuffle` and terminates, kept out of line as in `announce_shuffle`. */
-template<std::size_t tSize, typename TShuffled>
-[[gnu::cold, gnu::noinline]] void fail_shuffle(const std::array<grex::ShuffleIndex, tSize>& idxs,
-                                               const std::array<Value, tSize>& baseref,
-                                               const TShuffled& shuf) {
-  std::array<Value, tSize> ref{};
-  for (std::size_t i = 0; i < tSize; ++i) {
+template<std::size_t N, typename Shuffled>
+[[gnu::cold, gnu::noinline]] void fail_shuffle(const std::array<grex::ShuffleIndex, N>& idxs,
+                                               const std::array<Value, N>& baseref,
+                                               const Shuffled& shuf) {
+  std::array<Value, N> ref{};
+  for (std::size_t i = 0; i < N; ++i) {
     const auto sh = idxs[i];
     ref[i] = grex::is_index(sh) ? baseref[grex::u8(sh)] : Value{};
   }
@@ -52,35 +53,35 @@ template<std::size_t tSize, typename TShuffled>
   std::exit(EXIT_FAILURE);
 }
 
-template<std::size_t tSize>
-void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
-  using VC = test::VectorChecker<Value, tSize>;
+template<std::size_t N>
+void run_simd(test::Rng& rng, grex::IndexTag<N> /*tag*/) {
+  using VC = test::VectorChecker<Value, N>;
 
-  auto dist = test::make_distribution<Value>();
-  auto dval = [&] { return dist(rng); };
+  auto dist = test::make_distribution<Value>(); // NOLINT(*-const-correctness)
+  const auto dval = [&] { return dist(rng); };
 
-  grex::static_apply<tSize>([&]<std::size_t... tIdxs> {
+  grex::static_apply<N>([&]<std::size_t... I> {
     VC base = VC::random(dval);
 
-    constexpr auto idxs = grex::static_apply<repetitions>([&]<std::size_t... tReps>() {
+    constexpr auto idxs = grex::static_apply<repetitions>([&]<std::size_t... Reps> {
       test::Pcg32 pcg{};
       auto r = [&](auto /*dummy*/) {
-        const auto v = pcg.bounded_random(tSize + 2);
+        const auto v = pcg.bounded_random(N + 2);
         switch (v) {
-          case tSize: return grex::any_sh;
-          case tSize + 1: return grex::zero_sh;
-          default: return grex::ShuffleIndex{grex::u8(v)};
+          case N: return grex::any_sh;
+          case N + 1: return grex::zero_sh;
+          default: return grex::ShuffleIndex{static_cast<grex::u8>(v)};
         }
       };
-      auto arr = [&](auto /*dummy*/) { return std::array{r(tIdxs)...}; };
-      return std::array<std::array<grex::ShuffleIndex, tSize>, repetitions>{arr(tReps)...};
+      auto arr = [&](auto /*dummy*/) { return std::array{r(I)...}; };
+      return std::array<std::array<grex::ShuffleIndex, N>, repetitions>{arr(Reps)...};
     });
 
     auto fix = [&](grex::AnyIndexTag auto rep) {
       announce_shuffle(idxs[rep], base.vec);
-      const auto shuf = grex::shuffle<idxs[rep][tIdxs]...>(base.vec);
+      const auto shuf = grex::shuffle<idxs[rep][I]...>(base.vec);
       bool same = true;
-      for (std::size_t i = 0; i < tSize; ++i) {
+      for (std::size_t i = 0; i < N; ++i) {
         const auto sh = idxs[rep][i];
         switch (sh) {
           case grex::any_sh: break;
@@ -93,9 +94,10 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSize> /*tag*/) {
       }
     };
     grex::static_apply<repetitions>(
-      [&]<std::size_t... tReps>() { (..., fix(grex::index_tag<tReps>)); });
+      [&]<std::size_t... Reps> { (..., fix(grex::index_tag<Reps>)); });
   });
 }
+} // namespace
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};

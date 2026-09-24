@@ -270,8 +270,8 @@ GREX_NNMASK_BINARY(compare_eq)
 // Binary16 without AVX512-FP: round-trip through binary32.
 #if !GREX_F16_NATIVE_ARITHMETIC
 #define GREX_F16_CMP(NAME) \
-  template<std::size_t tSize> \
-  inline NativeMask<f16, tSize> NAME(NativeVector<f16, tSize> a, NativeVector<f16, tSize> b) { \
+  template<std::size_t N> \
+  inline NativeMask<f16, N> NAME(NativeVector<f16, N> a, NativeVector<f16, N> b) { \
     return convert(NAME(f16_to_f32(a), f16_to_f32(b)), type_tag<f16>); \
   }
 GREX_F16_CMP(compare_eq)
@@ -279,8 +279,8 @@ GREX_F16_CMP(compare_lt)
 GREX_F16_CMP(compare_ge)
 #undef GREX_F16_CMP
 
-template<std::size_t tSize>
-inline NativeMask<f16, tSize> compare_neq(NativeVector<f16, tSize> a, NativeVector<f16, tSize> b) {
+template<std::size_t N>
+inline NativeMask<f16, N> compare_neq(NativeVector<f16, N> a, NativeVector<f16, N> b) {
   return logical_not(compare_eq(a, b));
 }
 #endif

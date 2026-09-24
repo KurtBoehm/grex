@@ -18,15 +18,15 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<AnyVector TVec>
-inline void to_array(typename TVec::Value* dst, TVec v) {
+template<AnyVector Vec>
+inline void to_array(typename Vec::Value* dst, Vec v) {
   store(dst, v);
 }
 
-template<AnyMask TMask>
-inline void to_array(bool* dst, TMask m) {
-  using VectorValue = TMask::VectorValue;
-  constexpr std::size_t size = TMask::size;
+template<AnyMask Mask>
+inline void to_array(bool* dst, Mask m) {
+  using VectorValue = Mask::VectorValue;
+  constexpr std::size_t size = Mask::size;
 
   if constexpr (!std::same_as<VectorValue, u8>) {
     // elements are bigger than 1 byte → convert to 1-byte mask
@@ -41,15 +41,15 @@ inline void to_array(bool* dst, TMask m) {
   }
 }
 
-template<AnyVector TVec>
-inline std::array<typename TVec::Value, TVec::size> to_array(TVec v) {
-  std::array<typename TVec::Value, TVec::size> buf{};
+template<AnyVector Vec>
+inline std::array<typename Vec::Value, Vec::size> to_array(Vec v) {
+  std::array<typename Vec::Value, Vec::size> buf{};
   to_array(buf.data(), v);
   return buf;
 }
-template<AnyMask TMask>
-inline std::array<bool, TMask::size> to_array(TMask m) {
-  std::array<bool, TMask::size> buf{};
+template<AnyMask Mask>
+inline std::array<bool, Mask::size> to_array(Mask m) {
+  std::array<bool, Mask::size> buf{};
   to_array(buf.data(), m);
   return buf;
 }

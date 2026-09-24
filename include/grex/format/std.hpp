@@ -19,18 +19,18 @@
 
 #include "grex/types.hpp"
 
-template<grex::Vectorizable T, std::size_t tSize>
-struct std::formatter<grex::Vector<T, tSize>>
-    : std::formatter<std::array<grex::format_impl::Formatted<T>, tSize>> {
-  std::format_context::iterator format(grex::Vector<T, tSize> v, std::format_context& ctx) const {
-    return formatter<std::array<grex::format_impl::Formatted<T>, tSize>>::format(
+template<grex::Vectorizable T, std::size_t N>
+struct std::formatter<grex::Vector<T, N>>
+    : std::formatter<std::array<grex::format_impl::Formatted<T>, N>> {
+  std::format_context::iterator format(grex::Vector<T, N> v, std::format_context& ctx) const {
+    return formatter<std::array<grex::format_impl::Formatted<T>, N>>::format(
       grex::format_impl::formatted_array(v), ctx);
   }
 };
-template<grex::Vectorizable T, std::size_t tSize>
-struct std::formatter<grex::Mask<T, tSize>> : std::formatter<std::array<bool, tSize>> {
-  std::format_context::iterator format(grex::Mask<T, tSize> m, std::format_context& ctx) const {
-    return formatter<std::array<bool, tSize>>::format(m.as_array(), ctx);
+template<grex::Vectorizable T, std::size_t N>
+struct std::formatter<grex::Mask<T, N>> : std::formatter<std::array<bool, N>> {
+  std::format_context::iterator format(grex::Mask<T, N> m, std::format_context& ctx) const {
+    return formatter<std::array<bool, N>>::format(m.as_array(), ctx);
   }
 };
 
@@ -43,7 +43,7 @@ struct std::formatter<grex::ShuffleIndex> {
     switch (sh) {
       case grex::any_sh: return std::format_to(ctx.out(), "any_sh");
       case grex::zero_sh: return std::format_to(ctx.out(), "zero_sh");
-      default: return std::format_to(ctx.out(), "{}_sh", int(sh));
+      default: return std::format_to(ctx.out(), "{}_sh", static_cast<int>(sh));
     }
   }
 };

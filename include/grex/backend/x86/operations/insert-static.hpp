@@ -98,7 +98,7 @@ namespace grex::backend {
 #define GREX_VEC_SINSERT_i8x16(KIND, ...) \
   static constexpr std::size_t i = index.value; \
   constexpr std::array<u8, 16> mask = static_apply<16>( \
-    []<std::size_t... tJ>() { return std::array<u8, 16>{((tJ == i) ? 0 : 255)...}; }); \
+    []<std::size_t... J> { return std::array<u8, 16>{((J == i) ? 0 : 255)...}; }); \
   const __m128i mvec = _mm_and_si128(v.r, load(mask.data(), type_tag<u8x16>).r); \
   const __m128i vvalue = [&] { \
     if constexpr (index == 0) { \
@@ -230,8 +230,8 @@ inline f16x8 insert(f16x8 v, AnyIndexTag auto index, f16 value) {
 #endif
   }();
 #if GREX_X86_64_LEVEL < 2
-  const auto blend_mask = static_apply<8>(
-    [&]<std::size_t... tI>() { return _mm_setr_epi16(((tI == index) ? -1 : 0)...); });
+  const auto blend_mask =
+    static_apply<8>([&]<std::size_t... I> { return _mm_setr_epi16(((I == index) ? -1 : 0)...); });
   const auto masked = [&] {
     if constexpr (index == 7) {
       return shuf;

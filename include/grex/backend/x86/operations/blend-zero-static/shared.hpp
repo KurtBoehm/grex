@@ -20,20 +20,20 @@
 
 namespace grex::backend {
 struct ZeroBlenderAnd : public BaseExpensiveOp {
-  template<AnyBlendZeroSelectors auto tBzs>
-  static constexpr bool is_applicable(AutoTag<tBzs> /*tag*/) {
+  template<AnyBlendZeroSelectors auto BZS>
+  static constexpr bool is_applicable(AutoTag<BZS> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, BlendZeroSelectorsFor<TVec> tBzs>
-  static TVec apply(TVec vec, AutoTag<tBzs> /*tag*/) {
-    using Value = ValueOf<TVec>;
-    static constexpr std::size_t size = TVec::size;
+  template<AnyVector Vec, BlendZeroSelectorsFor<Vec> BZS>
+  static Vec apply(Vec vec, AutoTag<BZS> /*tag*/) {
+    using Value = ValueOf<Vec>;
+    static constexpr std::size_t size = Vec::size;
     using Int = SignedInt<sizeof(Value)>;
     using IVec = NativeVector<Int, size>;
 
     const IVec ivec = reinterpret(vec, type_tag<Int>);
-    const IVec mask = static_apply<size>([]<std::size_t... tIdxs>() {
-      return set(type_tag<IVec>, ((tBzs[tIdxs] == keep_bz) ? Int(-1) : Int(0))...);
+    const IVec mask = static_apply<size>([]<std::size_t... I> {
+      return set(type_tag<IVec>, ((BZS[I] == keep_bz) ? Int(-1) : Int(0))...);
     });
     return reinterpret(bitwise_and(ivec, mask), type_tag<Value>);
   }

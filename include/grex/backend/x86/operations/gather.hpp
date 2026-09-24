@@ -48,8 +48,8 @@ namespace grex::backend {
 #define GREX_GATHER_CAST(KIND, BITS) GREX_GATHER_CAST_##KIND(BITS)
 
 #define GREX_GATHER_PREFIX(VALUE, INDEX, SIZE) \
-  template<std::size_t tExtent> \
-  inline VectorFor<VALUE, SIZE> gather(std::span<const VALUE, tExtent> data, \
+  template<std::size_t Extent> \
+  inline VectorFor<VALUE, SIZE> gather(std::span<const VALUE, Extent> data, \
                                        VectorFor<INDEX, SIZE> idxs)
 #define GREX_GATHER_INSTRINSIC_AVX(VALKIND, VALBITS, IDXBITS, REGISTERBITS) \
   GREX_CAT(GREX_BITPREFIX(REGISTERBITS), _i##IDXBITS##gather_, GREX_EPI_SUFFIX(VALKIND, VALBITS))( \
@@ -64,8 +64,8 @@ namespace grex::backend {
   GREX_GATHER_INSTRINSIC_##REGISTERBITS(VALKIND, VALBITS, IDXBITS, REGISTERBITS)
 
 #define GREX_MGATHER_PREFIX(VALUE, INDEX, SIZE) \
-  template<std::size_t tExtent> \
-  inline VectorFor<VALUE, SIZE> mask_gather(std::span<const VALUE, tExtent> data, \
+  template<std::size_t Extent> \
+  inline VectorFor<VALUE, SIZE> mask_gather(std::span<const VALUE, Extent> data, \
                                             MaskFor<VALUE, SIZE> m, VectorFor<INDEX, SIZE> idxs)
 #define GREX_MGATHER_MMASK_128 mmask
 #define GREX_MGATHER_MMASK_256 mmask
@@ -176,16 +176,14 @@ GREX_GATHER_DEFINE(u, 32, u, 64, 8, 512)
 #endif
 
 // 8- and 16-bit indices: convert to i32
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
-requires(sizeof(TValue) >= 4 && sizeof(TIndex) <= 2)
-inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
-                                       NativeVector<TIndex, tSize> idxs) {
+template<Vectorizable V, std::size_t Extent, Vectorizable I, std::size_t N>
+requires(sizeof(V) >= 4 && sizeof(I) <= 2)
+inline VectorFor<V, N> gather(std::span<const V, Extent> data, NativeVector<I, N> idxs) {
   return gather(data, convert(idxs, type_tag<i32>));
 }
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
-requires(sizeof(TValue) >= 4 && sizeof(TIndex) <= 2)
-inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
-                                       SubVector<TIndex, tSize> idxs) {
+template<Vectorizable V, std::size_t Extent, Vectorizable I, std::size_t N>
+requires(sizeof(V) >= 4 && sizeof(I) <= 2)
+inline VectorFor<V, N> gather(std::span<const V, Extent> data, SubVector<I, N> idxs) {
   return gather(data, convert(idxs, type_tag<i32>));
 }
 
@@ -195,26 +193,24 @@ inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
 //   which is equivalent to idxs ^ 2^31, which transforms the value range of u32 to i32.
 // sadly, the latter cannot be done in general in standard C++ because pointer arithmetic
 // past the array leads to undefined behaviour
-template<Vectorizable TValue, std::size_t tExtent, std::size_t tSize>
-requires(sizeof(TValue) >= 4)
-inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
-                                       NativeVector<u32, tSize> idxs) {
+template<Vectorizable V, std::size_t Extent, std::size_t N>
+requires(sizeof(V) >= 4)
+inline VectorFor<V, N> gather(std::span<const V, Extent> data, NativeVector<u32, N> idxs) {
   constexpr u32 limit = u32{1} << 31;
   if (data.size() > limit) {
-    const auto flipped = bitwise_xor(idxs, broadcast(limit, type_tag<NativeVector<u32, tSize>>));
+    const auto flipped = bitwise_xor(idxs, broadcast(limit, type_tag<NativeVector<u32, N>>));
     return gather(std::span{data.data() + limit, data.size() - limit}, as<i32>(flipped));
   }
   return gather(data, convert(idxs, type_tag<i32>));
 }
 
-template<Vectorizable TValue, std::size_t tExtent, std::size_t tSize>
-requires(sizeof(TValue) >= 4)
-inline VectorFor<TValue, tSize> mask_gather(std::span<const TValue, tExtent> data,
-                                            NativeMask<TValue, tSize> m,
-                                            NativeVector<u32, tSize> idxs) {
+template<Vectorizable V, std::size_t Extent, std::size_t N>
+requires(sizeof(V) >= 4)
+inline VectorFor<V, N> mask_gather(std::span<const V, Extent> data, NativeMask<V, N> m,
+                                   NativeVector<u32, N> idxs) {
   constexpr u32 limit = u32{1} << 31;
   if (data.size() > limit) {
-    const auto flipped = bitwise_xor(idxs, broadcast(limit, type_tag<NativeVector<u32, tSize>>));
+    const auto flipped = bitwise_xor(idxs, broadcast(limit, type_tag<NativeVector<u32, N>>));
     return mask_gather(std::span{data.data() + limit, data.size() - limit}, m, as<i32>(flipped));
   }
   return mask_gather(data, m, convert(idxs, type_tag<i32>));

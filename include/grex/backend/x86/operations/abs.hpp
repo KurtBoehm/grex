@@ -118,9 +118,9 @@ GREX_NNVECTOR_UNARY(abs)
 
 // Binary16: clear the sign bit via `u16`. `_mm512_abs_ph` is translated to something equivalent
 // even with AVX512-FP16, so there is no point in adding a case distinction.
-template<std::size_t tSize>
-inline NativeVector<f16, tSize> abs(NativeVector<f16, tSize> v) {
-  using Work = NativeVector<u16, tSize>;
+template<std::size_t N>
+inline NativeVector<f16, N> abs(NativeVector<f16, N> v) {
+  using Work = NativeVector<u16, N>;
   return {.r = bitwise_and(Work{v.r}, broadcast(u16(0x7FFF), type_tag<Work>)).r};
 }
 } // namespace grex::backend

@@ -14,10 +14,9 @@
 
 namespace grex::backend {
 #define GREX_MASKARITH_SUB(NAME) \
-  template<Vectorizable T, std::size_t tSize> \
-  inline SubVector<T, tSize> NAME(SubMask<T, tSize> m, SubVector<T, tSize> a, \
-                                  SubVector<T, tSize> b) { \
-    return SubVector<T, tSize>{NAME(m.full, a.full, b.full)}; \
+  template<Vectorizable T, std::size_t N> \
+  inline SubVector<T, N> NAME(SubMask<T, N> m, SubVector<T, N> a, SubVector<T, N> b) { \
+    return SubVector<T, N>{NAME(m.full, a.full, b.full)}; \
   }
 GREX_MASKARITH_SUB(mask_add)
 GREX_MASKARITH_SUB(mask_subtract)
@@ -25,9 +24,9 @@ GREX_MASKARITH_SUB(mask_multiply)
 GREX_MASKARITH_SUB(mask_divide)
 
 #define GREX_MASKARITH_SUPER(NAME) \
-  template<typename TVecHalf, typename TMaskHalf> \
-  inline SuperVector<TVecHalf> NAME(SuperMask<TMaskHalf> m, SuperVector<TVecHalf> a, \
-                                    SuperVector<TVecHalf> b) { \
+  template<typename VecHalf, typename MaskHalf> \
+  inline SuperVector<VecHalf> NAME(SuperMask<MaskHalf> m, SuperVector<VecHalf> a, \
+                                   SuperVector<VecHalf> b) { \
     return { \
       .lower = NAME(m.lower, a.lower, b.lower), \
       .upper = NAME(m.upper, a.upper, b.upper), \

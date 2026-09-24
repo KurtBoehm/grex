@@ -99,54 +99,53 @@ GREX_MERGE_SUB(i, 8, 4, GREX_MERGE_i16x2)
 GREX_MERGE_SUB(u, 8, 4, GREX_MERGE_i16x2)
 
 // Merge to super-native vector
-template<Vectorizable T, std::size_t tSize>
-requires(is_supernative<T, 2 * tSize>)
-inline SuperVector<NativeVector<T, tSize>> merge(NativeVector<T, tSize> a,
-                                                 NativeVector<T, tSize> b) {
+template<Vectorizable T, std::size_t N>
+requires(is_supernative<T, 2 * N>)
+inline SuperVector<NativeVector<T, N>> merge(NativeVector<T, N> a, NativeVector<T, N> b) {
   return {.lower = a, .upper = b};
 }
-template<typename THalf>
-inline SuperVector<SuperVector<THalf>> merge(SuperVector<THalf> a, SuperVector<THalf> b) {
+template<typename Half>
+inline SuperVector<SuperVector<Half>> merge(SuperVector<Half> a, SuperVector<Half> b) {
   return {.lower = a, .upper = b};
 }
 
-template<typename TVector>
-inline auto quadruple(TVector v) {
+template<typename Vector>
+inline auto quadruple(Vector v) {
   const auto half = merge(v, v);
   return merge(half, half);
 }
 #if GREX_X86_64_LEVEL >= 4
-template<typename TValue, std::size_t tSize>
-requires(sizeof(TValue) * tSize == 16)
-inline NativeVector<TValue, tSize * 4> quadruple(NativeVector<TValue, tSize> v) {
+template<typename V, std::size_t N>
+requires(sizeof(V) * N == 16)
+inline NativeVector<V, N * 4> quadruple(NativeVector<V, N> v) {
   const __m512i v512 = _mm512_castsi128_si512(as<u8>(v).r);
   const __m512i shuf = _mm512_shuffle_i64x2(v512, v512, 0);
-  return as<TValue>(u8x64{shuf});
+  return as<V>(u8x64{shuf});
 }
 #endif
 
-template<std::size_t tRepetitions, typename TVector>
-requires(tRepetitions > 0 && std::has_single_bit(tRepetitions))
-inline auto repeat(TVector v) {
-  if constexpr (tRepetitions == 1) {
+template<std::size_t Repetitions, typename Vector>
+requires(Repetitions > 0 && std::has_single_bit(Repetitions))
+inline auto repeat(Vector v) {
+  if constexpr (Repetitions == 1) {
     return v;
-  } else if constexpr (tRepetitions == 4) {
+  } else if constexpr (Repetitions == 4) {
     return quadruple(v);
   } else {
-    const auto half = repeat<tRepetitions / 2>(v);
+    const auto half = repeat<Repetitions / 2>(v);
     return merge(half, half);
   }
 }
 
 #if GREX_X86_64_LEVEL >= 4
 // Merge compact masks to native/sub-native: Bit shift and logical or
-template<typename TMask>
-requires(!is_supernative<typename TMask::VectorValue, TMask::size * 2>)
-inline MaskFor<typename TMask::VectorValue, TMask::size * 2> merge(TMask a, TMask b) {
-  using Register = TMask::Register;
-  static constexpr std::size_t size = TMask::size;
+template<typename Mask>
+requires(!is_supernative<typename Mask::VectorValue, Mask::size * 2>)
+inline MaskFor<typename Mask::VectorValue, Mask::size * 2> merge(Mask a, Mask b) {
+  using Register = Mask::Register;
+  static constexpr std::size_t size = Mask::size;
   static constexpr std::size_t rdigits = sizeof(Register) * CHAR_BIT;
-  using Out = MaskFor<typename TMask::VectorValue, size * 2>;
+  using Out = MaskFor<typename Mask::VectorValue, size * 2>;
   using OutRegister = Out::Register;
   if constexpr (size < rdigits) {
     // Mask out the upper bits before merging
@@ -157,14 +156,14 @@ inline MaskFor<typename TMask::VectorValue, TMask::size * 2> merge(TMask a, TMas
   }
 }
 // Merge compact masks to super-native
-template<AnyMask TMask>
-requires(is_supernative<typename TMask::VectorValue, TMask::size * 2>)
-inline SuperMask<TMask> merge(TMask a, TMask b) {
+template<AnyMask Mask>
+requires(is_supernative<typename Mask::VectorValue, Mask::size * 2>)
+inline SuperMask<Mask> merge(Mask a, Mask b) {
   return {.lower = a, .upper = b};
 }
 #else
-template<AnyMask TMask>
-inline MaskFor<typename TMask::VectorValue, TMask::size * 2> merge(TMask a, TMask b) {
+template<AnyMask Mask>
+inline MaskFor<typename Mask::VectorValue, Mask::size * 2> merge(Mask a, Mask b) {
   return vector2mask(merge(mask2vector(a), mask2vector(b)));
 }
 #endif

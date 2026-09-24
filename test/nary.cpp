@@ -18,20 +18,21 @@
 
 #include "defs.hpp"
 
+namespace {
 namespace test = grex::test;
 using Value = grex::GREX_TEST_TYPE;
 inline constexpr std::size_t repetitions = 4096;
 inline constexpr std::size_t max_args = 16;
 
 /** Reports a failed comparison and terminates, kept out of line and cold as in `test::fail_msg`. */
-template<typename TLabel>
-[[gnu::cold, gnu::noinline]] inline void fail_with_message(const TLabel& label) {
+template<typename Label>
+[[gnu::cold, gnu::noinline]] inline void fail_with_message(const Label& label) {
   fmt::print(fmt::fg(fmt::terminal_color::red), "{}\n", test::resolve_label(label));
   std::exit(EXIT_FAILURE);
 }
 
-template<typename T1, typename T2, typename TLabel>
-inline void check_with_message(const TLabel& label, bool same, T1 a, T2 b, bool verbose = true) {
+template<typename T1, typename T2, typename Label>
+inline void check_with_message(const Label& label, bool same, T1 a, T2 b, bool verbose = true) {
   if (same) [[likely]] {
     if (verbose) {
       fmt::print(fmt::fg(fmt::terminal_color::green), "{}\n", test::resolve_label(label), a, b);
@@ -43,7 +44,7 @@ inline void check_with_message(const TLabel& label, bool same, T1 a, T2 b, bool 
 
 template<typename T>
 void run_ops(auto op) {
-  auto make_dist = [&]() {
+  const auto make_dist = [&] {
     using W = test::Widened<T>;
     if constexpr (grex::FloatVectorizable<T>) {
       // Common range for both scalar and SIMD float tests.
@@ -53,7 +54,7 @@ void run_ops(auto op) {
     }
   };
 
-  auto dist = [d = make_dist()](auto& r) mutable { return T(d(r)); };
+  const auto dist = [d = make_dist()](auto& r) mutable { return T(d(r)); };
 
   // grex::add: v[0] + v[1] + ... + v[n - 1]
   op(
@@ -67,26 +68,26 @@ void run_ops(auto op) {
 }
 
 #if !GREX_BACKEND_SCALAR
-template<grex::Vectorizable T, std::size_t tSize>
-void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
+template<grex::Vectorizable T, std::size_t N>
+void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<N> /*tag*/) {
   run_ops<T>([&](std::string_view opname, auto dist, auto make_ref, auto make_val) {
-    using VC = test::VectorChecker<T, tSize>;
+    using VC = test::VectorChecker<T, N>;
     auto dval = [&] { return dist(rng); };
 
     auto per_arity = [&](grex::AnyIndexTag auto num) {
       fmt::print(fmt::fg(fmt::terminal_color::magenta), "{} {}-ary\n", opname, num.value);
       for (std::size_t i = 0; i < repetitions; ++i) {
-        grex::static_apply<num.value>([&]<std::size_t... tJ>() {
-          auto make_vc = [&](std::size_t /*dummy*/) { return VC::random(dval); };
-          std::array<VC, num.value> arr{make_vc(tJ)...};
+        grex::static_apply<num.value>([&]<std::size_t... J> {
+          const auto make_vc = [&](std::size_t /*dummy*/) { return VC::random(dval); };
+          std::array<VC, num.value> arr{make_vc(J)...};
 
-          const auto ref = make_ref(arr[tJ].vec...);
-          const auto val = make_val(arr[tJ].vec...);
+          const auto ref = make_ref(arr[J].vec...);
+          const auto val = make_val(arr[J].vec...);
 
           if constexpr (grex::FloatVectorizable<T>) {
             const auto ref_arr = ref.as_array();
             const auto val_arr = val.as_array();
-            for (std::size_t k = 0; k < tSize; ++k) {
+            for (std::size_t k = 0; k < N; ++k) {
               const auto a = ref_arr[k];
               const auto b = val_arr[k];
               check_with_message(
@@ -101,7 +102,7 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
     };
 
     grex::static_apply<max_args - 1>(
-      [&]<std::size_t... tI>() { (..., per_arity(grex::index_tag<tI + 1>)); });
+      [&]<std::size_t... I> { (..., per_arity(grex::index_tag<I + 1>)); });
   });
 }
 #endif
@@ -114,11 +115,11 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
     auto per_arity = [&](grex::AnyIndexTag auto num) {
       fmt::print(fmt::fg(fmt::terminal_color::magenta), "scalar {} {}-ary\n", opname, num.value);
       for (std::size_t i = 0; i < repetitions; ++i) {
-        grex::static_apply<num.value>([&]<std::size_t... tJ>() {
+        grex::static_apply<num.value>([&]<std::size_t... J> {
           std::array<T, num.value> arr = test::random_array<T, num.value>(dval);
 
-          const auto val = make_val(arr[tJ]...);
-          const auto ref = T(make_ref(arr[tJ]...));
+          const auto val = make_val(arr[J]...);
+          const auto ref = T(make_ref(arr[J]...));
 
           if constexpr (grex::FloatVectorizable<T>) {
             check_with_message(
@@ -133,9 +134,10 @@ void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
     };
 
     grex::static_apply<max_args - 1>(
-      [&]<std::size_t... tI>() { (..., per_arity(grex::index_tag<tI + 1>)); });
+      [&]<std::size_t... I> { (..., per_arity(grex::index_tag<I + 1>)); });
   });
 }
+} // namespace
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};

@@ -20,10 +20,10 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<std::size_t tValueBytes, std::size_t tSize>
+template<std::size_t ValueBytes, std::size_t N>
 struct ShuffleIndices {
-  static constexpr std::size_t value_size = tValueBytes;
-  static constexpr std::size_t size = tSize;
+  static constexpr std::size_t value_size = ValueBytes;
+  static constexpr std::size_t size = N;
   static constexpr std::size_t lane_size = 16 / value_size;
   using Half = ShuffleIndices<value_size, size / 2>;
   using Blend = BlendSelectors<value_size, size>;
@@ -39,7 +39,9 @@ struct ShuffleIndices {
     return lane_off <= idx && idx < lane_off + lane_size;
   }
   static constexpr std::optional<u8> index_in_lane(std::size_t i, ShuffleIndex sh) {
-    return (is_index(sh) && is_in_lane(i, u8(sh)) ? std::make_optional(u8(sh)) : std::nullopt);
+    return (is_index(sh) && is_in_lane(i, static_cast<u8>(sh))
+              ? std::make_optional(static_cast<u8>(sh))
+              : std::nullopt);
   }
 
   constexpr ShuffleIndex operator[](std::size_t i) const {
@@ -47,32 +49,31 @@ struct ShuffleIndices {
   }
 
   [[nodiscard]] constexpr bool requires_zeroing() const {
-    return subzero || static_apply<size>([&]<std::size_t... tIdxs>() {
-             return (... || (indices[tIdxs] == zero_sh));
-           });
+    return subzero ||
+           static_apply<size>([&]<std::size_t... I> { return (... || (indices[I] == zero_sh)); });
   }
 
   [[nodiscard]] constexpr int imm8() const
   requires(size == 4)
   {
-    return static_apply<size>([&]<std::size_t... tIdxs>() {
-      auto f = [](int i, ShuffleIndex sh) { return is_index(sh) ? int(sh) : i; };
-      return (0 + ... + (f(tIdxs, indices[tIdxs]) << (2 * tIdxs)));
+    return static_apply<size>([&]<std::size_t... I> {
+      auto f = [](int i, ShuffleIndex sh) { return is_index(sh) ? static_cast<int>(sh) : i; };
+      return (0 + ... + (f(I, indices[I]) << (2 * I)));
     });
   }
 
-  template<bool tSignedIdxs = true>
-  [[nodiscard]] GREX_ALWAYS_INLINE auto vector(BoolTag<tSignedIdxs> signed_idxs = {}) const {
-    return static_apply<size>([&]<std::size_t... tIdxs>() GREX_ALWAYS_INLINE {
+  template<bool SignedIdxs = true>
+  [[nodiscard]] GREX_ALWAYS_INLINE auto vector(BoolTag<SignedIdxs> signed_idxs = {}) const {
+    return static_apply<size>([&]<std::size_t... I> GREX_ALWAYS_INLINE {
       using Val = std::conditional_t<signed_idxs, SignedInt<value_size>, UnsignedInt<value_size>>;
       auto f = [](ShuffleIndex sh) { return is_index(sh) ? Val(sh) : Val(-1); };
-      return set(type_tag<NativeVector<Val, size>>, f(indices[tIdxs])...);
+      return set(type_tag<NativeVector<Val, size>>, f(indices[I])...);
     });
   }
 
   [[nodiscard]] GREX_ALWAYS_INLINE auto mask() const {
-    return static_apply<size>([&]<std::size_t... tIdxs>() GREX_ALWAYS_INLINE {
-      return set(type_tag<NativeMask<SignedInt<value_size>, size>>, is_index(indices[tIdxs])...);
+    return static_apply<size>([&]<std::size_t... I> GREX_ALWAYS_INLINE {
+      return set(type_tag<NativeMask<SignedInt<value_size>, size>>, is_index(indices[I])...);
     });
   }
 
@@ -83,34 +84,38 @@ struct ShuffleIndices {
     if (!is_lane_local()) {
       return Opt{};
     }
-    return static_apply<size>([&]<std::size_t... tIdxs>() {
+    return static_apply<size>([&]<std::size_t... I> {
       auto f = [](ShuffleIndex sh) { return is_index(sh) ? Val(sh) : Val{-1}; };
-      return Opt{std::array{f(indices[tIdxs])...}};
+      return Opt{std::array{f(indices[I])...}};
     });
   }
 
   [[nodiscard]] constexpr auto intralane_indices() const {
-    return static_apply<size>([&]<std::size_t... tIdxs>() {
+    return static_apply<size>([&]<std::size_t... I> {
       auto f = [](std::size_t i, ShuffleIndex sh) {
         using Val = SignedInt<value_size>;
-        return (is_index(sh) && is_in_lane(i, u8(sh)) ? Val(u8(sh)) : Val{-1});
+        return (is_index(sh) && is_in_lane(i, static_cast<u8>(sh))
+                  ? static_cast<Val>(static_cast<u8>(sh))
+                  : Val{-1});
       };
-      return std::array{f(tIdxs, indices[tIdxs])...};
+      return std::array{f(I, indices[I])...};
     });
   }
   [[nodiscard]] constexpr auto extralane_indices() const {
     static_assert(size == 2 * lane_size,
                   "This function is designed for 256-bit, i.e. two-laned, vectors!");
     using Val = SignedInt<value_size>;
-    return static_apply<size>([&]<std::size_t... tIdxs>() {
+    return static_apply<size>([&]<std::size_t... I> {
       auto f = [](std::size_t i, ShuffleIndex sh) {
-        return (is_index(sh) && !is_in_lane(i, u8(sh)) ? Val(u8(sh)) : Val{-1});
+        return (is_index(sh) && !is_in_lane(i, static_cast<u8>(sh))
+                  ? static_cast<Val>(static_cast<u8>(sh))
+                  : Val{-1});
       };
-      return std::array{f(tIdxs, indices[tIdxs])...};
+      return std::array{f(I, indices[I])...};
     });
   }
 
-  template<std::size_t tSegment>
+  template<std::size_t Segment>
   [[nodiscard]] constexpr bool is_segment_local() const {
     for (std::size_t i = 0; i < size; ++i) {
       const auto sh = indices[i];
@@ -118,8 +123,8 @@ struct ShuffleIndices {
         continue;
       }
       const auto idx = u8(sh);
-      const auto lane_off = i / tSegment * tSegment;
-      if (idx < lane_off || lane_off + tSegment <= idx) {
+      const auto lane_off = i / Segment * Segment;
+      if (idx < lane_off || lane_off + Segment <= idx) {
         return false;
       }
     }
@@ -135,9 +140,9 @@ struct ShuffleIndices {
   [[nodiscard]] constexpr ShuffleIndices<value_size, lane_size> sub_extended() const
   requires(size < lane_size)
   {
-    return static_apply<lane_size>([&]<std::size_t... tIdxs>() {
+    return static_apply<lane_size>([&]<std::size_t... I> {
       return ShuffleIndices<value_size, lane_size>{
-        .indices = std::array{((tIdxs < size) ? indices[tIdxs] : any_sh)...},
+        .indices = std::array{((I < size) ? indices[I] : any_sh)...},
         .subzero = subzero,
       };
     });
@@ -146,7 +151,7 @@ struct ShuffleIndices {
   [[nodiscard]] constexpr Half half_raw(std::size_t half) const {
     return Half{
       .indices = static_apply<size / 2>(
-        [&]<std::size_t... tIdxs>() { return std::array{indices[tIdxs + half * size / 2]...}; }),
+        [&]<std::size_t... I> { return std::array{indices[I + half * size / 2]...}; }),
       .subzero = subzero,
     };
   }
@@ -154,7 +159,8 @@ struct ShuffleIndices {
     std::array<ShuffleIndex, size / 2> arr{};
     for (std::size_t i = 0; i < size / 2; ++i) {
       const ShuffleIndex sh = indices[i];
-      if (is_index(sh) && (u8(sh) < half * size / 2 || (half + 1) * size / 2 <= u8(sh))) {
+      if (is_index(sh) &&
+          (static_cast<u8>(sh) < half * size / 2 || (half + 1) * size / 2 <= static_cast<u8>(sh))) {
         return std::nullopt;
       }
       arr[i] = sh;
@@ -168,10 +174,10 @@ struct ShuffleIndices {
     for (std::size_t i = 0; i < size; ++i) {
       ShuffleIndex sh = indices[i];
       if (is_index(sh)) {
-        if (u8(sh) < index * size || (index + 1) * size <= u8(sh)) {
+        if (static_cast<u8>(sh) < index * size || (index + 1) * size <= static_cast<u8>(sh)) {
           return std::nullopt;
         }
-        sh = ShuffleIndex(u8(sh) - index * size);
+        sh = ShuffleIndex(static_cast<u8>(sh) - index * size);
       }
       arr[i] = sh;
     }
@@ -185,8 +191,8 @@ struct ShuffleIndices {
     for (std::size_t i = 0; i < size; ++i) {
       ShuffleIndex sh = indices[i];
       if (is_index(sh)) {
-        sh = (index * size <= u8(sh) && u8(sh) < (index + 1) * size)
-               ? ShuffleIndex(u8(sh) - index * size)
+        sh = (index * size <= static_cast<u8>(sh) && static_cast<u8>(sh) < (index + 1) * size)
+               ? ShuffleIndex(static_cast<u8>(sh) - index * size)
                : fallback;
       }
       arr[i] = sh;
@@ -194,28 +200,29 @@ struct ShuffleIndices {
     return ShuffleIndices{.indices = arr, .subzero = subzero};
   }
   [[nodiscard]] constexpr Blend blend_vectors() const {
-    auto f = [&](ShuffleIndex sh) { return (is_index(sh) && u8(sh) >= size) ? rhs_bl : lhs_bl; };
+    auto f = [&](ShuffleIndex sh) {
+      return (is_index(sh) && static_cast<u8>(sh) >= size) ? rhs_bl : lhs_bl;
+    };
     const auto arr =
-      static_apply<size>([&]<std::size_t... tIdxs>() { return std::array{f(indices[tIdxs])...}; });
+      static_apply<size>([&]<std::size_t... I> { return std::array{f(indices[I])...}; });
     return Blend{.ctrl = arr};
   }
 
-  template<std::size_t tSegment>
-  [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, tSegment>> repeated() const {
-    static_assert(size >= tSegment);
-    if constexpr (size == tSegment) {
+  template<std::size_t Segment>
+  [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, Segment>> repeated() const {
+    static_assert(size >= Segment);
+    if constexpr (size == Segment) {
       return *this;
     } else {
-      if (!is_segment_local<tSegment>()) {
+      if (!is_segment_local<Segment>()) {
         return std::nullopt;
       }
-      std::array<ShuffleIndex, tSegment> idxs = static_apply<tSegment>([&]<std::size_t... tIdxs>() {
-        return std::array<ShuffleIndex, tSegment>{indices[tIdxs]...};
-      });
+      std::array<ShuffleIndex, Segment> idxs = static_apply<Segment>(
+        [&]<std::size_t... I> { return std::array<ShuffleIndex, Segment>{indices[I]...}; });
       bool subz = subzero;
-      for (std::size_t i = tSegment; i < size; ++i) {
+      for (std::size_t i = Segment; i < size; ++i) {
         const ShuffleIndex sh = indices[i];
-        ShuffleIndex& dst = idxs[i % tSegment];
+        ShuffleIndex& dst = idxs[i % Segment];
         switch (sh) {
           case any_sh: break;
           case zero_sh: {
@@ -235,7 +242,8 @@ struct ShuffleIndices {
             break;
           }
           default: {
-            const auto idx = ShuffleIndex{u8(u8(sh) - (i / tSegment * tSegment))};
+            const auto idx =
+              ShuffleIndex{static_cast<u8>(static_cast<u8>(sh) - (i / Segment * Segment))};
             switch (dst) {
               case any_sh: {
                 dst = idx;
@@ -256,7 +264,7 @@ struct ShuffleIndices {
           }
         }
       }
-      return ShuffleIndices<value_size, tSegment>{.indices = idxs, .subzero = subz};
+      return ShuffleIndices<value_size, Segment>{.indices = idxs, .subzero = subz};
     }
   }
   [[nodiscard]] constexpr std::optional<ShuffleIndices<value_size, lane_size>> single_lane() const {
@@ -267,32 +275,30 @@ struct ShuffleIndices {
     return repeated<2 * lane_size>();
   }
 
-  template<std::size_t tDstValueBytes>
-  friend constexpr std::optional<
-    ShuffleIndices<tDstValueBytes, tSize * tValueBytes / tDstValueBytes>>
+  template<std::size_t DstValueBytes>
+  friend constexpr std::optional<ShuffleIndices<DstValueBytes, N * ValueBytes / DstValueBytes>>
   convert(const ShuffleIndices& self) {
-    constexpr auto dst_size = tSize * tValueBytes / tDstValueBytes;
-    using Dst = ShuffleIndices<tDstValueBytes, dst_size>;
+    constexpr auto dst_size = N * ValueBytes / DstValueBytes;
+    using Dst = ShuffleIndices<DstValueBytes, dst_size>;
 
-    if constexpr (tDstValueBytes == tValueBytes) {
+    if constexpr (DstValueBytes == ValueBytes) {
       return self;
-    } else if constexpr (tDstValueBytes < tValueBytes) {
+    } else if constexpr (DstValueBytes < ValueBytes) {
       // simply multiply the entries with factor and add their chunk index
-      constexpr auto factor = tValueBytes / tDstValueBytes;
+      constexpr auto factor = ValueBytes / DstValueBytes;
       auto f = [&](ShuffleIndex sh, std::size_t chunki) {
         if (is_index(sh)) {
-          return ShuffleIndex(u8(sh) * factor + chunki);
+          return ShuffleIndex(static_cast<u8>(sh) * factor + chunki);
         }
         return sh;
       };
-      const auto idxs = static_apply<dst_size>([&]<std::size_t... tIdxs>() {
-        return std::array{f(self.indices[tIdxs / factor], tIdxs % factor)...};
-      });
+      const auto idxs = static_apply<dst_size>(
+        [&]<std::size_t... I> { return std::array{f(self.indices[I / factor], I % factor)...}; });
       return Dst{.indices = idxs, .subzero = self.subzero};
     } else {
       // check whether the indices in each chunk that is converted to one index
       // start at a multiple of `factor` and are ascending from there (apart from any/zero)
-      constexpr auto factor = tDstValueBytes / tValueBytes;
+      constexpr auto factor = DstValueBytes / ValueBytes;
       std::array<ShuffleIndex, dst_size> idxs{};
       bool subz = self.subzero;
       for (std::size_t i = 0; i < dst_size; ++i) {
@@ -309,7 +315,7 @@ struct ShuffleIndices {
               break;
             }
             default: {
-              const auto srci = u8(shi);
+              const auto srci = static_cast<u8>(shi);
               if (srci % factor != j) {
                 return std::nullopt;
               }
@@ -337,7 +343,7 @@ struct ShuffleIndices {
     }
   }
 
-  [[nodiscard]] constexpr BlendZeroSelectors<tValueBytes, tSize> blend_zeros() const {
+  [[nodiscard]] constexpr BlendZeroSelectors<ValueBytes, N> blend_zeros() const {
     auto f = [](ShuffleIndex sh) {
       switch (sh) {
         case any_sh: return any_bz;
@@ -345,41 +351,40 @@ struct ShuffleIndices {
         default: return keep_bz;
       }
     };
-    return static_apply<tSize>([&]<std::size_t... tIdxs>() {
-      return BlendZeroSelectors<tValueBytes, tSize>{f(indices[tIdxs])...};
-    });
+    return static_apply<N>(
+      [&]<std::size_t... I> { return BlendZeroSelectors<ValueBytes, N>{f(indices[I])...}; });
   }
 };
-template<AnyVector TVec>
-using ShuffleIndicesFor = ShuffleIndices<sizeof(typename TVec::Value), TVec::size>;
+template<AnyVector Vec>
+using ShuffleIndicesFor = ShuffleIndices<sizeof(typename Vec::Value), Vec::size>;
 
 template<typename T>
 struct AnyShuffleIndicesTrait : public std::false_type {};
-template<std::size_t tValueBytes, std::size_t tSize>
-struct AnyShuffleIndicesTrait<ShuffleIndices<tValueBytes, tSize>> : public std::true_type {};
+template<std::size_t ValueBytes, std::size_t N>
+struct AnyShuffleIndicesTrait<ShuffleIndices<ValueBytes, N>> : public std::true_type {};
 template<typename T>
 concept AnyShuffleIndices = AnyShuffleIndicesTrait<T>::value;
 
-template<AnyShuffleIndices auto tIdxs>
+template<AnyShuffleIndices auto I>
 struct ShufflerTrait;
-template<AnyShuffleIndices auto tIdxs>
-using Shuffler = ShufflerTrait<tIdxs>::Shuffler;
+template<AnyShuffleIndices auto I>
+using Shuffler = ShufflerTrait<I>::Shuffler;
 
-template<AnyShuffleIndices auto tIdxs>
+template<AnyShuffleIndices auto I>
 struct PairShufflerTrait;
-template<AnyShuffleIndices auto tIdxs>
-using PairShuffler = PairShufflerTrait<tIdxs>::Shuffler;
+template<AnyShuffleIndices auto I>
+using PairShuffler = PairShufflerTrait<I>::Shuffler;
 
-template<ShuffleIndex... tIdxs, AnyVector TVec>
-requires(TVec::size == sizeof...(tIdxs))
-inline TVec shuffle(TVec vec) {
-  static constexpr auto idxs = ShuffleIndicesFor<TVec>{.indices = {tIdxs...}};
+template<ShuffleIndex... I, AnyVector Vec>
+requires(Vec::size == sizeof...(I))
+inline Vec shuffle(Vec vec) {
+  static constexpr auto idxs = ShuffleIndicesFor<Vec>{.indices = {I...}};
   return Shuffler<idxs>::apply(vec, auto_tag<idxs>);
 }
-template<ShuffleIndex... tIdxs, AnyVector TVec>
-requires(TVec::size == sizeof...(tIdxs))
-inline TVec pair_shuffle(TVec a, TVec b) {
-  static constexpr auto idxs = ShuffleIndicesFor<TVec>{.indices = {tIdxs...}};
+template<ShuffleIndex... I, AnyVector Vec>
+requires(Vec::size == sizeof...(I))
+inline Vec pair_shuffle(Vec a, Vec b) {
+  static constexpr auto idxs = ShuffleIndicesFor<Vec>{.indices = {I...}};
   return PairShuffler<idxs>::apply(a, b, auto_tag<idxs>);
 }
 
@@ -409,57 +414,56 @@ inline void shuffle_test() {
 }
 
 struct ShufflerBlendZero : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
-    return static_apply<tSh.size>([]<std::size_t... tIdxs>() {
-      return (... && (!is_index(tSh[tIdxs]) || u8(tSh[tIdxs]) == tIdxs));
-    });
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    return static_apply<SI.size>(
+      []<std::size_t... I> { return (... && (!is_index(SI[I]) || u8(SI[I]) == I)); });
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    static_assert(is_applicable(auto_tag<tSh>));
-    return ZeroBlender<tSh.blend_zeros()>::apply(vec, auto_tag<tSh.blend_zeros()>);
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    static_assert(is_applicable(auto_tag<SI>));
+    return ZeroBlender<SI.blend_zeros()>::apply(vec, auto_tag<SI.blend_zeros()>);
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
-    static_assert(is_applicable(auto_tag<tSh>));
-    return ZeroBlender<tSh.blend_zeros()>::cost(auto_tag<tSh>);
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
+    static_assert(is_applicable(auto_tag<SI>));
+    return ZeroBlender<SI.blend_zeros()>::cost(auto_tag<SI>);
   }
 };
 
 struct SubShuffler : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  using Base = Shuffler<tSh.sub_extended()>;
+  template<AnyShuffleIndices auto SI>
+  using Base = Shuffler<SI.sub_extended()>;
 
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
-    return Base<tSh>::is_applicable(auto_tag<tSh.sub_extended()>);
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    return Base<SI>::is_applicable(auto_tag<SI.sub_extended()>);
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    return TVec{Base<tSh>::apply(vec.full, auto_tag<tSh.sub_extended()>)};
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    return Vec{Base<SI>::apply(vec.full, auto_tag<SI.sub_extended()>)};
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*tag*/) {
-    return Base<tSh>::cost(auto_tag<tSh.sub_extended()>);
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*tag*/) {
+    return Base<SI>::cost(auto_tag<SI.sub_extended()>);
   }
 };
-template<AnyShuffleIndices auto tSh>
-requires((tSh.value_size * tSh.size < register_bytes.front()))
-struct ShufflerTrait<tSh> {
+template<AnyShuffleIndices auto SI>
+requires((SI.value_size * SI.size < register_bytes.front())) // NOLINT(*-redundant-parentheses)
+struct ShufflerTrait<SI> {
   using Shuffler = SubShuffler;
 };
 
 // A pair shuffler that just shuffles one of the vectors
 struct PairShufflerSingle : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
-    return tSh.indices_in_vector(0).has_value() || tSh.indices_in_vector(1).has_value();
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    return SI.indices_in_vector(0).has_value() || SI.indices_in_vector(1).has_value();
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec a, TVec b, AutoTag<tSh> /*tag*/) {
-    static constexpr auto a_sh = tSh.indices_in_vector(0);
-    static constexpr auto b_sh = tSh.indices_in_vector(1);
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec a, Vec b, AutoTag<SI> /*tag*/) {
+    static constexpr auto a_sh = SI.indices_in_vector(0);
+    static constexpr auto b_sh = SI.indices_in_vector(1);
 
     if constexpr (a_sh.has_value()) {
       return Shuffler<a_sh.value()>::apply(a, auto_tag<a_sh.value()>);
@@ -467,10 +471,10 @@ struct PairShufflerSingle : public BaseExpensiveOp {
       return Shuffler<b_sh.value()>::apply(b, auto_tag<b_sh.value()>);
     }
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*tag*/) {
-    constexpr auto a_sh = tSh.indices_in_vector(0);
-    constexpr auto b_sh = tSh.indices_in_vector(1);
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*tag*/) {
+    constexpr auto a_sh = SI.indices_in_vector(0);
+    constexpr auto b_sh = SI.indices_in_vector(1);
 
     if constexpr (a_sh.has_value()) {
       return Shuffler<a_sh.value()>::cost(auto_tag<a_sh.value()>);
@@ -481,62 +485,62 @@ struct PairShufflerSingle : public BaseExpensiveOp {
 };
 // A pair shuffler that performs two shuffles and then blends
 struct PairShufflerBlend : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec a, TVec b, AutoTag<tSh> /*tag*/) {
-    static constexpr auto a_sh = tSh.indices_in_vector_fallback(0, any_sh);
-    static constexpr auto b_sh = tSh.indices_in_vector_fallback(1, any_sh);
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec a, Vec b, AutoTag<SI> /*tag*/) {
+    static constexpr auto a_sh = SI.indices_in_vector_fallback(0, any_sh);
+    static constexpr auto b_sh = SI.indices_in_vector_fallback(1, any_sh);
 
-    return Blender<tSh.blend_vectors()>::apply(Shuffler<a_sh>::apply(a, auto_tag<a_sh>),
-                                               Shuffler<b_sh>::apply(b, auto_tag<b_sh>),
-                                               auto_tag<tSh.blend_vectors()>);
+    return Blender<SI.blend_vectors()>::apply(Shuffler<a_sh>::apply(a, auto_tag<a_sh>),
+                                              Shuffler<b_sh>::apply(b, auto_tag<b_sh>),
+                                              auto_tag<SI.blend_vectors()>);
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*tag*/) {
-    constexpr auto a_sh = tSh.indices_in_vector_fallback(0, any_sh);
-    constexpr auto b_sh = tSh.indices_in_vector_fallback(1, any_sh);
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*tag*/) {
+    constexpr auto a_sh = SI.indices_in_vector_fallback(0, any_sh);
+    constexpr auto b_sh = SI.indices_in_vector_fallback(1, any_sh);
 
     const auto [c00, c01] = Shuffler<a_sh>::cost(auto_tag<a_sh>);
     const auto [c10, c11] = Shuffler<b_sh>::cost(auto_tag<b_sh>);
-    const auto [c20, c21] = Blender<tSh.blend_vectors()>::cost(auto_tag<tSh.blend_vectors()>);
+    const auto [c20, c21] = Blender<SI.blend_vectors()>::cost(auto_tag<SI.blend_vectors()>);
     return {.inv_throughput = c00 + c10 + c20, .latency = c01 + c11 + c21};
   }
 };
-template<AnyShuffleIndices auto tSh>
+template<AnyShuffleIndices auto SI>
 struct PairShufflerTrait {
-  using Shuffler = CheapestType<tSh, PairShufflerSingle, PairShufflerBlend>;
+  using Shuffler = CheapestType<SI, PairShufflerSingle, PairShufflerBlend>;
 };
 
 struct SuperShuffler : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    static constexpr auto lower_sh = tSh.half_raw(0);
-    static constexpr auto upper_sh = tSh.half_raw(1);
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    static constexpr auto lower_sh = SI.half_raw(0);
+    static constexpr auto upper_sh = SI.half_raw(1);
 
     const auto lower = PairShuffler<lower_sh>::apply(vec.lower, vec.upper, auto_tag<lower_sh>);
     const auto upper = PairShuffler<upper_sh>::apply(vec.lower, vec.upper, auto_tag<upper_sh>);
-    return TVec{.lower = lower, .upper = upper};
+    return Vec{.lower = lower, .upper = upper};
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*tag*/) {
-    constexpr auto lower_sh = tSh.half_raw(0);
-    constexpr auto upper_sh = tSh.half_raw(1);
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*tag*/) {
+    constexpr auto lower_sh = SI.half_raw(0);
+    constexpr auto upper_sh = SI.half_raw(1);
     const auto [c0a, c1a] = PairShuffler<lower_sh>::cost(auto_tag<lower_sh>);
     const auto [c0b, c1b] = PairShuffler<upper_sh>::cost(auto_tag<upper_sh>);
     return {.inv_throughput = c0a + c0b, .latency = c1a + c1b};
   }
 };
 
-template<AnyShuffleIndices auto tSh>
-requires((tSh.value_size * tSh.size > register_bytes.back()))
-struct ShufflerTrait<tSh> {
+template<AnyShuffleIndices auto SI>
+requires((SI.value_size * SI.size > register_bytes.back())) // NOLINT(*-redundant-parentheses)
+struct ShufflerTrait<SI> {
   using Shuffler = SuperShuffler;
 };
 } // namespace grex::backend

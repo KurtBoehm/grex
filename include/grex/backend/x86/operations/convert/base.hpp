@@ -163,11 +163,11 @@ namespace grex::backend {
 // Baseline for compact masks:
 // If converting to a super-native mask, process lower/upper halves recursively;
 // otherwise, just reinterpret the underlying mask register.
-template<AnyMask TMask, typename TDst>
-requires(!AnySuperNativeMask<TMask>)
-inline MaskFor<TDst, TMask::size> convert(TMask mask, TypeTag<TDst> tag) {
-  using Out = MaskFor<TDst, TMask::size>;
-  if constexpr (is_supernative<TDst, TMask::size>) {
+template<AnyMask Mask, typename Dst>
+requires(!AnySuperNativeMask<Mask>)
+inline MaskFor<Dst, Mask::size> convert(Mask mask, TypeTag<Dst> tag) {
+  using Out = MaskFor<Dst, Mask::size>;
+  if constexpr (is_supernative<Dst, Mask::size>) {
     return Out{
       .lower = convert(split(mask, index_tag<0>), tag),
       .upper = convert(split(mask, index_tag<1>), tag),
@@ -178,96 +178,95 @@ inline MaskFor<TDst, TMask::size> convert(TMask mask, TypeTag<TDst> tag) {
   }
 }
 // Super-native mask → native/sub-native mask: convert each half and then merge.
-template<AnySuperNativeMask TMask, typename TDst>
-inline MaskFor<TDst, TMask::size> convert(TMask mask, TypeTag<TDst> tag) {
+template<AnySuperNativeMask Mask, typename Dst>
+inline MaskFor<Dst, Mask::size> convert(Mask mask, TypeTag<Dst> tag) {
   return merge(convert(mask.lower, tag), convert(mask.upper, tag));
 }
 #else
 // Baseline for broad masks:
 // Reinterpret mask as a signed integer vector, convert that, then reinterpret as a mask
 // of the desired element type.
-template<AnyMask TMask, typename TDst>
-inline auto convert(TMask mask, TypeTag<TDst> /*tag*/) {
-  return vector2mask(convert(mask2vector(mask), type_tag<SignedInt<sizeof(TDst)>>), type_tag<TDst>);
+template<AnyMask Mask, typename Dst>
+inline auto convert(Mask mask, TypeTag<Dst> /*tag*/) {
+  return vector2mask(convert(mask2vector(mask), type_tag<SignedInt<sizeof(Dst)>>), type_tag<Dst>);
 }
 #endif
 
 // Native → super-native: Split native
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-requires(is_supernative<TDst, tSize>)
-inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> tag) {
+template<Vectorizable Dst, Vectorizable Src, std::size_t N>
+requires(is_supernative<Dst, N>)
+inline VectorFor<Dst, N> convert(NativeVector<Src, N> v, TypeTag<Dst> tag) {
   return merge(convert(get_low(v), tag), convert(get_high(v), tag));
 }
 
 // Integer → larger integer (native) with different signedness:
 // widen while preserving source signedness, then reinterpret to destination type.
-template<IntVectorizable TDst, IntVector TSrc>
-requires(sizeof(TDst) > sizeof(ValueOf<TSrc>) &&
-         (std::is_signed_v<TDst> != std::is_signed_v<ValueOf<TSrc>>) &&
-         is_native<TDst, size_of<TSrc>>)
-inline NativeVector<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> /*tag*/) {
-  return {.r = convert(v, type_tag<CopySignInt<ValueOf<TSrc>, sizeof(TDst)>>).r};
+template<IntVectorizable Dst, IntVector Src>
+requires(sizeof(Dst) > sizeof(ValueOf<Src>) &&
+         (std::is_signed_v<Dst> != std::is_signed_v<ValueOf<Src>>) && is_native<Dst, size_of<Src>>)
+inline NativeVector<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> /*tag*/) {
+  return {.r = convert(v, type_tag<CopySignInt<ValueOf<Src>, sizeof(Dst)>>).r};
 }
 
 // Integer (native) → smaller integer where at least one type is signed:
 // perform truncation via an unsigned path.
-template<IntVectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
-requires((std::is_signed_v<TDst> || std::is_signed_v<TSrc>) && sizeof(TDst) < sizeof(TSrc))
-inline VectorFor<TDst, tSize> convert(NativeVector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
-  const auto s = convert(NativeVector<UnsignedOf<TSrc>, tSize>{v.r}, type_tag<UnsignedOf<TDst>>);
-  return VectorFor<TDst, tSize>{s.registr()};
+template<IntVectorizable Dst, IntVectorizable Src, std::size_t N>
+requires((std::is_signed_v<Dst> || std::is_signed_v<Src>) && sizeof(Dst) < sizeof(Src))
+inline VectorFor<Dst, N> convert(NativeVector<Src, N> v, TypeTag<Dst> /*tag*/) {
+  const auto s = convert(NativeVector<UnsignedOf<Src>, N>{v.r}, type_tag<UnsignedOf<Dst>>);
+  return VectorFor<Dst, N>{s.registr()};
 }
 
 // Sub-native to super-native, integer → any: convert to the smallest integer type for which
-// the vector with tSize lanes is native and go from there
-template<Vectorizable TDst, IntVectorizable TSrc, std::size_t tSize>
-requires(is_supernative<TDst, tSize>)
-inline VectorFor<TDst, tSize> convert(SubVector<TSrc, tSize> v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<CopySignInt<TSrc, 16 / tSize>>), tag);
+// the vector with N lanes is native and go from there
+template<Vectorizable Dst, IntVectorizable Src, std::size_t N>
+requires(is_supernative<Dst, N>)
+inline VectorFor<Dst, N> convert(SubVector<Src, N> v, TypeTag<Dst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<Src, 16 / N>>), tag);
 }
 
 // Super-native → sub-native/native for integers:
 // convert each half to the next-smaller integer type, merge halves,
 // then continue converting to the final destination type.
-template<IntVectorizable TDst, IntVector THalf>
-requires(!is_supernative<TDst, THalf::size * 2>)
-inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
-  using Src = ValueOf<THalf>;
+template<IntVectorizable Dst, IntVector Half>
+requires(!is_supernative<Dst, Half::size * 2>)
+inline VectorFor<Dst, Half::size * 2> convert(SuperVector<Half> v, TypeTag<Dst> /*tag*/) {
+  using Src = ValueOf<Half>;
   static constexpr std::size_t tmp_bytes = sizeof(Src) / 2;
   static constexpr bool tmp_signed = std::is_signed_v<Src>;
   using Tmp = std::conditional_t<tmp_signed, SignedInt<tmp_bytes>, UnsignedInt<tmp_bytes>>;
   const auto tmp = merge(convert(v.lower, type_tag<Tmp>), convert(v.upper, type_tag<Tmp>));
-  return convert(tmp, type_tag<TDst>);
+  return convert(tmp, type_tag<Dst>);
 }
 // Super-native → sub-native/native, floating-point → integer:
 // cast to same-sized integer, then go from there.
 // Excludes binary16 sources, as there is no conversion between 16-bit integers and binary16 without
 // AVX512-FP.
-template<IntVectorizable TDst, FloatVector THalf>
-requires(!is_supernative<TDst, THalf::size * 2> && !Float16<ValueOf<THalf>>)
-inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<CopySignInt<TDst, sizeof(ValueOf<THalf>)>>), tag);
+template<IntVectorizable Dst, FloatVector Half>
+requires(!is_supernative<Dst, Half::size * 2> && !Float16<ValueOf<Half>>)
+inline VectorFor<Dst, Half::size * 2> convert(SuperVector<Half> v, TypeTag<Dst> tag) {
+  return convert(convert(v, type_tag<CopySignInt<Dst, sizeof(ValueOf<Half>)>>), tag);
 }
 // Super-native → sub-native/native, integer → floating-point:
 // cast to same-sized floating-point, then go from there.
-template<FloatVectorizable TDst, IntVector THalf>
-requires(!is_supernative<TDst, THalf::size * 2>)
-inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> tag) {
-  return convert(convert(v, type_tag<Float<sizeof(ValueOf<THalf>)>>), tag);
+template<FloatVectorizable Dst, IntVector Half>
+requires(!is_supernative<Dst, Half::size * 2>)
+inline VectorFor<Dst, Half::size * 2> convert(SuperVector<Half> v, TypeTag<Dst> tag) {
+  return convert(convert(v, type_tag<Float<sizeof(ValueOf<Half>)>>), tag);
 }
 // Super-native → sub-native/native, floating-point → floating-point:
 // split into halves
-template<FloatVectorizable TDst, FloatVector THalf>
-requires(!is_supernative<TDst, THalf::size * 2>)
-inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> tag) {
+template<FloatVectorizable Dst, FloatVector Half>
+requires(!is_supernative<Dst, Half::size * 2>)
+inline VectorFor<Dst, Half::size * 2> convert(SuperVector<Half> v, TypeTag<Dst> tag) {
   return merge(convert(v.lower, tag), convert(v.upper, tag));
 }
 
 #if GREX_X86_64_LEVEL < 4
-template<typename TDst, typename THalf>
-requires(is_supernative<TDst, THalf::size * 2>)
-inline MaskFor<TDst, THalf::size * 2> convert(SuperMask<THalf> v, TypeTag<TDst> /*tag*/) {
-  return {.lower = convert(v.lower, type_tag<TDst>), .upper = convert(v.upper, type_tag<TDst>)};
+template<typename Dst, typename Half>
+requires(is_supernative<Dst, Half::size * 2>)
+inline MaskFor<Dst, Half::size * 2> convert(SuperMask<Half> v, TypeTag<Dst> /*tag*/) {
+  return {.lower = convert(v.lower, type_tag<Dst>), .upper = convert(v.upper, type_tag<Dst>)};
 }
 #endif
 } // namespace grex::backend

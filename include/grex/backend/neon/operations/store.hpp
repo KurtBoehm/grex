@@ -35,27 +35,26 @@ namespace grex::backend {
 GREX_FOREACH_TYPE_EXT(GREX_STORE, 128)
 
 /* This is not actually aligned, but who cares */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline void store_aligned(T* dst, NativeVector<T, tSize> src) {
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline void store_aligned(T* dst, NativeVector<T, N> src) {
   store(dst, src);
 }
 
-template<std::size_t tBytes, typename T>
+template<std::size_t Bytes, typename T>
 GREX_ALWAYS_INLINE inline void store_first(T* dst, NativeVector<T, 16 / sizeof(T)> src) {
-  std::memcpy(dst, &src.r, tBytes);
+  std::memcpy(dst, &src.r, Bytes);
 }
-template<std::size_t tBytes, typename T, std::size_t tSize>
-requires(tBytes <= sizeof(T) * tSize)
-GREX_ALWAYS_INLINE inline void store_first(T* dst, SubVector<T, tSize> src) {
-  std::memcpy(dst, &src.full.r, tBytes);
+template<std::size_t Bytes, typename T, std::size_t N>
+requires(Bytes <= sizeof(T) * N)
+GREX_ALWAYS_INLINE inline void store_first(T* dst, SubVector<T, N> src) {
+  std::memcpy(dst, &src.full.r, Bytes);
 }
 
-template<AnyVector TVec, std::size_t tSize>
-requires((AnyNativeVector<TVec> || AnySubNativeVector<TVec>) && tSize <= TVec::size)
-GREX_ALWAYS_INLINE inline void store_part(typename TVec::Value* dst, TVec src,
-                                          IndexTag<tSize> /*size*/) {
-  using Value = TVec::Value;
-  constexpr std::size_t bytes = tSize * sizeof(Value);
+template<AnyVector Vec, std::size_t N>
+requires((AnyNativeVector<Vec> || AnySubNativeVector<Vec>) && N <= Vec::size)
+GREX_ALWAYS_INLINE inline void store_part(typename Vec::Value* dst, Vec src, IndexTag<N> /*size*/) {
+  using Value = Vec::Value;
+  constexpr std::size_t bytes = N * sizeof(Value);
 
   // Simple cases: 16 and 0
   if constexpr (bytes == 16) {
@@ -100,13 +99,13 @@ GREX_ALWAYS_INLINE inline void store_part(typename TVec::Value* dst, TVec src,
   }
 }
 
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline void store(T* dst, SubVector<T, tSize> src) {
-  store_part(dst, src, index_tag<tSize>);
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline void store(T* dst, SubVector<T, N> src) {
+  store_part(dst, src, index_tag<N>);
 }
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline void store_aligned(T* dst, SubVector<T, tSize> src) {
-  store_part(dst, src, index_tag<tSize>);
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline void store_aligned(T* dst, SubVector<T, N> src) {
+  store_part(dst, src, index_tag<N>);
 }
 
 #define GREX_PARTSTORE_ATTR_0

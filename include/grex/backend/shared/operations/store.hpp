@@ -14,33 +14,33 @@
 
 namespace grex::backend {
 // SuperVector
-template<typename THalf>
-inline void store(typename THalf::Value* dst, SuperVector<THalf> src) {
+template<typename Half>
+inline void store(typename Half::Value* dst, SuperVector<Half> src) {
   store(dst, src.lower);
-  store(dst + THalf::size, src.upper);
+  store(dst + Half::size, src.upper);
 }
-template<typename THalf>
-inline void store_aligned(typename THalf::Value* dst, SuperVector<THalf> src) {
+template<typename Half>
+inline void store_aligned(typename Half::Value* dst, SuperVector<Half> src) {
   store_aligned(dst, src.lower);
-  store_aligned(dst + THalf::size, src.upper);
+  store_aligned(dst + Half::size, src.upper);
 }
-template<typename THalf>
-inline void store_part(typename THalf::Value* dst, SuperVector<THalf> src, std::size_t size) {
-  if (size <= THalf::size) {
+template<typename Half>
+inline void store_part(typename Half::Value* dst, SuperVector<Half> src, std::size_t size) {
+  if (size <= Half::size) {
     store_part(dst, src.lower, size);
     return;
   }
   store(dst, src.lower);
-  store_part(dst + THalf::size, src.upper, size - THalf::size);
+  store_part(dst + Half::size, src.upper, size - Half::size);
 }
-template<typename THalf>
-inline void store_part(typename THalf::Value* dst, SuperVector<THalf> src, AnyIndexTag auto size) {
-  if constexpr (size <= THalf::size) {
+template<typename Half>
+inline void store_part(typename Half::Value* dst, SuperVector<Half> src, AnyIndexTag auto size) {
+  if constexpr (size <= Half::size) {
     store_part(dst, src.lower, size);
     return;
   } else {
     store(dst, src.lower);
-    store_part(dst + THalf::size, src.upper, index_tag<size - THalf::size>);
+    store_part(dst + Half::size, src.upper, index_tag<size - Half::size>);
   }
 }
 } // namespace grex::backend

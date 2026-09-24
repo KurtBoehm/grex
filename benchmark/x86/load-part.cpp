@@ -15,16 +15,16 @@
 using namespace grex::primitives;
 namespace be = grex::backend;
 
-template<be::AnyVector TVec>
-GREX_ALWAYS_INLINE inline TVec load_part_grex(const be::ValueOf<TVec>* ptr, std::size_t size,
-                                              grex::TypeTag<TVec> tag) {
+template<be::AnyVector Vec>
+GREX_ALWAYS_INLINE inline Vec load_part_grex(const be::ValueOf<Vec>* ptr, std::size_t size,
+                                             grex::TypeTag<Vec> tag) {
   return be::load_part(ptr, size, tag);
 }
 
-template<be::AnySubNativeVector TVec>
-GREX_ALWAYS_INLINE inline TVec load_part_xgrex(const be::ValueOf<TVec>* ptr, std::size_t size,
-                                               grex::TypeTag<TVec> /*tag*/) {
-  return TVec{be::load_part(ptr, size, grex::type_tag<typename TVec::Full>)};
+template<be::AnySubNativeVector Vec>
+GREX_ALWAYS_INLINE inline Vec load_part_xgrex(const be::ValueOf<Vec>* ptr, std::size_t size,
+                                              grex::TypeTag<Vec> /*tag*/) {
+  return Vec{be::load_part(ptr, size, grex::type_tag<typename Vec::Full>)};
 }
 
 alignas(16) inline constexpr i32 mask_table[5][4] = {
@@ -109,11 +109,11 @@ load_part_overlap(const u16* ptr, std::size_t size, grex::TypeTag<be::VectorFor<
 }
 #endif
 
-template<be::AnyVector TVec>
-GREX_ALWAYS_INLINE inline TVec load_part_split(const be::ValueOf<TVec>* ptr, std::size_t size,
-                                               grex::TypeTag<TVec> /*tag*/) {
-  using Value = be::ValueOf<TVec>;
-  constexpr std::size_t vsize = be::size_of<TVec>;
+template<be::AnyVector Vec>
+GREX_ALWAYS_INLINE inline Vec load_part_split(const be::ValueOf<Vec>* ptr, std::size_t size,
+                                              grex::TypeTag<Vec> /*tag*/) {
+  using Value = be::ValueOf<Vec>;
+  constexpr std::size_t vsize = be::size_of<Vec>;
   using Half = be::VectorFor<Value, vsize / 2>;
 
   if (size <= vsize / 2) {

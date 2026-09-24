@@ -14,12 +14,12 @@
 
 namespace grex::backend {
 #define GREX_NN_CMP(NAME) \
-  template<Vectorizable T, std::size_t tSize> \
-  inline SubMask<T, tSize> NAME(SubVector<T, tSize> a, SubVector<T, tSize> b) { \
-    return SubMask<T, tSize>{NAME(a.full, b.full)}; \
+  template<Vectorizable T, std::size_t N> \
+  inline SubMask<T, N> NAME(SubVector<T, N> a, SubVector<T, N> b) { \
+    return SubMask<T, N>{NAME(a.full, b.full)}; \
   } \
-  template<typename THalf> \
-  inline auto NAME(SuperVector<THalf> a, SuperVector<THalf> b) { \
+  template<typename Half> \
+  inline auto NAME(SuperVector<Half> a, SuperVector<Half> b) { \
     return SuperMask{.lower = NAME(a.lower, b.lower), .upper = NAME(a.upper, b.upper)}; \
   }
 

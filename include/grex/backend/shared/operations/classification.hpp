@@ -16,17 +16,17 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<FloatVectorizable T, std::size_t tSize>
-inline SubMask<T, tSize> is_finite(SubVector<T, tSize> v) {
-  return SubMask<T, tSize>{is_finite(v.full)};
+template<FloatVectorizable T, std::size_t N>
+inline SubMask<T, N> is_finite(SubVector<T, N> v) {
+  return SubMask<T, N>{is_finite(v.full)};
 }
-template<typename THalf>
-inline auto is_finite(SuperVector<THalf> v) {
+template<typename Half>
+inline auto is_finite(SuperVector<Half> v) {
   return SuperMask{.lower = is_finite(v.lower), .upper = is_finite(v.upper)};
 }
 
-template<AnyVector TVec>
-inline TVec make_finite(TVec v) {
+template<AnyVector Vec>
+inline Vec make_finite(Vec v) {
   return blend_zero(is_finite(v), v);
 }
 template<FloatVectorizable T>

@@ -32,17 +32,17 @@
 
 namespace grex::backend {
 struct ShufflerShuffle128x4 : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
-    constexpr std::optional<ShuffleIndices<16, 4>> idxs128 = convert<16>(tSh);
-    constexpr std::optional<ShuffleIndices<4, 16>> idxs32 = convert<4>(tSh);
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    constexpr std::optional<ShuffleIndices<16, 4>> idxs128 = convert<16>(SI);
+    constexpr std::optional<ShuffleIndices<4, 16>> idxs32 = convert<4>(SI);
     return idxs128.has_value() && !idxs32->subzero;
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = ValueOf<TVec>;
-    static constexpr int imm8 = convert<16>(tSh).value().imm8();
-    static constexpr ShuffleIndices<4, 16> idxs32 = convert<4>(tSh).value();
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    using Value = ValueOf<Vec>;
+    static constexpr int imm8 = convert<16>(SI).value().imm8();
+    static constexpr ShuffleIndices<4, 16> idxs32 = convert<4>(SI).value();
     static_assert(!idxs32.subzero);
 
     const i32x16 ivec = reinterpret(vec, type_tag<i32>);
@@ -54,91 +54,91 @@ struct ShufflerShuffle128x4 : public BaseExpensiveOp {
       return reinterpret(i32x16{shuf}, type_tag<Value>);
     }
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
     return {.inv_throughput = 0.5, .latency = 3};
   }
 };
 
 struct ShufflerShuffle8x64 : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
-    return tSh.is_lane_local();
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    return SI.is_lane_local();
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = ValueOf<TVec>;
-    static constexpr ShuffleIndices<1, 64> shi = convert<1>(tSh).value();
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    using Value = ValueOf<Vec>;
+    static constexpr ShuffleIndices<1, 64> shi = convert<1>(SI).value();
     static constexpr auto idxs = shi.laned_indices().value();
 
     const i8x64 ivec = reinterpret(vec, type_tag<i8>);
     const auto shuf = _mm512_shuffle_epi8(ivec.r, load(idxs.data(), type_tag<i8x64>).r);
     return reinterpret(i8x64{shuf}, type_tag<Value>);
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
     return {.inv_throughput = 0.5, .latency = 4};
   }
 };
 
 struct ShufflerShuffle32x16 : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
-    const std::optional<ShuffleIndices<4, 16>> base = convert<4>(tSh);
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    const std::optional<ShuffleIndices<4, 16>> base = convert<4>(SI);
     return base.has_value() && base->single_lane().has_value();
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = ValueOf<TVec>;
-    static constexpr ShuffleIndices<4, 16> bidxs = convert<4>(tSh).value();
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    using Value = ValueOf<Vec>;
+    static constexpr ShuffleIndices<4, 16> bidxs = convert<4>(SI).value();
     static constexpr int imm8 = bidxs.single_lane().value().imm8();
 
     const i32x16 ivec = reinterpret(vec, type_tag<i32>);
     const auto shuf = _mm512_shuffle_epi32(ivec.r, _MM_PERM_ENUM(imm8));
-    const TVec shufr = reinterpret(i32x16{shuf}, type_tag<Value>);
-    return ZeroBlender<tSh.blend_zeros()>::apply(shufr, auto_tag<tSh.blend_zeros()>);
+    const Vec shufr = reinterpret(i32x16{shuf}, type_tag<Value>);
+    return ZeroBlender<SI.blend_zeros()>::apply(shufr, auto_tag<SI.blend_zeros()>);
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
-    const auto [c0, c1] = ZeroBlender<tSh.blend_zeros()>::cost(auto_tag<tSh>);
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
+    const auto [c0, c1] = ZeroBlender<SI.blend_zeros()>::cost(auto_tag<SI>);
     return {.inv_throughput = 0.5 + c0, .latency = std::max<f64>(c1, 1)};
   }
 };
 
 struct ShufflerPermutex64x8 : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
-    const std::optional<ShuffleIndices<8, 8>> base = convert<8>(tSh);
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    const std::optional<ShuffleIndices<8, 8>> base = convert<8>(SI);
     return base.has_value() && base->double_lane().has_value();
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = ValueOf<TVec>;
-    static constexpr ShuffleIndices<8, 8> bidxs = convert<8>(tSh).value();
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    using Value = ValueOf<Vec>;
+    static constexpr ShuffleIndices<8, 8> bidxs = convert<8>(SI).value();
     static constexpr int imm8 = bidxs.double_lane().value().imm8();
 
     const i64x8 ivec = reinterpret(vec, type_tag<i64>);
-    const TVec shuffled = reinterpret(i64x8{_mm512_permutex_epi64(ivec.r, imm8)}, type_tag<Value>);
-    return ZeroBlender<tSh.blend_zeros()>::apply(shuffled, auto_tag<tSh.blend_zeros()>);
+    const Vec shuffled = reinterpret(i64x8{_mm512_permutex_epi64(ivec.r, imm8)}, type_tag<Value>);
+    return ZeroBlender<SI.blend_zeros()>::apply(shuffled, auto_tag<SI.blend_zeros()>);
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
-    const auto [c0, c1] = ZeroBlender<tSh.blend_zeros()>::cost(auto_tag<tSh>);
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
+    const auto [c0, c1] = ZeroBlender<SI.blend_zeros()>::cost(auto_tag<SI>);
     return {.inv_throughput = 1 + c0, .latency = std::max<f64>(4, c1)};
   }
 };
 
 #define GREX_SHUFFLE_PERMUTEX_VAR(BITS, BYTES, SIZE, COST2) \
   struct ShufflerPermutexVar##BITS##x##SIZE : public BaseExpensiveOp { \
-    template<AnyShuffleIndices auto tSh> \
-    static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) { \
-      const std::optional<ShuffleIndices<BYTES, SIZE>> base = convert<BYTES>(tSh); \
+    template<AnyShuffleIndices auto SI> \
+    static constexpr bool is_applicable(AutoTag<SI> /*tag*/) { \
+      const std::optional<ShuffleIndices<BYTES, SIZE>> base = convert<BYTES>(SI); \
       return base.has_value() && !base->subzero; \
     } \
-    template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh> \
-    static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) { \
-      using Value = ValueOf<TVec>; \
-      static constexpr ShuffleIndices<BYTES, SIZE> idxs = convert<BYTES>(tSh).value(); \
+    template<AnyVector Vec, ShuffleIndicesFor<Vec> SI> \
+    static Vec apply(Vec vec, AutoTag<SI> /*tag*/) { \
+      using Value = ValueOf<Vec>; \
+      static constexpr ShuffleIndices<BYTES, SIZE> idxs = convert<BYTES>(SI).value(); \
       static_assert(!idxs.subzero); \
 \
       const i##BITS##x##SIZE ivec = reinterpret(vec, type_tag<i##BITS>); \
@@ -152,22 +152,22 @@ struct ShufflerPermutex64x8 : public BaseExpensiveOp {
                            type_tag<Value>); \
       } \
     } \
-    template<AnyShuffleIndices auto tSh> \
-    static constexpr Cost cost(AutoTag<tSh> /*idxs*/) { \
+    template<AnyShuffleIndices auto SI> \
+    static constexpr Cost cost(AutoTag<SI> /*idxs*/) { \
       return {.inv_throughput = 1, .latency = COST2}; \
     } \
   }; \
 \
   struct PairShufflerPermutexVar##BITS##x##SIZE : public BaseExpensiveOp { \
-    template<AnyShuffleIndices auto tSh> \
-    static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) { \
-      const std::optional<ShuffleIndices<BYTES, SIZE>> base = convert<BYTES>(tSh); \
+    template<AnyShuffleIndices auto SI> \
+    static constexpr bool is_applicable(AutoTag<SI> /*tag*/) { \
+      const std::optional<ShuffleIndices<BYTES, SIZE>> base = convert<BYTES>(SI); \
       return base.has_value() && !base->subzero; \
     } \
-    template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh> \
-    static TVec apply(TVec a, TVec b, AutoTag<tSh> /*tag*/) { \
-      using Value = ValueOf<TVec>; \
-      static constexpr ShuffleIndices<BYTES, SIZE> idxs = convert<BYTES>(tSh).value(); \
+    template<AnyVector Vec, ShuffleIndicesFor<Vec> SI> \
+    static Vec apply(Vec a, Vec b, AutoTag<SI> /*tag*/) { \
+      using Value = ValueOf<Vec>; \
+      static constexpr ShuffleIndices<BYTES, SIZE> idxs = convert<BYTES>(SI).value(); \
       static_assert(!idxs.subzero); \
 \
       const i##BITS##x##SIZE ia = reinterpret(a, type_tag<i##BITS>); \
@@ -181,8 +181,8 @@ struct ShufflerPermutex64x8 : public BaseExpensiveOp {
         return reinterpret(shuf, type_tag<Value>); \
       } \
     } \
-    template<AnyShuffleIndices auto tSh> \
-    static constexpr Cost cost(AutoTag<tSh> /*idxs*/) { \
+    template<AnyShuffleIndices auto SI> \
+    static constexpr Cost cost(AutoTag<SI> /*idxs*/) { \
       return {.inv_throughput = 1, .latency = COST2}; \
     } \
   };
@@ -201,14 +201,14 @@ GREX_SHUFFLE_PERMUTEX_VAR(8, 1, 64, 7)
 //      and then using intra-lane shuffling is more efficient, though that is more complicated
 //      to implement.
 struct ShufflerPermutexVar8x64 : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec vec, AutoTag<tSh> /*tag*/) {
-    using Value = ValueOf<TVec>;
-    static constexpr ShuffleIndices<1, 64> idxs = convert<1>(tSh).value();
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    using Value = ValueOf<Vec>;
+    static constexpr ShuffleIndices<1, 64> idxs = convert<1>(SI).value();
     static_assert(!idxs.subzero);
 
     // cross-lane 16-bit shuffling
@@ -216,23 +216,23 @@ struct ShufflerPermutexVar8x64 : public BaseExpensiveOp {
       return is_index(sh) ? i16(u8(sh) / 2) : i16(i);
     };
     // even indices
-    constexpr auto idxs16a = static_apply<32>(
-      [&]<std::size_t... tIdxs>() { return std::array{f16(tIdxs, tSh[2 * tIdxs])...}; });
+    constexpr auto idxs16a =
+      static_apply<32>([&]<std::size_t... I> { return std::array{f16(I, SI[2 * I])...}; });
     // odd indices
-    constexpr auto idxs16b = static_apply<32>(
-      [&]<std::size_t... tIdxs>() { return std::array{f16(tIdxs, tSh[2 * tIdxs + 1])...}; });
+    constexpr auto idxs16b =
+      static_apply<32>([&]<std::size_t... I> { return std::array{f16(I, SI[2 * I + 1])...}; });
 
     // per-lane 8-bit shuffling
     auto f8 = [&](std::size_t i, bool even) {
-      const auto sh = tSh[i];
+      const auto sh = SI[i];
       return ((i % 2 == 0) == even && is_index(sh)) ? i8(i / 2 * 2 + u8(sh) % 2) : i8(-1);
     };
     // even indices
     constexpr auto idxs8a =
-      static_apply<64>([&]<std::size_t... tIdxs>() { return std::array{f8(tIdxs, true)...}; });
+      static_apply<64>([&]<std::size_t... I> { return std::array{f8(I, true)...}; });
     // odd indices
     constexpr auto idxs8b =
-      static_apply<64>([&]<std::size_t... tIdxs>() { return std::array{f8(tIdxs, false)...}; });
+      static_apply<64>([&]<std::size_t... I> { return std::array{f8(I, false)...}; });
 
     const i8x64 ivec = reinterpret(vec, type_tag<i8>);
     const i16x32 shuf16a{
@@ -243,20 +243,20 @@ struct ShufflerPermutexVar8x64 : public BaseExpensiveOp {
     const i8x64 shuf8b{_mm512_shuffle_epi8(shuf16b.r, load(idxs8b.data(), type_tag<i8x64>).r)};
     return reinterpret(bitwise_or(shuf8a, shuf8b), type_tag<Value>);
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
     return {.inv_throughput = 4, .latency = 7};
   }
 };
 struct PairShufflerPermutexVar8x64 : public BaseExpensiveOp {
-  template<AnyShuffleIndices auto tSh>
-  static constexpr bool is_applicable(AutoTag<tSh> /*tag*/) {
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, ShuffleIndicesFor<TVec> tSh>
-  static TVec apply(TVec a, TVec b, AutoTag<tSh> /*tag*/) {
-    using Value = ValueOf<TVec>;
-    static constexpr ShuffleIndices<1, 64> idxs = convert<1>(tSh).value();
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec a, Vec b, AutoTag<SI> /*tag*/) {
+    using Value = ValueOf<Vec>;
+    static constexpr ShuffleIndices<1, 64> idxs = convert<1>(SI).value();
     static_assert(!idxs.subzero);
 
     // cross-lane 16-bit shuffling
@@ -264,23 +264,23 @@ struct PairShufflerPermutexVar8x64 : public BaseExpensiveOp {
       return is_index(sh) ? i16(u8(sh) / 2) : i16(i);
     };
     // even indices
-    constexpr auto idxs16a = static_apply<32>(
-      [&]<std::size_t... tIdxs>() { return std::array{f16(tIdxs, tSh[2 * tIdxs])...}; });
+    constexpr auto idxs16a =
+      static_apply<32>([&]<std::size_t... I> { return std::array{f16(I, SI[2 * I])...}; });
     // odd indices
-    constexpr auto idxs16b = static_apply<32>(
-      [&]<std::size_t... tIdxs>() { return std::array{f16(tIdxs, tSh[2 * tIdxs + 1])...}; });
+    constexpr auto idxs16b =
+      static_apply<32>([&]<std::size_t... I> { return std::array{f16(I, SI[2 * I + 1])...}; });
 
     // per-lane 8-bit shuffling
     auto f8 = [&](std::size_t i, bool even) {
-      const auto sh = tSh[i];
+      const auto sh = SI[i];
       return ((i % 2 == 0) == even && is_index(sh)) ? i8(i / 2 * 2 + u8(sh) % 2) : i8(-1);
     };
     // even indices
     constexpr auto idxs8a =
-      static_apply<64>([&]<std::size_t... tIdxs>() { return std::array{f8(tIdxs, true)...}; });
+      static_apply<64>([&]<std::size_t... I> { return std::array{f8(I, true)...}; });
     // odd indices
     constexpr auto idxs8b =
-      static_apply<64>([&]<std::size_t... tIdxs>() { return std::array{f8(tIdxs, false)...}; });
+      static_apply<64>([&]<std::size_t... I> { return std::array{f8(I, false)...}; });
 
     const i8x64 ia = reinterpret(a, type_tag<i8>);
     const i8x64 ib = reinterpret(b, type_tag<i8>);
@@ -292,27 +292,27 @@ struct PairShufflerPermutexVar8x64 : public BaseExpensiveOp {
     const i8x64 shuf8b{_mm512_shuffle_epi8(shuf16b.r, load(idxs8b.data(), type_tag<i8x64>).r)};
     return reinterpret(bitwise_or(shuf8a, shuf8b), type_tag<Value>);
   }
-  template<AnyShuffleIndices auto tSh>
-  static constexpr Cost cost(AutoTag<tSh> /*idxs*/) {
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
     return {.inv_throughput = 4, .latency = 7};
   }
 };
 #endif
 
-template<AnyShuffleIndices auto tSh>
-requires((tSh.value_size * tSh.size == 64))
-struct ShufflerTrait<tSh> {
+template<AnyShuffleIndices auto SI>
+requires((SI.value_size * SI.size == 64))
+struct ShufflerTrait<SI> {
   using Shuffler =
-    CheapestType<tSh, ShufflerBlendZero, ShufflerShuffle128x4, ShufflerShuffle8x64,
+    CheapestType<SI, ShufflerBlendZero, ShufflerShuffle128x4, ShufflerShuffle8x64,
                  ShufflerShuffle32x16, ShufflerPermutex64x8, ShufflerPermutexVar64x8,
                  ShufflerPermutexVar32x16, ShufflerPermutexVar16x32, ShufflerPermutexVar8x64>;
 };
-template<AnyShuffleIndices auto tSh>
-requires((tSh.value_size * tSh.size == 64))
-struct PairShufflerTrait<tSh> {
+template<AnyShuffleIndices auto SI>
+requires((SI.value_size * SI.size == 64))
+struct PairShufflerTrait<SI> {
   // TODO With AVX-512, the vpermi2 family can be used to merge two permutations
   using Shuffler =
-    CheapestType<tSh, PairShufflerSingle, PairShufflerPermutexVar64x8, PairShufflerPermutexVar32x16,
+    CheapestType<SI, PairShufflerSingle, PairShufflerPermutexVar64x8, PairShufflerPermutexVar32x16,
                  PairShufflerPermutexVar16x32, PairShufflerPermutexVar8x64, PairShufflerBlend>;
 };
 } // namespace grex::backend

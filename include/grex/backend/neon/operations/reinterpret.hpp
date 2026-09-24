@@ -146,30 +146,30 @@ GREX_REINTERPRET_NOOP(u, 8, 16, u, 8, 16)
 
 // f16 shares its register with u16 (see grex/backend/base.hpp), so reinterpreting to f16 is
 // reinterpreting to u16
-template<typename TSrc>
-inline auto reinterpret(TSrc v, TypeTag<f16> /*tag*/) {
+template<typename Src>
+inline auto reinterpret(Src v, TypeTag<f16> /*tag*/) {
   return reinterpret(v, type_tag<u16>);
 }
 
-template<Vectorizable TDst, typename TSrc>
-inline auto as(TSrc src) {
-  return reinterpret(src, type_tag<TDst>);
+template<Vectorizable Dst, typename Src>
+inline auto as(Src src) {
+  return reinterpret(src, type_tag<Dst>);
 }
 
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-inline NativeVector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)> as(NativeVector<TSrc, tSize> src) {
-  return NativeVector<TDst, tSize * sizeof(TSrc) / sizeof(TDst)>{as<TDst>(src.r)};
+template<Vectorizable Dst, Vectorizable Src, std::size_t N>
+inline NativeVector<Dst, N * sizeof(Src) / sizeof(Dst)> as(NativeVector<Src, N> src) {
+  return NativeVector<Dst, N * sizeof(Src) / sizeof(Dst)>{as<Dst>(src.r)};
 }
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-inline VectorFor<TDst, tSize * sizeof(TSrc) / sizeof(TDst)> as(SubVector<TSrc, tSize> src) {
-  using Out = VectorFor<TDst, tSize * sizeof(TSrc) / sizeof(TDst)>;
-  return Out{as<TDst>(src.full)};
+template<Vectorizable Dst, Vectorizable Src, std::size_t N>
+inline VectorFor<Dst, N * sizeof(Src) / sizeof(Dst)> as(SubVector<Src, N> src) {
+  using Out = VectorFor<Dst, N * sizeof(Src) / sizeof(Dst)>;
+  return Out{as<Dst>(src.full)};
 }
-template<Vectorizable TDst, AnyVector THalf>
-inline VectorFor<TDst, 2 * THalf::size * sizeof(typename THalf::Value) / sizeof(TDst)>
-as(SuperVector<THalf> src) {
-  using Out = VectorFor<TDst, 2 * THalf::size * sizeof(typename THalf::Value) / sizeof(TDst)>;
-  return Out{.lower = as<TDst>(src.lower), .upper = as<TDst>(src.upper)};
+template<Vectorizable Dst, AnyVector Half>
+inline VectorFor<Dst, 2 * Half::size * sizeof(typename Half::Value) / sizeof(Dst)>
+as(SuperVector<Half> src) {
+  using Out = VectorFor<Dst, 2 * Half::size * sizeof(typename Half::Value) / sizeof(Dst)>;
+  return Out{.lower = as<Dst>(src.lower), .upper = as<Dst>(src.upper)};
 }
 } // namespace grex::backend
 

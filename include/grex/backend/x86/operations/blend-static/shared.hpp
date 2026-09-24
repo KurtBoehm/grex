@@ -20,18 +20,18 @@
 
 namespace grex::backend {
 struct BlenderVariable : public BaseExpensiveOp {
-  template<AnyBlendSelectors auto tBls>
-  static constexpr bool is_applicable(AutoTag<tBls> /*tag*/) {
+  template<AnyBlendSelectors auto BS>
+  static constexpr bool is_applicable(AutoTag<BS> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, BlendSelectorsFor<TVec> tBls>
-  static TVec apply(TVec a, TVec b, AutoTag<tBls> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr std::size_t size = TVec::size;
+  template<AnyVector Vec, BlendSelectorsFor<Vec> BS>
+  static Vec apply(Vec a, Vec b, AutoTag<BS> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr std::size_t size = Vec::size;
     using VMask = NativeMask<Value, size>;
 
     const VMask mask = static_apply<size>(
-      []<std::size_t... tIdxs>() { return set(type_tag<VMask>, (tBls[tIdxs] == rhs_bl)...); });
+      []<std::size_t... I> { return set(type_tag<VMask>, (BS[I] == rhs_bl)...); });
     return blend(mask, a, b);
   }
   static constexpr Cost cost(auto /*bzs*/) {

@@ -89,17 +89,17 @@ GREX_FOREACH_SUB_EXT(GREX_STORE_SUB)
 //--------------------------------------------------------------------------------------------------
 
 namespace partstore {
-/** Stores the low `tBytes` bytes of `v` at `ptr`. */
-template<std::size_t tBytes>
-requires(tBytes == 1 || tBytes == 2 || tBytes == 4 || tBytes == 8 || tBytes == 16)
+/** Stores the low `Bytes` bytes of `v` at `ptr`. */
+template<std::size_t Bytes>
+requires(Bytes == 1 || Bytes == 2 || Bytes == 4 || Bytes == 8 || Bytes == 16)
 GREX_ALWAYS_INLINE inline void store_bytes(u8* ptr, __m128i v) {
-  if constexpr (tBytes == 16) {
+  if constexpr (Bytes == 16) {
     _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), v);
-  } else if constexpr (tBytes == 8) {
+  } else if constexpr (Bytes == 8) {
     _mm_storeu_si64(ptr, v);
-  } else if constexpr (tBytes == 4) {
+  } else if constexpr (Bytes == 4) {
     _mm_storeu_si32(ptr, v);
-  } else if constexpr (tBytes == 2) {
+  } else if constexpr (Bytes == 2) {
     _mm_storeu_si16(ptr, v);
   } else {
     // There is no `_mm_storeu_si8`, so this is the one place a value passes through a register.
@@ -108,52 +108,52 @@ GREX_ALWAYS_INLINE inline void store_bytes(u8* ptr, __m128i v) {
 }
 
 /**
- * Scatters the `bytes ∈ [tBlock, 2·tBlock)` low bytes of `v`, made up of `tElementBytes`-byte
- * elements, to `ptr`: the two overlapping stores `ptr[0, tBlock)` and `ptr[bytes - tBlock, bytes)`
- * cover exactly `[0, bytes)`, so the latter merely needs `v` shifted down by the `bytes - tBlock`
- * bytes the former already provides. Since `bytes` is a multiple of `tElementBytes`, the only such
- * `bytes` for `tElementBytes == tBlock` is `tBlock` itself, which the first store covers alone.
+ * Scatters the `bytes ∈ [Block, 2·Block)` low bytes of `v`, made up of `ElementBytes`-byte
+ * elements, to `ptr`: the two overlapping stores `ptr[0, Block)` and `ptr[bytes - Block, bytes)`
+ * cover exactly `[0, bytes)`, so the latter merely needs `v` shifted down by the `bytes - Block`
+ * bytes the former already provides. Since `bytes` is a multiple of `ElementBytes`, the only such
+ * `bytes` for `ElementBytes == Block` is `Block` itself, which the first store covers alone.
  */
-template<std::size_t tBlock, std::size_t tElementBytes>
-requires((tBlock == 2 || tBlock == 4) && tElementBytes <= tBlock)
+template<std::size_t Block, std::size_t ElementBytes>
+requires((Block == 2 || Block == 4) && ElementBytes <= Block)
 GREX_ALWAYS_INLINE inline void scatter_blocks(u8* ptr, __m128i v, std::size_t bytes) {
-  store_bytes<tBlock>(ptr, v);
-  if constexpr (tElementBytes < tBlock) {
-    store_bytes<tBlock>(ptr + bytes - tBlock,
-                        _mm_srl_epi64(v, _mm_cvtsi32_si128(int(8 * (bytes - tBlock)))));
+  store_bytes<Block>(ptr, v);
+  if constexpr (ElementBytes < Block) {
+    store_bytes<Block>(ptr + bytes - Block,
+                       _mm_srl_epi64(v, _mm_cvtsi32_si128(int(8 * (bytes - Block)))));
   }
 }
 
 /**
- * Stores the low `bytes < tTotal` bytes of `v`, made up of `tElementBytes`-byte elements, at `ptr`,
+ * Stores the low `bytes < Total` bytes of `v`, made up of `ElementBytes`-byte elements, at `ptr`,
  * writing no memory beyond them. Everything below eight bytes lives in the low half of `v`, where
  * `psrlq` provides the variable shift, so the bytes above are dealt with by storing the first eight
  * of them and moving the upper half down.
  */
-template<std::size_t tElementBytes, std::size_t tTotal>
-requires(tElementBytes <= tTotal && tTotal <= 16)
+template<std::size_t ElementBytes, std::size_t Total>
+requires(ElementBytes <= Total && Total <= 16)
 GREX_ALWAYS_INLINE inline void store_prefix_bytes(u8* ptr, __m128i v, std::size_t bytes) {
-  if constexpr (tTotal > 8) {
+  if constexpr (Total > 8) {
     if (bytes >= 8) {
       store_bytes<8>(ptr, v);
-      store_prefix_bytes<tElementBytes, tTotal - 8>(ptr + 8, _mm_unpackhi_epi64(v, v), bytes - 8);
+      store_prefix_bytes<ElementBytes, Total - 8>(ptr + 8, _mm_unpackhi_epi64(v, v), bytes - 8);
       return;
     }
   }
   // Two overlapping stores of the largest block that fits, halved down to a single byte.
-  if constexpr (tElementBytes <= 4 && tTotal > 4) {
+  if constexpr (ElementBytes <= 4 && Total > 4) {
     if (bytes >= 4) {
-      scatter_blocks<4, tElementBytes>(ptr, v, bytes);
+      scatter_blocks<4, ElementBytes>(ptr, v, bytes);
       return;
     }
   }
-  if constexpr (tElementBytes <= 2 && tTotal > 2) {
+  if constexpr (ElementBytes <= 2 && Total > 2) {
     if (bytes >= 2) {
-      scatter_blocks<2, tElementBytes>(ptr, v, bytes);
+      scatter_blocks<2, ElementBytes>(ptr, v, bytes);
       return;
     }
   }
-  if constexpr (tElementBytes == 1 && tTotal > 1) {
+  if constexpr (ElementBytes == 1 && Total > 1) {
     if (bytes == 1) {
       store_bytes<1>(ptr, v);
     }
@@ -161,23 +161,23 @@ GREX_ALWAYS_INLINE inline void store_prefix_bytes(u8* ptr, __m128i v, std::size_
 }
 
 /**
- * Stores the first `min(count, tCount)` elements of `tElementBytes` bytes each held in the low
+ * Stores the first `min(count, Count)` elements of `ElementBytes` bytes each held in the low
  * bytes of `v` at `base`, writing no memory beyond them. The element size and count are
  * compile-time constants so that the unreachable cases, which are the majority for all but 8-bit
  * elements, are pruned.
  */
-template<std::size_t tElementBytes, std::size_t tCount>
-requires((tElementBytes * tCount) <= 16)
+template<std::size_t ElementBytes, std::size_t Count>
+requires((ElementBytes * Count) <= 16)
 GREX_ALWAYS_INLINE inline void store_prefix(void* base, __m128i v, std::size_t count) {
-  static constexpr std::size_t total = tElementBytes * tCount;
+  static constexpr std::size_t total = ElementBytes * Count;
 
   auto* ptr = static_cast<u8*>(base);
-  if (count >= tCount) [[unlikely]] {
+  if (count >= Count) [[unlikely]] {
     store_bytes<total>(ptr, v);
     return;
   }
-  // Cannot overflow, since `count < tCount` and `total ≤ 16`.
-  store_prefix_bytes<tElementBytes, total>(ptr, v, tElementBytes * count);
+  // Cannot overflow, since `count < Count` and `total ≤ 16`.
+  store_prefix_bytes<ElementBytes, total>(ptr, v, ElementBytes * count);
 }
 } // namespace partstore
 

@@ -37,20 +37,19 @@ namespace grex::backend {
 GREX_FOREACH_SUB_EXT(GREX_MERGE_SUB)
 
 // Merge to super-native vector
-template<Vectorizable T, std::size_t tSize>
-requires(is_supernative<T, 2 * tSize>)
-inline SuperVector<NativeVector<T, tSize>> merge(NativeVector<T, tSize> a,
-                                                 NativeVector<T, tSize> b) {
+template<Vectorizable T, std::size_t N>
+requires(is_supernative<T, 2 * N>)
+inline SuperVector<NativeVector<T, N>> merge(NativeVector<T, N> a, NativeVector<T, N> b) {
   return {.lower = a, .upper = b};
 }
-template<typename THalf>
-inline SuperVector<SuperVector<THalf>> merge(SuperVector<THalf> a, SuperVector<THalf> b) {
+template<typename Half>
+inline SuperVector<SuperVector<Half>> merge(SuperVector<Half> a, SuperVector<Half> b) {
   return {.lower = a, .upper = b};
 }
 
-template<AnyMask TMask>
-inline MaskFor<typename TMask::VectorValue, TMask::size * 2> merge(TMask a, TMask b) {
-  return vector2mask(merge(mask2vector(a), mask2vector(b)), type_tag<typename TMask::VectorValue>);
+template<AnyMask Mask>
+inline MaskFor<typename Mask::VectorValue, Mask::size * 2> merge(Mask a, Mask b) {
+  return vector2mask(merge(mask2vector(a), mask2vector(b)), type_tag<typename Mask::VectorValue>);
 }
 } // namespace grex::backend
 

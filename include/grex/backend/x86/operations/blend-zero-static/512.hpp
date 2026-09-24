@@ -17,10 +17,10 @@
 #include "grex/backend/x86/operations/blend-zero-static/shared.hpp"
 
 namespace grex::backend {
-template<AnyBlendZeroSelectors auto tBzs>
-requires((tBzs.value_size * tBzs.size == 64))
-struct ZeroBlenderTrait<tBzs> {
-  using Type = CheapestType<tBzs, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderAnd>;
+template<AnyBlendZeroSelectors auto BZS>
+requires((BZS.value_size * BZS.size == 64))
+struct ZeroBlenderTrait<BZS> {
+  using Type = CheapestType<BZS, ZeroBlenderNoop, ZeroBlenderZero, ZeroBlenderAnd>;
 };
 } // namespace grex::backend
 #endif

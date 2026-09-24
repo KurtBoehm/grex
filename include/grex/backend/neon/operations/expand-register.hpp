@@ -25,13 +25,13 @@
 #endif
 
 namespace grex::backend {
-/** Casts from `TSrc` to `TDst` with arbitrary values in the upper bits. */
-template<IntVectorizable TDst, IntVectorizable TSrc>
-inline TDst expand_bits(TSrc src) {
+/** Casts from `Src` to `Dst` with arbitrary values in the upper bits. */
+template<IntVectorizable Dst, IntVectorizable Src>
+inline Dst expand_bits(Src src) {
   if (__builtin_constant_p(src)) {
-    return TDst(src);
+    return Dst(src);
   }
-  TDst dst;
+  Dst dst;
   asm("" : "=r"(dst) : "0"(src)); // NOLINT
   return dst;
 }
@@ -40,8 +40,8 @@ inline TDst expand_bits(TSrc src) {
 #define GREX_EXPAND_REGISTER_IMPL(KIND, BITS, SIZE) \
   using Single = KIND##BITS __attribute__((ext_vector_type(1))); \
   const Single s = x; \
-  return static_apply<SIZE>([&]<std::size_t... tIdxs>() -> GREX_REGISTER(KIND, BITS, SIZE) { \
-    return __builtin_shufflevector(s, s, ((tIdxs == 0) ? 0 : -1)...); \
+  return static_apply<SIZE>([&]<std::size_t... I> -> GREX_REGISTER(KIND, BITS, SIZE) { \
+    return __builtin_shufflevector(s, s, ((I == 0) ? 0 : -1)...); \
   });
 #define GREX_EXPAND_REGISTER_f GREX_EXPAND_REGISTER_IMPL
 #define GREX_EXPAND_REGISTER_i GREX_EXPAND_REGISTER_IMPL

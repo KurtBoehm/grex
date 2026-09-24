@@ -16,120 +16,119 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<Vectorizable T, std::size_t tSize>
-inline NativeVector<T, tSize> indices(TypeTag<NativeVector<T, tSize>> /*tag*/) {
-  return static_apply<tSize>(
-    []<std::size_t... tIdxs>() { return set(type_tag<NativeVector<T, tSize>>, T(tIdxs)...); });
+template<Vectorizable T, std::size_t N>
+inline NativeVector<T, N> indices(TypeTag<NativeVector<T, N>> /*tag*/) {
+  return static_apply<N>(
+    []<std::size_t... I> { return set(type_tag<NativeVector<T, N>>, T(I)...); });
 }
 
 // SubVector
-template<Vectorizable T, std::size_t tSize>
-inline SubVector<T, tSize> zeros(TypeTag<SubVector<T, tSize>> /*tag*/) {
-  return SubVector<T, tSize>{zeros(type_tag<NativeVector<T, min_native_size<T>>>)};
+template<Vectorizable T, std::size_t N>
+inline SubVector<T, N> zeros(TypeTag<SubVector<T, N>> /*tag*/) {
+  return SubVector<T, N>{zeros(type_tag<NativeVector<T, min_native_size<T>>>)};
 }
-template<Vectorizable T, std::size_t tSize>
-inline SubVector<T, tSize> undefined(TypeTag<SubVector<T, tSize>> /*tag*/) {
-  return SubVector<T, tSize>{undefined(type_tag<NativeVector<T, min_native_size<T>>>)};
+template<Vectorizable T, std::size_t N>
+inline SubVector<T, N> undefined(TypeTag<SubVector<T, N>> /*tag*/) {
+  return SubVector<T, N>{undefined(type_tag<NativeVector<T, min_native_size<T>>>)};
 }
-template<Vectorizable T, std::size_t tSize>
-inline SubVector<T, tSize> broadcast(T value, TypeTag<SubVector<T, tSize>> /*tag*/) {
-  return SubVector<T, tSize>{broadcast(value, type_tag<NativeVector<T, min_native_size<T>>>)};
+template<Vectorizable T, std::size_t N>
+inline SubVector<T, N> broadcast(T value, TypeTag<SubVector<T, N>> /*tag*/) {
+  return SubVector<T, N>{broadcast(value, type_tag<NativeVector<T, min_native_size<T>>>)};
 }
-template<Vectorizable T, std::size_t tSize>
-inline SubVector<T, tSize> indices(TypeTag<SubVector<T, tSize>> /*tag*/) {
-  return SubVector<T, tSize>{indices(type_tag<NativeVector<T, min_native_size<T>>>)};
+template<Vectorizable T, std::size_t N>
+inline SubVector<T, N> indices(TypeTag<SubVector<T, N>> /*tag*/) {
+  return SubVector<T, N>{indices(type_tag<NativeVector<T, min_native_size<T>>>)};
 }
 
 // SubMask
-template<Vectorizable T, std::size_t tSize>
-inline SubMask<T, tSize> zeros(TypeTag<SubMask<T, tSize>> /*tag*/) {
-  return SubMask<T, tSize>{zeros(type_tag<NativeMask<T, min_native_size<T>>>)};
+template<Vectorizable T, std::size_t N>
+inline SubMask<T, N> zeros(TypeTag<SubMask<T, N>> /*tag*/) {
+  return SubMask<T, N>{zeros(type_tag<NativeMask<T, min_native_size<T>>>)};
 }
-template<Vectorizable T, std::size_t tSize>
-inline SubMask<T, tSize> ones(TypeTag<SubMask<T, tSize>> /*tag*/) {
-  return SubMask<T, tSize>{ones(type_tag<NativeMask<T, min_native_size<T>>>)};
+template<Vectorizable T, std::size_t N>
+inline SubMask<T, N> ones(TypeTag<SubMask<T, N>> /*tag*/) {
+  return SubMask<T, N>{ones(type_tag<NativeMask<T, min_native_size<T>>>)};
 }
-template<Vectorizable T, std::size_t tSize>
-inline SubMask<T, tSize> broadcast(bool value, TypeTag<SubMask<T, tSize>> /*tag*/) {
-  return SubMask<T, tSize>{broadcast(value, type_tag<NativeMask<T, min_native_size<T>>>)};
+template<Vectorizable T, std::size_t N>
+inline SubMask<T, N> broadcast(bool value, TypeTag<SubMask<T, N>> /*tag*/) {
+  return SubMask<T, N>{broadcast(value, type_tag<NativeMask<T, min_native_size<T>>>)};
 }
 
 // SuperVector
-template<typename THalf>
-inline SuperVector<THalf> zeros(TypeTag<SuperVector<THalf>> /*tag*/) {
-  const auto half = zeros(type_tag<THalf>);
+template<typename Half>
+inline SuperVector<Half> zeros(TypeTag<SuperVector<Half>> /*tag*/) {
+  const auto half = zeros(type_tag<Half>);
   return {.lower = half, .upper = half};
 }
-template<typename THalf>
-inline SuperVector<THalf> undefined(TypeTag<SuperVector<THalf>> /*tag*/) {
-  const auto half = undefined(type_tag<THalf>);
+template<typename Half>
+inline SuperVector<Half> undefined(TypeTag<SuperVector<Half>> /*tag*/) {
+  const auto half = undefined(type_tag<Half>);
   return {.lower = half, .upper = half};
 }
-template<typename THalf>
-inline SuperVector<THalf> broadcast(typename THalf::Value value,
-                                    TypeTag<SuperVector<THalf>> /*tag*/) {
-  const auto half = broadcast(value, type_tag<THalf>);
+template<typename Half>
+inline SuperVector<Half> broadcast(typename Half::Value value, TypeTag<SuperVector<Half>> /*tag*/) {
+  const auto half = broadcast(value, type_tag<Half>);
   return {.lower = half, .upper = half};
 }
-template<typename THalf, typename... Ts>
-requires(sizeof...(Ts) == 2 * THalf::size && std::has_single_bit(sizeof...(Ts)))
-inline SuperVector<THalf> set(TypeTag<SuperVector<THalf>> /*tag*/, Ts... values) {
+template<typename Half, typename... Ts>
+requires(sizeof...(Ts) == 2 * Half::size && std::has_single_bit(sizeof...(Ts)))
+inline SuperVector<Half> set(TypeTag<SuperVector<Half>> /*tag*/, Ts... values) {
   constexpr std::size_t size = sizeof...(Ts);
   const std::array buf{values...};
-  auto op = [&]<std::size_t... tIdxs>() { return set(type_tag<THalf>, std::get<tIdxs>(buf)...); };
+  const auto op = [&]<std::size_t... I> { return set(type_tag<Half>, std::get<I>(buf)...); };
   return {.lower = static_apply<0, size / 2>(op), .upper = static_apply<size / 2, size>(op)};
 }
-template<typename THalf>
-inline SuperVector<THalf> indices(TypeTag<SuperVector<THalf>> /*tag*/) {
-  using Vec = SuperVector<THalf>;
+template<typename Half>
+inline SuperVector<Half> indices(TypeTag<SuperVector<Half>> /*tag*/) {
+  using Vec = SuperVector<Half>;
   using Value = Vec::Value;
   constexpr std::size_t size = Vec::size;
-  auto op = []<std::size_t... tIdxs>() { return set(type_tag<Vec>, Value(tIdxs)...); };
+  const auto op = []<std::size_t... I> { return set(type_tag<Vec>, Value(I)...); };
   return static_apply<0, size>(op);
 }
 
 // SuperMask
-template<typename THalf>
-inline SuperMask<THalf> zeros(TypeTag<SuperMask<THalf>> /*tag*/) {
-  const auto half = zeros(type_tag<THalf>);
+template<typename Half>
+inline SuperMask<Half> zeros(TypeTag<SuperMask<Half>> /*tag*/) {
+  const auto half = zeros(type_tag<Half>);
   return {.lower = half, .upper = half};
 }
-template<typename THalf>
-inline SuperMask<THalf> ones(TypeTag<SuperMask<THalf>> /*tag*/) {
-  const auto half = ones(type_tag<THalf>);
+template<typename Half>
+inline SuperMask<Half> ones(TypeTag<SuperMask<Half>> /*tag*/) {
+  const auto half = ones(type_tag<Half>);
   return {.lower = half, .upper = half};
 }
-template<typename THalf>
-inline SuperMask<THalf> broadcast(bool value, TypeTag<SuperMask<THalf>> /*tag*/) {
-  const auto half = broadcast(value, type_tag<THalf>);
+template<typename Half>
+inline SuperMask<Half> broadcast(bool value, TypeTag<SuperMask<Half>> /*tag*/) {
+  const auto half = broadcast(value, type_tag<Half>);
   return {.lower = half, .upper = half};
 }
-template<typename THalf, typename... Ts>
-requires(sizeof...(Ts) == 2 * THalf::size && std::has_single_bit(sizeof...(Ts)))
-inline SuperMask<THalf> set(TypeTag<SuperMask<THalf>> /*tag*/, Ts... values) {
+template<typename Half, typename... Ts>
+requires(sizeof...(Ts) == 2 * Half::size && std::has_single_bit(sizeof...(Ts)))
+inline SuperMask<Half> set(TypeTag<SuperMask<Half>> /*tag*/, Ts... values) {
   constexpr std::size_t size = sizeof...(Ts);
   const std::array buf{values...};
-  auto op = [&]<std::size_t... tIdxs>() { return set(type_tag<THalf>, std::get<tIdxs>(buf)...); };
+  const auto op = [&]<std::size_t... I> { return set(type_tag<Half>, std::get<I>(buf)...); };
   return {.lower = static_apply<0, size / 2>(op), .upper = static_apply<size / 2, size>(op)};
 }
 
-template<AnyVector TVec>
-inline TVec zeros() {
-  return zeros(type_tag<TVec>);
+template<AnyVector Vec>
+inline Vec zeros() {
+  return zeros(type_tag<Vec>);
 }
-template<AnyVector TVec>
-inline TVec broadcast(typename TVec::Value value) {
-  return broadcast(value, type_tag<TVec>);
+template<AnyVector Vec>
+inline Vec broadcast(typename Vec::Value value) {
+  return broadcast(value, type_tag<Vec>);
 }
 
 // Binary16: simple delegation to `u16` for basic construction.
-template<std::size_t tSize>
-inline NativeVector<f16, tSize> zeros(TypeTag<NativeVector<f16, tSize>>) {
-  return {.r = zeros(type_tag<NativeVector<u16, tSize>>).r};
+template<std::size_t N>
+inline NativeVector<f16, N> zeros(TypeTag<NativeVector<f16, N>> /*tag*/) {
+  return {.r = zeros(type_tag<NativeVector<u16, N>>).r};
 }
-template<std::size_t tSize>
-inline NativeVector<f16, tSize> undefined(TypeTag<NativeVector<f16, tSize>>) {
-  return {.r = undefined(type_tag<NativeVector<u16, tSize>>).r};
+template<std::size_t N>
+inline NativeVector<f16, N> undefined(TypeTag<NativeVector<f16, N>> /*tag*/) {
+  return {.r = undefined(type_tag<NativeVector<u16, N>>).r};
 }
 } // namespace grex::backend
 

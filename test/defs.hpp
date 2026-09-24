@@ -167,8 +167,8 @@ struct Check {
  * To avoid the compiler wasting time on optimizing this function, which should not be executed
  * during normal operation, inlining is disabled and it is marked as cols.
  */
-template<typename T1, typename T2, typename TLabel>
-[[gnu::cold, gnu::noinline]] inline void fail_msg(const TLabel& label, const T1& a, const T2& b) {
+template<typename T1, typename T2, typename Label>
+[[gnu::cold, gnu::noinline]] inline void fail_msg(const Label& label, const T1& a, const T2& b) {
   fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", resolve_label(label), a, b);
   std::exit(EXIT_FAILURE);
 }
@@ -177,8 +177,8 @@ template<typename T1, typename T2, typename TLabel>
  * If `same` and `verbose` are true, prints `label`, `a`, and `b` in green; if `same` is false,
  * calls `fail_msg`, which prints the same information in red and exits with a non-zero error code.
  */
-template<typename T1, typename T2, typename TLabel>
-inline void check_msg(const TLabel& label, bool same, T1 a, T2 b, bool verbose = true) {
+template<typename T1, typename T2, typename Label>
+inline void check_msg(const Label& label, bool same, T1 a, T2 b, bool verbose = true) {
   if (same) [[likely]] {
     if (verbose) {
       fmt::print(fmt::fg(fmt::terminal_color::green), "{}: {} == {}\n", resolve_label(label), a, b);
@@ -188,7 +188,7 @@ inline void check_msg(const TLabel& label, bool same, T1 a, T2 b, bool verbose =
   }
 }
 
-template<typename T, std::size_t tSize = 1>
+template<typename T, std::size_t N = 1>
 inline constexpr bool is_complete = false;
 template<typename T>
 inline constexpr bool is_complete<T, sizeof(T) / sizeof(T)> = true; // NOLINT
@@ -243,14 +243,14 @@ inline void check(const auto& label, T1 a, T2 b, std::size_t size, Check check =
 }
 
 /**
- * Generates `tSize` values of type `T` using `gen` and places them into an array in order.
+ * Generates `N` values of type `T` using `gen` and places them into an array in order.
  *
  * This function uses a loop instead of pack expansion two minimize the amount of inlining and,
  * thereby, to minimize the compile-time cost.
  */
-template<typename T, std::size_t tSize>
-inline std::array<T, tSize> random_array(auto&& gen) {
-  std::array<T, tSize> values{};
+template<typename T, std::size_t N>
+inline std::array<T, N> random_array(auto&& gen) {
+  std::array<T, N> values{};
   for (T& value : values) {
     value = gen();
   }
@@ -258,10 +258,10 @@ inline std::array<T, tSize> random_array(auto&& gen) {
 }
 
 #if !GREX_BACKEND_SCALAR
-template<Vectorizable T, std::size_t tSize>
+template<Vectorizable T, std::size_t N>
 struct VectorChecker {
-  Vector<T, tSize> vec{};
-  std::array<T, tSize> ref{};
+  Vector<T, N> vec{};
+  std::array<T, N> ref{};
 
   /**
    * Creates a checker whose lanes are drawn from the nullary generator `gen`.
@@ -269,8 +269,8 @@ struct VectorChecker {
    * See `random_array` for why the lanes are not filled by expanding a pack.
    */
   static VectorChecker random(auto&& gen) {
-    const std::array<T, tSize> values = random_array<T, tSize>(gen);
-    return {Vector<T, tSize>::load(values.data()), values};
+    const std::array<T, N> values = random_array<T, N>(gen);
+    return {Vector<T, N>::load(values.data()), values};
   }
 
   VectorChecker() = default;
@@ -279,9 +279,9 @@ struct VectorChecker {
     std::ranges::fill(ref, value);
   }
   template<typename... Ts>
-  requires(sizeof...(Ts) == tSize && (... && std::same_as<Ts, T>))
+  requires(sizeof...(Ts) == N && (... && std::same_as<Ts, T>))
   explicit VectorChecker(Ts... values) : vec{values...}, ref{values...} {}
-  VectorChecker(Vector<T, tSize> v, std::array<T, tSize> a) : vec{v}, ref{a} {}
+  VectorChecker(Vector<T, N> v, std::array<T, N> a) : vec{v}, ref{a} {}
 
   void check(const auto& label, Check check = {}) const {
     test::check(label, vec.as_array(), ref, check);
@@ -290,15 +290,15 @@ struct VectorChecker {
     test::check(label, vec.as_array(), ref, size, check);
   }
 };
-template<Vectorizable T, std::size_t tSize>
-auto format_as(const VectorChecker<T, tSize>& checker) {
+template<Vectorizable T, std::size_t N>
+auto format_as(const VectorChecker<T, N>& checker) {
   return std::tie(checker.vec, checker.ref);
 }
 
-template<Vectorizable T, std::size_t tSize>
+template<Vectorizable T, std::size_t N>
 struct MaskChecker {
-  Mask<T, tSize> mask{};
-  std::array<bool, tSize> ref{};
+  Mask<T, N> mask{};
+  std::array<bool, N> ref{};
 
   MaskChecker() = default;
 
@@ -306,16 +306,16 @@ struct MaskChecker {
     std::ranges::fill(ref, value);
   }
   template<typename... Ts>
-  requires(sizeof...(Ts) == tSize)
+  requires(sizeof...(Ts) == N)
   explicit MaskChecker(Ts... values) : mask{values...}, ref{values...} {}
-  MaskChecker(Mask<T, tSize> v, std::array<bool, tSize> a) : mask{v}, ref{a} {}
+  MaskChecker(Mask<T, N> v, std::array<bool, N> a) : mask{v}, ref{a} {}
 
   void check(const auto& label, Check check = {}) const {
     test::check(label, mask.as_array(), ref, check);
   }
 };
-template<Vectorizable T, std::size_t tSize>
-auto format_as(const MaskChecker<T, tSize>& checker) {
+template<Vectorizable T, std::size_t N>
+auto format_as(const MaskChecker<T, N>& checker) {
   return std::tie(checker.mask, checker.ref);
 }
 #endif
@@ -363,15 +363,14 @@ void for_each_type(auto op) {
 }
 
 #if !GREX_BACKEND_SCALAR
-template<Vectorizable T, std::size_t tMaxShift = std::bit_width(max_native_size<T>) + 1>
+template<Vectorizable T, std::size_t MaxShift = std::bit_width(max_native_size<T>) + 1>
 inline void for_each_size(auto op) {
-  static_apply<1, tMaxShift>(
-    [&]<std::size_t... tIdxs>() { (..., op(type_tag<T>, index_tag<1U << tIdxs>)); });
+  static_apply<1, MaxShift>([&]<std::size_t... I> { (..., op(type_tag<T>, index_tag<1U << I>)); });
 }
 
 inline void run_types_sizes(auto f) {
-  auto inner = [&]<typename T, std::size_t tSize>(TypeTag<T> t, IndexTag<tSize> s) {
-    fmt::print(fmt::fg(fmt::terminal_color::blue), "{}×{}\n", type_name<T>(), tSize);
+  auto inner = [&]<typename T, std::size_t N>(TypeTag<T> t, IndexTag<N> s) {
+    fmt::print(fmt::fg(fmt::terminal_color::blue), "{}×{}\n", type_name<T>(), N);
     f(t, s);
   };
   for_each_type([&]<typename T>(TypeTag<T> /*tag*/) { for_each_size<T>(inner); });

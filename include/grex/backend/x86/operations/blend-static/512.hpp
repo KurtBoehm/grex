@@ -17,10 +17,10 @@
 #include "grex/backend/x86/operations/blend-static/shared.hpp"
 
 namespace grex::backend {
-template<AnyBlendSelectors auto tBls>
-requires((tBls.value_size * tBls.size == 64))
-struct BlenderTrait<tBls> {
-  using Type = CheapestType<tBls, BlenderConstant, BlenderVariable>;
+template<AnyBlendSelectors auto BS>
+requires((BS.value_size * BS.size == 64))
+struct BlenderTrait<BS> {
+  using Type = CheapestType<BS, BlenderConstant, BlenderVariable>;
 };
 } // namespace grex::backend
 #endif

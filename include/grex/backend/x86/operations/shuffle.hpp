@@ -62,39 +62,36 @@ GREX_ALWAYS_INLINE inline __m256i shuffle_epi8(__m256i a, __m256i b) {
 }
 #endif
 
-// Compute indices for a shuffle operation acting on tDstBytes-sized chunks using a table with
-// tValueBytes-sized values.
+// Compute indices for a shuffle operation acting on DstBytes-sized chunks using a table with
+// ValueBytes-sized values.
 //
-// TIdxs:       vector of indices in units of tValueBytes.
-// tDstBytes:   shuffling chunks size in bytes (here 1 → byte indices).
-// tValueBytes: size of a single table element in bytes.
-template<UnsignedIntVector TIdxs, std::size_t tDstBytes, std::size_t tValueBytes>
-requires(sizeof(ValueOf<TIdxs>) <= tValueBytes && tDstBytes == 1 && tValueBytes != 1)
-GREX_ALWAYS_INLINE inline NativeVector<UnsignedInt<tDstBytes>,
-                                       size_of<TIdxs> * tValueBytes / tDstBytes>
-shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> /*dst_bytes*/,
-                IndexTag<tValueBytes> /*value_bytes*/) {
-  using Src = ValueOf<TIdxs>;
-  constexpr std::size_t dst_bytes = size_of<TIdxs> * tValueBytes;
-  constexpr std::size_t dst_size = dst_bytes / tDstBytes;
+// Idxs:       vector of indices in units of ValueBytes.
+// DstBytes:   shuffling chunks size in bytes (here 1 → byte indices).
+// ValueBytes: size of a single table element in bytes.
+template<UnsignedIntVector Idxs, std::size_t DstBytes, std::size_t ValueBytes>
+requires(sizeof(ValueOf<Idxs>) <= ValueBytes && DstBytes == 1 && ValueBytes != 1)
+GREX_ALWAYS_INLINE inline NativeVector<UnsignedInt<DstBytes>, size_of<Idxs> * ValueBytes / DstBytes>
+shuffle_indices(Idxs idxs, IndexTag<DstBytes> /*dst_bytes*/, IndexTag<ValueBytes> /*value_bytes*/) {
+  using Src = ValueOf<Idxs>;
+  constexpr std::size_t dst_bytes = size_of<Idxs> * ValueBytes;
+  constexpr std::size_t dst_size = dst_bytes / DstBytes;
 
   // For each destination byte, select the starting byte of the source table element.
-  constexpr auto shuf = grex::static_apply<dst_size>([]<std::size_t... tI>() {
-    return std::array<u8, dst_size>{(tI / tValueBytes) * sizeof(Src)...};
-  });
+  constexpr auto shuf = grex::static_apply<dst_size>(
+    []<std::size_t... I> { return std::array<u8, dst_size>{(I / ValueBytes) * sizeof(Src)...}; });
   // Per-byte offsets within each value.
   constexpr auto offs = grex::static_apply<dst_size>(
-    []<std::size_t... tI>() { return std::array<u8, dst_size>{tI % tValueBytes...}; });
+    []<std::size_t... I> { return std::array<u8, dst_size>{I % ValueBytes...}; });
 
   using UnIntVec = NativeVector<u8, dst_bytes>;
   const auto vshuf = load(shuf.data(), type_tag<UnIntVec>);
   const auto voffs = load(offs.data(), type_tag<UnIntVec>);
 
-  // Scale element indices by tValueBytes in bytes → shift by log2(tValueBytes).
-  const auto rscaled = shift_left(idxs, index_tag<std::size_t{std::bit_width(tValueBytes)} - 1>);
+  // Scale element indices by ValueBytes in bytes → shift by log2(ValueBytes).
+  const auto rscaled = shift_left(idxs, index_tag<std::size_t{std::bit_width(ValueBytes)} - 1>);
   // If the underlying native register is smaller than dst_bytes, duplicate it to fill.
   const auto scaled = [rscaled] {
-    if constexpr (sizeof(typename TIdxs::Register) < dst_bytes) {
+    if constexpr (sizeof(typename Idxs::Register) < dst_bytes) {
       return repeat<2>(rscaled.native());
     } else {
       return rscaled;
@@ -104,23 +101,21 @@ shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> /*dst_bytes*/,
   return add(UnIntVec{.r = shuffle_epi8(scaled.registr(), vshuf.r)}, voffs);
 }
 
-// Widen indices larger than tValueBytes to tValueBytes-sized integers, then delegate to other
+// Widen indices larger than ValueBytes to ValueBytes-sized integers, then delegate to other
 // overloads.
-template<UnsignedIntVector TIdxs, std::size_t tDstBytes, std::size_t tValueBytes>
-requires(sizeof(ValueOf<TIdxs>) > tValueBytes && tDstBytes != tValueBytes)
-GREX_ALWAYS_INLINE inline NativeVector<UnsignedInt<tDstBytes>,
-                                       TIdxs::size * tValueBytes / tDstBytes>
-shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> dst_bytes, IndexTag<tValueBytes> value_bytes) {
-  return shuffle_indices(convert<UnsignedInt<tValueBytes>>(idxs), dst_bytes, value_bytes);
+template<UnsignedIntVector Idxs, std::size_t DstBytes, std::size_t ValueBytes>
+requires(sizeof(ValueOf<Idxs>) > ValueBytes && DstBytes != ValueBytes)
+GREX_ALWAYS_INLINE inline NativeVector<UnsignedInt<DstBytes>, Idxs::size * ValueBytes / DstBytes>
+shuffle_indices(Idxs idxs, IndexTag<DstBytes> dst_bytes, IndexTag<ValueBytes> value_bytes) {
+  return shuffle_indices(convert<UnsignedInt<ValueBytes>>(idxs), dst_bytes, value_bytes);
 }
 
-// tDstBytes and tValueBytes are identical: simply convert the indices.
-template<UnsignedIntVector TIdxs, std::size_t tDstBytes, std::size_t tValueBytes>
-requires(tDstBytes == tValueBytes)
-GREX_ALWAYS_INLINE inline NativeVector<UnsignedInt<tDstBytes>, TIdxs::size>
-shuffle_indices(TIdxs idxs, IndexTag<tDstBytes> /*dst_bytes*/,
-                IndexTag<tValueBytes> /*value_bytes*/) {
-  return convert<UnsignedInt<tValueBytes>>(idxs);
+// DstBytes and ValueBytes are identical: simply convert the indices.
+template<UnsignedIntVector Idxs, std::size_t DstBytes, std::size_t ValueBytes>
+requires(DstBytes == ValueBytes)
+GREX_ALWAYS_INLINE inline NativeVector<UnsignedInt<DstBytes>, Idxs::size>
+shuffle_indices(Idxs idxs, IndexTag<DstBytes> /*dst_bytes*/, IndexTag<ValueBytes> /*value_bytes*/) {
+  return convert<UnsignedInt<ValueBytes>>(idxs);
 }
 
 #if GREX_X86_64_LEVEL >= 3
@@ -485,9 +480,9 @@ GREX_SHFL_MULTI(GREX_SHFL_MULTI_PSHUFB, u, 8, 32)
 #endif
 
 // Binary16: delegate to `u16`.
-template<Float16Vector TTable, UnsignedIntVector TIdxs>
-inline VectorFor<f16, size_of<TIdxs>> shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub,
-                                              AnyIndexTag auto index_offset) {
+template<Float16Vector Table, UnsignedIntVector Idxs>
+inline VectorFor<f16, size_of<Idxs>> shuffle(Table table, Idxs idxs, AnyIndexTag auto index_ub,
+                                             AnyIndexTag auto index_offset) {
   return as<f16>(shuffle(as<u16>(table), idxs, index_ub, index_offset));
 }
 
@@ -496,14 +491,14 @@ inline VectorFor<f16, size_of<TIdxs>> shuffle(TTable table, TIdxs idxs, AnyIndex
 // The overload set above covers many nice cases (native tables/indices).
 // This function resolves the remaining cases by splitting/expanding/merging into forms that are
 // handled by the specialized overloads.
-template<AnyVector TTable, UnsignedIntVector TIdxs>
-GREX_ALWAYS_INLINE inline VectorFor<ValueOf<TTable>, size_of<TIdxs>>
-shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto index_offset) {
-  using Value = ValueOf<TTable>;
+template<AnyVector Table, UnsignedIntVector Idxs>
+GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>>
+shuffle(Table table, Idxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto index_offset) {
+  using Value = ValueOf<Table>;
   using ValueIndex = UnsignedInt<sizeof(Value)>;
-  constexpr std::size_t table_size = size_of<TTable>;
-  using Index = ValueOf<TIdxs>;
-  constexpr std::size_t index_size = size_of<TIdxs>;
+  constexpr std::size_t table_size = size_of<Table>;
+  using Index = ValueOf<Idxs>;
+  constexpr std::size_t index_size = size_of<Idxs>;
   constexpr std::size_t max_index = std::numeric_limits<Index>::max();
 
   if constexpr (sizeof(Index) < 8 && table_size > max_index + 1) {
@@ -534,7 +529,7 @@ shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto in
     const auto lo = shuffle(table.lower, idxs, index_ub, index_offset);
     const auto hi = shuffle(table.upper, idxs, index_ub, index_tag<index_offset + table_size / 2>);
     const auto mask =
-      compare_lt(idxs, broadcast(Index{index_offset + table_size / 2}, type_tag<TIdxs>));
+      compare_lt(idxs, broadcast(Index{index_offset + table_size / 2}, type_tag<Idxs>));
     return blend(convert<Value>(mask), hi, lo);
   } else if constexpr (index_size < table_size && is_supernative<Index, table_size>) {
     // Fewer indices than table entries, and expanded indices would exceed native width:
@@ -564,10 +559,9 @@ shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto in
 }
 
 // Convenience overload: full table range, zero offset.
-template<AnyVector TTable, UnsignedIntVector TIdxs>
-GREX_ALWAYS_INLINE inline VectorFor<ValueOf<TTable>, size_of<TIdxs>> shuffle(TTable table,
-                                                                             TIdxs idxs) {
-  return shuffle(table, idxs, index_tag<TTable::size>, index_tag<0>);
+template<AnyVector Table, UnsignedIntVector Idxs>
+GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table table, Idxs idxs) {
+  return shuffle(table, idxs, index_tag<Table::size>, index_tag<0>);
 }
 #else // GREX_X86_64_LEVEL <= 1
 // Fallback implementations built from basic shuffles, shifts and blends.
@@ -806,9 +800,9 @@ GREX_SHFL_8(i)
 GREX_SHFL_8(u)
 
 // Binary16: delegate to `u16`.
-template<Float16Vector TTable, UnsignedIntVector TIdxs>
-inline VectorFor<f16, size_of<TIdxs>> shuffle(TTable table, TIdxs idxs,
-                                              AnyIndexTag auto index_offset) {
+template<Float16Vector Table, UnsignedIntVector Idxs>
+inline VectorFor<f16, size_of<Idxs>> shuffle(Table table, Idxs idxs,
+                                             AnyIndexTag auto index_offset) {
   return as<f16>(shuffle(as<u16>(table), idxs, index_offset));
 }
 
@@ -816,14 +810,14 @@ inline VectorFor<f16, size_of<TIdxs>> shuffle(TTable table, TIdxs idxs,
 //
 // Similar strategy as the x86-64-v2+ variant, but with fewer cases because only very small vector
 // sizes are natively supported.
-template<AnyVector TTable, UnsignedIntVector TIdxs>
-GREX_ALWAYS_INLINE inline VectorFor<ValueOf<TTable>, size_of<TIdxs>>
-shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_offset) {
-  using Value = ValueOf<TTable>;
+template<AnyVector Table, UnsignedIntVector Idxs>
+GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>>
+shuffle(Table table, Idxs idxs, AnyIndexTag auto index_offset) {
+  using Value = ValueOf<Table>;
   using ValueIndex = UnsignedInt<sizeof(Value)>;
-  constexpr std::size_t table_size = size_of<TTable>;
-  using Index = ValueOf<TIdxs>;
-  constexpr std::size_t index_size = size_of<TIdxs>;
+  constexpr std::size_t table_size = size_of<Table>;
+  using Index = ValueOf<Idxs>;
+  constexpr std::size_t index_size = size_of<Idxs>;
   constexpr std::size_t max_index = std::numeric_limits<Index>::max();
 
   if constexpr (sizeof(Index) < 8 && table_size > max_index + 1) {
@@ -839,7 +833,7 @@ shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_offset) {
     const auto lo = shuffle(table.lower, idxs, index_offset);
     const auto hi = shuffle(table.upper, idxs, index_tag<index_offset + table_size / 2>);
     const auto mask =
-      compare_lt(idxs, broadcast(Index{index_offset + table_size / 2}, type_tag<TIdxs>));
+      compare_lt(idxs, broadcast(Index{index_offset + table_size / 2}, type_tag<Idxs>));
     return blend(convert<Value>(mask), hi, lo);
   } else if constexpr (!std::same_as<Index, ValueIndex>) {
     // Index type differs from element size → convert indices to value-sized integers.
@@ -855,9 +849,8 @@ shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_offset) {
 }
 
 // Convenience overload: zero offset.
-template<AnyVector TTable, UnsignedIntVector TIdxs>
-GREX_ALWAYS_INLINE inline VectorFor<ValueOf<TTable>, size_of<TIdxs>> shuffle(TTable table,
-                                                                             TIdxs idxs) {
+template<AnyVector Table, UnsignedIntVector Idxs>
+GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table table, Idxs idxs) {
   return shuffle(table, idxs, index_tag<0>);
 }
 #endif

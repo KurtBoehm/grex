@@ -17,43 +17,43 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<Vectorizable T, std::size_t tSize, bool tIsSub = (tSize < min_native_size<T>),
-         bool tIsSuper = (tSize > max_native_size<T>)>
+template<Vectorizable T, std::size_t N, bool IsSub = (N < min_native_size<T>),
+         bool IsSuper = (N > max_native_size<T>)>
 struct VectorTrait;
-template<Vectorizable T, std::size_t tSize>
-struct VectorTrait<T, tSize, false, false> {
-  using Type = NativeVector<T, tSize>;
+template<Vectorizable T, std::size_t N>
+struct VectorTrait<T, N, false, false> {
+  using Type = NativeVector<T, N>;
 };
-template<Vectorizable T, std::size_t tSize>
-struct VectorTrait<T, tSize, true, false> {
-  using Type = SubVector<T, tSize>;
+template<Vectorizable T, std::size_t N>
+struct VectorTrait<T, N, true, false> {
+  using Type = SubVector<T, N>;
 };
-template<Vectorizable T, std::size_t tSize>
-struct VectorTrait<T, tSize, false, true> {
-  using Half = VectorTrait<T, tSize / 2>::Type;
+template<Vectorizable T, std::size_t N>
+struct VectorTrait<T, N, false, true> {
+  using Half = VectorTrait<T, N / 2>::Type;
   using Type = SuperVector<Half>;
 };
-template<Vectorizable T, std::size_t tSize>
-using VectorFor = VectorTrait<T, tSize>::Type;
+template<Vectorizable T, std::size_t N>
+using VectorFor = VectorTrait<T, N>::Type;
 
-template<Vectorizable T, std::size_t tSize, bool tIsSub = (tSize < min_native_size<T>),
-         bool tIsSuper = (tSize > max_native_size<T>)>
+template<Vectorizable T, std::size_t N, bool IsSub = (N < min_native_size<T>),
+         bool IsSuper = (N > max_native_size<T>)>
 struct MaskTrait;
-template<Vectorizable T, std::size_t tSize>
-struct MaskTrait<T, tSize, false, false> {
-  using Type = NativeMask<T, tSize>;
+template<Vectorizable T, std::size_t N>
+struct MaskTrait<T, N, false, false> {
+  using Type = NativeMask<T, N>;
 };
-template<Vectorizable T, std::size_t tSize>
-struct MaskTrait<T, tSize, true, false> {
-  using Type = SubMask<T, tSize>;
+template<Vectorizable T, std::size_t N>
+struct MaskTrait<T, N, true, false> {
+  using Type = SubMask<T, N>;
 };
-template<Vectorizable T, std::size_t tSize>
-struct MaskTrait<T, tSize, false, true> {
-  using Half = MaskTrait<T, tSize / 2>::Type;
+template<Vectorizable T, std::size_t N>
+struct MaskTrait<T, N, false, true> {
+  using Half = MaskTrait<T, N / 2>::Type;
   using Type = SuperMask<Half>;
 };
-template<Vectorizable T, std::size_t tSize>
-using MaskFor = MaskTrait<T, tSize>::Type;
+template<Vectorizable T, std::size_t N>
+using MaskFor = MaskTrait<T, N>::Type;
 } // namespace grex::backend
 #endif
 

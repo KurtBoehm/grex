@@ -14,30 +14,30 @@
 
 namespace grex::backend {
 // SubVector/SubMask
-template<Vectorizable T, std::size_t tSize>
-inline SubVector<T, tSize> insert(SubVector<T, tSize> v, std::size_t index, T value) {
-  return SubVector<T, tSize>{insert(v.full, index, value)};
+template<Vectorizable T, std::size_t N>
+inline SubVector<T, N> insert(SubVector<T, N> v, std::size_t index, T value) {
+  return SubVector<T, N>{insert(v.full, index, value)};
 }
-template<Vectorizable T, std::size_t tSize>
-inline SubMask<T, tSize> insert(SubMask<T, tSize> v, std::size_t index, bool value) {
-  return SubMask<T, tSize>{insert(v.full, index, value)};
+template<Vectorizable T, std::size_t N>
+inline SubMask<T, N> insert(SubMask<T, N> v, std::size_t index, bool value) {
+  return SubMask<T, N>{insert(v.full, index, value)};
 }
 
 // SuperVector/SuperMask
-template<typename THalf>
-inline SuperVector<THalf> insert(SuperVector<THalf> v, std::size_t index,
-                                 typename THalf::Value value) {
-  if (index < THalf::size) {
+template<typename Half>
+inline SuperVector<Half> insert(SuperVector<Half> v, std::size_t index,
+                                typename Half::Value value) {
+  if (index < Half::size) {
     return {.lower = insert(v.lower, index, value), .upper = v.upper};
   }
-  return {.lower = v.lower, .upper = insert(v.upper, index - THalf::size, value)};
+  return {.lower = v.lower, .upper = insert(v.upper, index - Half::size, value)};
 }
-template<typename THalf>
-inline SuperMask<THalf> insert(SuperMask<THalf> m, std::size_t index, bool value) {
-  if (index < THalf::size) {
+template<typename Half>
+inline SuperMask<Half> insert(SuperMask<Half> m, std::size_t index, bool value) {
+  if (index < Half::size) {
     return {.lower = insert(m.lower, index, value), .upper = m.upper};
   }
-  return {.lower = m.lower, .upper = insert(m.upper, index - THalf::size, value)};
+  return {.lower = m.lower, .upper = insert(m.upper, index - Half::size, value)};
 }
 } // namespace grex::backend
 

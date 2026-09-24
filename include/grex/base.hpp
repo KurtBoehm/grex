@@ -21,12 +21,12 @@
 #if defined(__GNUC__) && !defined(__clang__)
 #define GREX_GCC true
 #define GREX_CLANG false
-#elif defined(__clang__)
+#elifdef __clang__
 #define GREX_GCC false
 #define GREX_CLANG true
 #endif
 
-#if defined(__GNUC__)
+#ifdef __GNUC__
 #define GREX_ALWAYS_INLINE __attribute__((always_inline))
 #else
 #define GREX_ALWAYS_INLINE
@@ -112,7 +112,7 @@ using SignedOf = SignednessTrait<T>::Signed;
 template<typename T>
 static constexpr bool is_signed = SignednessTrait<T>::is_signed;
 
-template<std::size_t tBytes>
+template<std::size_t Bytes>
 struct SizedIntegerTrait;
 #define GREX_DEF_SIZEDI(B, U, S) \
   template<> \
@@ -125,16 +125,16 @@ GREX_DEF_SIZEDI(2, u16, i16)
 GREX_DEF_SIZEDI(4, u32, i32)
 GREX_DEF_SIZEDI(8, u64, i64)
 #undef GREX_DEF_SIZEDI
-template<std::size_t tBytes>
-using UnsignedInt = SizedIntegerTrait<tBytes>::Unsigned;
-template<std::size_t tBytes>
-using SignedInt = SizedIntegerTrait<tBytes>::Signed;
+template<std::size_t Bytes>
+using UnsignedInt = SizedIntegerTrait<Bytes>::Unsigned;
+template<std::size_t Bytes>
+using SignedInt = SizedIntegerTrait<Bytes>::Signed;
 template<FloatVectorizable T>
-using FloatSize = UnsignedInt<sizeof(T)>;
-template<typename T, std::size_t tBytes>
-using CopySignInt = std::conditional_t<is_signed<T>, SignedInt<tBytes>, UnsignedInt<tBytes>>;
+using FloaN = UnsignedInt<sizeof(T)>;
+template<typename T, std::size_t Bytes>
+using CopySignInt = std::conditional_t<is_signed<T>, SignedInt<Bytes>, UnsignedInt<Bytes>>;
 
-template<std::size_t tBytes>
+template<std::size_t Bytes>
 struct FloatTrait;
 template<>
 struct FloatTrait<2> {
@@ -148,8 +148,8 @@ template<>
 struct FloatTrait<8> {
   using Type = f64;
 };
-template<std::size_t tBytes>
-using Float = FloatTrait<tBytes>::Type;
+template<std::size_t Bytes>
+using Float = FloatTrait<Bytes>::Type;
 
 /**
  * Numeric properties of a vectorizable type.
@@ -196,39 +196,39 @@ struct TypeTag {
 template<typename T>
 inline constexpr TypeTag<T> type_tag{};
 
-template<typename T, T tVal>
+template<typename T, T V>
 struct ValueTag {
   using Value = T;
-  static constexpr T value = tVal;
+  static constexpr T value = V;
   constexpr operator T() const { // NOLINT
     return value;
   }
 };
-template<auto tValue>
-using AutoTag = ValueTag<std::decay_t<decltype(tValue)>, tValue>;
-template<int tValue>
-using IntTag = AutoTag<tValue>;
-template<std::size_t tValue>
-using IndexTag = AutoTag<tValue>;
-template<bool tValue>
-using BoolTag = AutoTag<tValue>;
+template<auto V>
+using AutoTag = ValueTag<std::decay_t<decltype(V)>, V>;
+template<int V>
+using IntTag = AutoTag<V>;
+template<std::size_t V>
+using IndexTag = AutoTag<V>;
+template<bool V>
+using BoolTag = AutoTag<V>;
 
-template<typename T, T tValue>
-inline constexpr ValueTag<T, tValue> value_tag{};
-template<auto tValue>
-inline constexpr AutoTag<tValue> auto_tag{};
-template<int tValue>
-inline constexpr IntTag<tValue> int_tag{};
-template<std::size_t tValue>
-inline constexpr IndexTag<tValue> index_tag{};
-template<bool tValue>
-inline constexpr BoolTag<tValue> bool_tag{};
+template<typename T, T V>
+inline constexpr ValueTag<T, V> value_tag{};
+template<auto V>
+inline constexpr AutoTag<V> auto_tag{}; // NOLINT(modernize-avoid-c-style-cast)
+template<int V>
+inline constexpr IntTag<V> int_tag{};
+template<std::size_t V>
+inline constexpr IndexTag<V> index_tag{};
+template<bool V>
+inline constexpr BoolTag<V> bool_tag{};
 inline constexpr BoolTag<true> true_tag{};
 inline constexpr BoolTag<false> false_tag{};
 
-template<bool tIsSafe>
+template<bool IsSafe>
 struct CastTag {
-  static constexpr bool is_safe = tIsSafe;
+  static constexpr bool is_safe = IsSafe;
 };
 inline constexpr CastTag<true> safe_tag{};
 inline constexpr CastTag<false> unsafe_tag{};
@@ -255,7 +255,7 @@ inline constexpr ShuffleIndex any_sh = ShuffleIndex::any;
 inline constexpr ShuffleIndex zero_sh = ShuffleIndex::zero;
 
 constexpr bool is_index(ShuffleIndex sh) {
-  return u8(sh) < u8(any_sh);
+  return static_cast<u8>(sh) < static_cast<u8>(any_sh);
 }
 namespace literals {
 consteval ShuffleIndex operator""_sh(unsigned long long int v) {
@@ -284,29 +284,29 @@ inline std::string_view format_as(IterDirection dir) {
   }
 }
 
-template<typename TIt>
-concept MultiByteIterator = requires(TIt it) {
-  typename TIt::Container;
-  { TIt::Container::element_bytes } -> std::convertible_to<std::size_t>;
+template<typename It>
+concept MultiByteIterator = requires(It it) {
+  typename It::Container;
+  { It::Container::element_bytes } -> std::convertible_to<std::size_t>;
   { it.raw() } -> std::convertible_to<const std::byte*>;
 };
 
-template<std::size_t tIdx, typename T>
+template<std::size_t I, typename T>
 using IdxType = T;
 
-template<std::size_t tSize>
+template<std::size_t N>
 GREX_ALWAYS_INLINE constexpr decltype(auto) static_apply(auto f) {
-  return [&]<std::size_t... tIdxs>(std::index_sequence<tIdxs...> /*seq*/)
+  return [&]<std::size_t... I>(std::index_sequence<I...> /*seq*/)
            GREX_ALWAYS_INLINE -> decltype(auto) {
-             return f.template operator()<tIdxs...>();
-           }(std::make_index_sequence<tSize>{});
+             return f.template operator()<I...>();
+           }(std::make_index_sequence<N>{});
 }
-template<std::size_t tBegin, std::size_t tEnd>
+template<std::size_t Begin, std::size_t End>
 GREX_ALWAYS_INLINE constexpr decltype(auto) static_apply(auto f) {
-  return [&]<std::size_t... tIdxs>(std::index_sequence<tIdxs...> /*seq*/)
+  return [&]<std::size_t... I>(std::index_sequence<I...> /*seq*/)
            GREX_ALWAYS_INLINE -> decltype(auto) {
-             return f.template operator()<tBegin + tIdxs...>();
-           }(std::make_index_sequence<tEnd - tBegin>{});
+             return f.template operator()<Begin + I...>();
+           }(std::make_index_sequence<End - Begin>{});
 }
 } // namespace grex
 

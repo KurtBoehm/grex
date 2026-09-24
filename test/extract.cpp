@@ -8,47 +8,48 @@
 #include <cstddef>
 #include <random>
 
-#include <fmt/base.h>
+#include <fmt/base.h> // IWYU pragma: keep
 #include <pcg_extras.hpp>
 
 #include "grex/grex.hpp"
 
 #include "defs.hpp"
 
+namespace {
 namespace test = grex::test;
 inline constexpr std::size_t repetitions = 4096;
 
 #if !GREX_BACKEND_SCALAR
-template<grex::Vectorizable T, std::size_t tSize>
-void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*tag*/) {
-  using VC = test::VectorChecker<T, tSize>;
-  using MC = test::MaskChecker<T, tSize>;
+template<grex::Vectorizable T, std::size_t N>
+void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<N> /*tag*/) {
+  using VC = test::VectorChecker<T, N>;
+  using MC = test::MaskChecker<T, N>;
 
   auto dist = test::make_distribution<T>();
   auto dval = [&] { return dist(rng); };
   std::uniform_int_distribution<int> bdist{0, 1};
-  auto bval = [&](std::size_t /*dummy*/) { return bool(bdist(rng)); };
+  auto bval = [&](std::size_t /*dummy*/) { return static_cast<bool>(bdist(rng)); };
 
-  grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+  grex::static_apply<N>([&]<std::size_t... I> {
     for (std::size_t i = 0; i < repetitions; ++i) {
       {
         const VC vc = VC::random(dval);
-        test::check("vector extract run-time", std::array{vc.vec[tIdxs]...}, vc.ref,
+        test::check("vector extract run-time", std::array{vc.vec[I]...}, vc.ref,
                     {.verbose = false});
-        test::check("vector extract compile-time", std::array{vc.vec[grex::index_tag<tIdxs>]...},
+        test::check("vector extract compile-time", std::array{vc.vec[grex::index_tag<I>]...},
                     vc.ref, {.verbose = false});
-        test::check("vector extract tuple-like", std::array{get<tIdxs>(vc.vec)...}, vc.ref,
+        test::check("vector extract tuple-like", std::array{get<I>(vc.vec)...}, vc.ref,
                     {.verbose = false});
         test::check("vector extract_single", grex::extract_single(vc.vec), vc.ref[0],
                     {.verbose = false});
       }
       {
-        const MC mc{bval(tIdxs)...};
-        test::check("vector extract run-time", std::array{mc.mask[tIdxs]...}, mc.ref,
+        const MC mc{bval(I)...};
+        test::check("vector extract run-time", std::array{mc.mask[I]...}, mc.ref,
                     {.verbose = false});
-        test::check("vector extract compile-time", std::array{mc.mask[grex::index_tag<tIdxs>]...},
+        test::check("vector extract compile-time", std::array{mc.mask[grex::index_tag<I>]...},
                     mc.ref, {.verbose = false});
-        test::check("vector extract tuple-like", std::array{get<tIdxs>(mc.mask)...}, mc.ref,
+        test::check("vector extract tuple-like", std::array{get<I>(mc.mask)...}, mc.ref,
                     {.verbose = false});
       }
     }
@@ -57,13 +58,14 @@ void run_simd(test::Rng& rng, grex::TypeTag<T> /*tag*/, grex::IndexTag<tSize> /*
 #endif
 template<grex::Vectorizable T>
 void run_scalar(test::Rng& rng, grex::TypeTag<T> /*tag*/) {
-  auto dist = test::make_distribution<T>();
+  auto dist = test::make_distribution<T>(); // NOLINT(misc-const-correctness)
 
   for (std::size_t i = 0; i < repetitions; ++i) {
     const T value = dist(rng);
     test::check("scalar extract", grex::extract_single(value), value, {.verbose = false});
   }
 }
+} // namespace
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};

@@ -19,10 +19,10 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<std::size_t tValueBytes, std::size_t tSize>
+template<std::size_t ValueBytes, std::size_t N>
 struct BlendSelectors {
-  static constexpr std::size_t value_size = tValueBytes;
-  static constexpr std::size_t size = tSize;
+  static constexpr std::size_t value_size = ValueBytes;
+  static constexpr std::size_t size = N;
   static constexpr std::size_t lane_size = 16 / value_size;
   using Ctrl = std::array<BlendSelector, size>;
 
@@ -37,15 +37,15 @@ struct BlendSelectors {
   [[nodiscard]] constexpr int imm8() const
   requires(size <= 8)
   {
-    return static_apply<size>(
-      [&]<std::size_t... tIdxs>() { return (0 + ... + (int(ctrl[tIdxs] == rhs_bl) << tIdxs)); });
+    return static_apply<size>([&]<std::size_t... I> {
+      return (0 + ... + (int(ctrl[I] == rhs_bl) << I)); // NOLINT(bugprone-signed-bitwise)
+    });
   }
 
   [[nodiscard]] constexpr std::optional<BlendSelector> constant() const {
     BlendSelector constant = any_bl;
     for (std::size_t i = 0; i < size; ++i) {
-      BlendSelector bl = ctrl[i];
-      switch (bl) {
+      switch (ctrl[i]) {
         case lhs_bl: {
           if (constant == rhs_bl) {
             return std::nullopt;
@@ -70,18 +70,18 @@ struct BlendSelectors {
   [[nodiscard]] constexpr BlendSelectors<value_size, lane_size> sub_extended() const
   requires(size < lane_size)
   {
-    return static_apply<lane_size>([&]<std::size_t... tIdxs>() {
-      return BlendSelectors<value_size, lane_size>{((tIdxs < size) ? ctrl[tIdxs] : any_bl)...};
+    return static_apply<lane_size>([&]<std::size_t... I> {
+      return BlendSelectors<value_size, lane_size>{((I < size) ? ctrl[I] : any_bl)...};
     });
   }
 
   [[nodiscard]] constexpr BlendSelectors<value_size, size / 2> lower() const {
     return static_apply<size / 2>(
-      [&]<std::size_t... tIdxs>() { return BlendSelectors<value_size, size / 2>{ctrl[tIdxs]...}; });
+      [&]<std::size_t... I> { return BlendSelectors<value_size, size / 2>{ctrl[I]...}; });
   }
   [[nodiscard]] constexpr BlendSelectors<value_size, size / 2> upper() const {
-    return static_apply<size / 2>([&]<std::size_t... tIdxs>() {
-      return BlendSelectors<value_size, size / 2>{ctrl[tIdxs + size / 2]...};
+    return static_apply<size / 2>([&]<std::size_t... I> {
+      return BlendSelectors<value_size, size / 2>{ctrl[I + size / 2]...};
     });
   }
 
@@ -90,10 +90,8 @@ struct BlendSelectors {
     if constexpr (size == lane_size) {
       return *this;
     } else {
-      std::array<BlendSelector, lane_size> data =
-        static_apply<lane_size>([&]<std::size_t... tIdxs>() {
-          return std::array<BlendSelector, lane_size>{ctrl[tIdxs]...};
-        });
+      std::array<BlendSelector, lane_size> data = static_apply<lane_size>(
+        [&]<std::size_t... I> { return std::array<BlendSelector, lane_size>{ctrl[I]...}; });
       for (std::size_t i = lane_size; i < size; ++i) {
         const BlendSelector bz = ctrl[i];
         switch (data[i % lane_size]) {
@@ -122,26 +120,25 @@ struct BlendSelectors {
     }
   }
 
-  template<std::size_t tDstValueBytes>
-  friend constexpr std::optional<
-    BlendSelectors<tDstValueBytes, tSize * tValueBytes / tDstValueBytes>>
+  template<std::size_t DstValueBytes>
+  friend constexpr std::optional<BlendSelectors<DstValueBytes, N * ValueBytes / DstValueBytes>>
   convert(const BlendSelectors& self) {
     static_assert(size >= lane_size, "At least one lane needs to be populated!");
 
-    constexpr auto dst_size = tSize * tValueBytes / tDstValueBytes;
-    using Dst = BlendSelectors<tDstValueBytes, dst_size>;
+    constexpr auto dst_size = N * ValueBytes / DstValueBytes;
+    using Dst = BlendSelectors<DstValueBytes, dst_size>;
 
-    if constexpr (tDstValueBytes == tValueBytes) {
+    if constexpr (DstValueBytes == ValueBytes) {
       return self;
-    } else if constexpr (tDstValueBytes < tValueBytes) {
+    } else if constexpr (DstValueBytes < ValueBytes) {
       // simply repeat the entries
-      constexpr auto factor = tValueBytes / tDstValueBytes;
+      constexpr auto factor = ValueBytes / DstValueBytes;
       const auto entries = static_apply<dst_size>(
-        [&]<std::size_t... tIdxs>() { return std::array{self.ctrl[tIdxs / factor]...}; });
+        [&]<std::size_t... I> { return std::array{self.ctrl[I / factor]...}; });
       return Dst{.ctrl = entries};
     } else {
       // check whether the entries are the same (ignoring any)
-      constexpr auto factor = tDstValueBytes / tValueBytes;
+      constexpr auto factor = DstValueBytes / ValueBytes;
       std::array<BlendSelector, dst_size> entries{};
       for (std::size_t i = 0; i < dst_size; ++i) {
         BlendSelector entry = any_bl;
@@ -174,25 +171,25 @@ struct BlendSelectors {
     }
   }
 };
-template<AnyVector TVec>
-using BlendSelectorsFor = BlendSelectors<sizeof(typename TVec::Value), TVec::size>;
+template<AnyVector Vec>
+using BlendSelectorsFor = BlendSelectors<sizeof(typename Vec::Value), Vec::size>;
 
 template<typename T>
 struct AnyBlendSelectorsTrait : public std::false_type {};
-template<std::size_t tValueBytes, std::size_t tSize>
-struct AnyBlendSelectorsTrait<BlendSelectors<tValueBytes, tSize>> : public std::true_type {};
+template<std::size_t ValueBytes, std::size_t N>
+struct AnyBlendSelectorsTrait<BlendSelectors<ValueBytes, N>> : public std::true_type {};
 template<typename T>
 concept AnyBlendSelectors = AnyBlendSelectorsTrait<T>::value;
 
-template<AnyBlendSelectors auto tBzs>
+template<AnyBlendSelectors auto BS>
 struct BlenderTrait;
-template<AnyBlendSelectors auto tBzs>
-using Blender = BlenderTrait<tBzs>::Type;
+template<AnyBlendSelectors auto BS>
+using Blender = BlenderTrait<BS>::Type;
 
-template<BlendSelector... tBzs, AnyVector TVec>
-requires(TVec::size == sizeof...(tBzs))
-inline TVec blend(TVec a, TVec b) {
-  static constexpr auto bzs = BlendSelectors<sizeof(typename TVec::Value), TVec::size>{tBzs...};
+template<BlendSelector... BS, AnyVector Vec>
+requires(Vec::size == sizeof...(BS))
+inline Vec blend(Vec a, Vec b) {
+  static constexpr auto bzs = BlendSelectors<sizeof(typename Vec::Value), Vec::size>{BS...};
   return Blender<bzs>::apply(a, b, auto_tag<bzs>);
 }
 
@@ -218,13 +215,13 @@ inline void blend_static_test() {
 }
 
 struct BlenderConstant : public BaseExpensiveOp {
-  template<AnyBlendSelectors auto tBls>
-  static constexpr bool is_applicable(AutoTag<tBls> /*tag*/) {
-    return tBls.constant().has_value();
+  template<AnyBlendSelectors auto BS>
+  static constexpr bool is_applicable(AutoTag<BS> /*tag*/) {
+    return BS.constant().has_value();
   }
-  template<AnyVector TVec, BlendSelectorsFor<TVec> tBls>
-  static TVec apply(TVec a, TVec b, AutoTag<tBls> /*tag*/) {
-    constexpr BlendSelector bl = tBls.constant().value();
+  template<AnyVector Vec, BlendSelectorsFor<Vec> BS>
+  static Vec apply(Vec a, Vec b, AutoTag<BS> /*tag*/) {
+    constexpr BlendSelector bl = BS.constant().value();
     if constexpr (bl == rhs_bl) {
       return b;
     } else {
@@ -237,51 +234,51 @@ struct BlenderConstant : public BaseExpensiveOp {
 };
 
 struct SubBlender : public BaseExpensiveOp {
-  template<AnyBlendSelectors auto tBls>
-  using Base = Blender<tBls.sub_extended()>;
+  template<AnyBlendSelectors auto BS>
+  using Base = Blender<BS.sub_extended()>;
 
-  template<AnyBlendSelectors auto tBls>
-  static constexpr bool is_applicable(AutoTag<tBls> /*tag*/) {
-    return Base<tBls>::is_applicable(auto_tag<tBls.sub_extended()>);
+  template<AnyBlendSelectors auto BS>
+  static constexpr bool is_applicable(AutoTag<BS> /*tag*/) {
+    return Base<BS>::is_applicable(auto_tag<BS.sub_extended()>);
   }
-  template<AnyVector TVec, BlendSelectorsFor<TVec> tBls>
-  static TVec apply(TVec a, TVec b, AutoTag<tBls> /*tag*/) {
-    return TVec{Base<tBls>::apply(a.full, b.full, auto_tag<tBls.sub_extended()>)};
+  template<AnyVector Vec, BlendSelectorsFor<Vec> BS>
+  static Vec apply(Vec a, Vec b, AutoTag<BS> /*tag*/) {
+    return Vec{Base<BS>::apply(a.full, b.full, auto_tag<BS.sub_extended()>)};
   }
-  template<AnyBlendSelectors auto tBls>
-  static constexpr Cost cost(AutoTag<tBls> /*tag*/) {
-    return Base<tBls>::cost(auto_tag<tBls.sub_extended()>);
+  template<AnyBlendSelectors auto BS>
+  static constexpr Cost cost(AutoTag<BS> /*tag*/) {
+    return Base<BS>::cost(auto_tag<BS.sub_extended()>);
   }
 };
 struct SuperBlender : public BaseExpensiveOp {
-  template<AnyBlendSelectors auto tBls>
-  static constexpr bool is_applicable(AutoTag<tBls> /*tag*/) {
-    return Blender<tBls.lower()>::is_applicable(auto_tag<tBls.lower()>) &&
-           Blender<tBls.upper()>::is_applicable(auto_tag<tBls.upper()>);
+  template<AnyBlendSelectors auto BS>
+  static constexpr bool is_applicable(AutoTag<BS> /*tag*/) {
+    return Blender<BS.lower()>::is_applicable(auto_tag<BS.lower()>) &&
+           Blender<BS.upper()>::is_applicable(auto_tag<BS.upper()>);
   }
-  template<AnyVector TVec, BlendSelectorsFor<TVec> tBls>
-  static TVec apply(TVec a, TVec b, AutoTag<tBls> /*tag*/) {
-    return TVec{
-      .lower = Blender<tBls.lower()>::apply(a.lower, b.lower, auto_tag<tBls.lower()>),
-      .upper = Blender<tBls.upper()>::apply(a.upper, b.upper, auto_tag<tBls.upper()>),
+  template<AnyVector Vec, BlendSelectorsFor<Vec> BS>
+  static Vec apply(Vec a, Vec b, AutoTag<BS> /*tag*/) {
+    return Vec{
+      .lower = Blender<BS.lower()>::apply(a.lower, b.lower, auto_tag<BS.lower()>),
+      .upper = Blender<BS.upper()>::apply(a.upper, b.upper, auto_tag<BS.upper()>),
     };
   }
-  template<AnyBlendSelectors auto tBls>
-  static constexpr Cost cost(AutoTag<tBls> /*tag*/) {
-    const auto [c0a, c1a] = Blender<tBls.lower()>::cost(auto_tag<tBls.lower()>);
-    const auto [c0b, c1b] = Blender<tBls.upper()>::cost(auto_tag<tBls.upper()>);
+  template<AnyBlendSelectors auto BS>
+  static constexpr Cost cost(AutoTag<BS> /*tag*/) {
+    const auto [c0a, c1a] = Blender<BS.lower()>::cost(auto_tag<BS.lower()>);
+    const auto [c0b, c1b] = Blender<BS.upper()>::cost(auto_tag<BS.upper()>);
     return {.inv_throughput = c0a + c0b, .latency = c1a + c1b};
   }
 };
 
-template<AnyBlendSelectors auto tBls>
-requires((tBls.value_size * tBls.size < register_bytes.front()))
-struct BlenderTrait<tBls> {
+template<AnyBlendSelectors auto BS>
+requires((BS.value_size * BS.size < register_bytes.front())) // NOLINT(*-redundant-parentheses)
+struct BlenderTrait<BS> {
   using Type = SubBlender;
 };
-template<AnyBlendSelectors auto tBls>
-requires((tBls.value_size * tBls.size > register_bytes.back()))
-struct BlenderTrait<tBls> {
+template<AnyBlendSelectors auto BS>
+requires((BS.value_size * BS.size > register_bytes.back())) // NOLINT(*-redundant-parentheses)
+struct BlenderTrait<BS> {
   using Type = SuperBlender;
 };
 } // namespace grex::backend

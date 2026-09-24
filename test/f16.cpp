@@ -20,6 +20,7 @@
 
 #include "defs.hpp"
 
+namespace {
 namespace test = grex::test;
 using namespace grex::primitives;
 
@@ -38,50 +39,51 @@ inline constexpr f64 f16_infinity_threshold = 65520;
  */
 f64 reference_value(u16 bits) {
   const f64 sign = ((bits >> 15U) != 0) ? -1 : 1;
-  const auto expo = int((bits >> 10U) & 0x1FU);
+  const auto expo = static_cast<int>((bits >> 10U) & 0x1FU); // NOLINT(*-signed-bitwise)
   const u32 mant = bits & 0x3FFU;
   if (expo == 0) {
     // Subnormal: mant · 2⁻²⁴.
-    return sign * std::ldexp(f64(mant), -24);
+    return sign * std::ldexp(static_cast<f64>(mant), -24);
   }
   if (expo == 0x1F) {
     return (mant == 0) ? sign * std::numeric_limits<f64>::infinity()
                        : std::numeric_limits<f64>::quiet_NaN();
   }
   // Normal: 1.mant · 2^(expo - 15) = (1024 + mant) · 2^(expo - 25).
-  return sign * std::ldexp(f64(mant | 0x400U), expo - 25);
+  return sign * std::ldexp(static_cast<f64>(mant | 0x400U), expo - 25);
 }
 
 /** The bit pattern of the binary16 nearest to `value`, rounding ties to even. */
 u16 reference_bits(f64 value) {
-  const auto sign = u16(std::signbit(value) ? 0x8000U : 0U);
+  const auto sign = static_cast<u16>(std::signbit(value) ? 0x8000U : 0U);
   if (std::isnan(value)) {
-    return u16(sign | 0x7E00U);
+    return static_cast<u16>(sign | 0x7E00U);
   }
   const f64 mag = std::abs(value);
   if (mag >= f16_infinity_threshold) {
-    return u16(sign | 0x7C00U);
+    return static_cast<u16>(sign | 0x7C00U);
   }
   if (mag < std::ldexp(1.0, -14)) {
     // Zero or subnormal, i.e. mant · 2⁻²⁴ with mant < 1024.
-    const auto mant = u32(std::nearbyint(std::ldexp(mag, 24)));
+    const auto mant = static_cast<u32>(std::nearbyint(std::ldexp(mag, 24)));
     // Rounding up may produce the smallest normal value, whose bit pattern follows seamlessly.
-    return u16(sign | u16(mant));
+    return static_cast<u16>(sign | static_cast<u16>(mant));
   }
   int expo2 = 0;
   std::frexp(mag, &expo2);
   // `frexp` returns mag = f · 2^expo2 with f ∈ [0.5, 1), so the unbiased exponent is expo2 - 1.
   int unbiased = expo2 - 1;
-  auto mant = u32(std::nearbyint(std::ldexp(mag, 10 - unbiased)));
+  auto mant = static_cast<u32>(std::nearbyint(std::ldexp(mag, 10 - unbiased)));
   if (mant == 2048) {
     // Rounding carried into the exponent.
     mant = 1024;
     ++unbiased;
   }
   if (unbiased > 15) {
-    return u16(sign | 0x7C00U);
+    return static_cast<u16>(sign | 0x7C00U);
   }
-  return u16(sign | u16(((u32(unbiased + 15) << 10U) | (mant - 1024))));
+  return static_cast<u16>(
+    sign | static_cast<u16>(((static_cast<u32>(unbiased + 15) << 10U) | (mant - 1024))));
 }
 
 /** Whether two binary16 bit patterns denote the same value, treating all not-a-numbers as equal. */
@@ -89,7 +91,7 @@ bool same_f16(u16 a, u16 b) {
   const bool a_nan = (a & 0x7C00U) == 0x7C00U && (a & 0x3FFU) != 0;
   const bool b_nan = (b & 0x7C00U) == 0x7C00U && (b & 0x3FFU) != 0;
   if (a_nan || b_nan) {
-    return a_nan && b_nan && ((a ^ b) & 0x8000U) == 0;
+    return a_nan && b_nan && ((a ^ b) & 0x8000U) == 0; // NOLINT(bugprone-signed-bitwise)
   }
   return a == b;
 }
@@ -107,45 +109,47 @@ void check_f16(const auto& label, f16 value, u16 reference, bool verbose = false
 /** Every binary16 value has an exact binary32 and binary64 counterpart. */
 void run_scalar_conversions() {
   for (u32 bits = 0; bits < 0x10000; ++bits) {
-    const f16 value = grex::f16_from_bits(u16(bits));
+    const f16 value = grex::f16_from_bits(static_cast<u16>(bits));
     const f32 single = grex::f16_to_f32(value);
     const f64 dbl = grex::f16_to_f64(value);
-    const f64 reference = reference_value(u16(bits));
+    const f64 reference = reference_value(static_cast<u16>(bits));
 
     if (std::isnan(reference)) {
       test::check_msg("f16_to_f32 not-a-number", std::isnan(single), single, reference, false);
       test::check_msg("f16_to_f64 not-a-number", std::isnan(dbl), dbl, reference, false);
     } else {
-      test::check_msg("f16_to_f32", f64(single) == reference, single, reference, false);
+      test::check_msg("f16_to_f32", static_cast<f64>(single) == reference, single, reference,
+                      false);
       test::check_msg("f16_to_f64", dbl == reference, dbl, reference, false);
     }
 
     // Converting back is lossless.
-    check_f16("round trip", grex::f32_to_f16(single), u16(bits));
-    check_f16("round trip via f64", grex::f64_to_f16(dbl), u16(bits));
+    check_f16("round trip", grex::f32_to_f16(single), static_cast<u16>(bits));
+    check_f16("round trip via f64", grex::f64_to_f16(dbl), static_cast<u16>(bits));
   }
 }
 
 /** Rounding from binary32 to binary16 is round-to-nearest, ties to even. */
 void run_scalar_rounding(test::Rng& rng) {
-  auto check = [](u32 bits) {
+  const auto check = [](u32 bits) {
     const f32 single = std::bit_cast<f32>(bits);
     check_f16([&] { return fmt::format("f32_to_f16({:#010x})", bits); }, grex::f32_to_f16(single),
-              reference_bits(f64(single)));
+              reference_bits(static_cast<f64>(single)));
   };
 
   // Every binary16 value, its immediate binary32 neighbours, and the midpoints between consecutive
   // binary16 values, which are exactly the ties.
   for (u32 bits = 0; bits < 0x10000; ++bits) {
-    const u32 base = std::bit_cast<u32>(grex::f16_to_f32(grex::f16_from_bits(u16(bits))));
+    const u32 base =
+      std::bit_cast<u32>(grex::f16_to_f32(grex::f16_from_bits(static_cast<u16>(bits))));
     for (int delta = -2; delta <= 2; ++delta) {
-      check(u32(int(base) + delta));
+      check(static_cast<u32>(static_cast<int>(base) + delta));
     }
     check(base ^ 0x1000U);
     check(base | 0x1000U);
   }
   for (std::size_t i = 0; i < (1U << 20U); ++i) {
-    check(u32(rng()));
+    check(static_cast<u32>(rng()));
   }
 }
 
@@ -155,22 +159,22 @@ void run_scalar_rounding(test::Rng& rng) {
  * values immediately next to a tie between two binary16 values.
  */
 void run_scalar_f64_rounding(test::Rng& rng) {
-  auto check = [](f64 value) {
+  const auto check = [](f64 value) {
     check_f16([&] { return fmt::format("f64_to_f16({})", value); }, grex::f64_to_f16(value),
               reference_bits(value));
   };
-  auto check_around = [&](f64 value) {
+  const auto check_around = [&](f64 value) {
     const auto bits = std::bit_cast<u64>(value);
     for (int delta = -2; delta <= 2; ++delta) {
-      check(std::bit_cast<f64>(u64(i64(bits) + delta)));
+      check(std::bit_cast<f64>(static_cast<u64>(static_cast<i64>(bits) + delta)));
     }
   };
 
   // Every finite binary16 value, the midpoints between consecutive binary16 values, which are
   // exactly the ties, and the binary64 neighbourhoods of both.
   for (u32 bits = 0; bits + 1 < 0x10000; ++bits) {
-    const f64 base = reference_value(u16(bits));
-    const f64 next = reference_value(u16(bits + 1));
+    const f64 base = reference_value(static_cast<u16>(bits));
+    const f64 next = reference_value(static_cast<u16>(bits + 1));
     if (!std::isfinite(base) || !std::isfinite(next)) {
       continue;
     }
@@ -188,19 +192,20 @@ void run_scalar_f64_rounding(test::Rng& rng) {
   }
   // Random values across the whole binary16 range, including the subnormals and the overflow.
   for (std::size_t i = 0; i < (1U << 20U); ++i) {
-    const f64 mag = std::ldexp(f64(rng() >> 11U) * 0x1p-53, int(rng() % 46) - 30);
+    const f64 mag =
+      std::ldexp(static_cast<f64>(rng() >> 11U) * 0x1p-53, static_cast<int>(rng() % 46) - 30);
     check(((rng() & 1U) != 0) ? -mag : mag);
   }
 }
 
 void run_scalar_operations(test::Rng& rng) {
-  auto dist = test::make_distribution<f16>();
+  auto dist = test::make_distribution<f16>(); // NOLINT(*-const-correctness)
 
   for (std::size_t i = 0; i < repetitions; ++i) {
     const f16 a = dist(rng);
     const f16 b = dist(rng);
-    const f64 fa = f64(grex::f16_to_f32(a));
-    const f64 fb = f64(grex::f16_to_f32(b));
+    const f64 fa = static_cast<f64>(grex::f16_to_f32(a));
+    const f64 fb = static_cast<f64>(grex::f16_to_f32(b));
 
     check_f16("abs", grex::abs(a), reference_bits(std::abs(fa)));
     check_f16("min", grex::min(a, b), reference_bits(std::min(fa, fb)));
@@ -219,16 +224,20 @@ void run_scalar_operations(test::Rng& rng) {
       check_f16("fnmadd", grex::fnmadd(a, b, b), reference_bits(fb - product));
       check_f16("fnmsub", grex::fnmsub(a, b, b), reference_bits(-product - fb));
     } else {
-      const f32 fa32 = f32(fa);
-      const f32 fb32 = f32(fb);
-      check_f16("fmadd", grex::fmadd(a, b, b), reference_bits(f64(std::fma(fa32, fb32, fb32))));
-      check_f16("fmsub", grex::fmsub(a, b, b), reference_bits(f64(std::fma(fa32, fb32, -fb32))));
-      check_f16("fnmadd", grex::fnmadd(a, b, b), reference_bits(f64(std::fma(-fa32, fb32, fb32))));
-      check_f16("fnmsub", grex::fnmsub(a, b, b), reference_bits(f64(std::fma(-fa32, fb32, -fb32))));
+      const f32 fa32 = static_cast<f32>(fa);
+      const f32 fb32 = static_cast<f32>(fb);
+      check_f16("fmadd", grex::fmadd(a, b, b),
+                reference_bits(static_cast<f64>(std::fma(fa32, fb32, fb32))));
+      check_f16("fmsub", grex::fmsub(a, b, b),
+                reference_bits(static_cast<f64>(std::fma(fa32, fb32, -fb32))));
+      check_f16("fnmadd", grex::fnmadd(a, b, b),
+                reference_bits(static_cast<f64>(std::fma(-fa32, fb32, fb32))));
+      check_f16("fnmsub", grex::fnmsub(a, b, b),
+                reference_bits(static_cast<f64>(std::fma(-fa32, fb32, -fb32))));
     }
     test::check("is_finite", grex::is_finite(a), std::isfinite(fa), {.verbose = false});
-    test::check("convert to f32", grex::convert<f32>(a), f32(fa), {.verbose = false});
-    check_f16("convert from f32", grex::convert<f16>(f32(fa)), grex::f16_bits(a));
+    test::check("convert to f32", grex::convert<f32>(a), static_cast<f32>(fa), {.verbose = false});
+    check_f16("convert from f32", grex::convert<f16>(static_cast<f32>(fa)), grex::f16_bits(a));
   }
 
   // Non-finite values.
@@ -269,8 +278,9 @@ void run_software_conversion(test::Rng& rng) {
 
   // Binary16 → binary32: Exhaustive.
   for (u32 base = 0; base < 0x10000; base += size) {
-    const auto halves = grex::static_apply<size>(
-      [&]<std::size_t... tI>() { return std::array{grex::f16_from_bits(u16(base + tI))...}; });
+    const auto halves = grex::static_apply<size>([&]<std::size_t... I> {
+      return std::array{grex::f16_from_bits(static_cast<u16>(base + I))...};
+    });
     const auto in = F16Vec::load(halves.data());
     const SingleVec out{grex::backend::f16_to_f32(in.backend())};
     const auto ref = in.convert(grex::type_tag<f32>);
@@ -280,39 +290,40 @@ void run_software_conversion(test::Rng& rng) {
   // Binary32 → binary16: All binary16 values, their neighbourhoods, the ties, and random values.
   std::array<f32, size> buf{};
   std::size_t filled = 0;
-  auto flush = [&]() {
+  auto flush = [&] {
     const auto in = SingleVec::load(buf.data());
     const F16Vec out{grex::backend::f32_to_f16(in.backend())};
     const auto array = out.as_array();
     for (std::size_t i = 0; i < size; ++i) {
       check_f16([&] { return fmt::format("f32_to_f16({})", buf[i]); }, array[i],
-                reference_bits(f64(buf[i])));
+                reference_bits(static_cast<f64>(buf[i])));
     }
     filled = 0;
   };
-  auto push = [&](u32 bits) {
+  const auto push = [&](u32 bits) {
     buf[filled++] = std::bit_cast<f32>(bits);
     if (filled == size) {
       flush();
     }
   };
   for (u32 bits = 0; bits < 0x10000; ++bits) {
-    const u32 base = std::bit_cast<u32>(grex::f16_to_f32(grex::f16_from_bits(u16(bits))));
+    const u32 base =
+      std::bit_cast<u32>(grex::f16_to_f32(grex::f16_from_bits(static_cast<u16>(bits))));
     for (int delta = -2; delta <= 2; ++delta) {
-      push(u32(int(base) + delta));
+      push(static_cast<u32>(static_cast<int>(base) + delta));
     }
     push(base ^ 0x1000U);
     push(base | 0x1000U);
   }
   for (std::size_t i = 0; i < (1U << 19U); ++i) {
-    push(u32(rng()));
+    push(static_cast<u32>(rng()));
   }
   while (filled != 0) {
     push(0);
   }
 }
-
 #endif
+} // namespace
 
 int main() {
   test::Rng rng{pcg_extras::seed_seq_from<std::random_device>{}};

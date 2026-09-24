@@ -51,27 +51,26 @@ namespace grex::backend {
 //--------------------------------------------------------------------------------------------------
 
 /**
- * The control operand of a permutation with `tPartBits`-wide parts which moves the
- * `tValueBits`-wide element `index` to the front, packed into a single scalar: Part `p` of the
+ * The control operand of a permutation with `PartBits`-wide parts which moves the
+ * `ValueBits`-wide element `index` to the front, packed into a single scalar: Part `p` of the
  * output is taken from part `index * parts + p` of the input, and since only the parts which make
- * up element 0 are of interest, the whole control fits into `tValueBits` bits.
+ * up element 0 are of interest, the whole control fits into `ValueBits` bits.
  */
-template<std::size_t tValueBits, std::size_t tPartBits>
-requires(tPartBits <= tValueBits && tValueBits <= 64)
-inline UnsignedInt<tValueBits / 8> extract_control(std::size_t index) {
-  using Control = UnsignedInt<tValueBits / 8>;
-  constexpr std::size_t parts = tValueBits / tPartBits;
+template<std::size_t ValueBits, std::size_t PartBits>
+requires(PartBits <= ValueBits && ValueBits <= 64)
+inline UnsignedInt<ValueBits / 8> extract_control(std::size_t index) {
+  using Control = UnsignedInt<ValueBits / 8>;
+  constexpr std::size_t parts = ValueBits / PartBits;
   // A one in every part and the position of every part within the element, respectively.
   constexpr Control ones = static_apply<parts>(
-    []<std::size_t... tParts>() { return Control(((Control{1} << (tParts * tPartBits)) | ...)); });
-  constexpr Control offsets = static_apply<parts>([]<std::size_t... tParts>() {
-    return Control(((Control(tParts) << (tParts * tPartBits)) | ...));
-  });
+    []<std::size_t... Parts> { return Control(((Control{1} << (Parts * PartBits)) | ...)); });
+  constexpr Control offsets = static_apply<parts>(
+    []<std::size_t... Parts> { return Control(((Control(Parts) << (Parts * PartBits)) | ...)); });
   return Control(Control(index * parts) * ones + offsets);
 }
 
 /**
- * Permute the `tPartBits`-wide parts of `v` as prescribed by `control`, which is the packed control
+ * Permute the `PartBits`-wide parts of `v` as prescribed by `control`, which is the packed control
  * described above, and return the lowest 128 bits of the result, of which only the parts belonging
  * to element 0 are meaningful.
  */
@@ -158,11 +157,11 @@ consteval std::size_t extract_chunk_bits(std::size_t vector_bits, std::size_t bi
  * Move the `chunk_index`-th chunk of the unsigned integer vector `v` to the front of a 128-bit
  * register.
  */
-template<AnyNativeVector TVec>
-requires(UnsignedIntVector<TVec>)
-inline __m128i extract_front(TVec v, std::size_t chunk_index) {
-  static constexpr std::size_t bits = 8 * sizeof(ValueOf<TVec>);
-  static constexpr std::size_t vector_bits = bits * size_of<TVec>;
+template<AnyNativeVector Vec>
+requires(UnsignedIntVector<Vec>)
+inline __m128i extract_front(Vec v, std::size_t chunk_index) {
+  static constexpr std::size_t bits = 8 * sizeof(ValueOf<Vec>);
+  static constexpr std::size_t vector_bits = bits * size_of<Vec>;
   static constexpr std::size_t part_bits = extract_part_bits(vector_bits, bits);
   static constexpr std::size_t chunk_bits = extract_chunk_bits(vector_bits, bits);
 
@@ -179,13 +178,13 @@ inline __m128i extract_front(TVec v, std::size_t chunk_index) {
  * register and reading it from there. Since only bit patterns are moved around, the permutation is
  * performed on the unsigned integer type of the same width.
  */
-template<AnyNativeVector TVec>
-inline ValueOf<TVec> extract(TVec v, std::size_t index) {
-  using Value = ValueOf<TVec>;
+template<AnyNativeVector Vec>
+inline ValueOf<Vec> extract(Vec v, std::size_t index) {
+  using Value = ValueOf<Vec>;
   using Part = UnsignedInt<sizeof(Value)>;
   using Front = NativeVector<Part, 16 / sizeof(Part)>;
   static constexpr std::size_t bits = 8 * sizeof(Value);
-  static constexpr std::size_t chunk_bits = extract_chunk_bits(bits * size_of<TVec>, bits);
+  static constexpr std::size_t chunk_bits = extract_chunk_bits(bits * size_of<Vec>, bits);
 
   const std::size_t offset = index * bits;
   const __m128i front = extract_front(as<Part>(v), offset / chunk_bits);
@@ -205,11 +204,11 @@ inline ValueOf<TVec> extract(TVec v, std::size_t index) {
 }
 #else
 /** SSE2 provides no variable shuffle, so a round trip through memory is used as the fallback. */
-template<AnyNativeVector TVec>
-inline ValueOf<TVec> extract(TVec v, std::size_t index) {
-  std::array<ValueOf<TVec>, size_of<TVec>> values{};
+template<AnyNativeVector Vec>
+inline ValueOf<Vec> extract(Vec v, std::size_t index) {
+  std::array<ValueOf<Vec>, size_of<Vec>> values{};
   store(values.data(), v);
-  return values[index % size_of<TVec>];
+  return values[index % size_of<Vec>];
 }
 #endif
 

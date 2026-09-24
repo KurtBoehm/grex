@@ -12,13 +12,13 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-// Casts from TSrc to TDst with arbitrary values in the upper bits
-template<IntVectorizable TDst, IntVectorizable TSrc>
-inline TDst expand_any(TSrc src) {
+// Casts from Src to Dst with arbitrary values in the upper bits
+template<IntVectorizable Dst, IntVectorizable Src>
+inline Dst expand_any(Src src) {
   if (__builtin_constant_p(src)) {
-    return TDst(src);
+    return Dst(src);
   }
-  TDst dst;
+  Dst dst;
   asm("" : "=r"(dst) : "0"(src));
   return dst;
 }

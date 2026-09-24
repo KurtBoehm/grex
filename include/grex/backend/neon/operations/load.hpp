@@ -34,9 +34,9 @@ namespace grex::backend {
 GREX_FOREACH_TYPE_EXT(GREX_LOAD, 128)
 
 /* This is not actually aligned, but who cares. */
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline NativeVector<T, tSize> load_aligned(const T* src,
-                                                              TypeTag<NativeVector<T, tSize>> tag) {
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline NativeVector<T, N> load_aligned(const T* src,
+                                                          TypeTag<NativeVector<T, N>> tag) {
   return load(src, tag);
 }
 
@@ -61,7 +61,7 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 16 / sizeof(T)> load_first(const T* da
                                                                      IndexTag<2> /*bytes*/) {
   using Vec = NativeVector<T, 16 / sizeof(T)>;
   if (static_apply<Vec::size>(
-        [&]<std::size_t... tI>() { return (... && __builtin_constant_p(data[tI])); })) {
+        [&]<std::size_t... I> { return (... && __builtin_constant_p(data[I])); })) {
     auto out = zeros(type_tag<Vec>);
     std::memcpy(&out, data, 2);
     return out;
@@ -77,7 +77,7 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 16 / sizeof(T)> load_first(const T* da
                                                                      IndexTag<4> /*bytes*/) {
   using Vec = NativeVector<T, 16 / sizeof(T)>;
   if (static_apply<Vec::size>(
-        [&]<std::size_t... tI>() { return (... && __builtin_constant_p(data[tI])); })) {
+        [&]<std::size_t... I> { return (... && __builtin_constant_p(data[I])); })) {
     auto out = zeros(type_tag<Vec>);
     std::memcpy(&out, data, 4);
     return out;
@@ -95,24 +95,24 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 16 / sizeof(T)> load_first(const T* da
   return {.r = as<T>(expand64(out))};
 }
 
-template<std::size_t tBytes, typename T>
+template<std::size_t Bytes, typename T>
 GREX_ALWAYS_INLINE inline NativeVector<T, 16 / sizeof(T)> load_first(const T* data) {
-  return load_first(data, index_tag<tBytes>);
+  return load_first(data, index_tag<Bytes>);
 }
 
-template<AnyVector TVec, std::size_t tSize>
-requires((AnyNativeVector<TVec> || AnySubNativeVector<TVec>) && tSize <= TVec::size)
-GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, IndexTag<tSize> /*size*/,
-                                         TypeTag<TVec> /*tag*/) {
-  using Value = TVec::Value;
+template<AnyVector Vec, std::size_t N>
+requires((AnyNativeVector<Vec> || AnySubNativeVector<Vec>) && N <= Vec::size)
+GREX_ALWAYS_INLINE inline Vec load_part(const typename Vec::Value* ptr, IndexTag<N> /*size*/,
+                                        TypeTag<Vec> /*tag*/) {
+  using Value = Vec::Value;
   using FullVec = NativeVector<Value, 16 / sizeof(Value)>;
-  constexpr std::size_t bytes = tSize * sizeof(Value);
+  constexpr std::size_t bytes = N * sizeof(Value);
 
   // Simple cases: 16 and 0
   if constexpr (bytes == 16) {
     return load(ptr, type_tag<FullVec>);
   } else if constexpr (bytes == 0) {
-    return undefined(type_tag<TVec>);
+    return undefined(type_tag<Vec>);
   }
 
   uint8x16_t out;
@@ -149,40 +149,38 @@ GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, IndexT
       out = vld1q_lane_u8(reinterpret_cast<const u8*>(ptr) + offset, out, offset);
     }
   }
-  return TVec{as<Value>(out)};
+  return Vec{as<Value>(out)};
 }
 
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline SubVector<T, tSize> load(const T* src,
-                                                   TypeTag<SubVector<T, tSize>> /*tag*/) {
-  using Dst = SubVector<T, tSize>;
-  return Dst{load_part(src, index_tag<tSize>, type_tag<Dst>)};
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline SubVector<T, N> load(const T* src, TypeTag<SubVector<T, N>> /*tag*/) {
+  using Dst = SubVector<T, N>;
+  return Dst{load_part(src, index_tag<N>, type_tag<Dst>)};
 }
-template<Vectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline SubVector<T, tSize> load_aligned(const T* src,
-                                                           TypeTag<SubVector<T, tSize>> /*tag*/) {
-  using Dst = SubVector<T, tSize>;
-  return Dst{load_part(src, index_tag<tSize>, type_tag<Dst>)};
+template<Vectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline SubVector<T, N> load_aligned(const T* src,
+                                                       TypeTag<SubVector<T, N>> /*tag*/) {
+  using Dst = SubVector<T, N>;
+  return Dst{load_part(src, index_tag<N>, type_tag<Dst>)};
 }
 
-template<AnyVector TVec>
-requires(AnyNativeVector<TVec> || AnySubNativeVector<TVec>)
-GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, std::size_t size,
-                                         TypeTag<TVec> tag) {
-  using Value = TVec::Value;
-  constexpr std::size_t bytes = sizeof(Value) * TVec::size;
+template<AnyVector Vec>
+requires(AnyNativeVector<Vec> || AnySubNativeVector<Vec>)
+GREX_ALWAYS_INLINE inline Vec load_part(const typename Vec::Value* ptr, std::size_t size,
+                                        TypeTag<Vec> tag) {
+  using Value = Vec::Value;
+  constexpr std::size_t bytes = sizeof(Value) * Vec::size;
 
   if (__builtin_constant_p(size)) {
     auto result = undefined(tag);
     bool matched = false;
-    grex::static_apply<TVec::size>([&]<std::size_t... tI>() {
-      matched =
-        (((tI == size) ? (result = load_part(ptr, index_tag<tI>, tag), true) : false) || ...);
+    grex::static_apply<Vec::size>([&]<std::size_t... I> {
+      matched = (((I == size) ? (result = load_part(ptr, index_tag<I>, tag), true) : false) || ...);
     });
     return matched ? result : load(ptr, tag);
   }
 
-  if (size >= TVec::size) [[unlikely]] {
+  if (size >= Vec::size) [[unlikely]] {
     return load(ptr, tag);
   }
   auto out = undefined(tag).registr();
@@ -210,7 +208,7 @@ GREX_ALWAYS_INLINE inline TVec load_part(const typename TVec::Value* ptr, std::s
     const auto lo = load_first<8>(ptr).r;
     out = as<Value>(vzip1q_u64(as<u64>(lo), as<u64>(out)));
   }
-  return TVec{out};
+  return Vec{out};
 }
 } // namespace grex::backend
 

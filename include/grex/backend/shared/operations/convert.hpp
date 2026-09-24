@@ -22,17 +22,17 @@ namespace grex::backend {
 //==================================================================================================
 
 // Source and destination scalar types are identical: return the vector unchanged.
-template<AnyVector TVec>
-inline TVec convert(TVec v, TypeTag<ValueOf<TVec>> /*tag*/) {
+template<AnyVector Vec>
+inline Vec convert(Vec v, TypeTag<ValueOf<Vec>> /*tag*/) {
   return v;
 }
 
 // Integer vectors with the same element width but different signedness:
 // reinterpret the register without modifying the bits.
-template<IntVectorizable TDst, IntVector TSrc>
-requires(!std::same_as<ValueOf<TSrc>, TDst> && sizeof(TDst) == sizeof(ValueOf<TSrc>))
-inline NativeVector<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> /*tag*/) {
-  return as<TDst>(v);
+template<IntVectorizable Dst, IntVector Src>
+requires(!std::same_as<ValueOf<Src>, Dst> && sizeof(Dst) == sizeof(ValueOf<Src>))
+inline NativeVector<Dst, size_of<Src>> convert(Src v, TypeTag<Dst> /*tag*/) {
+  return as<Dst>(v);
 }
 
 //==================================================================================================
@@ -42,32 +42,32 @@ inline NativeVector<TDst, size_of<TSrc>> convert(TSrc v, TypeTag<TDst> /*tag*/) 
 // Sub-native vector → sub-native vector:
 // expand to the smallest size where the source or destination element type becomes native,
 // perform the conversion there, then wrap back into a sub-vector.
-template<Vectorizable TDst, Vectorizable TSrc, std::size_t tSize>
-requires(is_subnative<TDst, tSize>)
-inline VectorFor<TDst, tSize> convert(SubVector<TSrc, tSize> v, TypeTag<TDst> /*tag*/) {
-  using Out = VectorFor<TDst, tSize>;
-  constexpr std::size_t work_size = std::min(min_native_size<TSrc>, Out::Full::size);
-  static_assert(work_size > tSize);
-  const auto s = convert(VectorFor<TSrc, work_size>{v.registr()}, type_tag<TDst>);
+template<Vectorizable Dst, Vectorizable Src, std::size_t N>
+requires(is_subnative<Dst, N>)
+inline VectorFor<Dst, N> convert(SubVector<Src, N> v, TypeTag<Dst> /*tag*/) {
+  using Out = VectorFor<Dst, N>;
+  constexpr std::size_t work_size = std::min(min_native_size<Src>, Out::Full::size);
+  static_assert(work_size > N);
+  const auto s = convert(VectorFor<Src, work_size>{v.registr()}, type_tag<Dst>);
   return Out{s.registr()};
 }
 
 // Super-native vector → super-native vector:
 // convert both halves to the destination type independently and merge.
-template<typename THalf, Vectorizable TDst>
-requires(is_supernative<TDst, THalf::size * 2>)
-inline VectorFor<TDst, THalf::size * 2> convert(SuperVector<THalf> v, TypeTag<TDst> /*tag*/) {
-  return merge(convert(v.lower, type_tag<TDst>), convert(v.upper, type_tag<TDst>));
+template<typename Half, Vectorizable Dst>
+requires(is_supernative<Dst, Half::size * 2>)
+inline VectorFor<Dst, Half::size * 2> convert(SuperVector<Half> v, TypeTag<Dst> /*tag*/) {
+  return merge(convert(v.lower, type_tag<Dst>), convert(v.upper, type_tag<Dst>));
 }
 
 // Convenience functions taking the destination element type as a template parameter, not a tag.
-template<Vectorizable TDst, AnyVector TSrc>
-inline VectorFor<TDst, TSrc::size> convert(TSrc v) {
-  return convert(v, type_tag<TDst>);
+template<Vectorizable Dst, AnyVector Src>
+inline VectorFor<Dst, Src::size> convert(Src v) {
+  return convert(v, type_tag<Dst>);
 }
-template<Vectorizable TDst, AnyMask TSrc>
-inline MaskFor<TDst, TSrc::size> convert(TSrc v) {
-  return convert(v, type_tag<TDst>);
+template<Vectorizable Dst, AnyMask Src>
+inline MaskFor<Dst, Src::size> convert(Src v) {
+  return convert(v, type_tag<Dst>);
 }
 } // namespace grex::backend
 

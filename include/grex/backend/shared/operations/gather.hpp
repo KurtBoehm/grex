@@ -19,52 +19,46 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
-inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
-                                       NativeVector<TIndex, tSize> idxs) {
-  return static_apply<tSize>([&]<std::size_t... tIdxs> {
-    return set(type_tag<VectorFor<TValue, tSize>>,
-               data[std::size_t(extract(idxs, index_tag<tIdxs>))]...);
+template<Vectorizable V, std::size_t Extent, Vectorizable Index, std::size_t N>
+inline VectorFor<V, N> gather(std::span<const V, Extent> data, NativeVector<Index, N> idxs) {
+  return static_apply<N>([&]<std::size_t... I> {
+    return set(type_tag<VectorFor<V, N>>, data[std::size_t(extract(idxs, index_tag<I>))]...);
   });
 }
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
-inline VectorFor<TValue, tSize> gather(std::span<const TValue, tExtent> data,
-                                       SubVector<TIndex, tSize> idxs) {
-  return static_apply<tSize>([&]<std::size_t... tIdxs> {
-    return set(type_tag<VectorFor<TValue, tSize>>,
-               data[std::size_t(extract(idxs, index_tag<tIdxs>))]...);
+template<Vectorizable V, std::size_t Extent, Vectorizable Index, std::size_t N>
+inline VectorFor<V, N> gather(std::span<const V, Extent> data, SubVector<Index, N> idxs) {
+  return static_apply<N>([&]<std::size_t... I> {
+    return set(type_tag<VectorFor<V, N>>, data[std::size_t(extract(idxs, index_tag<I>))]...);
   });
 }
-template<Vectorizable TValue, std::size_t tExtent, typename THalf>
-inline VectorFor<TValue, 2 * THalf::size> gather(std::span<const TValue, tExtent> data,
-                                                 SuperVector<THalf> idxs) {
+template<Vectorizable V, std::size_t Extent, typename Half>
+inline VectorFor<V, 2 * Half::size> gather(std::span<const V, Extent> data,
+                                           SuperVector<Half> idxs) {
   return merge(gather(data, idxs.lower), gather(data, idxs.upper));
 }
 
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
-inline VectorFor<TValue, tSize> mask_gather(std::span<const TValue, tExtent> data,
-                                            MaskFor<TValue, tSize> m,
-                                            NativeVector<TIndex, tSize> idxs) {
-  return static_apply<tSize>([&]<std::size_t... tIdxs> {
-    return set(type_tag<VectorFor<TValue, tSize>>,
-               (extract(m, index_tag<tIdxs>) ? data[std::size_t(extract(idxs, index_tag<tIdxs>))]
-                                             : TValue{})...);
+template<Vectorizable V, std::size_t Extent, Vectorizable Index, std::size_t N>
+inline VectorFor<V, N> mask_gather(std::span<const V, Extent> data, MaskFor<V, N> m,
+                                   NativeVector<Index, N> idxs) {
+  return static_apply<N>([&]<std::size_t... I> {
+    return set(
+      type_tag<VectorFor<V, N>>,
+      (extract(m, index_tag<I>) ? data[std::size_t(extract(idxs, index_tag<I>))] : V{})...);
   });
 }
-template<Vectorizable TValue, std::size_t tExtent, Vectorizable TIndex, std::size_t tSize>
-inline VectorFor<TValue, tSize> mask_gather(std::span<const TValue, tExtent> data,
-                                            MaskFor<TValue, tSize> m,
-                                            SubVector<TIndex, tSize> idxs) {
-  return static_apply<tSize>([&]<std::size_t... tIdxs> {
-    return set(type_tag<VectorFor<TValue, tSize>>,
-               (extract(m, index_tag<tIdxs>) ? data[std::size_t(extract(idxs, index_tag<tIdxs>))]
-                                             : TValue{})...);
+template<Vectorizable V, std::size_t Extent, Vectorizable Index, std::size_t N>
+inline VectorFor<V, N> mask_gather(std::span<const V, Extent> data, MaskFor<V, N> m,
+                                   SubVector<Index, N> idxs) {
+  return static_apply<N>([&]<std::size_t... I> {
+    return set(
+      type_tag<VectorFor<V, N>>,
+      (extract(m, index_tag<I>) ? data[std::size_t(extract(idxs, index_tag<I>))] : V{})...);
   });
 }
-template<Vectorizable TValue, std::size_t tExtent, typename TVecHalf>
-inline VectorFor<TValue, 2 * TVecHalf::size> mask_gather(std::span<const TValue, tExtent> data,
-                                                         MaskFor<TValue, 2 * TVecHalf::size> m,
-                                                         SuperVector<TVecHalf> idxs) {
+template<Vectorizable V, std::size_t Extent, typename VecHalf>
+inline VectorFor<V, 2 * VecHalf::size> mask_gather(std::span<const V, Extent> data,
+                                                   MaskFor<V, 2 * VecHalf::size> m,
+                                                   SuperVector<VecHalf> idxs) {
   return merge(mask_gather(data, get_low(m), idxs.lower),
                mask_gather(data, get_high(m), idxs.upper));
 }

@@ -15,44 +15,44 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<Vectorizable T, std::size_t tSize>
-inline SubMask<T, tSize> cutoff_mask(std::size_t i, TypeTag<SubMask<T, tSize>> /*tag*/) {
-  return SubMask<T, tSize>{cutoff_mask(i, type_tag<NativeMask<T, min_native_size<T>>>)};
+template<Vectorizable T, std::size_t N>
+inline SubMask<T, N> cutoff_mask(std::size_t i, TypeTag<SubMask<T, N>> /*tag*/) {
+  return SubMask<T, N>{cutoff_mask(i, type_tag<NativeMask<T, min_native_size<T>>>)};
 }
-template<typename THalf>
-inline SuperMask<THalf> cutoff_mask(std::size_t i, TypeTag<SuperMask<THalf>> /*tag*/) {
-  if (i <= THalf::size) {
-    return {.lower = cutoff_mask(i, type_tag<THalf>), .upper = zeros(type_tag<THalf>)};
+template<typename Half>
+inline SuperMask<Half> cutoff_mask(std::size_t i, TypeTag<SuperMask<Half>> /*tag*/) {
+  if (i <= Half::size) {
+    return {.lower = cutoff_mask(i, type_tag<Half>), .upper = zeros(type_tag<Half>)};
   }
-  return {.lower = ones(type_tag<THalf>), .upper = cutoff_mask(i - THalf::size, type_tag<THalf>)};
+  return {.lower = ones(type_tag<Half>), .upper = cutoff_mask(i - Half::size, type_tag<Half>)};
 }
 
-template<Vectorizable T, std::size_t tSize>
-inline SubMask<T, tSize> single_mask(std::size_t i, TypeTag<SubMask<T, tSize>> /*tag*/) {
-  return SubMask<T, tSize>{single_mask(i, type_tag<NativeMask<T, min_native_size<T>>>)};
+template<Vectorizable T, std::size_t N>
+inline SubMask<T, N> single_mask(std::size_t i, TypeTag<SubMask<T, N>> /*tag*/) {
+  return SubMask<T, N>{single_mask(i, type_tag<NativeMask<T, min_native_size<T>>>)};
 }
-template<typename THalf>
-inline SuperMask<THalf> single_mask(std::size_t i, TypeTag<SuperMask<THalf>> /*tag*/) {
-  if (i < THalf::size) {
-    return {.lower = single_mask(i, type_tag<THalf>), .upper = zeros(type_tag<THalf>)};
+template<typename Half>
+inline SuperMask<Half> single_mask(std::size_t i, TypeTag<SuperMask<Half>> /*tag*/) {
+  if (i < Half::size) {
+    return {.lower = single_mask(i, type_tag<Half>), .upper = zeros(type_tag<Half>)};
   }
-  return {.lower = zeros(type_tag<THalf>), .upper = single_mask(i - THalf::size, type_tag<THalf>)};
+  return {.lower = zeros(type_tag<Half>), .upper = single_mask(i - Half::size, type_tag<Half>)};
 }
 
-template<Vectorizable T, std::size_t tSize>
-inline NativeVector<T, tSize> cutoff(std::size_t i, NativeVector<T, tSize> v) {
-  return blend_zero(cutoff_mask(i, type_tag<NativeMask<T, tSize>>), v);
+template<Vectorizable T, std::size_t N>
+inline NativeVector<T, N> cutoff(std::size_t i, NativeVector<T, N> v) {
+  return blend_zero(cutoff_mask(i, type_tag<NativeMask<T, N>>), v);
 }
-template<Vectorizable T, std::size_t tSize>
-inline SubVector<T, tSize> cutoff(std::size_t i, SubVector<T, tSize> v) {
-  return SubVector<T, tSize>{cutoff(i, v.full)};
+template<Vectorizable T, std::size_t N>
+inline SubVector<T, N> cutoff(std::size_t i, SubVector<T, N> v) {
+  return SubVector<T, N>{cutoff(i, v.full)};
 }
-template<typename THalf>
-inline SuperVector<THalf> cutoff(std::size_t i, SuperVector<THalf> v) {
-  if (i <= THalf::size) {
-    return {.lower = cutoff(i, v.lower), .upper = zeros(type_tag<THalf>)};
+template<typename Half>
+inline SuperVector<Half> cutoff(std::size_t i, SuperVector<Half> v) {
+  if (i <= Half::size) {
+    return {.lower = cutoff(i, v.lower), .upper = zeros(type_tag<Half>)};
   }
-  return {.lower = v.lower, .upper = cutoff(i - THalf::size, v.upper)};
+  return {.lower = v.lower, .upper = cutoff(i - Half::size, v.upper)};
 }
 } // namespace grex::backend
 

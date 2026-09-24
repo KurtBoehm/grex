@@ -35,13 +35,13 @@ namespace grex::backend {
 // Bits
 //==================================================================================================
 
-// Cast TSrc to TDst with arbitrary values in the upper bits
-template<IntVectorizable TDst, IntVectorizable TSrc>
-inline TDst expand_bits(TSrc src) {
+// Cast Src to Dst with arbitrary values in the upper bits
+template<IntVectorizable Dst, IntVectorizable Src>
+inline Dst expand_bits(Src src) {
   if (__builtin_constant_p(src)) {
-    return TDst(src);
+    return Dst(src);
   }
-  TDst dst;
+  Dst dst;
   asm("" : "=r"(dst) : "0"(src)); // NOLINT
   return dst;
 }
@@ -50,9 +50,9 @@ inline TDst expand_bits(TSrc src) {
 // Scalar
 //==================================================================================================
 
-template<std::same_as<f16> T, bool tZero>
-inline f16x8 expand(T x, IndexTag<8> size, BoolTag<tZero> /*zero*/) {
-  if constexpr (!tZero) {
+template<std::same_as<f16> T, bool Zero>
+inline f16x8 expand(T x, IndexTag<8> size, BoolTag<Zero> /*zero*/) {
+  if constexpr (!Zero) {
     // A compile-time value has to stay recognizable as one: The `asm` block below is opaque to
     // GCC, which would keep callers such as `set` from folding a constant argument list into a
     // single vector constant. Zeroing the upper lanes is permitted, as they are arbitrary anyway.
@@ -84,9 +84,9 @@ inline f16x8 expand(T x, IndexTag<8> size, BoolTag<tZero> /*zero*/) {
   return {.r = _mm_bsrli_si128(_mm_bslli_si128(any, 14), 14)};
 #endif
 }
-template<std::same_as<f32> T, bool tZero>
-inline f32x4 expand(T x, IndexTag<4> /*tag*/, BoolTag<tZero> /*tag*/) {
-  if constexpr (!tZero) {
+template<std::same_as<f32> T, bool Zero>
+inline f32x4 expand(T x, IndexTag<4> /*tag*/, BoolTag<Zero> /*tag*/) {
+  if constexpr (!Zero) {
 #if GREX_GCC
     __m128 retval;
     asm("" : "=x"(retval) : "0"(x));
@@ -99,9 +99,9 @@ inline f32x4 expand(T x, IndexTag<4> /*tag*/, BoolTag<tZero> /*tag*/) {
   }
   return {.r = _mm_set_ss(x)};
 }
-template<std::same_as<f64> T, bool tZero>
-inline f64x2 expand(T x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
-  if constexpr (!tZero) {
+template<std::same_as<f64> T, bool Zero>
+inline f64x2 expand(T x, IndexTag<2> /*tag*/, BoolTag<Zero> /*tag*/) {
+  if constexpr (!Zero) {
 #if GREX_GCC
     __m128d retval;
     asm("" : "=x"(retval) : "0"(x));
@@ -115,13 +115,13 @@ inline f64x2 expand(T x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
   return {.r = _mm_set_sd(x)};
 }
 // Integers with at most 32 bits: Cast to i32
-template<IntVectorizable T, bool tZero>
+template<IntVectorizable T, bool Zero>
 requires(sizeof(T) <= 4)
 inline NativeVector<T, min_native_size<T>> expand(T x, IndexTag<min_native_size<T>> /*tag*/,
-                                                  BoolTag<tZero> /*tag*/) {
+                                                  BoolTag<Zero> /*tag*/) {
   // force zero extension
   using Unsigned = UnsignedOf<T>;
-  if constexpr (tZero) {
+  if constexpr (Zero) {
     return {.r = _mm_cvtsi32_si128(i32(Unsigned(x)))};
   } else {
 #if GREX_GCC
@@ -134,9 +134,9 @@ inline NativeVector<T, min_native_size<T>> expand(T x, IndexTag<min_native_size<
   }
 }
 // Integers with 64 bits: Cast to i64
-template<IntVectorizable T, bool tZero>
+template<IntVectorizable T, bool Zero>
 requires(sizeof(T) == 8)
-inline NativeVector<T, 2> expand(T x, IndexTag<2> /*tag*/, BoolTag<tZero> /*tag*/) {
+inline NativeVector<T, 2> expand(T x, IndexTag<2> /*tag*/, BoolTag<Zero> /*tag*/) {
   return {.r = _mm_cvtsi64_si128(i64(x))};
 }
 
@@ -169,14 +169,14 @@ GREX_FOREACH_TYPE_EXT(GREX_EXPANDV_INTRINSIC, 512, 256, 512)
 #endif
 
 // native/super-native → super-native
-template<AnyVector TVec, std::size_t tDstSize, bool tZero>
-requires(tDstSize > size_of<TVec> && is_supernative<ValueOf<TVec>, tDstSize> &&
-         (AnyNativeVector<TVec> || AnySuperNativeVector<TVec>))
-inline VectorFor<typename TVec::Value, tDstSize> expand(TVec v, IndexTag<tDstSize> /*size*/,
-                                                        BoolTag<tZero> zero_tag) {
-  using Value = TVec::Value;
-  using Half = VectorFor<Value, tDstSize / 2>;
-  if constexpr (tZero) {
+template<AnyVector Vec, std::size_t DstN, bool Zero>
+requires(DstN > size_of<Vec> && is_supernative<ValueOf<Vec>, DstN> &&
+         (AnyNativeVector<Vec> || AnySuperNativeVector<Vec>))
+inline VectorFor<typename Vec::Value, DstN> expand(Vec v, IndexTag<DstN> /*size*/,
+                                                   BoolTag<Zero> zero_tag) {
+  using Value = Vec::Value;
+  using Half = VectorFor<Value, DstN / 2>;
+  if constexpr (Zero) {
     return merge(expand(v, index_tag<Half::size>, zero_tag), zeros(type_tag<Half>));
   } else {
     return merge(expand(v, index_tag<Half::size>, zero_tag), undefined(type_tag<Half>));

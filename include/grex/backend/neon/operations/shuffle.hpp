@@ -163,8 +163,8 @@ inline u32x4 compress64(VectorFor<u64, 4> idxs) {
 }
 
 // Super-native variants: recursively compress each half.
-template<AnySuperNativeVector TVec>
-inline VectorFor<u32, size_of<TVec>> compress64(TVec v) {
+template<AnySuperNativeVector Vec>
+inline VectorFor<u32, size_of<Vec>> compress64(Vec v) {
   return {.lower = compress64(v.lower), .upper = compress64(v.upper)};
 }
 
@@ -211,10 +211,10 @@ inline u8x16 shuffle_indices(u64x2 idxs, IndexTag<8> /*value_bytes*/) {
 
 // Sub-native indices: expand the index vector to twice its width, compute byte indices,
 // then shrink back to the original vector width.
-template<Vectorizable T, std::size_t tSize, std::size_t tValueBytes>
-inline VectorFor<u8, tSize * tValueBytes> shuffle_indices(SubVector<T, tSize> idxs,
-                                                          IndexTag<tValueBytes> value_bytes) {
-  return shrink<tSize * tValueBytes>(shuffle_indices(expand_any<2 * tSize>(idxs), value_bytes));
+template<Vectorizable T, std::size_t N, std::size_t ValueBytes>
+inline VectorFor<u8, N * ValueBytes> shuffle_indices(SubVector<T, N> idxs,
+                                                     IndexTag<ValueBytes> value_bytes) {
+  return shrink<N * ValueBytes>(shuffle_indices(expand_any<2 * N>(idxs), value_bytes));
 }
 
 //==================================================================================================
@@ -225,7 +225,7 @@ inline VectorFor<u8, tSize * tValueBytes> shuffle_indices(SubVector<T, tSize> id
 // If logical index range (index_ub) exceeds table size, mask indices down to [0, 15].
 inline u8x16 shuffle(u8x16 table, u8x16 idxs, AnyIndexTag auto index_ub,
                      AnyIndexTag auto /*index_offset*/) {
-  uint8x16_t vidxs = idxs.r;
+  uint8x16_t vidxs = idxs.r; // NOLINT(*-const-correctness)
   if constexpr (index_ub > 16) {
     vidxs = vandq_u8(vidxs, vdupq_n_u8(0x0F));
   }
@@ -236,7 +236,7 @@ inline u8x16 shuffle(u8x16 table, u8x16 idxs, AnyIndexTag auto index_ub,
 // If logical index range (index_ub) exceeds table size, mask indices down to [0, 31].
 inline u8x16 shuffle(VectorFor<u8, 32> table, u8x16 idxs, AnyIndexTag auto index_ub,
                      AnyIndexTag auto /*index_offset*/) {
-  uint8x16_t vidxs = idxs.r;
+  uint8x16_t vidxs = idxs.r; // NOLINT(*-const-correctness)
   if constexpr (index_ub > 32) {
     vidxs = vandq_u8(vidxs, vdupq_n_u8(0x1F));
   }
@@ -247,7 +247,7 @@ inline u8x16 shuffle(VectorFor<u8, 32> table, u8x16 idxs, AnyIndexTag auto index
 // If logical index range (index_ub) exceeds table size, mask indices down to [0, 63].
 inline u8x16 shuffle(VectorFor<u8, 64> table, u8x16 idxs, AnyIndexTag auto index_ub,
                      AnyIndexTag auto /*index_offset*/) {
-  uint8x16_t vidxs = idxs.r;
+  uint8x16_t vidxs = idxs.r; // NOLINT(*-const-correctness)
   if constexpr (index_ub > 64) {
     vidxs = vandq_u8(vidxs, vdupq_n_u8(0x3F));
   }
@@ -264,17 +264,17 @@ inline u8x16 shuffle(VectorFor<u8, 64> table, u8x16 idxs, AnyIndexTag auto index
 // Generic typed shuffle front-end
 //==================================================================================================
 
-// TTable:       table of values to select from
-// TIdxs:        unsigned integer indices into the table
+// Table:        table of values to select from
+// Idxs:         unsigned integer indices into the table
 // index_ub:     compile-time upper bound on idx values (exclusive, in elements)
 // index_offset: base offset that has already been applied to the table (in elements)
-template<AnyVector TTable, UnsignedIntVector TIdxs>
-inline VectorFor<ValueOf<TTable>, size_of<TIdxs>>
-shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto index_offset) {
-  using Value = ValueOf<TTable>;
-  constexpr std::size_t table_size = size_of<TTable>;
-  using Index = ValueOf<TIdxs>;
-  constexpr std::size_t index_size = size_of<TIdxs>;
+template<AnyVector Table, UnsignedIntVector Idxs>
+inline VectorFor<ValueOf<Table>, size_of<Idxs>>
+shuffle(Table table, Idxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto index_offset) {
+  using Value = ValueOf<Table>;
+  constexpr std::size_t table_size = size_of<Table>;
+  using Index = ValueOf<Idxs>;
+  constexpr std::size_t index_size = size_of<Idxs>;
   constexpr std::size_t max_index = std::numeric_limits<Index>::max();
 
   if constexpr (sizeof(Index) < 8 && table_size > max_index + 1) {
@@ -302,7 +302,7 @@ shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto in
     // Table too large for a single tbl (max 64 bytes) → split into two halves.
     const auto lo = shuffle(table.lower, idxs, index_ub, index_offset);
     const auto hi = shuffle(table.upper, idxs, index_ub, index_tag<index_offset + table_size / 2>);
-    const auto mask = compare_lt(idxs, broadcast<TIdxs>(Index{index_offset + table_size / 2}));
+    const auto mask = compare_lt(idxs, broadcast<Idxs>(Index{index_offset + table_size / 2}));
     // Select from low or upper half depending on index range.
     return blend(convert<Value>(mask), hi, lo);
   } else {
@@ -312,9 +312,9 @@ shuffle(TTable table, TIdxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto in
 }
 
 // Convenience overload: full table range, zero base offset.
-template<AnyVector TTable, AnyVector TIdxs>
-inline VectorFor<typename TTable::Value, TIdxs::size> shuffle(TTable table, TIdxs idxs) {
-  return shuffle(table, idxs, index_tag<TTable::size>, index_tag<0>);
+template<AnyVector Table, AnyVector Idxs>
+inline VectorFor<typename Table::Value, Idxs::size> shuffle(Table table, Idxs idxs) {
+  return shuffle(table, idxs, index_tag<Table::size>, index_tag<0>);
 }
 } // namespace grex::backend
 

@@ -104,16 +104,16 @@ inline T make_finite(T v) {
 }
 #endif
 
-template<std::size_t tSrcBytes>
-static UnsignedInt<std::bit_ceil(tSrcBytes)> load_multibyte(const std::byte* data,
-                                                            IndexTag<tSrcBytes> /*tag*/) {
-  static constexpr std::size_t dst_bytes = std::bit_ceil(tSrcBytes);
-  static constexpr std::size_t overhead_bits = (dst_bytes - tSrcBytes) * CHAR_BIT;
+template<std::size_t SrcBytes>
+static UnsignedInt<std::bit_ceil(SrcBytes)> load_multibyte(const std::byte* data,
+                                                           IndexTag<SrcBytes> /*tag*/) {
+  static constexpr std::size_t dst_bytes = std::bit_ceil(SrcBytes);
+  static constexpr std::size_t overhead_bits = (dst_bytes - SrcBytes) * CHAR_BIT;
   using Dst = UnsignedInt<dst_bytes>;
   static constexpr Dst mask = std::numeric_limits<Dst>::max() >> overhead_bits;
 
   Dst output;
-  std::memcpy(&output, data, tSrcBytes);
+  std::memcpy(&output, data, SrcBytes);
   if constexpr (std::endian::native == std::endian::little) {
     return output & mask;
   }
@@ -123,29 +123,29 @@ static UnsignedInt<std::bit_ceil(tSrcBytes)> load_multibyte(const std::byte* dat
   return output;
 }
 
-template<std::size_t tIdx, typename THead, typename... TTail>
-GREX_ALWAYS_INLINE inline THead pack_get(THead head, TTail... tail) {
-  if constexpr (tIdx == 0) {
+template<std::size_t I, typename Head, typename... Tail>
+GREX_ALWAYS_INLINE inline Head pack_get(Head head, Tail... tail) {
+  if constexpr (I == 0) {
     return head;
   } else {
-    return pack_get<tIdx - 1>(tail...);
+    return pack_get<I - 1>(tail...);
   }
 }
 
 #define GREX_NARY(NAME, OP, SECOP) \
-  template<typename THead, typename... TTail> \
-  requires((... && std::same_as<THead, TTail>)) \
-  GREX_ALWAYS_INLINE inline THead NAME(THead head, TTail... tail) { \
-    constexpr std::size_t num = sizeof...(TTail) + 1; \
+  template<typename Head, typename... Tail> \
+  requires((... && std::same_as<Head, Tail>)) \
+  GREX_ALWAYS_INLINE inline Head NAME(Head head, Tail... tail) { \
+    constexpr std::size_t num = sizeof...(Tail) + 1; \
     if constexpr (num == 1) { \
       return head; \
     } else { \
       const auto rec0 = \
-        [&]<std::size_t tOff, std::size_t... tI>(IndexTag<tOff>, std::index_sequence<tI...>) \
-          GREX_ALWAYS_INLINE { return NAME(pack_get<tOff + tI>(head, tail...)...); }; \
+        [&]<std::size_t Off, std::size_t... I>(IndexTag<Off>, std::index_sequence<I...>) \
+          GREX_ALWAYS_INLINE { return NAME(pack_get<Off + I>(head, tail...)...); }; \
       const auto rec1 = \
-        [&]<std::size_t tOff, std::size_t... tI>(IndexTag<tOff>, std::index_sequence<tI...>) \
-          GREX_ALWAYS_INLINE { return SECOP(pack_get<tOff + tI>(head, tail...)...); }; \
+        [&]<std::size_t Off, std::size_t... I>(IndexTag<Off>, std::index_sequence<I...>) \
+          GREX_ALWAYS_INLINE { return SECOP(pack_get<Off + I>(head, tail...)...); }; \
 \
       if constexpr (std::has_single_bit(num)) { \
         const auto s0 = rec0(index_tag<0>, std::make_index_sequence<num / 2>{}); \

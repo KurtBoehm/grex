@@ -119,11 +119,11 @@ GREX_FOREACH_SUB_EXT(GREX_SUBSET_MASK)
     return {.r = set(type_tag<V>, GREX_REPEAT(SIZE, GREX_SET_NEGVAL, BITS)).r}; \
   }
 
-template<Vectorizable T, std::size_t tSize, typename... Ts>
-inline SubMask<T, tSize> set(TypeTag<SubMask<T, tSize>> /*tag*/, Ts... values) {
+template<Vectorizable T, std::size_t N, typename... Ts>
+inline SubMask<T, N> set(TypeTag<SubMask<T, N>> /*tag*/, Ts... values) {
   using SV = SignedInt<sizeof(T)>;
-  const auto r = set(type_tag<SubVector<SV, tSize>>, -SV(values)...).registr();
-  return SubMask<T, tSize>{r};
+  const auto r = set(type_tag<SubVector<SV, N>>, -SV(values)...).registr();
+  return SubMask<T, N>{r};
 }
 #endif
 
@@ -202,31 +202,31 @@ GREX_SUBSET2_UNPACK(f, 32)
 // More than two values, which are combined by an unpack tree
 //--------------------------------------------------------------------------------------------------
 
-/** The `tIdx`-th value of a pack, which is resolved entirely at compile time. */
-template<std::size_t tIdx, typename T, typename... Ts>
+/** The `I`-th value of a pack, which is resolved entirely at compile time. */
+template<std::size_t I, typename T, typename... Ts>
 GREX_ALWAYS_INLINE inline T pack_value(T value, Ts... rest) {
-  if constexpr (tIdx == 0) {
+  if constexpr (I == 0) {
     return value;
   } else {
-    return pack_value<tIdx - 1>(rest...);
+    return pack_value<I - 1>(rest...);
   }
 }
 
 /**
- * The `tSize` values starting at index `tBegin`, combined into a vector by an unpack tree: The two
+ * The `N` values starting at index `Begin`, combined into a vector by an unpack tree: The two
  * halves are built recursively and interleaved by `merge`, which uses a `punpckl` instruction up to
  * the native size and `vinserti128`/`vinserti64x4` beyond it.
  */
-template<std::size_t tBegin, std::size_t tSize, Vectorizable T, std::same_as<T>... Ts>
-requires(tSize >= 2 && sizeof...(Ts) + 1 >= tBegin + tSize)
-inline VectorFor<T, tSize> set_part(T value, Ts... rest) {
-  if constexpr (tSize == 2) {
-    return set(type_tag<SubVector<T, 2>>, pack_value<tBegin>(value, rest...),
-               pack_value<tBegin + 1>(value, rest...));
+template<std::size_t Begin, std::size_t N, Vectorizable T, std::same_as<T>... Ts>
+requires(N >= 2 && sizeof...(Ts) + 1 >= Begin + N)
+inline VectorFor<T, N> set_part(T value, Ts... rest) {
+  if constexpr (N == 2) {
+    return set(type_tag<SubVector<T, 2>>, pack_value<Begin>(value, rest...),
+               pack_value<Begin + 1>(value, rest...));
   } else {
-    constexpr std::size_t half = tSize / 2;
-    return merge(set_part<tBegin, half>(value, rest...),
-                 set_part<tBegin + half, half>(value, rest...));
+    constexpr std::size_t half = N / 2;
+    return merge(set_part<Begin, half>(value, rest...),
+                 set_part<Begin + half, half>(value, rest...));
   }
 }
 

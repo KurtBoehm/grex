@@ -15,48 +15,47 @@
 
 namespace grex::backend {
 // Super-native vectors: Split into halves
-template<typename THalf>
-inline SuperVector<THalf> load(const typename THalf::Value* ptr,
-                               TypeTag<SuperVector<THalf>> /*tag*/) {
+template<typename Half>
+inline SuperVector<Half> load(const typename Half::Value* ptr, TypeTag<SuperVector<Half>> /*tag*/) {
   return {
-    .lower = load(ptr, type_tag<THalf>),
-    .upper = load(ptr + THalf::size, type_tag<THalf>),
+    .lower = load(ptr, type_tag<Half>),
+    .upper = load(ptr + Half::size, type_tag<Half>),
   };
 }
-template<typename THalf>
-inline SuperVector<THalf> load_aligned(const typename THalf::Value* ptr,
-                                       TypeTag<SuperVector<THalf>> /*tag*/) {
+template<typename Half>
+inline SuperVector<Half> load_aligned(const typename Half::Value* ptr,
+                                      TypeTag<SuperVector<Half>> /*tag*/) {
   return {
-    .lower = load_aligned(ptr, type_tag<THalf>),
-    .upper = load_aligned(ptr + THalf::size, type_tag<THalf>),
+    .lower = load_aligned(ptr, type_tag<Half>),
+    .upper = load_aligned(ptr + Half::size, type_tag<Half>),
   };
 }
-template<typename THalf>
-inline SuperVector<THalf> load_part(const typename THalf::Value* ptr, std::size_t size,
-                                    TypeTag<SuperVector<THalf>> /*tag*/) {
-  if (size <= THalf::size) {
+template<typename Half>
+inline SuperVector<Half> load_part(const typename Half::Value* ptr, std::size_t size,
+                                   TypeTag<SuperVector<Half>> /*tag*/) {
+  if (size <= Half::size) {
     return {
-      .lower = load_part(ptr, size, type_tag<THalf>),
-      .upper = undefined(type_tag<THalf>),
+      .lower = load_part(ptr, size, type_tag<Half>),
+      .upper = undefined(type_tag<Half>),
     };
   }
   return {
-    .lower = load(ptr, type_tag<THalf>),
-    .upper = load_part(ptr + THalf::size, size - THalf::size, type_tag<THalf>),
+    .lower = load(ptr, type_tag<Half>),
+    .upper = load_part(ptr + Half::size, size - Half::size, type_tag<Half>),
   };
 }
-template<typename THalf>
-inline SuperVector<THalf> load_part(const typename THalf::Value* ptr, AnyIndexTag auto size,
-                                    TypeTag<SuperVector<THalf>> /*tag*/) {
-  if constexpr (size <= THalf::size) {
+template<typename Half>
+inline SuperVector<Half> load_part(const typename Half::Value* ptr, AnyIndexTag auto size,
+                                   TypeTag<SuperVector<Half>> /*tag*/) {
+  if constexpr (size <= Half::size) {
     return {
-      .lower = load_part(ptr, size, type_tag<THalf>),
-      .upper = undefined(type_tag<THalf>),
+      .lower = load_part(ptr, size, type_tag<Half>),
+      .upper = undefined(type_tag<Half>),
     };
   } else {
     return {
-      .lower = load(ptr, type_tag<THalf>),
-      .upper = load_part(ptr + THalf::size, index_tag<size - THalf::size>, type_tag<THalf>),
+      .lower = load(ptr, type_tag<Half>),
+      .upper = load_part(ptr + Half::size, index_tag<size - Half::size>, type_tag<Half>),
     };
   }
 }

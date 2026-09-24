@@ -12,20 +12,21 @@
 
 #include "grex/grex.hpp"
 
+namespace {
 using namespace grex::primitives;
 namespace be = grex::backend;
 
-template<be::AnyVector TVec>
-requires(be::AnyNativeVector<TVec> || be::AnySubNativeVector<TVec>)
-[[gnu::noinline]] void store_part_ifs(typename TVec::Value* dst, TVec src, std::size_t size) {
-  using Value = TVec::Value;
-  constexpr std::size_t bytes = sizeof(Value) * TVec::size;
+template<be::AnyVector Vec>
+requires(be::AnyNativeVector<Vec> || be::AnySubNativeVector<Vec>)
+[[gnu::noinline]] void store_part_ifs(typename Vec::Value* dst, Vec src, std::size_t size) {
+  using Value = Vec::Value;
+  constexpr std::size_t bytes = sizeof(Value) * Vec::size;
 
   if (__builtin_constant_p(size)) {
     bool matched = false;
-    grex::static_apply<TVec::size>([&]<std::size_t... tI>() {
+    grex::static_apply<Vec::size>([&]<std::size_t... I> {
       matched =
-        (((tI == size) ? (be::store_part(dst, src, grex::index_tag<tI>), true) : false) || ...);
+        (((I == size) ? (be::store_part(dst, src, grex::index_tag<I>), true) : false) || ...);
     });
     if (!matched) {
       be::store(dst, src);
@@ -33,7 +34,7 @@ requires(be::AnyNativeVector<TVec> || be::AnySubNativeVector<TVec>)
     return;
   }
 
-  if (size >= TVec::size) [[unlikely]] {
+  if (size >= Vec::size) [[unlikely]] {
     be::store(dst, src);
     return;
   }
@@ -41,21 +42,21 @@ requires(be::AnyNativeVector<TVec> || be::AnySubNativeVector<TVec>)
   if constexpr (bytes > 8) {
     if ((size & (8U / sizeof(Value))) != 0 && bytes > 8) {
       be::store_first<8>(dst, src);
-      src = TVec{be::as<Value>(vdupq_laneq_u64(be::as<u64>(src.registr()), 1))};
+      src = Vec{be::as<Value>(vdupq_laneq_u64(be::as<u64>(src.registr()), 1))};
     }
   }
   if constexpr (sizeof(Value) <= 4 && bytes > 4) {
     if ((size & (4U / sizeof(Value))) != 0) {
       constexpr std::size_t f = 8 / sizeof(Value);
       be::store_first<4>(dst + (size / f * f), src);
-      src = TVec{be::as<Value>(vdupq_laneq_u32(be::as<u32>(src.registr()), 1))};
+      src = Vec{be::as<Value>(vdupq_laneq_u32(be::as<u32>(src.registr()), 1))};
     }
   }
   if constexpr (sizeof(Value) <= 2 && bytes > 2) {
     if ((size & (2U / sizeof(Value))) != 0) {
       constexpr std::size_t f = 4 / sizeof(Value);
       be::store_first<2>(dst + (size / f * f), src);
-      src = TVec{be::as<Value>(vdupq_laneq_u16(be::as<u16>(src.registr()), 1))};
+      src = Vec{be::as<Value>(vdupq_laneq_u16(be::as<u16>(src.registr()), 1))};
     }
   }
   if constexpr (sizeof(Value) == 1) {
@@ -146,5 +147,6 @@ BM_OPS_WRAP(f32, 4)
 BM_OPS_WRAP(u16, 8)
 BM_OPS_WRAP(u8, 16)
 // NOLINTEND
+} // namespace
 
 BENCHMARK_MAIN();

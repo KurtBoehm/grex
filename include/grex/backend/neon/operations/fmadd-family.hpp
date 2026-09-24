@@ -48,37 +48,36 @@ inline constexpr bool has_fma = true;
 GREX_FOREACH_FP_TYPE_OPT_EXT(GREX_FMADDF, 128, MultiplyAdd, vfmaq)
 GREX_FOREACH_FP_TYPE_OPT_EXT(GREX_FMADDF, 128, NegatedMultiplyAdd, vfmsq)
 
-template<NativeFloatVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline NativeVector<T, tSize>
-fused(NativeVector<T, tSize> a, NativeVector<T, tSize> b, NativeVector<T, tSize> c,
-      MultiplySubtract /*tag*/) {
+template<NativeFloatVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline NativeVector<T, N> fused(NativeVector<T, N> a, NativeVector<T, N> b,
+                                                   NativeVector<T, N> c, MultiplySubtract /*tag*/) {
   return fused(a, b, negate(c), MultiplyAdd{});
 }
-template<NativeFloatVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline NativeVector<T, tSize>
-fused(NativeVector<T, tSize> a, NativeVector<T, tSize> b, NativeVector<T, tSize> c,
-      NegatedMultiplySubtract /*tag*/) {
+template<NativeFloatVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline NativeVector<T, N> fused(NativeVector<T, N> a, NativeVector<T, N> b,
+                                                   NativeVector<T, N> c,
+                                                   NegatedMultiplySubtract /*tag*/) {
   return fused(a, b, negate(c), NegatedMultiplyAdd{});
 }
 
-template<typename THalf>
-GREX_ALWAYS_INLINE inline SuperVector<THalf> fused(SuperVector<THalf> a, SuperVector<THalf> b,
-                                                   SuperVector<THalf> c, FusedTag auto tag) {
+template<typename Half>
+GREX_ALWAYS_INLINE inline SuperVector<Half> fused(SuperVector<Half> a, SuperVector<Half> b,
+                                                  SuperVector<Half> c, FusedTag auto tag) {
   return {
     .lower = fused(a.lower, b.lower, c.lower, tag),
     .upper = fused(a.upper, b.upper, c.upper, tag),
   };
 }
-template<NativeFloatVectorizable T, std::size_t tSize>
-GREX_ALWAYS_INLINE inline SubVector<T, tSize> fused(SubVector<T, tSize> a, SubVector<T, tSize> b,
-                                                    SubVector<T, tSize> c, FusedTag auto tag) {
-  return SubVector<T, tSize>{fused(a.full, b.full, c.full, tag)};
+template<NativeFloatVectorizable T, std::size_t N>
+GREX_ALWAYS_INLINE inline SubVector<T, N> fused(SubVector<T, N> a, SubVector<T, N> b,
+                                                SubVector<T, N> c, FusedTag auto tag) {
+  return SubVector<T, N>{fused(a.full, b.full, c.full, tag)};
 }
 
 #if !GREX_F16_NATIVE_ARITHMETIC
 // Binary16 without FP16: round-trip through binary32.
-template<Float16Vector TVec>
-GREX_ALWAYS_INLINE inline TVec fused(TVec a, TVec b, TVec c, FusedTag auto tag) {
+template<Float16Vector Vec>
+GREX_ALWAYS_INLINE inline Vec fused(Vec a, Vec b, Vec c, FusedTag auto tag) {
   return f32_to_f16(fused(f16_to_f32(a), f16_to_f32(b), f16_to_f32(c), tag));
 }
 #endif

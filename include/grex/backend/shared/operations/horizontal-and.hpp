@@ -10,8 +10,8 @@
 #include "grex/backend/base.hpp"
 
 namespace grex::backend {
-template<AnyMask THalf>
-inline bool horizontal_and(SuperMask<THalf> m) {
+template<AnyMask Half>
+inline bool horizontal_and(SuperMask<Half> m) {
   return horizontal_and(m.lower) && horizontal_and(m.upper);
 }
 } // namespace grex::backend

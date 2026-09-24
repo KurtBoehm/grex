@@ -16,15 +16,15 @@
 
 namespace grex::backend {
 // Convert a mask to signed integers
-template<Vectorizable T, std::size_t tSize>
-inline NativeVector<SignedInt<sizeof(T)>, tSize> mask2vector(NativeMask<T, tSize> m) {
+template<Vectorizable T, std::size_t N>
+inline NativeVector<SignedInt<sizeof(T)>, N> mask2vector(NativeMask<T, N> m) {
   return {.r = as<SignedInt<sizeof(T)>>(m.r)};
 }
 
 // Convert (signed) integers to a mask
-template<SignedIntVectorizable T, std::size_t tSize, Vectorizable TDst>
-requires(sizeof(T) == sizeof(TDst))
-inline NativeMask<TDst, tSize> vector2mask(NativeVector<T, tSize> m, TypeTag<TDst> /*tag*/) {
+template<SignedIntVectorizable T, std::size_t N, Vectorizable Dst>
+requires(sizeof(T) == sizeof(Dst))
+inline NativeMask<Dst, N> vector2mask(NativeVector<T, N> m, TypeTag<Dst> /*tag*/) {
   return {.r = as<UnsignedInt<sizeof(T)>>(m.r)};
 }
 } // namespace grex::backend

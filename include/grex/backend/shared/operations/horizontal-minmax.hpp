@@ -17,25 +17,25 @@
 #endif
 
 namespace grex::backend {
-template<typename THalf>
-inline THalf::Value horizontal_min(SuperVector<THalf> v) {
+template<typename Half>
+inline Half::Value horizontal_min(SuperVector<Half> v) {
   return horizontal_min(min(v.lower, v.upper));
 }
-template<typename THalf>
-inline THalf::Value horizontal_max(SuperVector<THalf> v) {
+template<typename Half>
+inline Half::Value horizontal_max(SuperVector<Half> v) {
   return horizontal_max(max(v.lower, v.upper));
 }
 
 #if !GREX_F16_NATIVE_ARITHMETIC
 // Binary16 without hardware support: round-trip through binary32.
-template<Float16Vector TVec>
-requires(!AnySuperNativeVector<TVec>)
-inline f16 horizontal_min(TVec v) {
+template<Float16Vector Vec>
+requires(!AnySuperNativeVector<Vec>)
+inline f16 horizontal_min(Vec v) {
   return grex::f32_to_f16(horizontal_min(f16_to_f32(v)));
 }
-template<Float16Vector TVec>
-requires(!AnySuperNativeVector<TVec>)
-inline f16 horizontal_max(TVec v) {
+template<Float16Vector Vec>
+requires(!AnySuperNativeVector<Vec>)
+inline f16 horizontal_max(Vec v) {
   return grex::f32_to_f16(horizontal_max(f16_to_f32(v)));
 }
 #endif

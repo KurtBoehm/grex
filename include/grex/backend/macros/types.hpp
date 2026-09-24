@@ -17,23 +17,23 @@
 #define GREX_REGKIND(KIND, BITS) GREX_REGKIND_I(KIND, BITS)
 
 #define GREX_NN_UNARY(TYPE, NAME) \
-  template<typename THalf> \
-  inline Super##TYPE<THalf> NAME(Super##TYPE<THalf> v) { \
+  template<typename Half> \
+  inline Super##TYPE<Half> NAME(Super##TYPE<Half> v) { \
     return {.lower = NAME(v.lower), .upper = NAME(v.upper)}; \
   } \
-  template<Vectorizable T, std::size_t tSize> \
-  inline Sub##TYPE<T, tSize> NAME(Sub##TYPE<T, tSize> v) { \
-    return Sub##TYPE<T, tSize>{NAME(v.full)}; \
+  template<Vectorizable T, std::size_t N> \
+  inline Sub##TYPE<T, N> NAME(Sub##TYPE<T, N> v) { \
+    return Sub##TYPE<T, N>{NAME(v.full)}; \
   }
 
 #define GREX_NN_BINARY(TYPE, NAME) \
-  template<typename THalf> \
-  inline Super##TYPE<THalf> NAME(Super##TYPE<THalf> a, Super##TYPE<THalf> b) { \
+  template<typename Half> \
+  inline Super##TYPE<Half> NAME(Super##TYPE<Half> a, Super##TYPE<Half> b) { \
     return {.lower = NAME(a.lower, b.lower), .upper = NAME(a.upper, b.upper)}; \
   } \
-  template<Vectorizable T, std::size_t tSize> \
-  inline Sub##TYPE<T, tSize> NAME(Sub##TYPE<T, tSize> a, Sub##TYPE<T, tSize> b) { \
-    return Sub##TYPE<T, tSize>{NAME(a.full, b.full)}; \
+  template<Vectorizable T, std::size_t N> \
+  inline Sub##TYPE<T, N> NAME(Sub##TYPE<T, N> a, Sub##TYPE<T, N> b) { \
+    return Sub##TYPE<T, N>{NAME(a.full, b.full)}; \
   }
 
 #define GREX_NNVECTOR_UNARY(NAME) GREX_NN_UNARY(Vector, NAME)

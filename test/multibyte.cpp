@@ -24,15 +24,16 @@
 #include <array>
 #endif
 
+namespace {
 namespace test = grex::test;
 
 inline constexpr std::size_t mbi_size = 1UL << 15UL;
 inline constexpr std::size_t repetitions = 4096;
 
 #if !GREX_BACKEND_SCALAR
-template<std::size_t tSrc>
-void run_simd(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
-  static constexpr std::size_t src_bytes = tSrc;
+template<std::size_t Src>
+void run_simd(test::Rng& rng, grex::IndexTag<Src> /*tag*/) {
+  static constexpr std::size_t src_bytes = Src;
   static constexpr std::size_t dst_bytes = std::bit_ceil(src_bytes);
   using Dst = grex::UnsignedInt<dst_bytes>;
   static constexpr auto sizes = grex::native_sizes<Dst>;
@@ -49,35 +50,35 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
     mbi[i] = dist(rng);
   }
 
-  auto op = [&]<std::size_t tSize>(grex::IndexTag<tSize> /*tag*/) {
-    fmt::print(fmt::fg(fmt::terminal_color::blue), "{}×{}\n", test::type_name<Dst>(), tSize);
+  auto op = [&]<std::size_t N>(grex::IndexTag<N> /*tag*/) {
+    fmt::print(fmt::fg(fmt::terminal_color::blue), "{}×{}\n", test::type_name<Dst>(), N);
     std::uniform_int_distribution<std::ptrdiff_t> idist{
       0,
-      static_cast<std::ptrdiff_t>(mbi_size - tSize),
+      static_cast<std::ptrdiff_t>(mbi_size - N),
     };
 
-    grex::static_apply<tSize>([&]<std::size_t... tIdxs>() {
+    grex::static_apply<N>([&]<std::size_t... I> {
       for (std::size_t r = 0; r < repetitions; ++r) {
         const auto it = std::as_const(mbi).begin() + idist(rng);
 
         {
-          test::VectorChecker<Dst, tSize> checker{
-            grex::Vector<Dst, tSize>::load_multibyte(it),
-            std::array{it[tIdxs]...},
+          const test::VectorChecker<Dst, N> checker{
+            grex::Vector<Dst, N>::load_multibyte(it),
+            std::array{it[I]...},
           };
           checker.check("load_multibyte vector/thesauros", {.verbose = false});
         }
         {
-          test::VectorChecker<Dst, tSize> checker{
-            grex::Vector<Dst, tSize>::load_multibyte(it),
-            std::array{grex::load_multibyte(it + tIdxs, grex::scalar_tag)...},
+          const test::VectorChecker<Dst, N> checker{
+            grex::Vector<Dst, N>::load_multibyte(it),
+            std::array{grex::load_multibyte(it + I, grex::scalar_tag)...},
           };
           checker.check("load_multibyte vector/tagged scalar", {.verbose = false});
         }
         {
-          test::VectorChecker<Dst, tSize> checker{
-            grex::load_multibyte(it, grex::full_tag<tSize>),
-            std::array{grex::load_multibyte(it + tIdxs, grex::scalar_tag)...},
+          const test::VectorChecker<Dst, N> checker{
+            grex::load_multibyte(it, grex::full_tag<N>),
+            std::array{grex::load_multibyte(it + I, grex::scalar_tag)...},
           };
           checker.check("load_multibyte tagged vector/tagged scalar", {.verbose = false});
         }
@@ -85,12 +86,12 @@ void run_simd(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
     });
   };
   grex::static_apply<1, std::bit_width(sizes.back()) + 1>(
-    [&]<std::size_t... tIdxs>() { (..., op(grex::index_tag<1U << tIdxs>)); });
+    [&]<std::size_t... I> { (..., op(grex::index_tag<1U << I>)); });
 }
 #endif
-template<std::size_t tSrc>
-void run_scalar(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
-  static constexpr std::size_t src_bytes = tSrc;
+template<std::size_t Src>
+void run_scalar(test::Rng& rng, grex::IndexTag<Src> /*tag*/) {
+  static constexpr std::size_t src_bytes = Src;
   static constexpr std::size_t dst_bytes = std::bit_ceil(src_bytes);
   using Dst = grex::UnsignedInt<dst_bytes>;
   fmt::print(fmt::fg(fmt::terminal_color::magenta) | fmt::emphasis::bold, "{} → {}, {}\n",
@@ -117,14 +118,15 @@ void run_scalar(test::Rng& rng, grex::IndexTag<tSrc> /*tag*/) {
     test::check("load_multibyte", a, c, {.verbose = false});
   }
 }
+} // namespace
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};
   test::Rng rng{seed_source};
-  grex::static_apply<8>([&]<std::size_t... tIdxs>() {
+  grex::static_apply<8>([&]<std::size_t... I> {
 #if !GREX_BACKEND_SCALAR
-    (..., run_simd(rng, grex::index_tag<tIdxs + 1>));
+    (..., run_simd(rng, grex::index_tag<I + 1>));
 #endif
-    (..., run_scalar(rng, grex::index_tag<tIdxs + 1>));
+    (..., run_scalar(rng, grex::index_tag<I + 1>));
   });
 }

@@ -54,19 +54,19 @@ concept FusedTag = std::same_as<T, MultiplyAdd> || std::same_as<T, MultiplySubtr
 // Vector types
 //==================================================================================================
 
-template<Vectorizable T, std::size_t tSize>
+template<Vectorizable T, std::size_t N>
 struct NativeVector;
 
 #if !GREX_BACKEND_SCALAR
 // Binary16 vectors are stored in the register that the back-end uses for `u16`, which makes every
 // operation that only moves bits around a plain delegation to `u16`, whereas operations that
 // natively operate on binary16 must cast to the appropriate register type.
-template<std::size_t tSize>
-requires(is_native<u16, tSize>)
-struct NativeVector<f16, tSize> {
-  using Register = NativeVector<u16, tSize>::Register;
+template<std::size_t N>
+requires(is_native<u16, N>)
+struct NativeVector<f16, N> {
+  using Register = NativeVector<u16, N>::Register;
   using Value = f16;
-  static constexpr std::size_t size = tSize;
+  static constexpr std::size_t size = N;
   static constexpr std::size_t bytes = sizeof(Value) * size;
 
   Register r;
@@ -80,12 +80,12 @@ struct NativeVector<f16, tSize> {
 };
 #endif
 
-template<Vectorizable T, std::size_t tSize>
+template<Vectorizable T, std::size_t N>
 struct SubVector {
   using Full = NativeVector<T, min_native_size<T>>;
   using Register = Full::Register;
   using Value = T;
-  static constexpr std::size_t size = tSize;
+  static constexpr std::size_t size = N;
   static constexpr std::size_t full_size = min_native_size<T>;
   static constexpr std::size_t bytes = sizeof(Value) * size;
 
@@ -101,14 +101,14 @@ struct SubVector {
     return full.r;
   }
 };
-template<typename THalf>
+template<typename Half>
 struct SuperVector {
-  using Value = THalf::Value;
-  static constexpr std::size_t size = 2 * THalf::size;
+  using Value = Half::Value;
+  static constexpr std::size_t size = 2 * Half::size;
   static constexpr std::size_t bytes = sizeof(Value) * size;
 
-  THalf lower;
-  THalf upper;
+  Half lower;
+  Half upper;
 };
 
 enum struct SimdKind : u8 { none, native, subnative, supernative };
@@ -118,20 +118,20 @@ struct AnyVectorTrait {
   static constexpr bool has_register = false;
   static constexpr SimdKind kind = SimdKind::none;
 };
-template<Vectorizable T, std::size_t tSize>
-struct AnyVectorTrait<NativeVector<T, tSize>> {
+template<Vectorizable T, std::size_t N>
+struct AnyVectorTrait<NativeVector<T, N>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = true;
   static constexpr SimdKind kind = SimdKind::native;
 };
-template<Vectorizable T, std::size_t tSize>
-struct AnyVectorTrait<SubVector<T, tSize>> {
+template<Vectorizable T, std::size_t N>
+struct AnyVectorTrait<SubVector<T, N>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = true;
   static constexpr SimdKind kind = SimdKind::subnative;
 };
-template<typename THalf>
-struct AnyVectorTrait<SuperVector<THalf>> {
+template<typename Half>
+struct AnyVectorTrait<SuperVector<Half>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = false;
   static constexpr SimdKind kind = SimdKind::supernative;
@@ -145,10 +145,10 @@ concept AnySubNativeVector = AnyVectorTrait<T>::kind == SimdKind::subnative;
 template<typename T>
 concept AnySuperNativeVector = AnyVectorTrait<T>::kind == SimdKind::supernative;
 
-template<AnyVector TVec>
-using ValueOf = TVec::Value;
-template<AnyVector TVec>
-inline constexpr std::size_t size_of = TVec::size;
+template<AnyVector Vec>
+using ValueOf = Vec::Value;
+template<AnyVector Vec>
+inline constexpr std::size_t size_of = Vec::size;
 
 template<typename T>
 concept IntVector = AnyVector<T> && IntVectorizable<ValueOf<T>>;
@@ -167,22 +167,22 @@ concept Float16Vector = AnyVector<T> && Float16<ValueOf<T>>;
 template<typename T>
 concept Int8Vector = AnyVector<T> && Int8<ValueOf<T>>;
 
-template<typename T, typename TValue>
-concept TypedVector = AnyVector<T> && std::same_as<ValueOf<T>, TValue>;
+template<typename T, typename V>
+concept TypedVector = AnyVector<T> && std::same_as<ValueOf<T>, V>;
 
-template<Vectorizable T, std::size_t tSize>
+template<Vectorizable T, std::size_t N>
 struct NativeMask;
 #if !GREX_BACKEND_SCALAR
-// See the comment on `NativeVector<f16, tSize>` above: binary16 masks reuse `u16`’s register too.
-template<std::size_t tSize>
-requires(is_native<u16, tSize>)
-struct NativeMask<f16, tSize> {
-  using Register = NativeMask<u16, tSize>::Register;
+// See the comment on `NativeVector<f16, N>` above: binary16 masks reuse `u16`’s register too.
+template<std::size_t N>
+requires(is_native<u16, N>)
+struct NativeMask<f16, N> {
+  using Register = NativeMask<u16, N>::Register;
   using VectorValue = f16;
-  static constexpr std::size_t size = tSize;
+  static constexpr std::size_t size = N;
   static constexpr std::size_t bytes = sizeof(VectorValue) * size;
   // Only used by the x86-64 back-end, where it denotes the width of the associated vector register
-  static constexpr std::size_t rbits = 16 * tSize;
+  static constexpr std::size_t rbits = 16 * N;
 
   Register r;
 
@@ -192,12 +192,12 @@ struct NativeMask<f16, tSize> {
 };
 #endif
 
-template<Vectorizable T, std::size_t tSize>
+template<Vectorizable T, std::size_t N>
 struct SubMask {
   using Full = NativeMask<T, min_native_size<T>>;
   using Register = Full::Register;
   using VectorValue = T;
-  static constexpr std::size_t size = tSize;
+  static constexpr std::size_t size = N;
   static constexpr std::size_t full_size = min_native_size<T>;
   static constexpr std::size_t bytes = sizeof(VectorValue) * size;
 
@@ -210,17 +210,17 @@ struct SubMask {
     return full.r;
   }
 };
-template<typename THalf>
+template<typename Half>
 struct SuperMask {
-  using VectorValue = THalf::VectorValue;
-  static constexpr std::size_t size = 2 * THalf::size;
+  using VectorValue = Half::VectorValue;
+  static constexpr std::size_t size = 2 * Half::size;
   static constexpr std::size_t bytes = sizeof(VectorValue) * size;
 
-  THalf lower;
-  THalf upper;
+  Half lower;
+  Half upper;
 };
-template<Vectorizable T, std::size_t tSize>
-using MaskPair = SuperMask<NativeMask<T, tSize>>;
+template<Vectorizable T, std::size_t N>
+using MaskPair = SuperMask<NativeMask<T, N>>;
 
 template<typename T>
 struct AnyMaskTrait {
@@ -228,20 +228,20 @@ struct AnyMaskTrait {
   static constexpr bool has_register = false;
   static constexpr SimdKind kind = SimdKind::none;
 };
-template<Vectorizable T, std::size_t tSize>
-struct AnyMaskTrait<NativeMask<T, tSize>> {
+template<Vectorizable T, std::size_t N>
+struct AnyMaskTrait<NativeMask<T, N>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = true;
   static constexpr SimdKind kind = SimdKind::native;
 };
-template<Vectorizable T, std::size_t tSize>
-struct AnyMaskTrait<SubMask<T, tSize>> {
+template<Vectorizable T, std::size_t N>
+struct AnyMaskTrait<SubMask<T, N>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = true;
   static constexpr SimdKind kind = SimdKind::subnative;
 };
-template<typename THalf>
-struct AnyMaskTrait<SuperMask<THalf>> {
+template<typename Half>
+struct AnyMaskTrait<SuperMask<Half>> {
   static constexpr bool is_vector = true;
   static constexpr bool has_register = false;
   static constexpr SimdKind kind = SimdKind::supernative;

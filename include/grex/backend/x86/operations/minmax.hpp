@@ -109,8 +109,8 @@ GREX_NNVECTOR_BINARY(max)
 // Binary16 without AVX512-FP16: round-trip through binary32.
 #if !GREX_F16_NATIVE_ARITHMETIC
 #define GREX_F16_MINMAX(NAME) \
-  template<std::size_t tSize> \
-  inline NativeVector<f16, tSize> NAME(NativeVector<f16, tSize> a, NativeVector<f16, tSize> b) { \
+  template<std::size_t N> \
+  inline NativeVector<f16, N> NAME(NativeVector<f16, N> a, NativeVector<f16, N> b) { \
     return f32_to_f16(NAME(f16_to_f32(a), f16_to_f32(b))); \
   }
 GREX_F16_MINMAX(min)

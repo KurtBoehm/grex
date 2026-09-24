@@ -19,19 +19,19 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<Vectorizable T, std::size_t tSize>
-inline NativeMask<T, tSize> cutoff_mask(std::size_t i, TypeTag<NativeMask<T, tSize>> /*tag*/) {
+template<Vectorizable T, std::size_t N>
+inline NativeMask<T, N> cutoff_mask(std::size_t i, TypeTag<NativeMask<T, N>> /*tag*/) {
   using U = UnsignedInt<sizeof(T)>;
-  const auto idxs = indices(type_tag<NativeVector<U, tSize>>);
-  const auto ref = broadcast(U(i), type_tag<NativeVector<U, tSize>>);
+  const auto idxs = indices(type_tag<NativeVector<U, N>>);
+  const auto ref = broadcast(U(i), type_tag<NativeVector<U, N>>);
   return {.r = compare_lt(idxs, ref).r};
 }
 
-template<Vectorizable T, std::size_t tSize>
-inline NativeMask<T, tSize> single_mask(std::size_t i, TypeTag<NativeMask<T, tSize>> /*tag*/) {
+template<Vectorizable T, std::size_t N>
+inline NativeMask<T, N> single_mask(std::size_t i, TypeTag<NativeMask<T, N>> /*tag*/) {
   using U = UnsignedInt<sizeof(T)>;
-  const auto idxs = indices(type_tag<NativeVector<U, tSize>>);
-  const auto ref = broadcast(U(i), type_tag<NativeVector<U, tSize>>);
+  const auto idxs = indices(type_tag<NativeVector<U, N>>);
+  const auto ref = broadcast(U(i), type_tag<NativeVector<U, N>>);
   return {.r = compare_eq(idxs, ref).r};
 }
 } // namespace grex::backend

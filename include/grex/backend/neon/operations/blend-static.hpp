@@ -22,22 +22,21 @@ namespace grex::backend {
 // TODO Add more efficient operations, for instance:
 // - Taking just one value from one of the vector
 struct BlenderVariable : public BaseExpensiveOp {
-  template<AnyBlendSelectors auto tBls>
-  static constexpr bool is_applicable(AutoTag<tBls> /*tag*/) {
+  template<AnyBlendSelectors auto BS>
+  static constexpr bool is_applicable(AutoTag<BS> /*tag*/) {
     return true;
   }
-  template<AnyVector TVec, BlendSelectorsFor<TVec> tBls>
-  static TVec apply(TVec a, TVec b, AutoTag<tBls> /*tag*/) {
-    using Value = TVec::Value;
-    static constexpr std::size_t size = TVec::size;
+  template<AnyVector Vec, BlendSelectorsFor<Vec> BS>
+  static Vec apply(Vec a, Vec b, AutoTag<BS> /*tag*/) {
+    using Value = Vec::Value;
+    static constexpr std::size_t size = Vec::size;
     using Int = SignedInt<sizeof(Value)>;
     using IVec = NativeVector<Int, size>;
     using VMask = NativeMask<Value, size>;
 
-    static constexpr std::array<Int, size> mask_idxs =
-      static_apply<size>([]<std::size_t... tIdxs>() {
-        return std::array<Int, size>{((tBls[tIdxs] == rhs_bl) ? Int(-1) : Int(0))...};
-      });
+    static constexpr std::array<Int, size> mask_idxs = static_apply<size>([]<std::size_t... I> {
+      return std::array<Int, size>{((BS[I] == rhs_bl) ? Int(-1) : Int(0))...};
+    });
 
     const VMask mask = vector2mask(load(mask_idxs.data(), type_tag<IVec>), type_tag<Value>);
     return blend(mask, a, b);
@@ -47,10 +46,10 @@ struct BlenderVariable : public BaseExpensiveOp {
   }
 };
 
-template<AnyBlendSelectors auto tBls>
-requires((tBls.value_size * tBls.size == 16))
-struct BlenderTrait<tBls> {
-  using Type = CheapestType<tBls, BlenderConstant, BlenderVariable>;
+template<AnyBlendSelectors auto BS>
+requires((BS.value_size * BS.size == 16)) // NOLINT(*-redundant-parentheses)
+struct BlenderTrait<BS> {
+  using Type = CheapestType<BS, BlenderConstant, BlenderVariable>;
 };
 } // namespace grex::backend
 

@@ -17,24 +17,23 @@
 #include "grex/base.hpp"
 
 namespace grex::backend {
-template<Vectorizable T, std::size_t tSize>
-inline NativeVector<T, tSize> mask_add(NativeMask<T, tSize> m, NativeVector<T, tSize> a,
-                                       NativeVector<T, tSize> b) {
+template<Vectorizable T, std::size_t N>
+inline NativeVector<T, N> mask_add(NativeMask<T, N> m, NativeVector<T, N> a, NativeVector<T, N> b) {
   return blend(m, a, add(a, b));
 }
-template<Vectorizable T, std::size_t tSize>
-inline NativeVector<T, tSize> mask_subtract(NativeMask<T, tSize> m, NativeVector<T, tSize> a,
-                                            NativeVector<T, tSize> b) {
+template<Vectorizable T, std::size_t N>
+inline NativeVector<T, N> mask_subtract(NativeMask<T, N> m, NativeVector<T, N> a,
+                                        NativeVector<T, N> b) {
   return blend(m, a, subtract(a, b));
 }
-template<Vectorizable T, std::size_t tSize>
-inline NativeVector<T, tSize> mask_multiply(NativeMask<T, tSize> m, NativeVector<T, tSize> a,
-                                            NativeVector<T, tSize> b) {
+template<Vectorizable T, std::size_t N>
+inline NativeVector<T, N> mask_multiply(NativeMask<T, N> m, NativeVector<T, N> a,
+                                        NativeVector<T, N> b) {
   return blend(m, a, multiply(a, b));
 }
-template<FloatVectorizable T, std::size_t tSize>
-inline NativeVector<T, tSize> mask_divide(NativeMask<T, tSize> m, NativeVector<T, tSize> a,
-                                          NativeVector<T, tSize> b) {
+template<FloatVectorizable T, std::size_t N>
+inline NativeVector<T, N> mask_divide(NativeMask<T, N> m, NativeVector<T, N> a,
+                                      NativeVector<T, N> b) {
   return blend(m, a, divide(a, b));
 }
 } // namespace grex::backend

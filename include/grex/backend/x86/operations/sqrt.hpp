@@ -39,8 +39,8 @@ GREX_NNVECTOR_UNARY(sqrt)
 // Binary16 without AVX512-FP16: round-trip through binary32, exactly as the Neon
 // back-end does. `SubVector`/`SuperVector` are covered by `GREX_NNVECTOR_UNARY` above already.
 #if !GREX_F16_NATIVE_ARITHMETIC
-template<Float16Vector TVec>
-inline TVec sqrt(TVec v) {
+template<Float16Vector Vec>
+inline Vec sqrt(Vec v) {
   return f32_to_f16(sqrt(f16_to_f32(v)));
 }
 #endif

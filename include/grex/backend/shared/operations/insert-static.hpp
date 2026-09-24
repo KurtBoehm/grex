@@ -14,35 +14,33 @@
 
 namespace grex::backend {
 // SubVector/SubMask
-template<Vectorizable T, std::size_t tSize, std::size_t tIndex>
-requires(tIndex < tSize)
-inline SubVector<T, tSize> insert(SubVector<T, tSize> v, IndexTag<tIndex> index, T value) {
-  return SubVector<T, tSize>{insert(v.full, index, value)};
+template<Vectorizable T, std::size_t N, std::size_t I>
+requires(I < N)
+inline SubVector<T, N> insert(SubVector<T, N> v, IndexTag<I> index, T value) {
+  return SubVector<T, N>{insert(v.full, index, value)};
 }
-template<Vectorizable T, std::size_t tSize, std::size_t tIndex>
-requires(tIndex < tSize)
-inline SubMask<T, tSize> insert(SubMask<T, tSize> v, IndexTag<tIndex> index, bool value) {
-  return SubMask<T, tSize>{insert(v.full, index, value)};
+template<Vectorizable T, std::size_t N, std::size_t I>
+requires(I < N)
+inline SubMask<T, N> insert(SubMask<T, N> v, IndexTag<I> index, bool value) {
+  return SubMask<T, N>{insert(v.full, index, value)};
 }
 
 // SuperVector/SuperMask
-template<typename THalf>
-inline SuperVector<THalf> insert(SuperVector<THalf> v, AnyIndexTag auto index,
-                                 typename THalf::Value value) {
-  if constexpr (index.value < THalf::size) {
+template<typename Half>
+inline SuperVector<Half> insert(SuperVector<Half> v, AnyIndexTag auto index,
+                                typename Half::Value value) {
+  if constexpr (index.value < Half::size) {
     return {.lower = insert(v.lower, index, value), .upper = v.upper};
   } else {
-    return {.lower = v.lower,
-            .upper = insert(v.upper, index_tag<index.value - THalf::size>, value)};
+    return {.lower = v.lower, .upper = insert(v.upper, index_tag<index.value - Half::size>, value)};
   }
 }
-template<typename THalf>
-inline SuperMask<THalf> insert(SuperMask<THalf> m, AnyIndexTag auto index, bool value) {
-  if constexpr (index.value < THalf::size) {
+template<typename Half>
+inline SuperMask<Half> insert(SuperMask<Half> m, AnyIndexTag auto index, bool value) {
+  if constexpr (index.value < Half::size) {
     return {.lower = insert(m.lower, index, value), .upper = m.upper};
   } else {
-    return {.lower = m.lower,
-            .upper = insert(m.upper, index_tag<index.value - THalf::size>, value)};
+    return {.lower = m.lower, .upper = insert(m.upper, index_tag<index.value - Half::size>, value)};
   }
 }
 } // namespace grex::backend

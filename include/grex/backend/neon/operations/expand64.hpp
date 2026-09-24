@@ -29,8 +29,8 @@ namespace grex::backend {
 #define GREX_EXPAND_64(KIND, BITS, SIZE) \
   inline GREX_REGISTER(KIND, BITS, GREX_MULTIPLY(SIZE, 2)) \
     expand64(GREX_REGISTER(KIND, BITS, SIZE) v) { \
-    return static_apply<GREX_MULTIPLY(SIZE, 2)>([&]<std::size_t... tI>() { \
-      return __builtin_shufflevector(v, v, ((tI < SIZE) ? int{tI} : -1)...); \
+    return static_apply<GREX_MULTIPLY(SIZE, 2)>([&]<std::size_t... I> { \
+      return __builtin_shufflevector(v, v, ((I < SIZE) ? int{I} : -1)...); \
     }); \
   }
 #endif
