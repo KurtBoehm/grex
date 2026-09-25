@@ -130,7 +130,7 @@ using UnsignedInt = SizedIntegerTrait<Bytes>::Unsigned;
 template<std::size_t Bytes>
 using SignedInt = SizedIntegerTrait<Bytes>::Signed;
 template<FloatVectorizable T>
-using FloaN = UnsignedInt<sizeof(T)>;
+using FloatSize = UnsignedInt<sizeof(T)>;
 template<typename T, std::size_t Bytes>
 using CopySignInt = std::conditional_t<is_signed<T>, SignedInt<Bytes>, UnsignedInt<Bytes>>;
 
