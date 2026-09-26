@@ -50,8 +50,8 @@ inline NativeVector<f16, N> reinterpret(NativeVector<f16, N> v, TypeTag<f16> /*t
 template<Vectorizable Dst, Vectorizable Src, std::size_t N>
 inline SubVector<Dst, N * sizeof(Src) / sizeof(Dst)> reinterpret(SubVector<Src, N> v,
                                                                  TypeTag<Dst> tag) {
-  using Dst = SubVector<Dst, N * sizeof(Src) / sizeof(Dst)>;
-  return Dst{reinterpret(v.full, tag)};
+  using DstVec = SubVector<Dst, N * sizeof(Src) / sizeof(Dst)>;
+  return DstVec{reinterpret(v.full, tag)};
 }
 template<Vectorizable Dst, typename Half>
 inline VectorFor<Dst, 2 * Half::size * sizeof(typename Half::Value) / sizeof(Dst)>
