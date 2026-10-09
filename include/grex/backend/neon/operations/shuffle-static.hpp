@@ -14,6 +14,9 @@
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
+#include "grex/backend/macros/for-each.hpp"
+#include "grex/backend/macros/types.hpp"
+#include "grex/backend/neon/macros/types.hpp"
 #include "grex/backend/neon/operations/extract.hpp"
 #include "grex/backend/neon/operations/set.hpp"
 #include "grex/backend/shared/defs.hpp"
@@ -168,6 +171,37 @@ private:
   }
 };
 
+#define GREX_DUP_I(KIND, BITS, SIZE, REGKIND) \
+  template<int Lane> \
+  inline KIND##BITS##x##SIZE duplicate_lane(KIND##BITS##x##SIZE v) { \
+    return {.r = GREX_ISUFFIXED(vdupq_laneq, REGKIND, BITS)(v.r, Lane)}; \
+  }
+#define GREX_DUP(KIND, BITS, SIZE) GREX_DUP_I(KIND, BITS, SIZE, GREX_REGKIND(KIND, BITS))
+GREX_FOREACH_TYPE_EXT(GREX_DUP, 128)
+
+struct ShufflerDup : BaseExpensiveOp {
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    static constexpr std::optional<ShuffleIndex> constant = SI.constant();
+    return constant.has_value() && is_index(*constant);
+  }
+
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    return duplicate_lane<int(SI.constant().value())>(vec);
+  }
+
+  /**
+   * One `DUP` (element), which has a latency of 2 and is present on each of the four SIMD execution
+   * units on each performance core on Apple Silicon, according to the Apple Silicon CPU
+   * Optimization Guide.
+   */
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
+    return {.inv_throughput = 0.25, .latency = 2};
+  }
+};
+
 struct ShufflerExtractSet : BaseExpensiveOp {
   template<AnyShuffleIndices auto SI>
   static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
@@ -190,7 +224,8 @@ struct ShufflerExtractSet : BaseExpensiveOp {
 template<AnyShuffleIndices auto I>
 requires((I.value_size * I.size == 16)) // NOLINT(*-redundant-parentheses)
 struct ShufflerTrait<I> {
-  using Shuffler = CheapestType<I, ShufflerBlendZero, ShufflerTbl, ShufflerExt, ShufflerExtractSet>;
+  using Shuffler =
+    CheapestType<I, ShufflerDup, ShufflerExt, ShufflerBlendZero, ShufflerTbl, ShufflerExtractSet>;
 };
 
 /**

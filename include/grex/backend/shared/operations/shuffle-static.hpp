@@ -34,7 +34,7 @@ struct ShuffleIndices {
   using Indices = std::array<ShuffleIndex, size>;
 
   Indices indices;
-  // whether partial entries need to be zeroed
+  /** Whether partial entries need to be zeroed. */
   bool subzero = false;
 
   static constexpr bool is_in_lane(std::size_t i, u8 idx) {
@@ -186,8 +186,10 @@ struct ShuffleIndices {
     }
     return ShuffleIndices{.indices = arr, .subzero = subzero};
   }
-  // Returns indices that fall within [index * size, (index + 1) * size) and replaces others
-  // with “any”
+  /**
+   * Returns indices that fall within `[index * size, (index + 1) * size)` and replaces others with
+   * `any`.
+   */
   [[nodiscard]] constexpr ShuffleIndices indices_in_vector_fallback(std::size_t index,
                                                                     ShuffleIndex fallback) const {
     Indices arr{};
@@ -287,7 +289,7 @@ struct ShuffleIndices {
     if constexpr (DstValueBytes == ValueBytes) {
       return self;
     } else if constexpr (DstValueBytes < ValueBytes) {
-      // simply multiply the entries with factor and add their chunk index
+      // Simply multiply the entries with factor and add their chunk index.
       constexpr auto factor = ValueBytes / DstValueBytes;
       auto f = [&](ShuffleIndex sh, std::size_t chunki) {
         if (is_index(sh)) {
@@ -299,8 +301,8 @@ struct ShuffleIndices {
         [&]<std::size_t... I> { return std::array{f(self.indices[I / factor], I % factor)...}; });
       return Dst{.indices = idxs, .subzero = self.subzero};
     } else {
-      // check whether the indices in each chunk that is converted to one index
-      // start at a multiple of `factor` and are ascending from there (apart from any/zero)
+      // Check whether the indices in each chunk that is converted to one index start at a multiple
+      // of `factor` and are ascending from there (apart from `any`/`zero`).
       constexpr auto factor = DstValueBytes / ValueBytes;
       std::array<ShuffleIndex, dst_size> idxs{};
       bool subz = self.subzero;
@@ -356,6 +358,32 @@ struct ShuffleIndices {
     };
     return static_apply<N>(
       [&]<std::size_t... I> { return BlendZeroSelectors<ValueBytes, N>{f(indices[I])...}; });
+  }
+
+  /**
+   * The shuffle index shared by all entries that are not `any`, or `nullopt` if there are
+   * conflicting entries or sub-lane zeros. If all entries are `any`, `any` is returned.
+   */
+  [[nodiscard]] constexpr std::optional<ShuffleIndex> constant() const {
+    if (subzero) {
+      // Sub-lane zeros conflict with one constant shuffle index.
+      return std::nullopt;
+    }
+    ShuffleIndex out = any_sh;
+    for (std::size_t i = 0; i < size; ++i) {
+      const ShuffleIndex si = indices[i];
+      switch (si) {
+        case any_sh: continue;
+        default: {
+          if (out != any_sh && out != si) {
+            // Conflicting information found.
+            return std::nullopt;
+          }
+          out = si;
+        }
+      }
+    }
+    return out;
   }
 };
 template<AnyVector Vec>
@@ -465,7 +493,7 @@ struct ShufflerTrait<SI> {
   using Shuffler = SubShuffler;
 };
 
-// A pair shuffler that just shuffles one of the vectors
+/** A pair shuffler that just shuffles one of the vectors. */
 struct PairShufflerSingle : BaseExpensiveOp {
   template<AnyShuffleIndices auto SI>
   static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
@@ -494,7 +522,7 @@ struct PairShufflerSingle : BaseExpensiveOp {
     }
   }
 };
-// A pair shuffler that performs two shuffles and then blends
+/** A pair shuffler that performs two shuffles and then blends. */
 struct PairShufflerBlend : BaseExpensiveOp {
   template<AnyShuffleIndices auto SI>
   static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
