@@ -24,7 +24,7 @@ namespace grex::backend {
 // - Inserting one zero
 // - Inserting one value into zeros
 // - A contiguous ranges of non-zeros/zeros
-struct ZeroBlenderAnd : public BaseExpensiveOp {
+struct ZeroBlenderAnd : BaseExpensiveOp {
   template<AnyBlendZeroSelectors auto BZS>
   static constexpr bool is_applicable(AutoTag<BZS> /*tag*/) {
     return true;

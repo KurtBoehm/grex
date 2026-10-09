@@ -175,11 +175,11 @@ template<AnyVector Vec>
 using BlendSelectorsFor = BlendSelectors<sizeof(typename Vec::Value), Vec::size>;
 
 template<typename T>
-struct AnyBlendSelectorsTrait : public std::false_type {};
+inline constexpr bool any_blend_selectors = false;
 template<std::size_t ValueBytes, std::size_t N>
-struct AnyBlendSelectorsTrait<BlendSelectors<ValueBytes, N>> : public std::true_type {};
+inline constexpr bool any_blend_selectors<BlendSelectors<ValueBytes, N>> = true;
 template<typename T>
-concept AnyBlendSelectors = AnyBlendSelectorsTrait<T>::value;
+concept AnyBlendSelectors = any_blend_selectors<T>;
 
 template<AnyBlendSelectors auto BS>
 struct BlenderTrait;
@@ -214,7 +214,7 @@ inline void blend_static_test() {
   static_assert(bzs3.single_lane()->ctrl == std::array{lhs_bl, rhs_bl});
 }
 
-struct BlenderConstant : public BaseExpensiveOp {
+struct BlenderConstant : BaseExpensiveOp {
   template<AnyBlendSelectors auto BS>
   static constexpr bool is_applicable(AutoTag<BS> /*tag*/) {
     return BS.constant().has_value();
@@ -233,7 +233,7 @@ struct BlenderConstant : public BaseExpensiveOp {
   }
 };
 
-struct SubBlender : public BaseExpensiveOp {
+struct SubBlender : BaseExpensiveOp {
   template<AnyBlendSelectors auto BS>
   using Base = Blender<BS.sub_extended()>;
 
@@ -250,7 +250,7 @@ struct SubBlender : public BaseExpensiveOp {
     return Base<BS>::cost(auto_tag<BS.sub_extended()>);
   }
 };
-struct SuperBlender : public BaseExpensiveOp {
+struct SuperBlender : BaseExpensiveOp {
   template<AnyBlendSelectors auto BS>
   static constexpr bool is_applicable(AutoTag<BS> /*tag*/) {
     return Blender<BS.lower()>::is_applicable(auto_tag<BS.lower()>) &&

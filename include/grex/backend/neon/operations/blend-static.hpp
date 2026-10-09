@@ -21,7 +21,7 @@
 namespace grex::backend {
 // TODO Add more efficient operations, for instance:
 // - Taking just one value from one of the vector
-struct BlenderVariable : public BaseExpensiveOp {
+struct BlenderVariable : BaseExpensiveOp {
   template<AnyBlendSelectors auto BS>
   static constexpr bool is_applicable(AutoTag<BS> /*tag*/) {
     return true;

@@ -359,11 +359,11 @@ template<AnyVector Vec>
 using ShuffleIndicesFor = ShuffleIndices<sizeof(typename Vec::Value), Vec::size>;
 
 template<typename T>
-struct AnyShuffleIndicesTrait : public std::false_type {};
+inline constexpr bool any_shuffle_indices = false;
 template<std::size_t ValueBytes, std::size_t N>
-struct AnyShuffleIndicesTrait<ShuffleIndices<ValueBytes, N>> : public std::true_type {};
+inline constexpr bool any_shuffle_indices<ShuffleIndices<ValueBytes, N>> = true;
 template<typename T>
-concept AnyShuffleIndices = AnyShuffleIndicesTrait<T>::value;
+concept AnyShuffleIndices = any_shuffle_indices<T>;
 
 template<AnyShuffleIndices auto I>
 struct ShufflerTrait;
@@ -413,7 +413,7 @@ inline void shuffle_test() {
   static_assert(sin3->subzero);
 }
 
-struct ShufflerBlendZero : public BaseExpensiveOp {
+struct ShufflerBlendZero : BaseExpensiveOp {
   template<AnyShuffleIndices auto SI>
   static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
     return static_apply<SI.size>(
@@ -431,7 +431,7 @@ struct ShufflerBlendZero : public BaseExpensiveOp {
   }
 };
 
-struct SubShuffler : public BaseExpensiveOp {
+struct SubShuffler : BaseExpensiveOp {
   template<AnyShuffleIndices auto SI>
   using Base = Shuffler<SI.sub_extended()>;
 
@@ -455,7 +455,7 @@ struct ShufflerTrait<SI> {
 };
 
 // A pair shuffler that just shuffles one of the vectors
-struct PairShufflerSingle : public BaseExpensiveOp {
+struct PairShufflerSingle : BaseExpensiveOp {
   template<AnyShuffleIndices auto SI>
   static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
     return SI.indices_in_vector(0).has_value() || SI.indices_in_vector(1).has_value();
@@ -484,7 +484,7 @@ struct PairShufflerSingle : public BaseExpensiveOp {
   }
 };
 // A pair shuffler that performs two shuffles and then blends
-struct PairShufflerBlend : public BaseExpensiveOp {
+struct PairShufflerBlend : BaseExpensiveOp {
   template<AnyShuffleIndices auto SI>
   static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
     return true;
@@ -514,7 +514,7 @@ struct PairShufflerTrait {
   using Shuffler = CheapestType<SI, PairShufflerSingle, PairShufflerBlend>;
 };
 
-struct SuperShuffler : public BaseExpensiveOp {
+struct SuperShuffler : BaseExpensiveOp {
   template<AnyShuffleIndices auto SI>
   static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
     return true;

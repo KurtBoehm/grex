@@ -151,11 +151,11 @@ template<AnyVector Vec>
 using BlendZeroSelectorsFor = BlendZeroSelectors<sizeof(typename Vec::Value), Vec::size>;
 
 template<typename T>
-struct AnyBlendZeroSelectorsTrait : public std::false_type {};
+inline constexpr bool any_blend_zero_selectors = false;
 template<std::size_t ValueBytes, std::size_t N>
-struct AnyBlendZeroSelectorsTrait<BlendZeroSelectors<ValueBytes, N>> : public std::true_type {};
+inline constexpr bool any_blend_zero_selectors<BlendZeroSelectors<ValueBytes, N>> = true;
 template<typename T>
-concept AnyBlendZeroSelectors = AnyBlendZeroSelectorsTrait<T>::value;
+concept AnyBlendZeroSelectors = any_blend_zero_selectors<T>;
 
 template<AnyBlendZeroSelectors auto BZS>
 struct ZeroBlenderTrait;
@@ -190,7 +190,7 @@ inline void blend_zero_static_test() {
   static_assert(bzs3.single_lane()->ctrl == std::array{zero_bz, keep_bz});
 }
 
-struct ZeroBlenderNoop : public BaseExpensiveOp {
+struct ZeroBlenderNoop : BaseExpensiveOp {
   template<AnyBlendZeroSelectors auto BZS>
   static constexpr bool is_applicable(AutoTag<BZS> /*tag*/) {
     return static_apply<BZS.size>(
@@ -205,7 +205,7 @@ struct ZeroBlenderNoop : public BaseExpensiveOp {
     return {.inv_throughput = 0, .latency = 0};
   }
 };
-struct ZeroBlenderZero : public BaseExpensiveOp {
+struct ZeroBlenderZero : BaseExpensiveOp {
   template<AnyBlendZeroSelectors auto BZS>
   static constexpr bool is_applicable(AutoTag<BZS> /*tag*/) {
     return static_apply<BZS.size>(
@@ -221,7 +221,7 @@ struct ZeroBlenderZero : public BaseExpensiveOp {
   }
 };
 
-struct SubZeroBlender : public BaseExpensiveOp {
+struct SubZeroBlender : BaseExpensiveOp {
   template<AnyBlendZeroSelectors auto BZS>
   using Base = ZeroBlender<BZS.sub_extended()>;
 
@@ -238,7 +238,7 @@ struct SubZeroBlender : public BaseExpensiveOp {
     return Base<BZS>::cost(auto_tag<BZS.sub_extended()>);
   }
 };
-struct SuperZeroBlender : public BaseExpensiveOp {
+struct SuperZeroBlender : BaseExpensiveOp {
   template<AnyBlendZeroSelectors auto BZS>
   static constexpr bool is_applicable(AutoTag<BZS> /*tag*/) {
     return ZeroBlender<BZS.lower()>::is_applicable(auto_tag<BZS.lower()>) &&
