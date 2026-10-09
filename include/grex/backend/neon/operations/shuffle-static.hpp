@@ -7,6 +7,7 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SHUFFLE_STATIC_HPP
 #define INCLUDE_GREX_BACKEND_NEON_OPERATIONS_SHUFFLE_STATIC_HPP
 
+#include <cassert>
 #include <cstddef>
 #include <limits>
 #include <optional>
@@ -190,6 +191,96 @@ template<AnyShuffleIndices auto I>
 requires((I.value_size * I.size == 16)) // NOLINT(*-redundant-parentheses)
 struct ShufflerTrait<I> {
   using Shuffler = CheapestType<I, ShufflerBlendZero, ShufflerTbl, ShufflerExt, ShufflerExtractSet>;
+};
+
+/**
+ * A pair shuffle that resolves to a single `EXT`, which concatenates its two operands, shifts the
+ * resulting 32 bytes down by an immediate, and extracts the low 16 bytes.
+ *
+ * This shuffler supports any pattern achievable using `EXT` with the two arguments passed in either
+ * order.
+ */
+struct PairShufflerExt : BaseExpensiveOp {
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    return offset<SI>().has_value();
+  }
+
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec lo, Vec hi, AutoTag<SI> /*tag*/) {
+    static constexpr u8 off = offset<SI>().value();
+
+    if constexpr (off > 16) {
+      return {.r = as<ValueOf<Vec>>(vextq_u8(as<u8>(lo.r), as<u8>(hi.r), off - 16))};
+    } else {
+      return {.r = as<ValueOf<Vec>>(vextq_u8(as<u8>(hi.r), as<u8>(lo.r), off))};
+    }
+  }
+
+  /**
+   * One `EXT`, which has a latency of 2 and is present on each of the four SIMD execution units on
+   * each performance core on Apple Silicon, according to the Apple Silicon CPU Optimization Guide.
+   */
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
+    return {.inv_throughput = 0.25, .latency = 2};
+  }
+
+private:
+  /**
+   * The byte offset of the `EXT` that realizes a given shuffle, if there is one, with a bias of 16.
+   * An `offset ≥ 16` corresponds to `EXT dst, a, b, #(offset - 16)` whereas `offset < 16`
+   * corresponds to `EXT dst, b, a, #offset`.
+   */
+  template<AnyShuffleIndices auto SI>
+  static constexpr std::optional<u8> offset() {
+    // `EXT` operates on bytes; the intrinsics for larger types resolve to the byte-level
+    // instruction.
+    static constexpr auto idxs = convert<1>(SI).value();
+    static constexpr std::size_t size = 16;
+    static constexpr std::size_t index_ub = 32;
+    static_assert(idxs.size == size);
+
+    // Determine the biased offset.
+    std::optional<u8> offset{};
+    for (std::size_t i = 0; i < size; ++i) {
+      const ShuffleIndex si = idxs[i];
+      switch (si) {
+        case any_sh: continue;
+        case zero_sh: {
+          // Zeroing is not supported.
+          return std::nullopt;
+        }
+        default: {
+          const u8 idx = static_cast<u8>(si);
+          assert(idx < index_ub);
+          const u8 offset_i = static_cast<u8>((size + idx - i) % index_ub);
+
+          if (offset.has_value() && offset != offset_i) {
+            // If a different offset was determined earlier, the pattern is not supported.
+            return std::nullopt;
+          }
+          offset = offset_i;
+        }
+      }
+    }
+
+    if (!offset.has_value() || *offset == 0 || *offset == size) {
+      // If neither input vector was accessed, simply returning one of the inputs is more efficient,
+      // which are handled elsewhere.
+      // If the offset sans bias is 0 or -16, the result is just one of the two arguments and there
+      // are better solutions.
+      return std::nullopt;
+    }
+
+    return offset;
+  }
+};
+
+template<AnyShuffleIndices auto SI>
+requires((SI.value_size * SI.size == 16)) // NOLINT(*-redundant-parentheses)
+struct PairShufflerTrait<SI> {
+  using Shuffler = CheapestType<SI, PairShufflerSingle, PairShufflerBlend, PairShufflerExt>;
 };
 } // namespace grex::backend
 

@@ -205,6 +205,10 @@ struct Vector : VectorBase<T, std::make_index_sequence<N>> {
   GREX_ALWAYS_INLINE explicit Vector(T value)
       : Base{backend::broadcast(value, type_tag<Backend>)} {}
 
+  GREX_ALWAYS_INLINE explicit Vector(Vector<T, N / 2> lo, Vector<T, N / 2> hi)
+  requires(N > 2)
+      : Base{backend::merge(lo.backend(), hi.backend())} {}
+
   /** Expands scalar `x` into a vector with undefined upper lanes. */
   [[nodiscard]] GREX_ALWAYS_INLINE static Vector expanded_any(T value) {
     return Vector{backend::expand_any(value, index_tag<N>)};
@@ -690,8 +694,8 @@ GREX_ALWAYS_INLINE inline Vector<T, IdxN> shuffle(Vector<T, TableN> table, Vecto
 
 /** Shuffles `table` using compile-time indices. */
 template<ShuffleIndex... I, Vectorizable T, std::size_t N>
-GREX_ALWAYS_INLINE inline Vector<T, N> shuffle(Vector<T, N> table) {
-  return Vector<T, N>{backend::shuffle<I...>(table.backend())};
+GREX_ALWAYS_INLINE inline Vector<T, sizeof...(I)> shuffle(Vector<T, N> table) {
+  return Vector<T, sizeof...(I)>{backend::shuffle<I...>(table.backend())};
 }
 
 /** Masked add: `result[i] = mask[i] ? a[i] + b[i] : a[i]`. */

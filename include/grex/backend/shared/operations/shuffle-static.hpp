@@ -12,8 +12,11 @@
 #include <optional>
 #include <type_traits>
 
+#include "grex/backend/active/operations/set.hpp"
+#include "grex/backend/active/operations/split.hpp"
 #include "grex/backend/active/sizes.hpp"
 #include "grex/backend/base.hpp"
+#include "grex/backend/choosers.hpp"
 #include "grex/backend/shared/defs.hpp"
 #include "grex/backend/shared/operations/blend-static.hpp"
 #include "grex/backend/shared/operations/blend-zero-static.hpp"
@@ -376,16 +379,24 @@ template<AnyShuffleIndices auto I>
 using PairShuffler = PairShufflerTrait<I>::Shuffler;
 
 template<ShuffleIndex... I, AnyVector Vec>
-requires(Vec::size == sizeof...(I))
+requires(size_of<Vec> == sizeof...(I))
 inline Vec shuffle(Vec vec) {
   static constexpr auto idxs = ShuffleIndicesFor<Vec>{.indices = {I...}};
   return Shuffler<idxs>::apply(vec, auto_tag<idxs>);
 }
 template<ShuffleIndex... I, AnyVector Vec>
-requires(Vec::size == sizeof...(I))
-inline Vec pair_shuffle(Vec a, Vec b) {
-  static constexpr auto idxs = ShuffleIndicesFor<Vec>{.indices = {I...}};
-  return PairShuffler<idxs>::apply(a, b, auto_tag<idxs>);
+requires(size_of<Vec> == 2 * sizeof...(I))
+inline VectorFor<ValueOf<Vec>, sizeof...(I)> shuffle(Vec vec) {
+  if constexpr (AnySuperNativeVector<Vec>) {
+    // Split super-native vectors and use the pair shuffler.
+    using Half = VectorFor<ValueOf<Vec>, sizeof...(I)>;
+    static constexpr auto idxs = ShuffleIndicesFor<Half>{.indices = {I...}};
+    return PairShuffler<idxs>::apply(get_low(vec), get_high(vec), auto_tag<idxs>);
+  } else {
+    // Extend the shuffle indices with any entries to avoid two sub-native shuffles.
+    static constexpr auto full = ShuffleIndicesFor<Vec>{.indices = {I..., (void(I), any_sh)...}};
+    return get_low(Shuffler<full>::apply(vec, auto_tag<full>));
+  }
 }
 
 inline void shuffle_test() {
