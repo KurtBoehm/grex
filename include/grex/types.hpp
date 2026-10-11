@@ -125,7 +125,9 @@ struct Mask {
   }
 
   /** Returns lane `i` with a compile-time index. */
-  [[nodiscard]] GREX_ALWAYS_INLINE bool operator[](AnyIndexTag auto i) const {
+  template<std::size_t I>
+  requires(I < size)
+  [[nodiscard]] GREX_ALWAYS_INLINE bool operator[](IndexTag<I> i) const {
     return backend::extract(mask_, i);
   }
 
@@ -141,7 +143,9 @@ struct Mask {
   }
 
   /** Returns a copy with lane `i` replaced by `value` with a compile-time index. */
-  [[nodiscard]] GREX_ALWAYS_INLINE Mask insert(AnyIndexTag auto i, bool value) const {
+  template<std::size_t I>
+  requires(I < size)
+  [[nodiscard]] GREX_ALWAYS_INLINE Mask insert(IndexTag<I> i, bool value) const {
     return Mask{backend::insert(mask_, i, value)};
   }
 
@@ -234,7 +238,9 @@ struct Vector : VectorBase<T, std::make_index_sequence<N>> {
     return Vector{backend::load_part(ptr, num, type_tag<Backend>)};
   }
   /** Loads `num` (up to `size`) elements from memory with undefined upper lanes. */
-  [[nodiscard]] GREX_ALWAYS_INLINE static Vector load_part(const T* ptr, AnyIndexTag auto num) {
+  template<std::size_t I>
+  requires(I <= size)
+  [[nodiscard]] GREX_ALWAYS_INLINE static Vector load_part(const T* ptr, IndexTag<I> num) {
     return Vector{backend::load_part(ptr, num, type_tag<Backend>)};
   }
 
@@ -254,14 +260,14 @@ struct Vector : VectorBase<T, std::make_index_sequence<N>> {
    * Loads `size` unsigned integers starting at `it` and converts each to `Value`.
    *
    * This convenience overload is intended to be used with iterators to a data structure that stores
-   * unsigned integers with `It::Container::element_bytes` bytes each and provides a pointer to
-   * the underlying bytes (represented using `std::byte`) through `it.raw()`.
+   * unsigned integers with `It::element_bytes` bytes each and provides a pointer to the underlying
+   * bytes (represented using `std::byte`) through `it.raw()`.
    */
   template<MultiByteIterator It>
   [[nodiscard]] GREX_ALWAYS_INLINE static Vector load_multibyte(It it)
   requires(UnsignedIntVectorizable<T>)
   {
-    return load_multibyte(it.raw(), index_tag<It::Container::element_bytes>);
+    return load_multibyte(it.raw(), index_tag<It::element_bytes>);
   }
 
   /** Returns an undefined vector. */
@@ -365,7 +371,9 @@ struct Vector : VectorBase<T, std::make_index_sequence<N>> {
   }
 
   /** Returns lane `i` with a compile-time index. */
-  [[nodiscard]] GREX_ALWAYS_INLINE T operator[](AnyIndexTag auto i) const {
+  template<std::size_t I>
+  requires(I < size)
+  [[nodiscard]] GREX_ALWAYS_INLINE T operator[](IndexTag<I> i) const {
     return backend::extract(vec_, i);
   }
 
@@ -381,7 +389,9 @@ struct Vector : VectorBase<T, std::make_index_sequence<N>> {
   }
 
   /** Returns a copy with lane `i` replaced by `value` with a compile-time index. */
-  [[nodiscard]] GREX_ALWAYS_INLINE Vector insert(AnyIndexTag auto i, T value) const {
+  template<std::size_t I>
+  requires(I < size)
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector insert(IndexTag<I> i, T value) const {
     return Vector{backend::insert(vec_, i, value)};
   }
 
@@ -400,8 +410,17 @@ struct Vector : VectorBase<T, std::make_index_sequence<N>> {
     backend::store_part(value, vec_, num);
   }
   /** Stores the first `num` elements to unaligned memory. */
-  GREX_ALWAYS_INLINE void store_part(T* value, AnyIndexTag auto num) const {
+  template<std::size_t I>
+  requires(I <= size)
+  GREX_ALWAYS_INLINE void store_part(T* value, IndexTag<I> num) const {
     backend::store_part(value, vec_, num);
+  }
+
+  /** Broadcasts the given lane into all lanes. */
+  template<std::size_t I>
+  requires(I < size)
+  [[nodiscard]] GREX_ALWAYS_INLINE Vector broadcast_lane(IndexTag<I> i) {
+    return Vector{backend::broadcast_lane(vec_, i)};
   }
 
 #define GREX_VECTOR_CMP_BINOP(OP, REQ, BACKEND, COMMENT_NAME) \

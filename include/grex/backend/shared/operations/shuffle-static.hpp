@@ -12,6 +12,7 @@
 #include <optional>
 #include <type_traits>
 
+#include "grex/backend/active/operations/broadcast-lane.hpp"
 #include "grex/backend/active/operations/set.hpp"
 #include "grex/backend/active/operations/split.hpp"
 #include "grex/backend/active/sizes.hpp"
@@ -467,6 +468,26 @@ struct ShufflerBlendZero : BaseExpensiveOp {
   static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
     static_assert(is_applicable(auto_tag<SI>));
     return ZeroBlender<SI.blend_zeros()>::cost(auto_tag<SI>);
+  }
+};
+
+/** A shuffler that broadcasts a single lane. */
+struct ShufflerBroadcast : BaseExpensiveOp {
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    static constexpr std::optional<ShuffleIndex> constant = SI.constant();
+    return constant.has_value() && is_index(*constant);
+  }
+
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    return broadcast_lane(vec, index_tag<static_cast<std::size_t>(SI.constant().value())>);
+  }
+
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
+    return broadcast_lane_cost<SI.value_size, SI.size,
+                               static_cast<std::size_t>(SI.constant().value())>();
   }
 };
 

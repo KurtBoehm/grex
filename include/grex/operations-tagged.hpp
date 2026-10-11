@@ -298,7 +298,7 @@ load_multibyte(const std::byte* data, IndexTag<SrcBytes> src_bytes, Tag /*tag*/)
 #endif
 template<MultiByteIterator It, AnyTag Tag>
 static auto load_multibyte(It it, Tag tag) {
-  return load_multibyte(it.raw(), index_tag<It::Container::element_bytes>, tag);
+  return load_multibyte(it.raw(), index_tag<It::element_bytes>, tag);
 }
 
 // transform

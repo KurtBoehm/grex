@@ -8,7 +8,6 @@
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHUFFLE_STATIC_SHARED_HPP
 
 #include <cstddef>
-#include <utility>
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/shared/defs.hpp"

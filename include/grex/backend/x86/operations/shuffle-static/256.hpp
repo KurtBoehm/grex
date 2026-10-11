@@ -39,7 +39,7 @@ struct ShufflerShuffle8x32 : public BaseExpensiveOp {
   }
   template<AnyShuffleIndices auto SI>
   static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
-    return {.inv_throughput = 0.5, .latency = 4};
+    return {.inv_throughput = 0.5, .latency = 2};
   }
 };
 
@@ -86,7 +86,7 @@ struct ShufflerPermute64x4 : public BaseExpensiveOp {
   template<AnyShuffleIndices auto SI>
   static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
     const auto [c0, c1] = ZeroBlender<SI.blend_zeros()>::cost(auto_tag<SI>);
-    return {.inv_throughput = 1 + c0, .latency = std::max<f64>(4, c1)};
+    return {.inv_throughput = 0.5 + c0, .latency = std::max<f64>(4, c1)};
   }
 };
 
@@ -117,8 +117,8 @@ struct ShufflerShuffle8x32Ext : public BaseExpensiveOp {
 template<AnyShuffleIndices auto I>
 requires((I.value_size * I.size == 32))
 struct ShufflerTrait<I> {
-  using Shuffler = CheapestType<I, ShufflerBlendZero, ShufflerShuffle8x32, ShufflerShuffle32x8,
-                                ShufflerPermute64x4, ShufflerShuffle8x32Ext>;
+  using Shuffler = CheapestType<I, ShufflerBroadcast, ShufflerBlendZero, ShufflerShuffle8x32,
+                                ShufflerShuffle32x8, ShufflerPermute64x4, ShufflerShuffle8x32Ext>;
 };
 } // namespace grex::backend
 #endif

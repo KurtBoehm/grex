@@ -8,7 +8,6 @@
 #define INCLUDE_GREX_BACKEND_X86_OPERATIONS_SHUFFLE_STATIC_128_HPP
 
 #include <algorithm>
-#include <utility>
 
 #include "grex/backend/base.hpp"
 #include "grex/backend/shared/defs.hpp"
@@ -70,8 +69,8 @@ struct ShufflerShuffle32x4 : public BaseExpensiveOp {
 template<AnyShuffleIndices auto I>
 requires((I.value_size * I.size == 16))
 struct ShufflerTrait<I> {
-  using Shuffler = CheapestType<I, ShufflerBlendZero, ShufflerShuffle8x16, ShufflerShuffle32x4,
-                                ShufflerExtractSet>;
+  using Shuffler = CheapestType<I, ShufflerBroadcast, ShufflerBlendZero, ShufflerShuffle8x16,
+                                ShufflerShuffle32x4, ShufflerExtractSet>;
 };
 } // namespace grex::backend
 

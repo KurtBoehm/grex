@@ -43,7 +43,15 @@ struct Cost {
   f64 inv_throughput;
   f64 latency;
 
-  auto operator<=>(const Cost&) const = default;
+  constexpr auto operator<=>(const Cost&) const = default;
+
+  /** Adds both components, which is often not particularly realistic. */
+  friend constexpr Cost operator+(Cost a, Cost b) {
+    return {
+      .inv_throughput = a.inv_throughput + b.inv_throughput,
+      .latency = a.latency + b.latency,
+    };
+  }
 };
 
 template<auto Value, typename ZeroBlenders>

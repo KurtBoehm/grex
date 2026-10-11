@@ -235,12 +235,10 @@ struct ShufflerPermutexVar8x64 : public BaseExpensiveOp {
       static_apply<64>([&]<std::size_t... I> { return std::array{f8(I, false)...}; });
 
     const i8x64 ivec = reinterpret(vec, type_tag<i8>);
-    const i16x32 shuf16a{
-      _mm512_permutexvar_epi16(load(idxs16a.data(), type_tag<i16x32>).r, ivec.r)};
-    const i16x32 shuf16b{
-      _mm512_permutexvar_epi16(load(idxs16b.data(), type_tag<i16x32>).r, ivec.r)};
-    const i8x64 shuf8a{_mm512_shuffle_epi8(shuf16a.r, load(idxs8a.data(), type_tag<i8x64>).r)};
-    const i8x64 shuf8b{_mm512_shuffle_epi8(shuf16b.r, load(idxs8b.data(), type_tag<i8x64>).r)};
+    const auto shuf16a = _mm512_permutexvar_epi16(load(idxs16a.data(), type_tag<i16x32>).r, ivec.r);
+    const auto shuf16b = _mm512_permutexvar_epi16(load(idxs16b.data(), type_tag<i16x32>).r, ivec.r);
+    const i8x64 shuf8a{_mm512_shuffle_epi8(shuf16a, load(idxs8a.data(), type_tag<i8x64>).r)};
+    const i8x64 shuf8b{_mm512_shuffle_epi8(shuf16b, load(idxs8b.data(), type_tag<i8x64>).r)};
     return reinterpret(bitwise_or(shuf8a, shuf8b), type_tag<Value>);
   }
   template<AnyShuffleIndices auto SI>
@@ -284,12 +282,12 @@ struct PairShufflerPermutexVar8x64 : public BaseExpensiveOp {
 
     const i8x64 ia = reinterpret(a, type_tag<i8>);
     const i8x64 ib = reinterpret(b, type_tag<i8>);
-    const i16x32 shuf16a{
-      _mm512_permutex2var_epi16(ia.r, load(idxs16a.data(), type_tag<i16x32>).r, ib.r)};
-    const i16x32 shuf16b{
-      _mm512_permutex2var_epi16(ia.r, load(idxs16b.data(), type_tag<i16x32>).r, ib.r)};
-    const i8x64 shuf8a{_mm512_shuffle_epi8(shuf16a.r, load(idxs8a.data(), type_tag<i8x64>).r)};
-    const i8x64 shuf8b{_mm512_shuffle_epi8(shuf16b.r, load(idxs8b.data(), type_tag<i8x64>).r)};
+    const auto shuf16a =
+      _mm512_permutex2var_epi16(ia.r, load(idxs16a.data(), type_tag<i16x32>).r, ib.r);
+    const auto shuf16b =
+      _mm512_permutex2var_epi16(ia.r, load(idxs16b.data(), type_tag<i16x32>).r, ib.r);
+    const i8x64 shuf8a{_mm512_shuffle_epi8(shuf16a, load(idxs8a.data(), type_tag<i8x64>).r)};
+    const i8x64 shuf8b{_mm512_shuffle_epi8(shuf16b, load(idxs8b.data(), type_tag<i8x64>).r)};
     return reinterpret(bitwise_or(shuf8a, shuf8b), type_tag<Value>);
   }
   template<AnyShuffleIndices auto SI>
@@ -302,10 +300,10 @@ struct PairShufflerPermutexVar8x64 : public BaseExpensiveOp {
 template<AnyShuffleIndices auto SI>
 requires((SI.value_size * SI.size == 64))
 struct ShufflerTrait<SI> {
-  using Shuffler =
-    CheapestType<SI, ShufflerBlendZero, ShufflerShuffle128x4, ShufflerShuffle8x64,
-                 ShufflerShuffle32x16, ShufflerPermutex64x8, ShufflerPermutexVar64x8,
-                 ShufflerPermutexVar32x16, ShufflerPermutexVar16x32, ShufflerPermutexVar8x64>;
+  using Shuffler = CheapestType<SI, ShufflerBroadcast, ShufflerBlendZero, ShufflerShuffle128x4,
+                                ShufflerShuffle8x64, ShufflerShuffle32x16, ShufflerPermutex64x8,
+                                ShufflerPermutexVar64x8, ShufflerPermutexVar32x16,
+                                ShufflerPermutexVar16x32, ShufflerPermutexVar8x64>;
 };
 template<AnyShuffleIndices auto SI>
 requires((SI.value_size * SI.size == 64))

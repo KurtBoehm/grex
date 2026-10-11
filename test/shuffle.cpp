@@ -9,6 +9,7 @@
 #include "grex/grex.hpp"
 
 #if !GREX_BACKEND_SCALAR
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdlib>
@@ -60,6 +61,19 @@ void run_simd(test::Rng& rng, grex::IndexTag<N> /*tag*/) {
   auto dist = test::make_distribution<Value>(); // NOLINT(*-const-correctness)
   const auto dval = [&] { return dist(rng); };
 
+  // broadcast_lane
+  grex::static_apply<N>([&]<std::size_t... I> {
+    VC bc_base = VC::random(dval);
+    const auto broadcast_lane = [&](grex::AnyIndexTag auto lane) {
+      std::array<Value, N> bc_array{};
+      std::ranges::fill(bc_array, bc_base.vec[lane]);
+
+      VC{bc_base.vec.broadcast_lane(lane), bc_array}.check("broadcast_lane");
+    };
+    (..., broadcast_lane(grex::index_tag<I>));
+  });
+
+  // shuffle
   grex::static_apply<N>([&]<std::size_t... I> {
     VC base = VC::random(dval);
 
@@ -77,7 +91,7 @@ void run_simd(test::Rng& rng, grex::IndexTag<N> /*tag*/) {
       return std::array<std::array<grex::ShuffleIndex, N>, repetitions>{arr(Reps)...};
     });
 
-    auto fix = [&](grex::AnyIndexTag auto rep) {
+    const auto fix = [&](grex::AnyIndexTag auto rep) {
       announce_shuffle(idxs[rep], base.vec);
       const auto shuf = grex::shuffle<idxs[rep][I]...>(base.vec);
       bool same = true;

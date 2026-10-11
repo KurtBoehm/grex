@@ -18,6 +18,7 @@
 
 #include "grex/f16.hpp" // IWYU pragma: export
 
+namespace grex {
 #if defined(__GNUC__) && !defined(__clang__)
 #define GREX_GCC true
 #define GREX_CLANG false
@@ -26,13 +27,15 @@
 #define GREX_CLANG true
 #endif
 
+inline constexpr bool is_gcc = GREX_GCC;
+inline constexpr bool is_clang = GREX_CLANG;
+
 #ifdef __GNUC__
 #define GREX_ALWAYS_INLINE __attribute__((always_inline))
 #else
 #define GREX_ALWAYS_INLINE
 #endif
 
-namespace grex {
 namespace primitives {
 using u8 = std::uint8_t;
 using u16 = std::uint16_t;
@@ -63,6 +66,8 @@ concept Int64 = std::same_as<T, u64> || std::same_as<T, i64>;
 /** IEEE 754 binary16: not always supported in hardware and therefore often a special case. */
 template<typename T>
 concept Float16 = std::same_as<T, f16>;
+template<typename T>
+concept Any16 = Int16<T> || Float16<T>;
 
 template<typename T>
 concept UnsignedIntVectorizable =
@@ -286,8 +291,7 @@ inline std::string_view format_as(IterDirection dir) {
 
 template<typename It>
 concept MultiByteIterator = requires(It it) {
-  typename It::Container;
-  { It::Container::element_bytes } -> std::convertible_to<std::size_t>;
+  { It::element_bytes } -> std::convertible_to<std::size_t>;
   { it.raw() } -> std::convertible_to<const std::byte*>;
 };
 
