@@ -430,7 +430,7 @@ struct Vector : VectorBase<T, std::make_index_sequence<N>> {
     backend::store_part(value, vec_, num);
   }
 
-  /** Broadcasts the given lane into all lanes. */
+  /** Broadcasts lane `I` into all lanes. */
   template<std::size_t I>
   requires(I < size)
   [[nodiscard, GREX_ALWAYS_INLINE]] Vector broadcast_lane(IndexTag<I> i) const {
@@ -750,6 +750,13 @@ template<Vectorizable T, std::size_t N>
 template<BlendSelector... BS, Vectorizable T, std::size_t N>
 [[nodiscard, GREX_ALWAYS_INLINE]] inline Vector<T, N> blend(Vector<T, N> v0, Vector<T, N> v1) {
   return Vector<T, N>{backend::blend<BS...>(v0.backend(), v1.backend())};
+}
+
+/** Broadcasts lane `I` into all lanes. */
+template<std::size_t I, Vectorizable T, std::size_t N>
+requires(I < N)
+[[nodiscard, GREX_ALWAYS_INLINE]] Vector<T, N> broadcast_lane(Vector<T, N> v) {
+  return v.broadcast_lane(index_tag<I>);
 }
 
 /** Moves the lanes down by `Shift` lanes: `result[i] = (i + Shift < N) ? v[i + Shift] : 0`. */

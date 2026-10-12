@@ -70,6 +70,7 @@ void run_simd(test::Rng& rng, grex::IndexTag<N> /*tag*/) {
       std::ranges::fill(bc_array, base.vec[lane]);
 
       VC{base.vec.broadcast_lane(lane), bc_array}.check("broadcast_lane");
+      VC{grex::broadcast_lane<lane>(base.vec), bc_array}.check("broadcast_lane");
     };
     (..., broadcast_lane(grex::index_tag<I>));
   });
