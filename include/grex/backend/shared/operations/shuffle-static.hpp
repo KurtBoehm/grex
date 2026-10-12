@@ -751,7 +751,7 @@ private:
         default: {
           const u8 idx = static_cast<u8>(si);
           assert(idx < index_ub);
-          const auto offset_i = static_cast<std::size_t>((size + idx - i) % index_ub);
+          const auto offset_i = (size + idx - i) % index_ub;
 
           if (off.has_value() && *off != offset_i) {
             // If a different offset was determined earlier, the pattern is not supported.
