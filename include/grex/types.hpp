@@ -755,7 +755,7 @@ template<BlendSelector... BS, Vectorizable T, std::size_t N>
 /** Broadcasts lane `I` into all lanes. */
 template<std::size_t I, Vectorizable T, std::size_t N>
 requires(I < N)
-[[nodiscard, GREX_ALWAYS_INLINE]] Vector<T, N> broadcast_lane(Vector<T, N> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline Vector<T, N> broadcast_lane(Vector<T, N> v) {
   return v.broadcast_lane(index_tag<I>);
 }
 
