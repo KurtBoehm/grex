@@ -31,7 +31,7 @@ inline constexpr bool is_gcc = GREX_GCC;
 inline constexpr bool is_clang = GREX_CLANG;
 
 #ifdef __GNUC__
-#define GREX_ALWAYS_INLINE __attribute__((always_inline))
+#define GREX_ALWAYS_INLINE gnu::always_inline
 #define GREX_NEVER_INLINE gnu::noinline
 #define GREX_COLD gnu::cold
 #else
@@ -303,18 +303,18 @@ template<std::size_t I, typename T>
 using IdxType = T;
 
 template<std::size_t N>
-GREX_ALWAYS_INLINE constexpr decltype(auto) static_apply(auto f) {
-  return [&]<std::size_t... I>(std::index_sequence<I...> /*seq*/)
-           GREX_ALWAYS_INLINE -> decltype(auto) {
-             return f.template operator()<I...>();
-           }(std::make_index_sequence<N>{});
+[[GREX_ALWAYS_INLINE]] constexpr decltype(auto) static_apply(auto f) {
+  return [&]<std::size_t... I> [[GREX_ALWAYS_INLINE]] (
+           std::index_sequence<I...> /*seq*/) -> decltype(auto) {
+    return f.template operator()<I...>();
+  }(std::make_index_sequence<N>{});
 }
 template<std::size_t Begin, std::size_t End>
-GREX_ALWAYS_INLINE constexpr decltype(auto) static_apply(auto f) {
-  return [&]<std::size_t... I>(std::index_sequence<I...> /*seq*/)
-           GREX_ALWAYS_INLINE -> decltype(auto) {
-             return f.template operator()<Begin + I...>();
-           }(std::make_index_sequence<End - Begin>{});
+[[GREX_ALWAYS_INLINE]] constexpr decltype(auto) static_apply(auto f) {
+  return [&]<std::size_t... I> [[GREX_ALWAYS_INLINE]] (
+           std::index_sequence<I...> /*seq*/) -> decltype(auto) {
+    return f.template operator()<Begin + I...>();
+  }(std::make_index_sequence<End - Begin>{});
 }
 } // namespace grex
 

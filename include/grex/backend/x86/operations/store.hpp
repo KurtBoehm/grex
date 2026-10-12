@@ -92,7 +92,7 @@ namespace partstore {
 /** Stores the low `Bytes` bytes of `v` at `ptr`. */
 template<std::size_t Bytes>
 requires(Bytes == 1 || Bytes == 2 || Bytes == 4 || Bytes == 8 || Bytes == 16)
-GREX_ALWAYS_INLINE inline void store_bytes(u8* ptr, __m128i v) {
+[[GREX_ALWAYS_INLINE]] inline void store_bytes(u8* ptr, __m128i v) {
   if constexpr (Bytes == 16) {
     _mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), v);
   } else if constexpr (Bytes == 8) {
@@ -116,7 +116,7 @@ GREX_ALWAYS_INLINE inline void store_bytes(u8* ptr, __m128i v) {
  */
 template<std::size_t Block, std::size_t ElementBytes>
 requires((Block == 2 || Block == 4) && ElementBytes <= Block)
-GREX_ALWAYS_INLINE inline void scatter_blocks(u8* ptr, __m128i v, std::size_t bytes) {
+[[GREX_ALWAYS_INLINE]] inline void scatter_blocks(u8* ptr, __m128i v, std::size_t bytes) {
   store_bytes<Block>(ptr, v);
   if constexpr (ElementBytes < Block) {
     store_bytes<Block>(ptr + bytes - Block,
@@ -132,7 +132,7 @@ GREX_ALWAYS_INLINE inline void scatter_blocks(u8* ptr, __m128i v, std::size_t by
  */
 template<std::size_t ElementBytes, std::size_t Total>
 requires(ElementBytes <= Total && Total <= 16)
-GREX_ALWAYS_INLINE inline void store_prefix_bytes(u8* ptr, __m128i v, std::size_t bytes) {
+[[GREX_ALWAYS_INLINE]] inline void store_prefix_bytes(u8* ptr, __m128i v, std::size_t bytes) {
   if constexpr (Total > 8) {
     if (bytes >= 8) {
       store_bytes<8>(ptr, v);
@@ -168,7 +168,7 @@ GREX_ALWAYS_INLINE inline void store_prefix_bytes(u8* ptr, __m128i v, std::size_
  */
 template<std::size_t ElementBytes, std::size_t Count>
 requires((ElementBytes * Count) <= 16)
-GREX_ALWAYS_INLINE inline void store_prefix(void* base, __m128i v, std::size_t count) {
+[[GREX_ALWAYS_INLINE]] inline void store_prefix(void* base, __m128i v, std::size_t count) {
   static constexpr std::size_t total = ElementBytes * Count;
 
   auto* ptr = static_cast<u8*>(base);

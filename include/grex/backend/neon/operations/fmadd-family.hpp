@@ -36,7 +36,7 @@ namespace grex::backend {
 inline constexpr bool has_fma = true;
 
 #define GREX_FMADDF(KIND, BITS, SIZE, TAG, INTRINSIC) \
-  GREX_ALWAYS_INLINE inline NativeVector<KIND##BITS, SIZE> fused( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<KIND##BITS, SIZE> fused( \
     NativeVector<KIND##BITS, SIZE> a, NativeVector<KIND##BITS, SIZE> b, \
     NativeVector<KIND##BITS, SIZE> c, TAG) { \
     const auto ar = from_stored<KIND##BITS>(a.r); \
@@ -49,54 +49,54 @@ GREX_FOREACH_FP_TYPE_OPT_EXT(GREX_FMADDF, 128, MultiplyAdd, vfmaq)
 GREX_FOREACH_FP_TYPE_OPT_EXT(GREX_FMADDF, 128, NegatedMultiplyAdd, vfmsq)
 
 template<NativeFloatVectorizable T, std::size_t N>
-GREX_ALWAYS_INLINE inline NativeVector<T, N> fused(NativeVector<T, N> a, NativeVector<T, N> b,
-                                                   NativeVector<T, N> c, MultiplySubtract /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, N>
+fused(NativeVector<T, N> a, NativeVector<T, N> b, NativeVector<T, N> c, MultiplySubtract /*tag*/) {
   return fused(a, b, negate(c), MultiplyAdd{});
 }
 template<NativeFloatVectorizable T, std::size_t N>
-GREX_ALWAYS_INLINE inline NativeVector<T, N> fused(NativeVector<T, N> a, NativeVector<T, N> b,
-                                                   NativeVector<T, N> c,
-                                                   NegatedMultiplySubtract /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, N>
+fused(NativeVector<T, N> a, NativeVector<T, N> b, NativeVector<T, N> c,
+      NegatedMultiplySubtract /*tag*/) {
   return fused(a, b, negate(c), NegatedMultiplyAdd{});
 }
 
 template<typename Half>
-GREX_ALWAYS_INLINE inline SuperVector<Half> fused(SuperVector<Half> a, SuperVector<Half> b,
-                                                  SuperVector<Half> c, FusedTag auto tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline SuperVector<Half>
+fused(SuperVector<Half> a, SuperVector<Half> b, SuperVector<Half> c, FusedTag auto tag) {
   return {
     .lower = fused(a.lower, b.lower, c.lower, tag),
     .upper = fused(a.upper, b.upper, c.upper, tag),
   };
 }
 template<NativeFloatVectorizable T, std::size_t N>
-GREX_ALWAYS_INLINE inline SubVector<T, N> fused(SubVector<T, N> a, SubVector<T, N> b,
-                                                SubVector<T, N> c, FusedTag auto tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<T, N>
+fused(SubVector<T, N> a, SubVector<T, N> b, SubVector<T, N> c, FusedTag auto tag) {
   return SubVector<T, N>{fused(a.full, b.full, c.full, tag)};
 }
 
 #if !GREX_F16_NATIVE_ARITHMETIC
 // Binary16 without FP16: round-trip through binary32.
 template<Float16Vector Vec>
-GREX_ALWAYS_INLINE inline Vec fused(Vec a, Vec b, Vec c, FusedTag auto tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline Vec fused(Vec a, Vec b, Vec c, FusedTag auto tag) {
   return f32_to_f16(fused(f16_to_f32(a), f16_to_f32(b), f16_to_f32(c), tag));
 }
 #endif
 
 #define GREX_FFMA(TYPE, BSUFFIX) \
   template<std::same_as<TYPE> T> \
-  GREX_ALWAYS_INLINE inline T fused(T a, T b, T c, MultiplyAdd) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline T fused(T a, T b, T c, MultiplyAdd) { \
     return __builtin_fma##BSUFFIX(a, b, c); \
   } \
   template<std::same_as<TYPE> T> \
-  GREX_ALWAYS_INLINE inline T fused(T a, T b, T c, MultiplySubtract) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline T fused(T a, T b, T c, MultiplySubtract) { \
     return __builtin_fma##BSUFFIX(a, b, -c); \
   } \
   template<std::same_as<TYPE> T> \
-  GREX_ALWAYS_INLINE inline T fused(T a, T b, T c, NegatedMultiplyAdd) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline T fused(T a, T b, T c, NegatedMultiplyAdd) { \
     return __builtin_fma##BSUFFIX(-a, b, c); \
   } \
   template<std::same_as<TYPE> T> \
-  GREX_ALWAYS_INLINE inline T fused(T a, T b, T c, NegatedMultiplySubtract) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline T fused(T a, T b, T c, NegatedMultiplySubtract) { \
     return __builtin_fma##BSUFFIX(-a, b, -c); \
   }
 
@@ -107,7 +107,7 @@ GREX_FFMA(f32, f)
 GREX_FFMA(f16, f16)
 #else
 template<std::same_as<f16> T>
-GREX_ALWAYS_INLINE inline T fused(T a, T b, T c, FusedTag auto tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline T fused(T a, T b, T c, FusedTag auto tag) {
   return grex::f32_to_f16(
     fused(grex::f16_to_f32(a), grex::f16_to_f32(b), grex::f16_to_f32(c), tag));
 }

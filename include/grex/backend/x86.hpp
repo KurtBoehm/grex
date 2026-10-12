@@ -8,7 +8,6 @@
 #include "x86/operations.hpp"
 #include "x86/sizes.hpp"
 #include "x86/types.hpp"
-#include "x86/utils.hpp"
 // IWYU pragma: end_exports
 
 #endif // INCLUDE_GREX_BACKEND_X86_HPP

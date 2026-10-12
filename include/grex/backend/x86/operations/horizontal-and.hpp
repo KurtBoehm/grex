@@ -55,7 +55,7 @@ namespace grex::backend {
 #endif
 
 #define GREX_HAND(KIND, BITS, SIZE, ...) \
-  GREX_ALWAYS_INLINE inline bool horizontal_and(NativeMask<KIND##BITS, SIZE> m) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline bool horizontal_and(NativeMask<KIND##BITS, SIZE> m) { \
     return GREX_HAND_IMPL(KIND, BITS, SIZE, __VA_ARGS__); \
   }
 #define GREX_HAND_ALL(REGISTERBITS, BITPREFIX) \
@@ -63,7 +63,7 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_HAND_ALL)
 
 #define GREX_HAND_SUB(KIND, BITS, PART, SIZE) \
-  GREX_ALWAYS_INLINE inline bool horizontal_and(SubMask<KIND##BITS, PART> m) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline bool horizontal_and(SubMask<KIND##BITS, PART> m) { \
     return GREX_HAND_SUB_IMPL(KIND, BITS, PART, SIZE); \
   }
 GREX_FOREACH_SUB_EXT(GREX_HAND_SUB)

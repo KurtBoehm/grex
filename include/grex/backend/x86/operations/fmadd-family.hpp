@@ -72,16 +72,16 @@ GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fnmadd, NegatedMultiplyAdd)
 GREX_FOREACH_X86_64_LEVEL(GREX_FMADDF_ALL, fnmsub, NegatedMultiplySubtract)
 
 template<typename Half>
-GREX_ALWAYS_INLINE inline SuperVector<Half> fused(SuperVector<Half> a, SuperVector<Half> b,
-                                                  SuperVector<Half> c, FusedTag auto tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline SuperVector<Half>
+fused(SuperVector<Half> a, SuperVector<Half> b, SuperVector<Half> c, FusedTag auto tag) {
   return {
     .lower = fused(a.lower, b.lower, c.lower, tag),
     .upper = fused(a.upper, b.upper, c.upper, tag),
   };
 }
 template<NativeFloatVectorizable T, std::size_t N>
-GREX_ALWAYS_INLINE inline SubVector<T, N> fused(SubVector<T, N> a, SubVector<T, N> b,
-                                                SubVector<T, N> c, FusedTag auto tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<T, N>
+fused(SubVector<T, N> a, SubVector<T, N> b, SubVector<T, N> c, FusedTag auto tag) {
   return SubVector<T, N>{fused(a.full, b.full, c.full, tag)};
 }
 
@@ -98,11 +98,11 @@ GREX_FOREACH_FP_TYPE_OPT_EXT(GREX_FMADDS, 128, fnmsub, NegatedMultiplySubtract)
 // Binary16 without AVX512-FP16: round-trip through binary32.
 #if !GREX_F16_NATIVE_ARITHMETIC
 template<Float16Vector Vec>
-GREX_ALWAYS_INLINE inline Vec fused(Vec a, Vec b, Vec c, FusedTag auto tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline Vec fused(Vec a, Vec b, Vec c, FusedTag auto tag) {
   return f32_to_f16(fused(f16_to_f32(a), f16_to_f32(b), f16_to_f32(c), tag));
 }
 template<std::same_as<f16> T>
-GREX_ALWAYS_INLINE inline T fused(T a, T b, T c, FusedTag auto tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline T fused(T a, T b, T c, FusedTag auto tag) {
   const auto r = fused(grex::f16_to_f32(a), grex::f16_to_f32(b), grex::f16_to_f32(c), tag);
   return grex::f32_to_f16(r);
 }

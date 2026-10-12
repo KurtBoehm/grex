@@ -72,16 +72,16 @@ struct ShuffleIndices {
   }
 
   template<bool SignedIdxs = true>
-  [[nodiscard]] GREX_ALWAYS_INLINE auto vector(BoolTag<SignedIdxs> signed_idxs = {}) const {
-    return static_apply<size>([&]<std::size_t... I> GREX_ALWAYS_INLINE {
+  [[nodiscard, GREX_ALWAYS_INLINE]] auto vector(BoolTag<SignedIdxs> signed_idxs = {}) const {
+    return static_apply<size>([&]<std::size_t... I> [[GREX_ALWAYS_INLINE]] {
       using Val = std::conditional_t<signed_idxs, SignedInt<value_size>, UnsignedInt<value_size>>;
       auto f = [](ShuffleIndex sh) { return is_index(sh) ? Val(sh) : Val(-1); };
       return set(type_tag<NativeVector<Val, size>>, f(indices[I])...);
     });
   }
 
-  [[nodiscard]] GREX_ALWAYS_INLINE auto mask() const {
-    return static_apply<size>([&]<std::size_t... I> GREX_ALWAYS_INLINE {
+  [[nodiscard, GREX_ALWAYS_INLINE]] auto mask() const {
+    return static_apply<size>([&]<std::size_t... I> [[GREX_ALWAYS_INLINE]] {
       return set(type_tag<NativeMask<SignedInt<value_size>, size>>, is_index(indices[I])...);
     });
   }

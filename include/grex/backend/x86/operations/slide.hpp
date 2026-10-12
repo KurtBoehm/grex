@@ -46,7 +46,7 @@ inline constexpr u64 shift_mask =
 
 /** The native vector of type `V` with the bytes in `r`. */
 template<AnyNativeVector V, typename R>
-[[nodiscard]] GREX_ALWAYS_INLINE inline V from_byte_register(R r) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline V from_byte_register(R r) noexcept {
   return as<ValueOf<V>>(NativeVector<u8, sizeof(ValueOf<V>) * size_of<V>>{.r = r});
 }
 } // namespace sld
@@ -219,7 +219,7 @@ consteval Cost rotate_down_cost() {
 namespace sld {
 template<std::size_t ByteShift>
 requires(ByteShift <= 16)
-[[nodiscard]] GREX_ALWAYS_INLINE inline __m128i alignr(__m128i lo, __m128i hi) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128i alignr(__m128i lo, __m128i hi) noexcept {
   if constexpr (ByteShift == 0) {
     return lo;
   } else if constexpr (ByteShift == 16) {
@@ -234,7 +234,7 @@ requires(ByteShift <= 16)
 #if GREX_X86_64_LEVEL >= 3
 template<std::size_t ByteShift>
 requires(ByteShift <= 32)
-[[nodiscard]] GREX_ALWAYS_INLINE inline __m256i alignr(__m256i lo, __m256i hi) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m256i alignr(__m256i lo, __m256i hi) noexcept {
   if constexpr (ByteShift == 0) {
     return lo;
   } else if constexpr (ByteShift == 32) {
@@ -264,7 +264,7 @@ requires(ByteShift <= 32)
 #if GREX_X86_64_LEVEL >= 4
 template<std::size_t ByteShift>
 requires(ByteShift <= 64)
-[[nodiscard]] GREX_ALWAYS_INLINE inline __m512i alignr(__m512i lo, __m512i hi) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m512i alignr(__m512i lo, __m512i hi) noexcept {
   if constexpr (ByteShift == 0) {
     return lo;
   } else if constexpr (ByteShift == 64) {
@@ -295,7 +295,7 @@ requires(ByteShift <= 64)
 
 template<std::size_t Shift, AnyNativeVector V>
 requires(Shift <= size_of<V>)
-[[nodiscard]] GREX_ALWAYS_INLINE inline V concat_slide_down(V lo, V hi) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline V concat_slide_down(V lo, V hi) noexcept {
   const auto r = sld::alignr<sizeof(ValueOf<V>) * Shift>(as<u8>(lo).r, as<u8>(hi).r);
   return sld::from_byte_register<V>(r);
 }
@@ -307,7 +307,7 @@ requires(Shift <= size_of<V>)
 namespace sld {
 template<ShiftDirection Dir, std::size_t ByteShift>
 requires(ByteShift <= 16)
-[[nodiscard]] GREX_ALWAYS_INLINE inline __m128i shift_bytes(__m128i v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128i shift_bytes(__m128i v) noexcept {
   if constexpr (ByteShift == 0) {
     return v;
   } else if constexpr (ByteShift == 16) {
@@ -322,7 +322,7 @@ requires(ByteShift <= 16)
 #if GREX_X86_64_LEVEL >= 3
 template<ShiftDirection Dir, std::size_t ByteShift>
 requires(ByteShift <= 32)
-[[nodiscard]] GREX_ALWAYS_INLINE inline __m256i shift_bytes(__m256i v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m256i shift_bytes(__m256i v) noexcept {
   static constexpr bool down = Dir == shift_down;
   if constexpr (ByteShift == 0) {
     return v;
@@ -367,7 +367,7 @@ requires(ByteShift <= 32)
 #if GREX_X86_64_LEVEL >= 4
 template<ShiftDirection Dir, std::size_t ByteShift>
 requires(ByteShift <= 64)
-[[nodiscard]] GREX_ALWAYS_INLINE inline __m512i shift_bytes(__m512i v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m512i shift_bytes(__m512i v) noexcept {
   static constexpr bool down = Dir == shift_down;
   if constexpr (ByteShift == 0) {
     return v;
@@ -390,7 +390,7 @@ requires(ByteShift <= 64)
 
 template<ShiftDirection Dir, std::size_t Shift, AnyNativeVector V>
 requires(Shift <= size_of<V>)
-[[nodiscard]] GREX_ALWAYS_INLINE inline V slide(V v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline V slide(V v) noexcept {
   const auto r = sld::shift_bytes<Dir, sizeof(ValueOf<V>) * Shift>(as<u8>(v).r);
   return sld::from_byte_register<V>(r);
 }
@@ -407,7 +407,7 @@ inline constexpr int rotate4_imm =
 
 template<std::size_t ByteShift>
 requires(ByteShift < 16)
-[[nodiscard]] GREX_ALWAYS_INLINE inline __m128i rotr(__m128i v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128i rotr(__m128i v) noexcept {
   if constexpr (ByteShift == 0) {
     return v;
   } else if constexpr (ByteShift % 4 == 0) {
@@ -421,7 +421,7 @@ requires(ByteShift < 16)
 #if GREX_X86_64_LEVEL >= 3
 template<std::size_t ByteShift>
 requires(ByteShift < 32)
-[[nodiscard]] GREX_ALWAYS_INLINE inline __m256i rotr(__m256i v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m256i rotr(__m256i v) noexcept {
   if constexpr (ByteShift == 0) {
     return v;
   } else if constexpr (x86_64_level >= 4 && ByteShift % 4 == 0) {
@@ -450,7 +450,7 @@ requires(ByteShift < 32)
 #if GREX_X86_64_LEVEL >= 4
 template<std::size_t ByteShift>
 requires(ByteShift < 64)
-[[nodiscard]] GREX_ALWAYS_INLINE inline __m512i rotr(__m512i v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m512i rotr(__m512i v) noexcept {
   if constexpr (ByteShift == 0) {
     return v;
   } else if constexpr (ByteShift % 4 != 0 && has_avx512vbmi) {
@@ -467,7 +467,7 @@ requires(ByteShift < 64)
 
 template<std::size_t Shift, AnyNativeVector V>
 requires(Shift <= size_of<V>)
-[[nodiscard]] GREX_ALWAYS_INLINE inline V rotate_down(V v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline V rotate_down(V v) noexcept {
   const auto r = sld::rotr<sizeof(ValueOf<V>) * (Shift % size_of<V>)>(as<u8>(v).r);
   return sld::from_byte_register<V>(r);
 }
@@ -482,13 +482,13 @@ requires(Shift <= size_of<V>)
  */
 template<ShiftDirection Dir, std::size_t Shift, AnySubNativeVector V>
 requires(Shift <= size_of<V>)
-[[nodiscard]] GREX_ALWAYS_INLINE inline V slide(V v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline V slide(V v) noexcept {
   static constexpr bool down = Dir == shift_down;
   static constexpr std::size_t byte_size = sizeof(ValueOf<V>) * size_of<V>;
   static constexpr int bit_shift = 8 * sizeof(ValueOf<V>) * Shift;
 
   const __m128i ur = as<u8>(v.full).r;
-  const __m128i r = [&] GREX_ALWAYS_INLINE {
+  const __m128i r = [&] [[GREX_ALWAYS_INLINE]] {
     if constexpr (byte_size == 8) {
       return down ? _mm_srli_epi64(ur, bit_shift) : _mm_slli_epi64(ur, bit_shift);
     } else if constexpr (byte_size == 4) {

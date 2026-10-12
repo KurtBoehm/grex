@@ -15,12 +15,14 @@
 namespace grex::backend {
 template<Vectorizable T, std::size_t N, std::size_t I>
 requires(I < N)
-GREX_ALWAYS_INLINE inline SubVector<T, N> broadcast_lane(SubVector<T, N> v, IndexTag<I> i) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<T, N> broadcast_lane(SubVector<T, N> v,
+                                                                        IndexTag<I> i) {
   return SubVector<T, N>{broadcast_lane(v.full, i)};
 }
 template<AnyVector Half, std::size_t I>
 requires(I < 2 * size_of<Half>)
-GREX_ALWAYS_INLINE inline SuperVector<Half> broadcast_lane(SuperVector<Half> v, IndexTag<I> i) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline SuperVector<Half> broadcast_lane(SuperVector<Half> v,
+                                                                          IndexTag<I> i) {
   if constexpr (I < size_of<Half>) {
     const auto bc = broadcast_lane(v.lower, i);
     return {.lower = bc, .upper = bc};

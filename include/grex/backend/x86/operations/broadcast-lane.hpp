@@ -13,7 +13,6 @@
 #include "grex/backend/shared/defs.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp"
-#include "grex/backend/x86/utils.hpp"
 #include "grex/base.hpp"
 
 namespace grex::backend {
@@ -25,7 +24,7 @@ consteval int splat(int i) {
 /** SSE2 16-bit broadcast: `pshuf[lh]w` + `pshufd`. 2 µops. */
 template<std::size_t I>
 requires(I < 8)
-GREX_ALWAYS_INLINE inline __m128i sse2_bcast16(__m128i v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128i sse2_bcast16(__m128i v) {
   if constexpr (I < 4) {
     static constexpr int imm = splat(I);
     return _mm_shuffle_epi32(_mm_shufflelo_epi16(v, imm), 0x00);
@@ -74,7 +73,7 @@ inline constexpr Cost pshufb_zmm{.inv_throughput = 0.5, .latency = 1};
 } // namespace bcast_lane::cost
 
 template<std::size_t ValueBytes, std::size_t N, std::size_t I>
-consteval Cost broadcast_lane_cost() {
+[[nodiscard]] consteval Cost broadcast_lane_cost() {
   using namespace bcast_lane::cost;
 
   if constexpr (ValueBytes * N == 16) {
@@ -137,7 +136,7 @@ consteval Cost broadcast_lane_cost() {
 /** `f64`: `movddup` starting on level 2, `unpcklpd`/`unpckhpd` on level 1. 1 µop. */
 template<std::size_t I>
 requires(I < 2)
-GREX_ALWAYS_INLINE inline f64x2 broadcast_lane(f64x2 v, IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline f64x2 broadcast_lane(f64x2 v, IndexTag<I> /*idx*/) {
   if constexpr (I == 0 && x86_64_level >= 2) {
     return {.r = _mm_movedup_pd(v.r)};
   } else if constexpr (I == 0) {
@@ -150,7 +149,7 @@ GREX_ALWAYS_INLINE inline f64x2 broadcast_lane(f64x2 v, IndexTag<I> /*idx*/) {
 /** `f32`: `shufps` before level 3, `vpermilps` afterwards (non-destructive). 1 µop. */
 template<std::size_t I>
 requires(I < 4)
-GREX_ALWAYS_INLINE inline f32x4 broadcast_lane(f32x4 v, IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline f32x4 broadcast_lane(f32x4 v, IndexTag<I> /*idx*/) {
   static constexpr int imm = bcast_lane::splat(I);
   if constexpr (x86_64_level >= 3) {
     return {.r = _mm_permute_ps(v.r, imm)};
@@ -162,8 +161,8 @@ GREX_ALWAYS_INLINE inline f32x4 broadcast_lane(f32x4 v, IndexTag<I> /*idx*/) {
 /** `i64`/`u64`: `pshufd`. 1 µop. */
 template<std::size_t I, Int64 T>
 requires(I < 2)
-GREX_ALWAYS_INLINE inline NativeVector<T, 2> broadcast_lane(NativeVector<T, 2> v,
-                                                            IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 2> broadcast_lane(NativeVector<T, 2> v,
+                                                                           IndexTag<I> /*idx*/) {
   static constexpr int imm = (I > 0) ? 0xEE : 0x44;
   return {.r = _mm_shuffle_epi32(v.r, imm)};
 }
@@ -171,8 +170,8 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 2> broadcast_lane(NativeVector<T, 2> v
 /** `i32`/`u32`: `pshufd`. 1 µop. */
 template<std::size_t I, Int32 T>
 requires(I < 4)
-GREX_ALWAYS_INLINE inline NativeVector<T, 4> broadcast_lane(NativeVector<T, 4> v,
-                                                            IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 4> broadcast_lane(NativeVector<T, 4> v,
+                                                                           IndexTag<I> /*idx*/) {
   static constexpr int imm = bcast_lane::splat(I);
   return {.r = _mm_shuffle_epi32(v.r, imm)};
 }
@@ -185,8 +184,8 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 4> broadcast_lane(NativeVector<T, 4> v
  */
 template<std::size_t I, Any16 T>
 requires(I < 8)
-GREX_ALWAYS_INLINE inline NativeVector<T, 8> broadcast_lane(NativeVector<T, 8> v,
-                                                            IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 8> broadcast_lane(NativeVector<T, 8> v,
+                                                                           IndexTag<I> /*idx*/) {
   if constexpr (I == 0 && x86_64_level >= 3) {
     return {.r = _mm_broadcastw_epi16(v.r)};
   } else if constexpr (x86_64_level >= 2) {
@@ -204,8 +203,8 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 8> broadcast_lane(NativeVector<T, 8> v
  */
 template<std::size_t I, Int8 T>
 requires(I < 16)
-GREX_ALWAYS_INLINE inline NativeVector<T, 16> broadcast_lane(NativeVector<T, 16> v,
-                                                             IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 16> broadcast_lane(NativeVector<T, 16> v,
+                                                                            IndexTag<I> /*idx*/) {
   if constexpr (I == 0 && x86_64_level >= 3) {
     return {.r = _mm_broadcastb_epi8(v.r)};
   } else if constexpr (x86_64_level >= 2) {
@@ -225,7 +224,7 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 16> broadcast_lane(NativeVector<T, 16>
 /** `f64`: `vpermpd`. 1 µop. */
 template<std::size_t I>
 requires(I < 4)
-GREX_ALWAYS_INLINE inline f64x4 broadcast_lane(f64x4 v, IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline f64x4 broadcast_lane(f64x4 v, IndexTag<I> /*idx*/) {
   static constexpr int imm = bcast_lane::splat(I);
   return {.r = _mm256_permute4x64_pd(v.r, imm)};
 }
@@ -233,7 +232,7 @@ GREX_ALWAYS_INLINE inline f64x4 broadcast_lane(f64x4 v, IndexTag<I> /*idx*/) {
 /** `f32`: `vbroadcastss` (lane 0)/`vpermps` + constant load. 1 µop. */
 template<std::size_t I>
 requires(I < 8)
-GREX_ALWAYS_INLINE inline f32x8 broadcast_lane(f32x8 v, IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline f32x8 broadcast_lane(f32x8 v, IndexTag<I> /*idx*/) {
   if constexpr (I == 0) {
     return {.r = _mm256_broadcastss_ps(_mm256_castps256_ps128(v.r))};
   } else {
@@ -244,8 +243,8 @@ GREX_ALWAYS_INLINE inline f32x8 broadcast_lane(f32x8 v, IndexTag<I> /*idx*/) {
 /** `i64`/`u64`: `vpermq`. 1 µop. */
 template<std::size_t I, Int64 T>
 requires(I < 4)
-GREX_ALWAYS_INLINE inline NativeVector<T, 4> broadcast_lane(NativeVector<T, 4> v,
-                                                            IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 4> broadcast_lane(NativeVector<T, 4> v,
+                                                                           IndexTag<I> /*idx*/) {
   static constexpr int imm = bcast_lane::splat(I);
   return {.r = _mm256_permute4x64_epi64(v.r, imm)};
 }
@@ -253,8 +252,8 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 4> broadcast_lane(NativeVector<T, 4> v
 /** `i32`/`u32`: `vpbroadcastd` (lane 0)/`vpermd` + constant load. 1 µop. */
 template<std::size_t I, Int32 T>
 requires(I < 8)
-GREX_ALWAYS_INLINE inline NativeVector<T, 8> broadcast_lane(NativeVector<T, 8> v,
-                                                            IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 8> broadcast_lane(NativeVector<T, 8> v,
+                                                                           IndexTag<I> /*idx*/) {
   if constexpr (I == 0) {
     return {.r = _mm256_broadcastd_epi32(_mm256_castsi256_si128(v.r))};
   } else {
@@ -270,8 +269,8 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 8> broadcast_lane(NativeVector<T, 8> v
  */
 template<std::size_t I, Any16 T>
 requires(I < 16)
-GREX_ALWAYS_INLINE inline NativeVector<T, 16> broadcast_lane(NativeVector<T, 16> v,
-                                                             IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 16> broadcast_lane(NativeVector<T, 16> v,
+                                                                            IndexTag<I> /*idx*/) {
   if constexpr (I == 0) {
     return {.r = _mm256_broadcastw_epi16(_mm256_castsi256_si128(v.r))};
   } else if constexpr (x86_64_level >= 4) {
@@ -298,8 +297,8 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 16> broadcast_lane(NativeVector<T, 16>
  */
 template<std::size_t I, Int8 T>
 requires(I < 32)
-GREX_ALWAYS_INLINE inline NativeVector<T, 32> broadcast_lane(NativeVector<T, 32> v,
-                                                             IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 32> broadcast_lane(NativeVector<T, 32> v,
+                                                                            IndexTag<I> /*idx*/) {
   if constexpr (I == 0) {
     return {.r = _mm256_broadcastb_epi8(_mm256_castsi256_si128(v.r))};
   } else if constexpr (x86_64_level >= 4 && has_avx512vbmi) {
@@ -327,7 +326,7 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 32> broadcast_lane(NativeVector<T, 32>
  */
 template<std::size_t I>
 requires(I < 8)
-GREX_ALWAYS_INLINE inline f64x8 broadcast_lane(f64x8 v, IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline f64x8 broadcast_lane(f64x8 v, IndexTag<I> /*idx*/) {
   if constexpr (I == 0) {
     return {.r = _mm512_broadcastsd_pd(_mm512_castpd512_pd128(v.r))};
   } else {
@@ -338,7 +337,7 @@ GREX_ALWAYS_INLINE inline f64x8 broadcast_lane(f64x8 v, IndexTag<I> /*idx*/) {
 /** `f32`: `vbroadcastss` (lane 0)/`vpermps` + constant load. 1 µop. */
 template<std::size_t I>
 requires(I < 16)
-GREX_ALWAYS_INLINE inline f32x16 broadcast_lane(f32x16 v, IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline f32x16 broadcast_lane(f32x16 v, IndexTag<I> /*idx*/) {
   if constexpr (I == 0) {
     return {.r = _mm512_broadcastss_ps(_mm512_castps512_ps128(v.r))};
   } else {
@@ -352,8 +351,8 @@ GREX_ALWAYS_INLINE inline f32x16 broadcast_lane(f32x16 v, IndexTag<I> /*idx*/) {
  */
 template<std::size_t I, Int64 T>
 requires(I < 8)
-GREX_ALWAYS_INLINE inline NativeVector<T, 8> broadcast_lane(NativeVector<T, 8> v,
-                                                            IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 8> broadcast_lane(NativeVector<T, 8> v,
+                                                                           IndexTag<I> /*idx*/) {
   if constexpr (I == 0) {
     return {.r = _mm512_broadcastq_epi64(_mm512_castsi512_si128(v.r))};
   } else {
@@ -364,8 +363,8 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 8> broadcast_lane(NativeVector<T, 8> v
 /** `i32`/`u32`: `vpbroadcastd` (lane 0)/`vpermd` + constant load. 1 µop. */
 template<std::size_t I, Int32 T>
 requires(I < 16)
-GREX_ALWAYS_INLINE inline NativeVector<T, 16> broadcast_lane(NativeVector<T, 16> v,
-                                                             IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 16> broadcast_lane(NativeVector<T, 16> v,
+                                                                            IndexTag<I> /*idx*/) {
   if constexpr (I == 0) {
     return {.r = _mm512_broadcastd_epi32(_mm512_castsi512_si128(v.r))};
   } else {
@@ -376,8 +375,8 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 16> broadcast_lane(NativeVector<T, 16>
 /** `i16`/`u16`: `vpbroadcastw` (lane 0)/`vpermw` + constant load. 1 µop. */
 template<std::size_t I, Any16 T>
 requires(I < 32)
-GREX_ALWAYS_INLINE inline NativeVector<T, 32> broadcast_lane(NativeVector<T, 32> v,
-                                                             IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 32> broadcast_lane(NativeVector<T, 32> v,
+                                                                            IndexTag<I> /*idx*/) {
   if constexpr (I == 0) {
     return {.r = _mm512_broadcastw_epi16(_mm512_castsi512_si128(v.r))};
   } else {
@@ -395,8 +394,8 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 32> broadcast_lane(NativeVector<T, 32>
  */
 template<std::size_t I, Int8 T>
 requires(I < 64)
-GREX_ALWAYS_INLINE inline NativeVector<T, 64> broadcast_lane(NativeVector<T, 64> v,
-                                                             IndexTag<I> /*idx*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, 64> broadcast_lane(NativeVector<T, 64> v,
+                                                                            IndexTag<I> /*idx*/) {
   if constexpr (I == 0) {
     return {.r = _mm512_broadcastb_epi8(_mm512_castsi512_si128(v.r))};
   } else if constexpr (has_avx512vbmi) {
@@ -409,7 +408,7 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 64> broadcast_lane(NativeVector<T, 64>
   } else {
     // Copy the 128-bit block holding the byte to all four blocks, then pshufb.
     static constexpr int blk = bcast_lane::splat(I / 16);
-    const auto shuffled = pin(_mm512_shuffle_i32x4(v.r, v.r, blk));
+    const auto shuffled = _mm512_shuffle_i32x4(v.r, v.r, blk);
     return {.r = _mm512_shuffle_epi8(shuffled, _mm512_set1_epi8(static_cast<i8>(I % 16)))};
   }
 }

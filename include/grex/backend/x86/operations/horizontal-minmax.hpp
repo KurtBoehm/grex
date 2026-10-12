@@ -170,11 +170,13 @@ namespace grex::backend {
 
 // Wrapper macros
 #define GREX_HMINMAX(KIND, BITS, SIZE, OP) \
-  GREX_ALWAYS_INLINE inline KIND##BITS horizontal_##OP(NativeVector<KIND##BITS, SIZE> v) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##BITS horizontal_##OP( \
+    NativeVector<KIND##BITS, SIZE> v) { \
     GREX_HMINMAX_##KIND(OP, KIND, BITS, SIZE) \
   }
 #define GREX_HMINMAX_SUB(KIND, BITS, PART, SIZE, OP) \
-  GREX_ALWAYS_INLINE inline KIND##BITS horizontal_##OP(SubVector<KIND##BITS, PART> v) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##BITS horizontal_##OP( \
+    SubVector<KIND##BITS, PART> v) { \
     const auto vf = v.full; \
     GREX_HMINMAX_##KIND(OP, KIND, BITS, PART) \
   }
@@ -195,14 +197,14 @@ GREX_FOREACH_SUB(GREX_HMINMAX_SUB_ALL)
 // Without AVX512-FP, the portable fallback (round trip through binary32) is used.
 #if GREX_F16_NATIVE_ARITHMETIC
 #define GREX_HMINMAX_F16(OP) \
-  GREX_ALWAYS_INLINE inline f16 horizontal_##OP(SubVector<f16, 2> v) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline f16 horizontal_##OP(SubVector<f16, 2> v) { \
     /* [v1, -, -, -, -, -, -, -] */ \
     const __m128h shuf = _mm_castsi128_ph(_mm_shufflelo_epi16(v.registr(), 1)); \
     /* [v0 + v1, -, -, -, -, -, -, -][0] */ \
     return _mm_cvtsh_h(_mm_##OP##_sh(_mm_castsi128_ph(v.registr()), shuf)); \
   } \
   template<Float16Vector Vec> \
-  GREX_ALWAYS_INLINE inline f16 horizontal_##OP(Vec v) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline f16 horizontal_##OP(Vec v) { \
     return horizontal_##OP(OP(get_low(v), get_high(v))); \
   }
 

@@ -18,13 +18,13 @@
 namespace grex::backend {
 template<std::size_t Shift, AnySubNativeVector V>
 requires(Shift <= size_of<V>)
-[[nodiscard]] GREX_ALWAYS_INLINE inline V concat_slide_down(V lo, V hi) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline V concat_slide_down(V lo, V hi) noexcept {
   // The merged vector may itself be sub-native, hence `native()`.
   return V{slide<shift_down, Shift>(merge(lo, hi)).native()};
 }
 template<std::size_t Shift, AnySuperNativeVector V>
 requires(Shift <= size_of<V>)
-[[nodiscard]] GREX_ALWAYS_INLINE inline V concat_slide_down(V lo, V hi) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline V concat_slide_down(V lo, V hi) noexcept {
   static constexpr std::size_t half_size = size_of<V> / 2;
   if constexpr (Shift <= half_size) {
     return V{
@@ -46,7 +46,7 @@ requires(Shift <= size_of<V>)
  */
 template<ShiftDirection Dir, std::size_t Shift, AnySuperNativeVector V>
 requires(Shift <= size_of<V>)
-[[nodiscard]] GREX_ALWAYS_INLINE inline V slide(V v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline V slide(V v) noexcept {
   static constexpr bool down = Dir == shift_down;
   static constexpr std::size_t half_size = size_of<V> / 2;
   if constexpr (down && Shift <= half_size) {
@@ -75,7 +75,7 @@ requires(Shift <= size_of<V>)
 /** Rotation of sub- and super-native vectors as `concat_slide_down` of the vector with itself. */
 template<std::size_t Shift, typename V>
 requires((AnySubNativeVector<V> || AnySuperNativeVector<V>) && Shift <= size_of<V>)
-[[nodiscard]] GREX_ALWAYS_INLINE inline V rotate_down(V v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline V rotate_down(V v) noexcept {
   return concat_slide_down<Shift>(v, v);
 }
 
@@ -85,7 +85,7 @@ requires((AnySubNativeVector<V> || AnySuperNativeVector<V>) && Shift <= size_of<
  */
 template<std::size_t ValueBytes, std::size_t N, std::size_t Shift>
 requires(Shift <= N && ValueBytes * N > register_bytes.back())
-consteval Cost concat_slide_down_cost() noexcept {
+[[nodiscard]] consteval Cost concat_slide_down_cost() noexcept {
   static constexpr std::size_t half = N / 2;
   const Cost c = concat_slide_down_cost<ValueBytes, half, (Shift <= half) ? Shift : Shift - half>();
   return {.inv_throughput = 2 * c.inv_throughput, .latency = c.latency};

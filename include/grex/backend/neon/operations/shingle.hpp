@@ -35,22 +35,24 @@ namespace grex::backend {
 #define GREX_VUSHINGLE_u GREX_VUSHINGLE_i
 
 #define GREX_SHINGLE_I(KIND, BITS, SIZE, WORKKIND) \
-  GREX_ALWAYS_INLINE inline NativeVector<KIND##BITS, SIZE> shingle_up( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<KIND##BITS, SIZE> shingle_up( \
     NativeVector<KIND##BITS, SIZE> v) { \
     return {.r = GREX_ISUFFIXED(vextq, WORKKIND, BITS)(GREX_ISUFFIXED(vdupq_n, WORKKIND, BITS)(0), \
                                                        v.r, GREX_DECR(SIZE))}; \
   } \
   template<std::same_as<KIND##BITS> T> \
-  GREX_ALWAYS_INLINE inline NativeVector<T, SIZE> shingle_up(T front, NativeVector<T, SIZE> v) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, SIZE> shingle_up( \
+    T front, NativeVector<T, SIZE> v) { \
     GREX_VUSHINGLE_##KIND(KIND, BITS, SIZE); \
   } \
-  GREX_ALWAYS_INLINE inline NativeVector<KIND##BITS, SIZE> shingle_down( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<KIND##BITS, SIZE> shingle_down( \
     NativeVector<KIND##BITS, SIZE> v) { \
     return {.r = GREX_ISUFFIXED(vextq, WORKKIND, \
                                 BITS)(v.r, GREX_ISUFFIXED(vdupq_n, WORKKIND, BITS)(0), 1)}; \
   } \
   template<std::same_as<KIND##BITS> T> \
-  GREX_ALWAYS_INLINE inline NativeVector<T, SIZE> shingle_down(NativeVector<T, SIZE> v, T back) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, SIZE> shingle_down( \
+    NativeVector<T, SIZE> v, T back) { \
     const auto vback = expand_any(back, index_tag<SIZE>).r; \
     return {.r = GREX_ISUFFIXED(vextq, KIND, BITS)(v.r, vback, 1)}; \
   }
@@ -94,7 +96,7 @@ GREX_FOREACH_TYPE_EXT(GREX_SHINGLE, 128)
 #define GREX_VDSHINGLE_8x2 GREX_VDSHINGLE_x2
 
 #define GREX_SHINGLE_SUB_I(KIND, BITS, PART, SIZE, WORKKIND) \
-  GREX_ALWAYS_INLINE inline SubVector<KIND##BITS, PART> shingle_up( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<KIND##BITS, PART> shingle_up( \
     SubVector<KIND##BITS, PART> v) { \
     const auto low64 = GREX_ISUFFIXED(vget_low, WORKKIND, BITS)(v.full.r); \
     const auto ext = GREX_ISUFFIXED(vext, WORKKIND, BITS)( \
@@ -102,21 +104,23 @@ GREX_FOREACH_TYPE_EXT(GREX_SHINGLE, 128)
     return SubVector<KIND##BITS, PART>{expand64(ext)}; \
   } \
   template<std::same_as<KIND##BITS> T> \
-  GREX_ALWAYS_INLINE inline SubVector<T, PART> shingle_up(T front, SubVector<T, PART> v) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<T, PART> shingle_up(T front, \
+                                                                         SubVector<T, PART> v) { \
     const auto low64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(v.full.r); \
     const auto ext = \
       GREX_ISUFFIXED(vext, KIND, BITS)(low64, low64, GREX_DECR(GREX_DIVIDE(SIZE, 2))); \
     const auto set = GREX_ISUFFIXED(vset_lane, KIND, BITS)(front, ext, 0); \
     return SubVector<KIND##BITS, PART>{expand64(set)}; \
   } \
-  GREX_ALWAYS_INLINE inline SubVector<KIND##BITS, PART> shingle_down( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<KIND##BITS, PART> shingle_down( \
     SubVector<KIND##BITS, PART> v) { \
     const auto low64 = GREX_ISUFFIXED(vget_low, WORKKIND, BITS)(v.full.r); \
     GREX_CAT(GREX_ZDSHINGLE_, BITS, x, PART)(WORKKIND, BITS); \
     return SubVector<KIND##BITS, PART>{expand64(dst)}; \
   } \
   template<std::same_as<KIND##BITS> T> \
-  GREX_ALWAYS_INLINE inline SubVector<T, PART> shingle_down(SubVector<T, PART> v, T back) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<T, PART> shingle_down(SubVector<T, PART> v, \
+                                                                           T back) { \
     const auto low64 = GREX_ISUFFIXED(vget_low, KIND, BITS)(v.full.r); \
     GREX_CAT(GREX_VDSHINGLE_, BITS, x, PART)(KIND, BITS, SIZE); \
     return SubVector<KIND##BITS, PART>{expand64(dst)}; \

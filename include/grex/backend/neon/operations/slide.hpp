@@ -35,7 +35,7 @@ namespace ext {
  * A `Shift` of `0` or `N` just returns one input vector and costs nothing.
  */
 template<std::size_t N, std::size_t Shift>
-consteval Cost cost() noexcept {
+[[nodiscard]] consteval Cost cost() noexcept {
   return (Shift == 0 || Shift == N) ? Cost{.inv_throughput = 0, .latency = 0}
                                     : Cost{.inv_throughput = 0.25, .latency = 2};
 }
@@ -44,13 +44,13 @@ consteval Cost cost() noexcept {
 /** See `ext::cost`. */
 template<std::size_t ValueBytes, std::size_t N, std::size_t Shift>
 requires(Shift <= N && ValueBytes * N <= register_bytes.back())
-consteval Cost concat_slide_down_cost() noexcept {
+[[nodiscard]] consteval Cost concat_slide_down_cost() noexcept {
   return ext::cost<N, Shift>();
 }
 /** See `ext::cost`. */
 template<std::size_t ValueBytes, std::size_t N, std::size_t Shift>
 requires(Shift <= N)
-consteval Cost rotate_down_cost() noexcept {
+[[nodiscard]] consteval Cost rotate_down_cost() noexcept {
   return ext::cost<N, Shift>();
 }
 /**
@@ -58,7 +58,7 @@ consteval Cost rotate_down_cost() noexcept {
  */
 template<std::size_t ValueBytes, std::size_t N, ShiftDirection Dir, std::size_t Shift>
 requires(Shift <= N)
-consteval Cost slide_cost() noexcept {
+[[nodiscard]] consteval Cost slide_cost() noexcept {
   return ext::cost<N, Shift>();
 }
 
@@ -70,8 +70,8 @@ namespace ext {
 #define GREX_EXT_I(KIND, BITS, SIZE, REGKIND) \
   template<std::size_t Shift> \
   requires(Shift <= SIZE) \
-  [[nodiscard]] GREX_ALWAYS_INLINE inline KIND##BITS##x##SIZE ext(KIND##BITS##x##SIZE lo, \
-                                                                  KIND##BITS##x##SIZE hi) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##BITS##x##SIZE ext(KIND##BITS##x##SIZE lo, \
+                                                                   KIND##BITS##x##SIZE hi) { \
     if constexpr (Shift == 0) { \
       return lo; \
     } else if constexpr (Shift == SIZE) { \
@@ -86,20 +86,20 @@ GREX_FOREACH_TYPE_EXT(GREX_EXT, 128)
 
 template<std::size_t Shift, Vectorizable T, std::size_t N>
 requires(Shift <= N)
-[[nodiscard]] GREX_ALWAYS_INLINE inline NativeVector<T, N>
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, N>
 concat_slide_down(NativeVector<T, N> lo, NativeVector<T, N> hi) noexcept {
   return ext::ext<Shift>(lo, hi);
 }
 template<std::size_t Shift, Vectorizable T, std::size_t N>
 requires(Shift <= N)
-[[nodiscard]] GREX_ALWAYS_INLINE inline NativeVector<T, N>
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, N>
 rotate_down(NativeVector<T, N> v) noexcept {
   return ext::ext<Shift>(v, v);
 }
 
 template<ShiftDirection Dir, std::size_t Shift, Vectorizable T, std::size_t N>
 requires(Shift <= N)
-[[nodiscard]] GREX_ALWAYS_INLINE inline NativeVector<T, N> slide(NativeVector<T, N> v) noexcept {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, N> slide(NativeVector<T, N> v) noexcept {
   if constexpr (Dir == shift_down) {
     return ext::ext<Shift>(v, zeros<NativeVector<T, N>>());
   } else {
@@ -114,7 +114,7 @@ requires(Shift <= N)
 #define GREX_EXT_SUB_II(KIND, BITS, PART, SIZE, PARTBITS, REGKIND) \
   template<ShiftDirection Dir, std::size_t Shift> \
   requires(Shift <= PART) \
-  [[nodiscard]] GREX_ALWAYS_INLINE inline SubVector<KIND##BITS, PART> slide( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<KIND##BITS, PART> slide( \
     SubVector<KIND##BITS, PART> v) noexcept { \
     if constexpr (Shift == 0) { \
       return v; \
@@ -142,7 +142,7 @@ GREX_FOREACH_SUB_EXT(GREX_EXT_SUB)
 #define GREX_EXT_SUB_CSD64(KIND, BITS, PART, REGKIND) \
   template<std::size_t Shift> \
   requires(Shift <= PART) \
-  [[nodiscard]] GREX_ALWAYS_INLINE inline SubVector<KIND##BITS, PART> concat_slide_down( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<KIND##BITS, PART> concat_slide_down( \
     SubVector<KIND##BITS, PART> lo, SubVector<KIND##BITS, PART> hi) noexcept { \
     if constexpr (Shift == 0) { \
       return lo; \

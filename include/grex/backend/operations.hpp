@@ -124,7 +124,7 @@ static UnsignedInt<std::bit_ceil(SrcBytes)> load_multibyte(const std::byte* data
 }
 
 template<std::size_t I, typename Head, typename... Tail>
-GREX_ALWAYS_INLINE inline Head pack_get(Head head, Tail... tail) {
+[[GREX_ALWAYS_INLINE]] inline Head pack_get(Head head, Tail... tail) {
   if constexpr (I == 0) {
     return head;
   } else {
@@ -135,17 +135,19 @@ GREX_ALWAYS_INLINE inline Head pack_get(Head head, Tail... tail) {
 #define GREX_NARY(NAME, OP, SECOP) \
   template<typename Head, typename... Tail> \
   requires((... && std::same_as<Head, Tail>)) \
-  GREX_ALWAYS_INLINE inline Head NAME(Head head, Tail... tail) { \
+  [[GREX_ALWAYS_INLINE]] inline Head NAME(Head head, Tail... tail) { \
     constexpr std::size_t num = sizeof...(Tail) + 1; \
     if constexpr (num == 1) { \
       return head; \
     } else { \
-      const auto rec0 = \
-        [&]<std::size_t Off, std::size_t... I>(IndexTag<Off>, std::index_sequence<I...>) \
-          GREX_ALWAYS_INLINE { return NAME(pack_get<Off + I>(head, tail...)...); }; \
-      const auto rec1 = \
-        [&]<std::size_t Off, std::size_t... I>(IndexTag<Off>, std::index_sequence<I...>) \
-          GREX_ALWAYS_INLINE { return SECOP(pack_get<Off + I>(head, tail...)...); }; \
+      const auto rec0 = [&]<std::size_t Off, std::size_t... I> [[GREX_ALWAYS_INLINE]] ( \
+                          IndexTag<Off>, std::index_sequence<I...>) { \
+        return NAME(pack_get<Off + I>(head, tail...)...); \
+      }; \
+      const auto rec1 = [&]<std::size_t Off, std::size_t... I> [[GREX_ALWAYS_INLINE]] ( \
+                          IndexTag<Off>, std::index_sequence<I...>) { \
+        return SECOP(pack_get<Off + I>(head, tail...)...); \
+      }; \
 \
       if constexpr (std::has_single_bit(num)) { \
         const auto s0 = rec0(index_tag<0>, std::make_index_sequence<num / 2>{}); \

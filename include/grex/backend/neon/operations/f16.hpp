@@ -20,17 +20,17 @@
 
 namespace grex::backend {
 // Binary16: Reinterpret to/from `u16`.
-inline float16x4_t as_f16(uint16x4_t r) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline float16x4_t as_f16(uint16x4_t r) {
   return vreinterpret_f16_u16(r);
 }
-inline float16x8_t as_f16(uint16x8_t r) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline float16x8_t as_f16(uint16x8_t r) {
   return vreinterpretq_f16_u16(r);
 }
 
-inline uint16x4_t as_u16(float16x4_t r) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline uint16x4_t as_u16(float16x4_t r) {
   return vreinterpret_u16_f16(r);
 }
-inline uint16x8_t as_u16(float16x8_t r) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline uint16x8_t as_u16(float16x8_t r) {
   return vreinterpretq_u16_f16(r);
 }
 
@@ -38,7 +38,7 @@ inline uint16x8_t as_u16(float16x8_t r) {
 // in grex/backend/shared/operations/convert.hpp is never needed here.
 
 /** Widen a binary16 vector into the binary32 vector. */
-GREX_ALWAYS_INLINE inline VectorFor<f32, 8> f16_to_f32(NativeVector<f16, 8> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f32, 8> f16_to_f32(NativeVector<f16, 8> v) {
   const float16x8_t half = vreinterpretq_f16_u16(v.r);
   return {
     .lower = {.r = vcvt_f32_f16(vget_low_f16(half))},
@@ -48,22 +48,22 @@ GREX_ALWAYS_INLINE inline VectorFor<f32, 8> f16_to_f32(NativeVector<f16, 8> v) {
 /** Widen a binary16 vector into the binary32 vector. */
 template<std::size_t N>
 requires(std::has_single_bit(N) && N < 8)
-GREX_ALWAYS_INLINE inline VectorFor<f32, N> f16_to_f32(SubVector<f16, N> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f32, N> f16_to_f32(SubVector<f16, N> v) {
   const float16x4_t half = vget_low_f16(vreinterpretq_f16_u16(v.full.r));
   return VectorFor<f32, N>{vcvt_f32_f16(half)};
 }
 
 /** Convert a binary32 vector into the binary16 vector, rounding ties to even. */
-GREX_ALWAYS_INLINE inline NativeVector<f16, 8> f32_to_f16(VectorFor<f32, 8> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<f16, 8> f32_to_f16(VectorFor<f32, 8> v) {
   const float16x4_t lower = vcvt_f16_f32(v.lower.r);
   return {.r = vreinterpretq_u16_f16(vcvt_high_f16_f32(lower, v.upper.r))};
 }
 /** Convert a binary32 vector into the binary16 vector, rounding ties to even. */
-GREX_ALWAYS_INLINE inline SubVector<f16, 4> f32_to_f16(NativeVector<f32, 4> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<f16, 4> f32_to_f16(NativeVector<f32, 4> v) {
   return SubVector<f16, 4>{vreinterpretq_u16_f16(expand64(vcvt_f16_f32(v.r)))};
 }
 /** Convert a binary32 vector into the binary16 vector, rounding ties to even. */
-GREX_ALWAYS_INLINE inline SubVector<f16, 2> f32_to_f16(SubVector<f32, 2> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<f16, 2> f32_to_f16(SubVector<f32, 2> v) {
   return SubVector<f16, 2>{vreinterpretq_u16_f16(expand64(vcvt_f16_f32(v.full.r)))};
 }
 
@@ -89,7 +89,7 @@ inline constexpr u64 f64_discarded = (u64{1} << 29U) - 1;
  * Infinities and not-a-numbers survive this unchanged, the latter because the sticky bit keeps a
  * significand whose surviving bits are all zero from turning into an infinity.
  */
-GREX_ALWAYS_INLINE inline float64x2_t round_odd(float64x2_t v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline float64x2_t round_odd(float64x2_t v) {
   const uint64x2_t bits = vreinterpretq_u64_f64(v);
   const uint64x2_t mask = vdupq_n_u64(f64_discarded);
   const uint64x2_t sticky =
@@ -99,26 +99,28 @@ GREX_ALWAYS_INLINE inline float64x2_t round_odd(float64x2_t v) {
 } // namespace f16_convert
 
 /** Narrow a binary64 vector to binary32, rounding to odd (see `f16_convert::round_odd`). */
-GREX_ALWAYS_INLINE inline VectorFor<f32, 2> f64_to_f32_odd(NativeVector<f64, 2> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f32, 2> f64_to_f32_odd(NativeVector<f64, 2> v) {
   return VectorFor<f32, 2>{expand64(vcvt_f32_f64(f16_convert::round_odd(v.r)))};
 }
 /** Narrow a binary64 vector to binary32, rounding to odd (see `f16_convert::round_odd`). */
-GREX_ALWAYS_INLINE inline NativeVector<f32, 4> f64_to_f32_odd(SuperVector<NativeVector<f64, 2>> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<f32, 4>
+f64_to_f32_odd(SuperVector<NativeVector<f64, 2>> v) {
   const float32x2_t lower = vcvt_f32_f64(f16_convert::round_odd(v.lower.r));
   return {.r = vcvt_high_f32_f64(lower, f16_convert::round_odd(v.upper.r))};
 }
 /** Narrow a binary64 vector to binary32, rounding to odd (see `f16_convert::round_odd`). */
 template<TypedVector<f64> Half>
-GREX_ALWAYS_INLINE inline VectorFor<f32, 2 * size_of<Half>> f64_to_f32_odd(SuperVector<Half> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f32, 2 * size_of<Half>>
+f64_to_f32_odd(SuperVector<Half> v) {
   return merge(f64_to_f32_odd(v.lower), f64_to_f32_odd(v.upper));
 }
 
 /** Widen a binary32 vector to binary64, which is always exact. */
-GREX_ALWAYS_INLINE inline NativeVector<f64, 2> f32_to_f64(SubVector<f32, 2> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<f64, 2> f32_to_f64(SubVector<f32, 2> v) {
   return {.r = vcvt_f64_f32(vget_low_f32(v.full.r))};
 }
 /** Widen a binary32 vector to binary64, which is always exact. */
-GREX_ALWAYS_INLINE inline VectorFor<f64, 4> f32_to_f64(NativeVector<f32, 4> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f64, 4> f32_to_f64(NativeVector<f32, 4> v) {
   return {
     .lower = {.r = vcvt_f64_f32(vget_low_f32(v.r))},
     .upper = {.r = vcvt_high_f64_f32(v.r)},
@@ -126,7 +128,8 @@ GREX_ALWAYS_INLINE inline VectorFor<f64, 4> f32_to_f64(NativeVector<f32, 4> v) {
 }
 /** Widen a binary32 vector to binary64, which is always exact. */
 template<TypedVector<f32> Half>
-GREX_ALWAYS_INLINE inline VectorFor<f64, 2 * Half::size> f32_to_f64(SuperVector<Half> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f64, 2 * Half::size>
+f32_to_f64(SuperVector<Half> v) {
   return {.lower = f32_to_f64(v.lower), .upper = f32_to_f64(v.upper)};
 }
 
@@ -135,12 +138,12 @@ GREX_ALWAYS_INLINE inline VectorFor<f64, 2 * Half::size> f32_to_f64(SuperVector<
  * exact.
  */
 template<Float16Vector Vec>
-GREX_ALWAYS_INLINE inline VectorFor<f64, size_of<Vec>> f16_to_f64(Vec v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f64, size_of<Vec>> f16_to_f64(Vec v) {
   return f32_to_f64(f16_to_f32(v));
 }
 /** Convert a binary64 vector into the binary16 vector with the nearest values, ties to even. */
 template<TypedVector<f64> Vec>
-GREX_ALWAYS_INLINE inline VectorFor<f16, size_of<Vec>> f64_to_f16(Vec v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f16, size_of<Vec>> f64_to_f16(Vec v) {
   return f32_to_f16(f64_to_f32_odd(v));
 }
 
@@ -149,7 +152,7 @@ GREX_ALWAYS_INLINE inline VectorFor<f16, size_of<Vec>> f64_to_f16(Vec v) {
  * otherwise.
  */
 template<typename Value, typename Vec>
-GREX_ALWAYS_INLINE inline auto to_stored(Vec v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline auto to_stored(Vec v) {
   if constexpr (std::same_as<Value, f16>) {
     return as_u16(v);
   } else {
@@ -162,7 +165,7 @@ GREX_ALWAYS_INLINE inline auto to_stored(Vec v) {
  * returns the input unchanged otherwise.
  */
 template<typename Value, typename Vec>
-GREX_ALWAYS_INLINE inline auto from_stored(Vec v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline auto from_stored(Vec v) {
   if constexpr (std::same_as<Value, f16>) {
     return as_f16(v);
   } else {

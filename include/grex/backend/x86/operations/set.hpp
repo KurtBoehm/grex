@@ -204,7 +204,7 @@ GREX_SUBSET2_UNPACK(f, 32)
 
 /** The `I`-th value of a pack, which is resolved entirely at compile time. */
 template<std::size_t I, typename T, typename... Ts>
-GREX_ALWAYS_INLINE inline T pack_value(T value, Ts... rest) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline T pack_value(T value, Ts... rest) {
   if constexpr (I == 0) {
     return value;
   } else {

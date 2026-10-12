@@ -27,7 +27,7 @@
 namespace grex::backend {
 /** Casts from `Src` to `Dst` with arbitrary values in the upper bits. */
 template<IntVectorizable Dst, IntVectorizable Src>
-inline Dst expand_bits(Src src) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline Dst expand_bits(Src src) {
   if (__builtin_constant_p(src)) {
     return Dst(src);
   }
@@ -40,9 +40,10 @@ inline Dst expand_bits(Src src) {
 #define GREX_EXPAND_REGISTER_IMPL(KIND, BITS, SIZE) \
   using Single = KIND##BITS __attribute__((ext_vector_type(1))); \
   const Single s = x; \
-  return static_apply<SIZE>([&]<std::size_t... I> -> GREX_REGISTER(KIND, BITS, SIZE) { \
-    return __builtin_shufflevector(s, s, ((I == 0) ? 0 : -1)...); \
-  });
+  return static_apply<SIZE>( \
+    [&]<std::size_t... I> [[GREX_ALWAYS_INLINE]] -> GREX_REGISTER(KIND, BITS, SIZE) { \
+      return __builtin_shufflevector(s, s, ((I == 0) ? 0 : -1)...); \
+    });
 #define GREX_EXPAND_REGISTER_f GREX_EXPAND_REGISTER_IMPL
 #define GREX_EXPAND_REGISTER_i GREX_EXPAND_REGISTER_IMPL
 #define GREX_EXPAND_REGISTER_u GREX_EXPAND_REGISTER_IMPL
@@ -67,7 +68,7 @@ inline Dst expand_bits(Src src) {
 
 #define GREX_EXPAND_REGISTER(KIND, BITS, SIZE) \
   template<std::same_as<KIND##BITS> T> \
-  GREX_ALWAYS_INLINE inline GREX_REGISTER(KIND, BITS, SIZE) expand_register(T x) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline GREX_REGISTER(KIND, BITS, SIZE) expand_register(T x) { \
     GREX_EXPAND_REGISTER_##KIND(KIND, BITS, SIZE) \
   }
 GREX_FOREACH_TYPE_EXT(GREX_EXPAND_REGISTER, 128)

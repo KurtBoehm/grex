@@ -303,12 +303,12 @@ static auto load_multibyte(It it, Tag tag) {
 
 // transform
 template<typename TSize = u64>
-GREX_ALWAYS_INLINE inline auto transform(auto op, OptValuedScalarTag<TSize> auto /*tag*/) {
+[[GREX_ALWAYS_INLINE]] inline auto transform(auto op, OptValuedScalarTag<TSize> auto /*tag*/) {
   return op(value_tag<TSize, 0>);
 }
 #if !GREX_BACKEND_SCALAR
 template<typename TSize = u64, OptValuedFullVectorTag<TSize> Tag>
-GREX_ALWAYS_INLINE inline auto transform(auto op, Tag /*tag*/) {
+[[GREX_ALWAYS_INLINE]] inline auto transform(auto op, Tag /*tag*/) {
   static constexpr std::size_t size = Tag::size;
   using Value = decltype(op(value_tag<TSize, 0>));
   return static_apply<size>([&]<std::size_t... I> {
@@ -317,7 +317,7 @@ GREX_ALWAYS_INLINE inline auto transform(auto op, Tag /*tag*/) {
   });
 }
 template<typename TSize = u64, OptValuedPartVectorTag<TSize> Tag>
-GREX_ALWAYS_INLINE inline auto transform(auto op, Tag tag) {
+[[GREX_ALWAYS_INLINE]] inline auto transform(auto op, Tag tag) {
   static constexpr std::size_t size = Tag::size;
   using Value = decltype(op(value_tag<TSize, 0>));
   return static_apply<size>([&]<std::size_t... I> {

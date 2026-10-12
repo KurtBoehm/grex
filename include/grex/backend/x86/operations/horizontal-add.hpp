@@ -142,11 +142,13 @@ namespace grex::backend {
 
 // Wrapper macros
 #define GREX_HADD(KIND, BITS, SIZE) \
-  GREX_ALWAYS_INLINE inline KIND##BITS horizontal_add(NativeVector<KIND##BITS, SIZE> v) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##BITS horizontal_add( \
+    NativeVector<KIND##BITS, SIZE> v) { \
     GREX_HADD_##KIND(KIND, BITS, SIZE, SIZE) \
   }
 #define GREX_HADD_SUB(KIND, BITS, PART, SIZE) \
-  GREX_ALWAYS_INLINE inline KIND##BITS horizontal_add(SubVector<KIND##BITS, PART> v) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##BITS horizontal_add( \
+    SubVector<KIND##BITS, PART> v) { \
     const auto vf = v.full; \
     GREX_HADD_##KIND(KIND, BITS, PART, SIZE) \
   }
@@ -161,14 +163,14 @@ GREX_FOREACH_SUB(GREX_HADD_SUB)
 // without relying on the compiler implementations.
 // Without AVX512-FP, the portable fallback (round trip through binary32) is used.
 #if GREX_F16_NATIVE_ARITHMETIC
-GREX_ALWAYS_INLINE inline f16 horizontal_add(SubVector<f16, 2> v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline f16 horizontal_add(SubVector<f16, 2> v) {
   // [v1, -, -, -, -, -, -, -]
   const __m128h shuf = _mm_castsi128_ph(_mm_shufflelo_epi16(v.registr(), 1));
   // [v0 + v1, -, -, -, -, -, -, -][0]
   return _mm_cvtsh_h(_mm_add_sh(_mm_castsi128_ph(v.registr()), shuf));
 }
 template<Float16Vector Vec>
-GREX_ALWAYS_INLINE inline f16 horizontal_add(Vec v) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline f16 horizontal_add(Vec v) {
   return horizontal_add(add(get_low(v), get_high(v)));
 }
 #endif

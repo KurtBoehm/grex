@@ -16,14 +16,14 @@ using namespace grex::primitives;
 namespace be = grex::backend;
 
 template<be::AnyVector Vec>
-GREX_ALWAYS_INLINE inline Vec load_part_grex(const be::ValueOf<Vec>* ptr, std::size_t size,
-                                             grex::TypeTag<Vec> tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline Vec
+load_part_grex(const be::ValueOf<Vec>* ptr, std::size_t size, grex::TypeTag<Vec> tag) {
   return be::load_part(ptr, size, tag);
 }
 
 template<be::AnySubNativeVector Vec>
-GREX_ALWAYS_INLINE inline Vec load_part_xgrex(const be::ValueOf<Vec>* ptr, std::size_t size,
-                                              grex::TypeTag<Vec> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline Vec
+load_part_xgrex(const be::ValueOf<Vec>* ptr, std::size_t size, grex::TypeTag<Vec> /*tag*/) {
   return Vec{be::load_part(ptr, size, grex::type_tag<typename Vec::Full>)};
 }
 
@@ -36,27 +36,27 @@ alignas(16) inline constexpr i32 mask_table[5][4] = {
 };
 
 #if GREX_X86_64_LEVEL >= 3
-GREX_ALWAYS_INLINE inline __m128d load_part_table(const f64* ptr, std::size_t size,
-                                                  grex::TypeTag<be::f64x2> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128d load_part_table(const f64* ptr, std::size_t size,
+                                                                 grex::TypeTag<be::f64x2> /*tag*/) {
   __m128i mask = _mm_load_si128(reinterpret_cast<const __m128i*>(mask_table[size]));
   return _mm_maskload_pd(ptr, mask);
 }
-GREX_ALWAYS_INLINE inline __m128 load_part_table(const f32* ptr, std::size_t size,
-                                                 grex::TypeTag<be::f32x4> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128 load_part_table(const f32* ptr, std::size_t size,
+                                                                grex::TypeTag<be::f32x4> /*tag*/) {
   __m128i mask = _mm_load_si128(reinterpret_cast<const __m128i*>(mask_table[size]));
   return _mm_maskload_ps(ptr, mask);
 }
 
-GREX_ALWAYS_INLINE inline __m128i load_part_table(const i32* ptr, std::size_t size,
-                                                  grex::TypeTag<be::i32x4> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128i load_part_table(const i32* ptr, std::size_t size,
+                                                                 grex::TypeTag<be::i32x4> /*tag*/) {
   __m128i mask = _mm_load_si128(reinterpret_cast<const __m128i*>(mask_table[size]));
   return _mm_maskload_epi32(ptr, mask);
 }
 #endif
 
 #if GREX_X86_64_LEVEL >= 2
-GREX_ALWAYS_INLINE inline __m128d load_part_sse(const f64* ptr, std::size_t size,
-                                                grex::TypeTag<be::f64x2> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128d load_part_sse(const f64* ptr, std::size_t size,
+                                                               grex::TypeTag<be::f64x2> /*tag*/) {
   __m128d v = _mm_undefined_pd();
   switch (size) {
     case 2: return _mm_loadu_pd(ptr); // full vector
@@ -68,8 +68,8 @@ GREX_ALWAYS_INLINE inline __m128d load_part_sse(const f64* ptr, std::size_t size
   }
 }
 
-GREX_ALWAYS_INLINE inline __m128i load_part_sse(const i32* ptr, std::size_t size,
-                                                grex::TypeTag<be::i32x4> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128i load_part_sse(const i32* ptr, std::size_t size,
+                                                               grex::TypeTag<be::i32x4> /*tag*/) {
   __m128i v = _mm_undefined_si128();
   switch (size) {
     case 4: return _mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr)); // full vector
@@ -89,7 +89,7 @@ GREX_ALWAYS_INLINE inline __m128i load_part_sse(const i32* ptr, std::size_t size
 #endif
 
 #if GREX_X86_64_LEVEL == 2
-GREX_ALWAYS_INLINE inline be::VectorFor<u16, 16>
+[[nodiscard, GREX_ALWAYS_INLINE]] inline be::VectorFor<u16, 16>
 load_part_overlap(const u16* ptr, std::size_t size, grex::TypeTag<be::VectorFor<u16, 16>> tag) {
   if (size <= 8) {
     return be::merge(be::load_part(ptr, size, grex::type_tag<be::u16x8>),
@@ -110,8 +110,8 @@ load_part_overlap(const u16* ptr, std::size_t size, grex::TypeTag<be::VectorFor<
 #endif
 
 template<be::AnyVector Vec>
-GREX_ALWAYS_INLINE inline Vec load_part_split(const be::ValueOf<Vec>* ptr, std::size_t size,
-                                              grex::TypeTag<Vec> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline Vec
+load_part_split(const be::ValueOf<Vec>* ptr, std::size_t size, grex::TypeTag<Vec> /*tag*/) {
   using Value = be::ValueOf<Vec>;
   constexpr std::size_t vsize = be::size_of<Vec>;
   using Half = be::VectorFor<Value, vsize / 2>;

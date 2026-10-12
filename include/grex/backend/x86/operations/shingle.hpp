@@ -480,20 +480,22 @@ namespace grex::backend {
 //==================================================================================================
 
 #define GREX_SHINGLE(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS) \
-  GREX_ALWAYS_INLINE inline NativeVector<KIND##BITS, SIZE> shingle_up( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<KIND##BITS, SIZE> shingle_up( \
     NativeVector<KIND##BITS, SIZE> v) { \
     GREX_CAT(GREX_ZUSHINGLE_, BITS, _, SIZE)(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS); \
   } \
   template<std::same_as<KIND##BITS> T> \
-  GREX_ALWAYS_INLINE inline NativeVector<T, SIZE> shingle_up(T front, NativeVector<T, SIZE> v) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, SIZE> shingle_up( \
+    T front, NativeVector<T, SIZE> v) { \
     GREX_CAT(GREX_VUSHINGLE_, BITS, _, SIZE)(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS); \
   } \
-  GREX_ALWAYS_INLINE inline NativeVector<KIND##BITS, SIZE> shingle_down( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<KIND##BITS, SIZE> shingle_down( \
     NativeVector<KIND##BITS, SIZE> v) { \
     GREX_CAT(GREX_ZDSHINGLE_, BITS, _, SIZE)(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS); \
   } \
   template<std::same_as<KIND##BITS> T> \
-  GREX_ALWAYS_INLINE inline NativeVector<T, SIZE> shingle_down(NativeVector<T, SIZE> v, T back) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<T, SIZE> shingle_down( \
+    NativeVector<T, SIZE> v, T back) { \
     GREX_CAT(GREX_VDSHINGLE_, BITS, _, SIZE)(KIND, BITS, SIZE, BITPREFIX, REGISTERBITS); \
   }
 #define GREX_SHINGLE_ALL(REGISTERBITS, BITPREFIX) \
@@ -501,24 +503,26 @@ namespace grex::backend {
 GREX_FOREACH_X86_64_LEVEL(GREX_SHINGLE_ALL)
 
 #define GREX_SHINGLE_SUB_I(KIND, BITS, PART, SIZE, BITPREFIX, REGISTERBITS, RKIND) \
-  GREX_ALWAYS_INLINE inline SubVector<KIND##BITS, PART> shingle_up( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<KIND##BITS, PART> shingle_up( \
     SubVector<KIND##BITS, PART> v) { \
     const __m128i iv = GREX_KINDCAST(RKIND, i, BITS, REGISTERBITS, v.registr()); \
     const auto slli = GREX_CAT(_mm_slli_epi, GREX_MULTIPLY(BITS, PART))(iv, BITS); \
     return SubVector<KIND##BITS, PART>{GREX_KINDCAST(i, RKIND, BITS, REGISTERBITS, slli)}; \
   } \
   template<std::same_as<KIND##BITS> T> \
-  GREX_ALWAYS_INLINE inline SubVector<T, PART> shingle_up(T front, SubVector<T, PART> v) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<T, PART> shingle_up(T front, \
+                                                                         SubVector<T, PART> v) { \
     return SubVector<T, PART>{insert(shingle_up(v).full, index_tag<0>, front)}; \
   } \
-  GREX_ALWAYS_INLINE inline SubVector<KIND##BITS, PART> shingle_down( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<KIND##BITS, PART> shingle_down( \
     SubVector<KIND##BITS, PART> v) { \
     const __m128i iv = GREX_KINDCAST(RKIND, i, BITS, REGISTERBITS, v.registr()); \
     const auto srli = GREX_CAT(_mm_srli_epi, GREX_MULTIPLY(BITS, PART))(iv, BITS); \
     return SubVector<KIND##BITS, PART>{GREX_KINDCAST(i, RKIND, BITS, REGISTERBITS, srli)}; \
   } \
   template<std::same_as<KIND##BITS> T> \
-  GREX_ALWAYS_INLINE inline SubVector<T, PART> shingle_down(SubVector<T, PART> v, T back) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline SubVector<T, PART> shingle_down(SubVector<T, PART> v, \
+                                                                           T back) { \
     GREX_CAT(GREX_VDSHINGLE_, BITS, _, PART)(KIND, BITS, PART, SIZE, BITPREFIX, REGISTERBITS) \
   }
 #define GREX_SHINGLE_SUB(KIND, BITS, PART, SIZE, BITPREFIX, REGISTERBITS) \

@@ -53,11 +53,11 @@
 namespace grex::backend {
 #if GREX_X86_64_LEVEL > 1
 // Thin wrappers to abstract over 128/256-bit byte-wise shuffles.
-GREX_ALWAYS_INLINE inline __m128i shuffle_epi8(__m128i a, __m128i b) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128i shuffle_epi8(__m128i a, __m128i b) {
   return _mm_shuffle_epi8(a, b);
 }
 #if GREX_X86_64_LEVEL >= 3
-GREX_ALWAYS_INLINE inline __m256i shuffle_epi8(__m256i a, __m256i b) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m256i shuffle_epi8(__m256i a, __m256i b) {
   return _mm256_shuffle_epi8(a, b);
 }
 #endif
@@ -70,7 +70,8 @@ GREX_ALWAYS_INLINE inline __m256i shuffle_epi8(__m256i a, __m256i b) {
 // ValueBytes: size of a single table element in bytes.
 template<UnsignedIntVector Idxs, std::size_t DstBytes, std::size_t ValueBytes>
 requires(sizeof(ValueOf<Idxs>) <= ValueBytes && DstBytes == 1 && ValueBytes != 1)
-GREX_ALWAYS_INLINE inline NativeVector<UnsignedInt<DstBytes>, size_of<Idxs> * ValueBytes / DstBytes>
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<UnsignedInt<DstBytes>,
+                                                      size_of<Idxs> * ValueBytes / DstBytes>
 shuffle_indices(Idxs idxs, IndexTag<DstBytes> /*dst_bytes*/, IndexTag<ValueBytes> /*value_bytes*/) {
   using Src = ValueOf<Idxs>;
   constexpr std::size_t dst_bytes = size_of<Idxs> * ValueBytes;
@@ -105,7 +106,8 @@ shuffle_indices(Idxs idxs, IndexTag<DstBytes> /*dst_bytes*/, IndexTag<ValueBytes
 // overloads.
 template<UnsignedIntVector Idxs, std::size_t DstBytes, std::size_t ValueBytes>
 requires(sizeof(ValueOf<Idxs>) > ValueBytes && DstBytes != ValueBytes)
-GREX_ALWAYS_INLINE inline NativeVector<UnsignedInt<DstBytes>, Idxs::size * ValueBytes / DstBytes>
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<UnsignedInt<DstBytes>,
+                                                      Idxs::size * ValueBytes / DstBytes>
 shuffle_indices(Idxs idxs, IndexTag<DstBytes> dst_bytes, IndexTag<ValueBytes> value_bytes) {
   return shuffle_indices(convert<UnsignedInt<ValueBytes>>(idxs), dst_bytes, value_bytes);
 }
@@ -113,7 +115,7 @@ shuffle_indices(Idxs idxs, IndexTag<DstBytes> dst_bytes, IndexTag<ValueBytes> va
 // DstBytes and ValueBytes are identical: simply convert the indices.
 template<UnsignedIntVector Idxs, std::size_t DstBytes, std::size_t ValueBytes>
 requires(DstBytes == ValueBytes)
-GREX_ALWAYS_INLINE inline NativeVector<UnsignedInt<DstBytes>, Idxs::size>
+[[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<UnsignedInt<DstBytes>, Idxs::size>
 shuffle_indices(Idxs idxs, IndexTag<DstBytes> /*dst_bytes*/, IndexTag<ValueBytes> /*value_bytes*/) {
   return convert<UnsignedInt<ValueBytes>>(idxs);
 }
@@ -123,16 +125,16 @@ shuffle_indices(Idxs idxs, IndexTag<DstBytes> /*dst_bytes*/, IndexTag<ValueBytes
 
 // 4×u64 → 8×u32: replicate the lower 32 bits into the upper 32 bits, double each index, and offset
 // by [0, 1].
-GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(u64x4 idxs, IndexTag<4> /*dst_bytes*/,
-                                                IndexTag<8> /*value_bytes*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline u32x8
+shuffle_indices(u64x4 idxs, IndexTag<4> /*dst_bytes*/, IndexTag<8> /*value_bytes*/) {
   const auto idxs32 = _mm256_slli_epi64(_mm256_shuffle_epi32(idxs.r, 0b10100000), 1);
   return {.r = _mm256_add_epi32(idxs32, _mm256_setr_epi32(0, 1, 0, 1, 0, 1, 0, 1))};
 }
 
 // 4×u32 → 8×u32: replicate each 4-byte index to 8 adjacent bytes, double each index, and offset by
 // [0, 1].
-GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(u32x4 idxs, IndexTag<4> /*dst_bytes*/,
-                                                IndexTag<8> /*value_bytes*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline u32x8
+shuffle_indices(u32x4 idxs, IndexTag<4> /*dst_bytes*/, IndexTag<8> /*value_bytes*/) {
   const auto lo32 = _mm_shuffle_epi32(idxs.r, 0b01010000);
   const auto hi32 = _mm_shuffle_epi32(idxs.r, 0b11111010);
   const auto idxs32 = _mm256_slli_epi64(_mm256_setr_m128i(lo32, hi32), 1);
@@ -141,8 +143,8 @@ GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(u32x4 idxs, IndexTag<4> /*dst_by
 
 // 4×u16 → 8×u32: replicate each 2-byte index to 8 adjacent bytes, double each index, and offset by
 // [0, 1].
-GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(SubVector<u16, 4> idxs, IndexTag<4> /*dst_bytes*/,
-                                                IndexTag<8> /*value_bytes*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline u32x8
+shuffle_indices(SubVector<u16, 4> idxs, IndexTag<4> /*dst_bytes*/, IndexTag<8> /*value_bytes*/) {
   const auto lo64 = _mm_shufflelo_epi16(idxs.full.r, 0b01010000);
   const auto hi64 = _mm_shufflelo_epi16(idxs.full.r, 0b11111010);
   const auto lo128 = _mm_unpacklo_epi64(lo64, hi64);
@@ -154,8 +156,8 @@ GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(SubVector<u16, 4> idxs, IndexTag
 
 // 4×u8 → 8×u32: replicate each 1-byte index to 8 adjacent bytes, double each index, and offset by
 // [0, 1].
-GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(SubVector<u8, 4> idxs, IndexTag<4> /*dst_bytes*/,
-                                                IndexTag<8> /*value_bytes*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline u32x8
+shuffle_indices(SubVector<u8, 4> idxs, IndexTag<4> /*dst_bytes*/, IndexTag<8> /*value_bytes*/) {
   const __m256i bcidxs = _mm256_broadcastd_epi32(idxs.registr());
   const std::array<u8, 32> shuf{0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
                                 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3};
@@ -229,7 +231,7 @@ GREX_ALWAYS_INLINE inline u32x8 shuffle_indices(SubVector<u8, 4> idxs, IndexTag<
 
 // AVX-512, 2×native table: use the vpermi2/permutex2var family for shuffles across two tables.
 #define GREX_SHFL2_AVX512(KIND, BITS, IDXBITS, SIZE) \
-  GREX_ALWAYS_INLINE inline VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> shuffle( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> shuffle( \
     VectorFor<KIND##BITS, SIZE> table, VectorFor<u##IDXBITS, GREX_DIVIDE(SIZE, 2)> idxs, \
     AnyIndexTag auto /*index_ub*/, AnyIndexTag auto /*index_offset*/) { \
     using UnIntVec = VectorFor<u##BITS, GREX_DIVIDE(SIZE, 2)>; \
@@ -333,7 +335,7 @@ GREX_SHFL2_AVX512_IDXS(u, 8, 128)
 // REGISTERBITS: bit-width of the underlying SIMD register
 // BITPREFIX:    intrinsic name prefix (e.g. _mm256)
 #define GREX_SHFL(KIND, BITS, IDXBITS, SIZE, REGISTERBITS, BITPREFIX) \
-  GREX_ALWAYS_INLINE inline NativeVector<KIND##BITS, SIZE> shuffle( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline NativeVector<KIND##BITS, SIZE> shuffle( \
     NativeVector<KIND##BITS, SIZE> table, VectorFor<u##IDXBITS, SIZE> idxs, \
     [[maybe_unused]] AnyIndexTag auto index_ub, [[maybe_unused]] AnyIndexTag auto index_offset) { \
     GREX_SHFL_IMPL(KIND, BITS, IDXBITS, SIZE, REGISTERBITS, BITPREFIX) \
@@ -359,7 +361,7 @@ GREX_FOREACH_X86_64_LEVEL(GREX_SHFL_ALL)
 // - reinterpret back to the requested type.
 #if GREX_X86_64_LEVEL >= 4
 #define GREX_SHFL_MULTI_BASE(REPS, KIND, WORKKIND, BITS, DSTSIZE, SRCSIZE, IDXBITS, IMPL) \
-  GREX_ALWAYS_INLINE inline KIND##BITS##x##DSTSIZE shuffle( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##BITS##x##DSTSIZE shuffle( \
     KIND##BITS##x##SRCSIZE table, VectorFor<u##IDXBITS, DSTSIZE> idxs, \
     [[maybe_unused]] AnyIndexTag auto index_ub, [[maybe_unused]] AnyIndexTag auto index_offset) { \
     constexpr auto tag = index_tag<GREX_DIVIDE(BITS, 8)>; \
@@ -434,7 +436,7 @@ GREX_FOREACH_TYPE(GREX_SHFL_MULTI_RESOLVER, 128)
 // AVX2-only “multi” shuffles (output > native table size).
 
 #define GREX_SHFL_MULTI_VPERMILPD(KIND, BITS, IDXBITS, SIZE) \
-  GREX_ALWAYS_INLINE inline VectorFor<KIND##BITS, SIZE> shuffle( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<KIND##BITS, SIZE> shuffle( \
     VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> table, VectorFor<u##IDXBITS, SIZE> idxs, \
     AnyIndexTag auto /*index_ub*/, AnyIndexTag auto /*index_offset*/) { \
     const auto idxs64 = shuffle_indices(idxs, index_tag<8>, index_tag<GREX_DIVIDE(BITS, 8)>); \
@@ -444,7 +446,7 @@ GREX_FOREACH_TYPE(GREX_SHFL_MULTI_RESOLVER, 128)
   }
 
 #define GREX_SHFL_MULTI_VPERMILPS(KIND, BITS, IDXBITS, SIZE) \
-  GREX_ALWAYS_INLINE inline VectorFor<KIND##BITS, SIZE> shuffle( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<KIND##BITS, SIZE> shuffle( \
     VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> table, VectorFor<u##IDXBITS, SIZE> idxs, \
     AnyIndexTag auto /*index_ub*/, AnyIndexTag auto /*index_offset*/) { \
     const auto idxs32 = shuffle_indices(idxs, index_tag<4>, index_tag<GREX_DIVIDE(BITS, 8)>).r; \
@@ -453,7 +455,7 @@ GREX_FOREACH_TYPE(GREX_SHFL_MULTI_RESOLVER, 128)
   }
 
 #define GREX_SHFL_MULTI_PSHUFB(KIND, BITS, IDXBITS, SIZE) \
-  GREX_ALWAYS_INLINE inline VectorFor<KIND##BITS, SIZE> shuffle( \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<KIND##BITS, SIZE> shuffle( \
     VectorFor<KIND##BITS, GREX_DIVIDE(SIZE, 2)> table, VectorFor<u##IDXBITS, SIZE> idxs, \
     AnyIndexTag auto /*index_ub*/, AnyIndexTag auto /*index_offset*/) { \
     const auto idxs8 = shuffle_indices(idxs, index_tag<1>, index_tag<GREX_DIVIDE(BITS, 8)>).r; \
@@ -492,7 +494,7 @@ inline VectorFor<f16, size_of<Idxs>> shuffle(Table table, Idxs idxs, AnyIndexTag
 // This function resolves the remaining cases by splitting/expanding/merging into forms that are
 // handled by the specialized overloads.
 template<AnyVector Table, UnsignedIntVector Idxs>
-GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>>
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<ValueOf<Table>, size_of<Idxs>>
 shuffle(Table table, Idxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto index_offset) {
   using Value = ValueOf<Table>;
   using ValueIndex = UnsignedInt<sizeof(Value)>;
@@ -560,15 +562,16 @@ shuffle(Table table, Idxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto inde
 
 // Convenience overload: full table range, zero offset.
 template<AnyVector Table, UnsignedIntVector Idxs>
-GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table table, Idxs idxs) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<ValueOf<Table>, size_of<Idxs>>
+shuffle(Table table, Idxs idxs) {
   return shuffle(table, idxs, index_tag<Table::size>, index_tag<0>);
 }
 #else // GREX_X86_64_LEVEL <= 1
 // Fallback implementations built from basic shuffles, shifts and blends.
 
 #define GREX_SHFL_64(KIND) \
-  GREX_ALWAYS_INLINE inline KIND##64x2 shuffle(KIND##64x2 table, u64x2 idxs, \
-                                               AnyIndexTag auto /*index_offset*/) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##64x2 shuffle(KIND##64x2 table, u64x2 idxs, \
+                                                              AnyIndexTag auto /*index_offset*/) { \
     /* Index bit 0 selects element 0 or 1. */ \
     const auto select0 = \
       bf64x2{.r = compare_eq(shift_left(idxs, index_tag<63>), zeros<u64x2>()).r}; \
@@ -579,8 +582,8 @@ GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table
   }
 
 #define GREX_SHFL_32(KIND) \
-  GREX_ALWAYS_INLINE inline KIND##32x4 shuffle(KIND##32x4 table, u32x4 idxs, \
-                                               AnyIndexTag auto /*index_offset*/) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##32x4 shuffle(KIND##32x4 table, u32x4 idxs, \
+                                                              AnyIndexTag auto /*index_offset*/) { \
     /* Decode two lowest index bits using masks. */ \
     const auto select0 = \
       bf32x4{.r = compare_eq(shift_left(idxs, index_tag<31>), zeros<u32x4>()).r}; \
@@ -596,8 +599,8 @@ GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table
     const auto bc23 = blend(select0, bc3, bc2); \
     return as<KIND##32>(blend(select1, bc23, bc01)); \
   } \
-  GREX_ALWAYS_INLINE inline KIND##32x4 shuffle(SubVector<KIND##32, 2> table, u32x4 idxs, \
-                                               AnyIndexTag auto /*index_offset*/) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##32x4 shuffle( \
+    SubVector<KIND##32, 2> table, u32x4 idxs, AnyIndexTag auto /*index_offset*/) { \
     const auto select0 = \
       bf32x4{.r = compare_eq(shift_left(idxs, index_tag<31>), zeros<u32x4>()).r}; \
     const auto tab = as<f32>(table.full).r; \
@@ -607,8 +610,8 @@ GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table
   }
 
 #define GREX_SHFL_16(KIND) \
-  GREX_ALWAYS_INLINE inline KIND##16x8 shuffle(KIND##16x8 table, u16x8 idxs, \
-                                               AnyIndexTag auto /*index_offset*/) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##16x8 shuffle(KIND##16x8 table, u16x8 idxs, \
+                                                              AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##16, 8>; \
     using Msk = NativeMask<KIND##16, 8>; \
 \
@@ -639,8 +642,8 @@ GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table
 \
     return blend(select2, bc4567, bc0123); \
   } \
-  GREX_ALWAYS_INLINE inline KIND##16x8 shuffle(SubVector<KIND##16, 4> table, u16x8 idxs, \
-                                               AnyIndexTag auto /*index_offset*/) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##16x8 shuffle( \
+    SubVector<KIND##16, 4> table, u16x8 idxs, AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##16, 8>; \
     using Msk = NativeMask<KIND##16, 8>; \
 \
@@ -657,8 +660,8 @@ GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table
     const auto bc23 = blend(select0, bc3, bc2); \
     return blend(select1, bc23, bc01); \
   } \
-  GREX_ALWAYS_INLINE inline KIND##16x8 shuffle(SubVector<KIND##16, 2> table, u16x8 idxs, \
-                                               AnyIndexTag auto /*index_offset*/) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##16x8 shuffle( \
+    SubVector<KIND##16, 2> table, u16x8 idxs, AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##16, 8>; \
     using Msk = NativeMask<KIND##16, 8>; \
 \
@@ -670,8 +673,8 @@ GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table
   }
 
 #define GREX_SHFL_8(KIND) \
-  GREX_ALWAYS_INLINE inline KIND##8x16 shuffle(KIND##8x16 table, u8x16 idxs, \
-                                               AnyIndexTag auto /*index_offset*/) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##8x16 shuffle(KIND##8x16 table, u8x16 idxs, \
+                                                              AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##8, 16>; \
     using Msk = NativeMask<KIND##8, 16>; \
 \
@@ -725,8 +728,8 @@ GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table
 \
     return blend(select3, bc89abcdef, bc01234567); \
   } \
-  GREX_ALWAYS_INLINE inline KIND##8x16 shuffle(SubVector<KIND##8, 8> table, u8x16 idxs, \
-                                               AnyIndexTag auto /*index_offset*/) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##8x16 shuffle( \
+    SubVector<KIND##8, 8> table, u8x16 idxs, AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##8, 16>; \
     using Msk = NativeMask<KIND##8, 16>; \
 \
@@ -756,8 +759,8 @@ GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table
     const auto bc4567 = blend(select1, bc67, bc45); \
     return blend(select2, bc4567, bc0123); \
   } \
-  GREX_ALWAYS_INLINE inline KIND##8x16 shuffle(SubVector<KIND##8, 4> table, u8x16 idxs, \
-                                               AnyIndexTag auto /*index_offset*/) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##8x16 shuffle( \
+    SubVector<KIND##8, 4> table, u8x16 idxs, AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##8, 16>; \
     using Msk = NativeMask<KIND##8, 16>; \
 \
@@ -775,8 +778,8 @@ GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table
     const auto bc23 = blend(select0, bc3, bc2); \
     return blend(select1, bc23, bc01); \
   } \
-  GREX_ALWAYS_INLINE inline KIND##8x16 shuffle(SubVector<KIND##8, 2> table, u8x16 idxs, \
-                                               AnyIndexTag auto /*index_offset*/) { \
+  [[nodiscard, GREX_ALWAYS_INLINE]] inline KIND##8x16 shuffle( \
+    SubVector<KIND##8, 2> table, u8x16 idxs, AnyIndexTag auto /*index_offset*/) { \
     using Vec = NativeVector<KIND##8, 16>; \
     using Msk = NativeMask<KIND##8, 16>; \
 \
@@ -811,7 +814,7 @@ inline VectorFor<f16, size_of<Idxs>> shuffle(Table table, Idxs idxs,
 // Similar strategy as the x86-64-v2+ variant, but with fewer cases because only very small vector
 // sizes are natively supported.
 template<AnyVector Table, UnsignedIntVector Idxs>
-GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>>
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<ValueOf<Table>, size_of<Idxs>>
 shuffle(Table table, Idxs idxs, AnyIndexTag auto index_offset) {
   using Value = ValueOf<Table>;
   using ValueIndex = UnsignedInt<sizeof(Value)>;
@@ -850,7 +853,8 @@ shuffle(Table table, Idxs idxs, AnyIndexTag auto index_offset) {
 
 // Convenience overload: zero offset.
 template<AnyVector Table, UnsignedIntVector Idxs>
-GREX_ALWAYS_INLINE inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table table, Idxs idxs) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<ValueOf<Table>, size_of<Idxs>>
+shuffle(Table table, Idxs idxs) {
   return shuffle(table, idxs, index_tag<0>);
 }
 #endif

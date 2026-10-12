@@ -215,26 +215,30 @@ inline VectorFor<f16, size_of<Src>> convert(Src v, TypeTag<f16> tag) {
 // specialized than the generic conversions above and thus unambiguously preferred.
 
 template<std::size_t N>
-GREX_ALWAYS_INLINE inline VectorFor<f32, N> convert(NativeVector<f16, N> v, TypeTag<f32> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f32, N> convert(NativeVector<f16, N> v,
+                                                                   TypeTag<f32> /*tag*/) {
   return f16_to_f32(v);
 }
 template<std::size_t N>
-GREX_ALWAYS_INLINE inline VectorFor<f32, N> convert(SubVector<f16, N> v, TypeTag<f32> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f32, N> convert(SubVector<f16, N> v,
+                                                                   TypeTag<f32> /*tag*/) {
   return f16_to_f32(v);
 }
 
 template<std::size_t N>
-GREX_ALWAYS_INLINE inline VectorFor<f16, N> convert(NativeVector<f32, N> v, TypeTag<f16> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f16, N> convert(NativeVector<f32, N> v,
+                                                                   TypeTag<f16> /*tag*/) {
   return f32_to_f16(v);
 }
 template<std::size_t N>
-GREX_ALWAYS_INLINE inline VectorFor<f16, N> convert(SubVector<f32, N> v, TypeTag<f16> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f16, N> convert(SubVector<f32, N> v,
+                                                                   TypeTag<f16> /*tag*/) {
   return f32_to_f16(v);
 }
 template<typename Half>
 requires(std::same_as<ValueOf<Half>, f32> && !is_supernative<f16, 2 * Half::size>)
-GREX_ALWAYS_INLINE inline VectorFor<f16, 2 * Half::size> convert(SuperVector<Half> v,
-                                                                 TypeTag<f16> /*tag*/) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f16, 2 * Half::size>
+convert(SuperVector<Half> v, TypeTag<f16> /*tag*/) {
   return f32_to_f16(v);
 }
 
@@ -246,7 +250,8 @@ GREX_ALWAYS_INLINE inline VectorFor<f16, 2 * Half::size> convert(SuperVector<Hal
 
 template<Vectorizable Dst, std::size_t N>
 requires(!std::same_as<Dst, f16>)
-GREX_ALWAYS_INLINE inline VectorFor<Dst, N> convert(NativeVector<f16, N> v, TypeTag<Dst> tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<Dst, N> convert(NativeVector<f16, N> v,
+                                                                   TypeTag<Dst> tag) {
   if constexpr (std::same_as<Dst, f64>) {
     return f16_to_f64(v);
   } else {
@@ -255,7 +260,8 @@ GREX_ALWAYS_INLINE inline VectorFor<Dst, N> convert(NativeVector<f16, N> v, Type
 }
 template<Vectorizable Dst, std::size_t N>
 requires(!std::same_as<Dst, f16>)
-GREX_ALWAYS_INLINE inline VectorFor<Dst, N> convert(SubVector<f16, N> v, TypeTag<Dst> tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<Dst, N> convert(SubVector<f16, N> v,
+                                                                   TypeTag<Dst> tag) {
   if constexpr (std::same_as<Dst, f64>) {
     return f16_to_f64(v);
   } else {
@@ -266,8 +272,8 @@ GREX_ALWAYS_INLINE inline VectorFor<Dst, N> convert(SubVector<f16, N> v, TypeTag
 template<typename Half>
 requires(!std::same_as<ValueOf<Half>, f16> && !std::same_as<ValueOf<Half>, f32> &&
          !is_supernative<f16, 2 * Half::size>)
-GREX_ALWAYS_INLINE inline VectorFor<f16, 2 * Half::size> convert(SuperVector<Half> v,
-                                                                 TypeTag<f16> tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f16, 2 * Half::size> convert(SuperVector<Half> v,
+                                                                                TypeTag<f16> tag) {
   if constexpr (std::same_as<ValueOf<Half>, f64>) {
     return f64_to_f16(v);
   } else {
@@ -277,7 +283,8 @@ GREX_ALWAYS_INLINE inline VectorFor<f16, 2 * Half::size> convert(SuperVector<Hal
 
 template<Vectorizable Src, std::size_t N>
 requires(!std::same_as<Src, f16> && !std::same_as<Src, f32>)
-GREX_ALWAYS_INLINE inline VectorFor<f16, N> convert(NativeVector<Src, N> v, TypeTag<f16> tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f16, N> convert(NativeVector<Src, N> v,
+                                                                   TypeTag<f16> tag) {
   if constexpr (std::same_as<Src, f64>) {
     return f64_to_f16(v);
   } else {
@@ -286,7 +293,8 @@ GREX_ALWAYS_INLINE inline VectorFor<f16, N> convert(NativeVector<Src, N> v, Type
 }
 template<Vectorizable Src, std::size_t N>
 requires(!std::same_as<Src, f16> && !std::same_as<Src, f32>)
-GREX_ALWAYS_INLINE inline VectorFor<f16, N> convert(SubVector<Src, N> v, TypeTag<f16> tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<f16, N> convert(SubVector<Src, N> v,
+                                                                   TypeTag<f16> tag) {
   if constexpr (std::same_as<Src, f64>) {
     return f64_to_f16(v);
   } else {
@@ -296,8 +304,8 @@ GREX_ALWAYS_INLINE inline VectorFor<f16, N> convert(SubVector<Src, N> v, TypeTag
 
 template<IntVectorizable Dst, Float16Vector Half>
 requires(!is_supernative<Dst, 2 * Half::size>)
-GREX_ALWAYS_INLINE inline VectorFor<Dst, 2 * Half::size> convert(SuperVector<Half> v,
-                                                                 TypeTag<Dst> tag) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline VectorFor<Dst, 2 * Half::size> convert(SuperVector<Half> v,
+                                                                                TypeTag<Dst> tag) {
   return convert(convert(v, type_tag<f32>), tag);
 }
 #endif

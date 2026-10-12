@@ -17,8 +17,8 @@ namespace be = grex::backend;
 
 template<be::AnyVector Vec>
 requires(be::AnyNativeVector<Vec> || be::AnySubNativeVector<Vec>)
-GREX_ALWAYS_INLINE inline Vec load_part_ifs(const typename Vec::Value* ptr, std::size_t size,
-                                            grex::TypeTag<Vec> tag) {
+[[GREX_ALWAYS_INLINE]] inline Vec load_part_ifs(const typename Vec::Value* ptr, std::size_t size,
+                                                grex::TypeTag<Vec> tag) {
   using Value = Vec::Value;
   constexpr std::size_t bytes = sizeof(Value) * Vec::size;
 

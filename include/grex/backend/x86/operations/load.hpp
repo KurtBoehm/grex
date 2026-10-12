@@ -111,7 +111,7 @@ inline constexpr std::array<u8, 32> shift_down_idxs = [] {
 }();
 
 /** Moves the top `tail ≤ 16` bytes of `v` down to the bottom, zeroing the bytes above them. */
-GREX_ALWAYS_INLINE inline __m128i shift_down(__m128i v, std::size_t tail) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128i shift_down(__m128i v, std::size_t tail) {
   const auto* row = shift_down_idxs.data() + (16 - tail);
   return _mm_shuffle_epi8(v, _mm_loadu_si128(reinterpret_cast<const __m128i*>(row)));
 }
@@ -120,7 +120,7 @@ GREX_ALWAYS_INLINE inline __m128i shift_down(__m128i v, std::size_t tail) {
 /** Loads exactly `Bytes` bytes at `ptr` into the low bytes of a 128-bit register. */
 template<std::size_t Bytes>
 requires(Bytes == 2 || Bytes == 4 || Bytes == 8 || Bytes == 16)
-GREX_ALWAYS_INLINE inline __m128i load_bytes(const u8* ptr) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128i load_bytes(const u8* ptr) {
   if constexpr (Bytes == 16) {
     return _mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr));
   } else if constexpr (Bytes == 8) {
@@ -142,7 +142,7 @@ GREX_ALWAYS_INLINE inline __m128i load_bytes(const u8* ptr) {
  */
 template<std::size_t Block, std::size_t ElementBytes>
 requires((Block == 2 || Block == 4 || Block == 8) && ElementBytes <= Block)
-GREX_ALWAYS_INLINE inline __m128i gather_blocks(const u8* ptr, std::size_t bytes) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128i gather_blocks(const u8* ptr, std::size_t bytes) {
   const __m128i lo = load_bytes<Block>(ptr);
   if constexpr (ElementBytes == Block) {
     // The only multiple of `Block` in `[Block, 2·Block)` is `Block`, so `lo` is everything.
@@ -168,7 +168,7 @@ GREX_ALWAYS_INLINE inline __m128i gather_blocks(const u8* ptr, std::size_t bytes
  */
 template<std::size_t ElementBytes, std::size_t Count>
 requires((ElementBytes * Count) <= 16)
-GREX_ALWAYS_INLINE inline __m128i load_prefix(const void* base, std::size_t count) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline __m128i load_prefix(const void* base, std::size_t count) {
   static constexpr std::size_t total = ElementBytes * Count;
 
   const auto* ptr = static_cast<const u8*>(base);

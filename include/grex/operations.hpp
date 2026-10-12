@@ -128,7 +128,7 @@ inline T horizontal_max(T value) {
 /** Reinterprets to another value type, retaining the overall byte count of the vector. */
 template<Vectorizable Dst, Vectorizable Src>
 requires(sizeof(Src) == sizeof(Dst))
-GREX_ALWAYS_INLINE inline Dst bit_cast(Src src) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline Dst bit_cast(Src src) {
   return std::bit_cast<Dst>(src);
 }
 
@@ -136,7 +136,7 @@ GREX_ALWAYS_INLINE inline Dst bit_cast(Src src) {
 /** Reinterprets to another value type, retaining the overall byte count of the vector. */
 template<Vectorizable Dst, AnyVector Src>
 requires(sizeof(typename Src::Value) == sizeof(Dst))
-GREX_ALWAYS_INLINE inline Vector<Dst, Src::size> bit_cast(Src src) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline Vector<Dst, Src::size> bit_cast(Src src) {
   return src.bit_cast(type_tag<Dst>);
 }
 #endif
@@ -204,10 +204,10 @@ inline Mask<Dst, Src::size> convert(Src src, AnyBoolTag auto /*tag*/) {
 // Pack reductions
 //==================================================================================================
 
-GREX_ALWAYS_INLINE inline auto add(auto... values) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline auto add(auto... values) {
   return backend::nary_add(values...);
 }
-GREX_ALWAYS_INLINE inline auto subtract(auto... values) {
+[[nodiscard, GREX_ALWAYS_INLINE]] inline auto subtract(auto... values) {
   return backend::nary_subtract(values...);
 }
 
