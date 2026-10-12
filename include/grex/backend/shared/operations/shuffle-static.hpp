@@ -7,13 +7,18 @@
 #ifndef INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SHUFFLE_STATIC_HPP
 #define INCLUDE_GREX_BACKEND_SHARED_OPERATIONS_SHUFFLE_STATIC_HPP
 
+#include <algorithm>
 #include <array>
+#include <bitset>
+#include <cassert>
 #include <cstddef>
+#include <limits>
 #include <optional>
 #include <type_traits>
 
 #include "grex/backend/active/operations/broadcast-lane.hpp"
 #include "grex/backend/active/operations/set.hpp"
+#include "grex/backend/active/operations/slide.hpp"
 #include "grex/backend/active/operations/split.hpp"
 #include "grex/backend/active/sizes.hpp"
 #include "grex/backend/base.hpp"
@@ -491,6 +496,133 @@ struct ShufflerBroadcast : BaseExpensiveOp {
   }
 };
 
+/** A shuffle that applies a slide or a rotation. */
+struct ShufflerSlide : BaseExpensiveOp {
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    return args<SI>().has_value();
+  }
+
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec vec, AutoTag<SI> /*tag*/) {
+    static constexpr Args a = args<SI>().value();
+
+    if constexpr (a.op == Operation::slide_down) {
+      return slide<shift_down, a.offset>(vec);
+    } else if constexpr (a.op == Operation::slide_up) {
+      return slide<shift_up, a.offset>(vec);
+    } else {
+      return rotate_down<a.offset>(vec);
+    }
+  }
+
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
+    static constexpr Args a = args<SI>().value();
+
+    if constexpr (a.op == Operation::slide_down) {
+      return slide_cost<SI.value_size, SI.size, shift_down, a.offset>();
+    } else if constexpr (a.op == Operation::slide_up) {
+      return slide_cost<SI.value_size, SI.size, shift_up, a.offset>();
+    } else {
+      return rotate_down_cost<SI.value_size, SI.size, a.offset>();
+    }
+  }
+
+private:
+  /** Each operation that is supported. */
+  enum struct Operation : u8 { rotate_down, slide_down, slide_up };
+
+  /** The operation to be applied together with the corresponding offset. */
+  struct Args {
+    Operation op;
+    std::size_t offset;
+  };
+
+  /** The rotation offset shared by all referenced lanes, and which operations reproduce it. */
+  struct Fit {
+    std::size_t offset;
+    bool rotate_down;
+    bool slide_down;
+    bool slide_up;
+  };
+
+  /** Determine which operations fit the pattern described by `SI`. */
+  template<AnyShuffleIndices auto SI>
+  static constexpr std::optional<Fit> fit() {
+    static constexpr std::size_t size = SI.size;
+
+    // Determine the shared offset and record which lanes read the input and which are zeroed.
+    std::optional<std::size_t> offset{};
+    std::bitset<size> value_mask{};
+    std::bitset<size> zero_mask{};
+    for (std::size_t i = 0; i < size; ++i) {
+      const ShuffleIndex si = SI[i];
+      switch (si) {
+        case any_sh: continue;
+        case zero_sh: {
+          zero_mask.set(i);
+          continue;
+        }
+        default: {
+          // Lane `i` reads lane `(i + off) % size`; offset zero is left to `ShufflerBlendZero`.
+          const std::size_t off = (size + static_cast<u8>(si) - i) % size;
+          if (off == 0 || (offset.has_value() && *offset != off)) {
+            return std::nullopt;
+          }
+          offset = off;
+          value_mask.set(i);
+        }
+      }
+    }
+
+    if (!offset.has_value()) {
+      // If the input vector was not accessed at all, either the input vector or the zero vector is
+      // a more efficient alternative, which are handled by `ShufflerBlendZero`.
+      return std::nullopt;
+    }
+
+    // Lanes below `size - offset` read from above themselves, the others wrap around.
+    const auto lo_mask = ~std::bitset<size>{} >> *offset;
+    return Fit{
+      .offset = *offset,
+      .rotate_down = zero_mask.none(),
+      .slide_down = (value_mask & ~lo_mask).none() && (zero_mask & lo_mask).none(),
+      .slide_up = (value_mask & lo_mask).none() && (zero_mask & ~lo_mask).none(),
+    };
+  }
+
+  /** The cheapest applicable operation, if any. */
+  template<AnyShuffleIndices auto SI>
+  static constexpr std::optional<Args> args() {
+    static constexpr std::optional<Fit> f = fit<SI>();
+    if constexpr (!f.has_value()) {
+      return std::nullopt;
+    } else {
+      static constexpr std::size_t off = f->offset;
+      static constexpr std::size_t up = SI.size - off;
+      static constexpr Cost unusable{
+        .inv_throughput = std::numeric_limits<f64>::infinity(),
+        .latency = std::numeric_limits<f64>::infinity(),
+      };
+      // Indexed by `Operation`.
+      static constexpr std::array<Cost, 3> costs{
+        f->rotate_down ? rotate_down_cost<SI.value_size, SI.size, off>() : unusable,
+        f->slide_down ? slide_cost<SI.value_size, SI.size, shift_down, off>() : unusable,
+        f->slide_up ? slide_cost<SI.value_size, SI.size, shift_up, up>() : unusable,
+      };
+      static constexpr auto best =
+        static_cast<std::size_t>(std::ranges::min_element(costs) - costs.begin());
+      if constexpr (costs[best] == unusable) {
+        return std::nullopt;
+      } else {
+        const auto op = static_cast<Operation>(best);
+        return Args{.op = op, .offset = (op == Operation::slide_up) ? up : off};
+      }
+    }
+  }
+};
+
 struct SubShuffler : BaseExpensiveOp {
   template<AnyShuffleIndices auto SI>
   using Base = Shuffler<SI.sub_extended()>;
@@ -543,6 +675,7 @@ struct PairShufflerSingle : BaseExpensiveOp {
     }
   }
 };
+
 /** A pair shuffler that performs two shuffles and then blends. */
 struct PairShufflerBlend : BaseExpensiveOp {
   template<AnyShuffleIndices auto SI>
@@ -569,9 +702,81 @@ struct PairShufflerBlend : BaseExpensiveOp {
     return {.inv_throughput = c00 + c10 + c20, .latency = c01 + c11 + c21};
   }
 };
+
+/** A pair shuffler that resolves to `concat_slide_down`. */
+struct PairShufflerSlide : BaseExpensiveOp {
+  template<AnyShuffleIndices auto SI>
+  static constexpr bool is_applicable(AutoTag<SI> /*tag*/) {
+    return offset<SI>().has_value();
+  }
+
+  template<AnyVector Vec, ShuffleIndicesFor<Vec> SI>
+  static Vec apply(Vec lo, Vec hi, AutoTag<SI> /*tag*/) {
+    static constexpr std::size_t size = SI.size;
+    static constexpr std::size_t off = offset<SI>().value();
+
+    if constexpr (off > size) {
+      return concat_slide_down<off - size>(lo, hi);
+    } else {
+      return concat_slide_down<off>(hi, lo);
+    }
+  }
+
+  template<AnyShuffleIndices auto SI>
+  static constexpr Cost cost(AutoTag<SI> /*idxs*/) {
+    return concat_slide_down_cost<SI.value_size, SI.size, offset<SI>().value() % SI.size>();
+  }
+
+private:
+  /**
+   * The offset of the `concat_slide_down` that realizes `SI`, if there is one, with a bias of
+   * `size = SI.size`. An `offset > size` corresponds to `concat_slide_down<off - size>(lo, hi);`
+   * whereas `offset < size` corresponds to `concat_slide_down<off>(hi, lo)`.
+   */
+  template<AnyShuffleIndices auto SI>
+  static constexpr std::optional<std::size_t> offset() {
+    static constexpr std::size_t size = SI.size;
+    static constexpr std::size_t index_ub = 2 * size;
+
+    // Determine the biased offset.
+    std::optional<std::size_t> off{};
+    for (std::size_t i = 0; i < size; ++i) {
+      const ShuffleIndex si = SI[i];
+      switch (si) {
+        case any_sh: continue;
+        case zero_sh: {
+          // Zeroing is not supported.
+          return std::nullopt;
+        }
+        default: {
+          const u8 idx = static_cast<u8>(si);
+          assert(idx < index_ub);
+          const auto offset_i = static_cast<std::size_t>((size + idx - i) % index_ub);
+
+          if (off.has_value() && *off != offset_i) {
+            // If a different offset was determined earlier, the pattern is not supported.
+            return std::nullopt;
+          }
+          off = offset_i;
+        }
+      }
+    }
+
+    if (!off.has_value() || *off == 0 || *off == size) {
+      // If neither input vector was accessed, simply returning one of the inputs is more efficient,
+      // which are handled elsewhere.
+      // If the offset sans bias is `0` or `-size`, the result is just one of the two arguments and
+      // there are better solutions.
+      return std::nullopt;
+    }
+
+    return off;
+  }
+};
+
 template<AnyShuffleIndices auto SI>
 struct PairShufflerTrait {
-  using Shuffler = CheapestType<SI, PairShufflerSingle, PairShufflerBlend>;
+  using Shuffler = CheapestType<SI, PairShufflerSingle, PairShufflerBlend, PairShufflerSlide>;
 };
 
 struct SuperShuffler : BaseExpensiveOp {

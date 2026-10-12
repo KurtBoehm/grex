@@ -26,7 +26,7 @@ inline constexpr std::size_t max_args = 16;
 
 /** Reports a failed comparison and terminates, kept out of line and cold as in `test::fail_msg`. */
 template<typename Label>
-[[gnu::cold, gnu::noinline]] inline void fail_with_message(const Label& label) {
+[[GREX_COLD, GREX_NEVER_INLINE]] inline void fail_with_message(const Label& label) {
   fmt::print(fmt::fg(fmt::terminal_color::red), "{}\n", test::resolve_label(label));
   std::exit(EXIT_FAILURE);
 }

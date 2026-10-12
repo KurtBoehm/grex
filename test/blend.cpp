@@ -23,6 +23,7 @@ namespace test = grex::test;
 using Value = grex::GREX_TEST_TYPE;
 inline constexpr std::size_t repetitions = 256;
 
+namespace {
 /**
  * Reports a failed `blend_zero` and terminates.
  *
@@ -30,7 +31,7 @@ inline constexpr std::size_t repetitions = 256;
  * inlined and optimized into each of the `repetitions` unrolled copies of the test body.
  */
 template<std::size_t N, typename Blended>
-[[gnu::cold, gnu::noinline]] void
+[[GREX_COLD, GREX_NEVER_INLINE]] void
 fail_blend_zero(const std::array<grex::BlendZeroSelector, N>& sels, const grex::Vector<Value, N>& a,
                 const std::array<Value, N>& aref, const Blended& blended) {
   std::array<Value, N> ref{};
@@ -44,7 +45,7 @@ fail_blend_zero(const std::array<grex::BlendZeroSelector, N>& sels, const grex::
 
 /** Reports a failed `blend` and terminates, see `fail_blend_zero`. */
 template<std::size_t N, typename Blended>
-[[gnu::cold, gnu::noinline]] void
+[[GREX_COLD, GREX_NEVER_INLINE]] void
 fail_blend(const std::array<grex::BlendSelector, N>& sels, const grex::Vector<Value, N>& a,
            const std::array<Value, N>& aref, const grex::Vector<Value, N>& b,
            const std::array<Value, N>& bref, const Blended& blended) {
@@ -119,6 +120,7 @@ void run_simd(test::Rng& rng, grex::IndexTag<N> /*tag*/) {
       [&]<std::size_t... Reps> { (..., fix(grex::index_tag<Reps>)); });
   });
 }
+} // namespace
 
 int main() {
   pcg_extras::seed_seq_from<std::random_device> seed_source{};

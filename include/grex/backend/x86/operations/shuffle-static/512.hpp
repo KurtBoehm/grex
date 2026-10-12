@@ -300,18 +300,19 @@ struct PairShufflerPermutexVar8x64 : public BaseExpensiveOp {
 template<AnyShuffleIndices auto SI>
 requires((SI.value_size * SI.size == 64))
 struct ShufflerTrait<SI> {
-  using Shuffler = CheapestType<SI, ShufflerBroadcast, ShufflerBlendZero, ShufflerShuffle128x4,
-                                ShufflerShuffle8x64, ShufflerShuffle32x16, ShufflerPermutex64x8,
-                                ShufflerPermutexVar64x8, ShufflerPermutexVar32x16,
-                                ShufflerPermutexVar16x32, ShufflerPermutexVar8x64>;
+  using Shuffler =
+    CheapestType<SI, ShufflerBroadcast, ShufflerSlide, ShufflerBlendZero, ShufflerShuffle128x4,
+                 ShufflerShuffle8x64, ShufflerShuffle32x16, ShufflerPermutex64x8,
+                 ShufflerPermutexVar64x8, ShufflerPermutexVar32x16, ShufflerPermutexVar16x32,
+                 ShufflerPermutexVar8x64, PairShufflerSlide>;
 };
 template<AnyShuffleIndices auto SI>
 requires((SI.value_size * SI.size == 64))
 struct PairShufflerTrait<SI> {
-  // TODO With AVX-512, the vpermi2 family can be used to merge two permutations
-  using Shuffler =
-    CheapestType<SI, PairShufflerSingle, PairShufflerPermutexVar64x8, PairShufflerPermutexVar32x16,
-                 PairShufflerPermutexVar16x32, PairShufflerPermutexVar8x64, PairShufflerBlend>;
+  // TODO With AVX-512, the vpermi2 family can be used to merge two permutations.
+  using Shuffler = CheapestType<SI, PairShufflerSingle, PairShufflerPermutexVar64x8,
+                                PairShufflerPermutexVar32x16, PairShufflerPermutexVar16x32,
+                                PairShufflerPermutexVar8x64, PairShufflerBlend, PairShufflerSlide>;
 };
 } // namespace grex::backend
 #endif

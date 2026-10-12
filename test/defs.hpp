@@ -168,7 +168,8 @@ struct Check {
  * during normal operation, inlining is disabled and it is marked as cols.
  */
 template<typename T1, typename T2, typename Label>
-[[gnu::cold, gnu::noinline]] inline void fail_msg(const Label& label, const T1& a, const T2& b) {
+[[GREX_COLD, GREX_NEVER_INLINE]] inline void fail_msg(const Label& label, const T1& a,
+                                                      const T2& b) {
   fmt::print(fmt::fg(fmt::terminal_color::red), "{}: {} != {}\n", resolve_label(label), a, b);
   std::exit(EXIT_FAILURE);
 }
@@ -268,9 +269,14 @@ struct VectorChecker {
    *
    * See `random_array` for why the lanes are not filled by expanding a pack.
    */
-  static VectorChecker random(auto&& gen) {
-    const std::array<T, N> values = random_array<T, N>(gen);
-    return {Vector<T, N>::load(values.data()), values};
+  [[GREX_NEVER_INLINE]] static VectorChecker random(auto&& gen) {
+    // Generate and load random values for all underlying lanes, including inactive ones (if any).
+    static constexpr std::size_t extended_size = std::max(N, min_native_size<T>);
+    const std::array<T, extended_size> extended_values = random_array<T, extended_size>(gen);
+    // Cut off any inactive lanes for the reference array.
+    std::array<T, N> values{};
+    std::ranges::copy_n(extended_values.begin(), N, values.begin());
+    return {Vector<T, N>::load_extended(extended_values.data()), values};
   }
 
   VectorChecker() = default;

@@ -254,6 +254,15 @@ template<typename T>
 concept AnySubNativeMask = AnyMaskTrait<T>::kind == SimdKind::subnative;
 template<typename T>
 concept AnySuperNativeMask = AnyMaskTrait<T>::kind == SimdKind::supernative;
+
+//==================================================================================================
+// Enumerations
+//==================================================================================================
+
+/** The direction in which the elements move: towards lower or towards higher indices. */
+enum struct ShiftDirection : bool { down, up };
+inline constexpr ShiftDirection shift_down = ShiftDirection::down;
+inline constexpr ShiftDirection shift_up = ShiftDirection::up;
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_BASE_HPP

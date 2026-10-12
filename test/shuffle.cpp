@@ -16,6 +16,7 @@
 #include <random>
 
 #include <fmt/color.h>
+#include <fmt/format.h>
 #include <pcg_extras.hpp>
 
 #include "defs.hpp"
@@ -33,17 +34,17 @@ inline constexpr std::size_t repetitions = 256;
  * optimized into each of the `repetitions` unrolled copies of the test body.
  */
 template<std::size_t N>
-[[gnu::noinline]] void announce_shuffle(const std::array<grex::ShuffleIndex, N>& idxs,
-                                        const grex::Vector<Value, N>& base) {
+[[GREX_NEVER_INLINE]] void announce_shuffle(const std::array<grex::ShuffleIndex, N>& idxs,
+                                            const grex::Vector<Value, N>& base) {
   fmt::print("grex::shuffle<{}>({}×{}{{{}}});\n", fmt::join(idxs, ", "), test::type_name<Value>(),
              N, fmt::join(base, ", "));
 }
 
 /** Reports a failed `shuffle` and terminates, kept out of line as in `announce_shuffle`. */
 template<std::size_t N, typename Shuffled>
-[[gnu::cold, gnu::noinline]] void fail_shuffle(const std::array<grex::ShuffleIndex, N>& idxs,
-                                               const std::array<Value, N>& baseref,
-                                               const Shuffled& shuf) {
+[[GREX_COLD, GREX_NEVER_INLINE]] void fail_shuffle(const std::array<grex::ShuffleIndex, N>& idxs,
+                                                   const std::array<Value, N>& baseref,
+                                                   const Shuffled& shuf) {
   std::array<Value, N> ref{};
   for (std::size_t i = 0; i < N; ++i) {
     const auto sh = idxs[i];
@@ -63,14 +64,62 @@ void run_simd(test::Rng& rng, grex::IndexTag<N> /*tag*/) {
 
   // broadcast_lane
   grex::static_apply<N>([&]<std::size_t... I> {
-    VC bc_base = VC::random(dval);
+    VC base = VC::random(dval);
     const auto broadcast_lane = [&](grex::AnyIndexTag auto lane) {
       std::array<Value, N> bc_array{};
-      std::ranges::fill(bc_array, bc_base.vec[lane]);
+      std::ranges::fill(bc_array, base.vec[lane]);
 
-      VC{bc_base.vec.broadcast_lane(lane), bc_array}.check("broadcast_lane");
+      VC{base.vec.broadcast_lane(lane), bc_array}.check("broadcast_lane");
     };
     (..., broadcast_lane(grex::index_tag<I>));
+  });
+
+  // shift and rotate
+  grex::static_apply<N + 1>([&]<std::size_t... I> {
+    VC base0 = VC::random(dval);
+    VC base1 = VC::random(dval);
+
+    const auto shrot_lane = [&](grex::AnyIndexTag auto shift) {
+      std::array<Value, N> shift_down_array{};
+      std::array<Value, N> shift_up_array{};
+      std::array<Value, N> rot_down_array{};
+      std::array<Value, N> rot_up_array{};
+      std::array<Value, N> crot_down_array{};
+      std::array<Value, N> crot_up_array{};
+
+      for (std::size_t i = 0; i < N; ++i) {
+        shift_down_array[i] = (i + shift < N) ? base0.ref[i + shift] : 0;
+        shift_up_array[i] = (i >= shift) ? base0.ref[i - shift] : 0;
+        rot_down_array[i] = base0.ref[(i + shift) % N];
+        rot_up_array[i] = base0.ref[(i + N - shift) % N];
+        crot_down_array[i] = (i + shift < N) ? base0.ref[i + shift] : base1.ref[i + shift - N];
+        crot_up_array[i] = (i < shift) ? base0.ref[N + i - shift] : base1.ref[i - shift];
+      }
+
+      VC{base0.vec.slide_down(shift), shift_down_array}.check(
+        [&] { return fmt::format("{}.slide_down(index_tag<{}>)", base0.vec, shift.value); });
+      VC{base0.vec.slide_up(shift), shift_up_array}.check(
+        [&] { return fmt::format("{}.slide_up(index_tag<{}>)", base0.vec, shift.value); });
+      VC{grex::slide_down<shift>(base0.vec), shift_down_array}.check(
+        [&] { return fmt::format("slide_down<{}>({})", shift.value, base0.vec); });
+      VC{grex::slide_up<shift>(base0.vec), shift_up_array}.check(
+        [&] { return fmt::format("slide_up<{}>({})", shift.value, base0.vec); });
+
+      VC{base0.vec.rotate_down(shift), rot_down_array}.check(
+        [&] { return fmt::format("{}.rotate_down(index_tag<{}>)", base0.vec, shift.value); });
+      VC{base0.vec.rotate_up(shift), rot_up_array}.check(
+        [&] { return fmt::format("{}.rotate_up(index_tag<{}>)", base0.vec, shift.value); });
+      VC{grex::rotate_down<shift>(base0.vec), rot_down_array}.check(
+        [&] { return fmt::format("rotate_down<{}>({})", shift.value, base0.vec); });
+      VC{grex::rotate_up<shift>(base0.vec), rot_up_array}.check(
+        [&] { return fmt::format("rotate_up<{}>({})", shift.value, base0.vec); });
+
+      VC{grex::slide_down<shift>(base0.vec, base1.vec), crot_down_array}.check(
+        [&] { return fmt::format("slide_down<{}>({}, {})", shift.value, base0.vec, base1.vec); });
+      VC{grex::slide_up<shift>(base0.vec, base1.vec), crot_up_array}.check(
+        [&] { return fmt::format("slide_up<{}>({}, {})", shift.value, base0.vec, base1.vec); });
+    };
+    (..., shrot_lane(grex::index_tag<I>));
   });
 
   // shuffle

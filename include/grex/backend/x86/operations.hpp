@@ -39,6 +39,7 @@
 #include "operations/shrink.hpp"
 #include "operations/shuffle-static.hpp"
 #include "operations/shuffle.hpp"
+#include "operations/slide.hpp"
 #include "operations/split.hpp"
 #include "operations/sqrt.hpp"
 #include "operations/store.hpp"

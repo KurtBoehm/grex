@@ -32,8 +32,12 @@ inline constexpr bool is_clang = GREX_CLANG;
 
 #ifdef __GNUC__
 #define GREX_ALWAYS_INLINE __attribute__((always_inline))
+#define GREX_NEVER_INLINE gnu::noinline
+#define GREX_COLD gnu::cold
 #else
 #define GREX_ALWAYS_INLINE
+#define GREX_NEVER_INLINE
+#define GREX_COLD
 #endif
 
 namespace primitives {

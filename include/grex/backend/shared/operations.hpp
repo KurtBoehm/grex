@@ -27,6 +27,7 @@
 #include "operations/shingle.hpp"
 #include "operations/shrink.hpp"
 #include "operations/shuffle-static.hpp"
+#include "operations/slide.hpp"
 #include "operations/store.hpp"
 #include "operations/to-array.hpp"
 // IWYU pragma: end_exports

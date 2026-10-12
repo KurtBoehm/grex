@@ -7,6 +7,8 @@
 #ifndef INCLUDE_GREX_BACKEND_NEON_TYPES_HPP
 #define INCLUDE_GREX_BACKEND_NEON_TYPES_HPP
 
+#include <cstddef>
+
 #include <arm_neon.h>
 
 #include "grex/backend/base.hpp"
@@ -42,6 +44,9 @@ namespace grex::backend {
 \
     [[nodiscard]] Register registr() const { \
       return r; \
+    } \
+    [[nodiscard]] NativeVector native() const { \
+      return *this; \
     } \
   }; \
   using KIND##BITS##x##SIZE = NativeVector<KIND##BITS, SIZE>;

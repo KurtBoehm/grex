@@ -117,8 +117,9 @@ struct ShufflerShuffle8x32Ext : public BaseExpensiveOp {
 template<AnyShuffleIndices auto I>
 requires((I.value_size * I.size == 32))
 struct ShufflerTrait<I> {
-  using Shuffler = CheapestType<I, ShufflerBroadcast, ShufflerBlendZero, ShufflerShuffle8x32,
-                                ShufflerShuffle32x8, ShufflerPermute64x4, ShufflerShuffle8x32Ext>;
+  using Shuffler =
+    CheapestType<I, ShufflerBroadcast, ShufflerSlide, ShufflerBlendZero, ShufflerShuffle8x32,
+                 ShufflerShuffle32x8, ShufflerPermute64x4, ShufflerShuffle8x32Ext>;
 };
 } // namespace grex::backend
 #endif

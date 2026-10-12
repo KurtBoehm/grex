@@ -18,7 +18,7 @@ namespace be = grex::backend;
 
 template<be::AnyVector Vec>
 requires(be::AnyNativeVector<Vec> || be::AnySubNativeVector<Vec>)
-[[gnu::noinline]] void store_part_ifs(typename Vec::Value* dst, Vec src, std::size_t size) {
+[[GREX_NEVER_INLINE]] void store_part_ifs(typename Vec::Value* dst, Vec src, std::size_t size) {
   using Value = Vec::Value;
   constexpr std::size_t bytes = sizeof(Value) * Vec::size;
 
@@ -77,8 +77,8 @@ requires(be::AnyNativeVector<Vec> || be::AnySubNativeVector<Vec>)
     return; \
   }
 #define BM_PARTSTORE(KIND, BITS, SIZE) \
-  [[gnu::noinline]] void store_part_swi(KIND##BITS* dst, be::NativeVector<KIND##BITS, SIZE> src, \
-                                        std::size_t size) { \
+  [[GREX_NEVER_INLINE]] void store_part_swi( \
+    KIND##BITS* dst, be::NativeVector<KIND##BITS, SIZE> src, std::size_t size) { \
     switch (size) { \
       GREX_REPEAT(SIZE, BM_PARTSTORE_CASE, KIND, BITS) \
       [[unlikely]] BM_PARTSTORE_CASE(SIZE, SIZE, KIND, BITS) default : std::unreachable(); \
@@ -87,8 +87,8 @@ requires(be::AnyNativeVector<Vec> || be::AnySubNativeVector<Vec>)
 GREX_FOREACH_TYPE(BM_PARTSTORE, 128)
 
 #define BM_SUBPARTSTORE(KIND, BITS, PART, SIZE) \
-  [[gnu::noinline]] void store_part_switch(KIND##BITS* dst, be::SubVector<KIND##BITS, PART> src, \
-                                           std::size_t size) { \
+  [[GREX_NEVER_INLINE]] void store_part_switch( \
+    KIND##BITS* dst, be::SubVector<KIND##BITS, PART> src, std::size_t size) { \
     switch (size) { \
       GREX_REPEAT(PART, BM_PARTSTORE_CASE, KIND, BITS) \
       [[unlikely]] BM_PARTSTORE_CASE(PART, PART, KIND, BITS) default : std::unreachable(); \

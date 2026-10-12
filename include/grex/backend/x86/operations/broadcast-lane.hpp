@@ -13,6 +13,7 @@
 #include "grex/backend/shared/defs.hpp"
 #include "grex/backend/x86/instruction-sets.hpp"
 #include "grex/backend/x86/types.hpp"
+#include "grex/backend/x86/utils.hpp"
 #include "grex/base.hpp"
 
 namespace grex::backend {
@@ -33,26 +34,13 @@ GREX_ALWAYS_INLINE inline __m128i sse2_bcast16(__m128i v) {
     return _mm_shuffle_epi32(_mm_shufflehi_epi16(v, imm), 0xFF);
   }
 }
-
-/**
- * Clang re-optimizes shuffle intrinsics; in one of the two-step sequences below, it would trade the
- * constant-free sequence for one with a constant-pool vector. An empty `asm` on the intermediate
- * value stops that and costs no instruction.
- */
-template<typename T>
-GREX_ALWAYS_INLINE inline T pin(T x) {
-#if GREX_CLANG
-  __asm__("" : "+v"(x));
-#endif
-  return x;
-}
 } // namespace bcast_lane
 
 // The µop counts are based on Zen 5; even modern Intel CPUs can use more µops, e.g. for `vpermw`.
 
-// =================================================================================================
+//==================================================================================================
 // Costs for various instructions on Zen 5 base on uops.info
-// =================================================================================================
+//==================================================================================================
 
 namespace bcast_lane::cost {
 // Zen 5, measured on uops.info. For instructions whose operands have different latencies, the
@@ -142,9 +130,9 @@ consteval Cost broadcast_lane_cost() {
   }
 }
 
-// =================================================================================================
+//==================================================================================================
 // 128-bit
-// =================================================================================================
+//==================================================================================================
 
 /** `f64`: `movddup` starting on level 2, `unpcklpd`/`unpckhpd` on level 1. 1 µop. */
 template<std::size_t I>
@@ -230,9 +218,9 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 16> broadcast_lane(NativeVector<T, 16>
 }
 
 #if GREX_X86_64_LEVEL >= 3
-// =================================================================================================
+//==================================================================================================
 // 256-bit (level 3+)
-// =================================================================================================
+//==================================================================================================
 
 /** `f64`: `vpermpd`. 1 µop. */
 template<std::size_t I>
@@ -329,9 +317,9 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 32> broadcast_lane(NativeVector<T, 32>
 #endif
 
 #if GREX_X86_64_LEVEL >= 4
-// =================================================================================================
+//==================================================================================================
 // 512-bit (level 4)
-// =================================================================================================
+//==================================================================================================
 
 /**
  * `f64`: `vbroadcastsd` (lane 0)/`vpermpd` + constant load. 1 µop.
@@ -421,7 +409,7 @@ GREX_ALWAYS_INLINE inline NativeVector<T, 64> broadcast_lane(NativeVector<T, 64>
   } else {
     // Copy the 128-bit block holding the byte to all four blocks, then pshufb.
     static constexpr int blk = bcast_lane::splat(I / 16);
-    const auto shuffled = bcast_lane::pin(_mm512_shuffle_i32x4(v.r, v.r, blk));
+    const auto shuffled = pin(_mm512_shuffle_i32x4(v.r, v.r, blk));
     return {.r = _mm512_shuffle_epi8(shuffled, _mm512_set1_epi8(static_cast<i8>(I % 16)))};
   }
 }
