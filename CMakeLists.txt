@@ -33,6 +33,8 @@ else()
 endif()
 
 include(FetchContent)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 add_library(${PROJECT_NAME} INTERFACE)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
@@ -52,7 +54,25 @@ target_include_directories(
   ${PROJECT_NAME}
   INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+install(TARGETS grex EXPORT grexTargets)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# Install tree: the targets file is the config file.
+install(
+  EXPORT grexTargets
+  NAMESPACE grex::
+  FILE grexConfig.cmake
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/grex
+)
+
+# Build tree: same trick
+export(
+  EXPORT grexTargets
+  NAMESPACE grex::
+  FILE ${CMAKE_CURRENT_BINARY_DIR}/grexConfig.cmake
 )
 
 if(GREX_BUILD_TESTS)
@@ -64,7 +84,8 @@ if(GREX_BUILD_TESTS)
   )
   FetchContent_MakeAvailable(cmop)
 
-  # Tests need OpenMP, so it’s requested here rather than unconditionally for the whole project.
+  # Tests need OpenMP, so it’s requested here rather than unconditionally for
+  # the whole project.
   cmop_find_openmp()
 
   FetchContent_Declare(
@@ -91,9 +112,10 @@ if(GREX_BUILD_TESTS)
   )
   FetchContent_MakeAvailable(thesauros)
 
-  # The marches to build the tests for are detected by running a small tool on the build machine:
-  # the supported microarchitecture levels on x86-64 and, on ARM64, the ARMv8-a baseline plus
-  # ARMv8-a with FP16 if the CPU supports that extension.
+  # The architectures to build the tests for are detected by running a small
+  # tool on the build machine: the supported microarchitecture levels on x86-64
+  # and, on ARM64, the ARMv8-a baseline plus ARMv8-a with FP16 if the CPU
+  # supports that extension.
   if(grex_backend STREQUAL "x86_64")
     set(grex_detect_src "tools/cpuid.cpp")
   elseif(grex_backend STREQUAL "neon")
@@ -102,21 +124,22 @@ if(GREX_BUILD_TESTS)
 
   if(DEFINED grex_detect_src)
     try_run(
-      grex_detect_run_res
-      grex_detect_compile_res
+      grex_detect_run_res grex_detect_compile_res
       SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/${grex_detect_src}"
       CMAKE_FLAGS
         "-DINCLUDE_DIRECTORIES:STRING=${CMAKE_CURRENT_SOURCE_DIR}/include"
-      CXX_STANDARD 23
-      CXX_STANDARD_REQUIRED TRUE
+        CXX_STANDARD 23 CXX_STANDARD_REQUIRED TRUE
       RUN_OUTPUT_VARIABLE grex_detect_output
     )
     if(NOT grex_detect_compile_res OR NOT grex_detect_run_res EQUAL 0)
-      message(FATAL_ERROR "Detecting the CPU features via ${grex_detect_src} failed!")
+      message(
+        FATAL_ERROR "Detecting the CPU features via ${grex_detect_src} failed!"
+      )
     endif()
 
-    # The first line holds the marches, separated by ";"; any further line (the optional x86-64
-    # extensions, which the CMake build does not test separately) is dropped.
+    # The first line holds the architectures, separated by ";"; any further line
+    # (the optional x86-64 extensions, which the CMake build does not test
+    # separately) is dropped.
     string(REGEX REPLACE "\n.*" "" grex_arches "${grex_detect_output}")
     string(STRIP "${grex_arches}" grex_arches)
   endif()
@@ -128,9 +151,11 @@ if(GREX_BUILD_TESTS)
     target_compile_features(${test_target} PRIVATE cxx_std_23)
     target_link_libraries(
       ${test_target}
-      PRIVATE ${PROJECT_NAME} cmop::openmp thesauros::thesauros
-      # fmt::fmt is part of thesauros::thesauros already, and linking it twice
-      # (which CMake does not optimize away) leads to warnings with Apple Clang.
+      PRIVATE
+        ${PROJECT_NAME} cmop::openmp thesauros::thesauros
+        # fmt::fmt is part of thesauros::thesauros already, and linking it twice
+        # (which CMake does not optimize away) leads to warnings with Apple
+        # Clang.
     )
     target_include_directories(
       ${test_target}
@@ -142,36 +167,22 @@ if(GREX_BUILD_TESTS)
   endfunction()
 
   # tests that are separated based on the value type
-  foreach(
-    test_info
-    IN
-    ITEMS "blend;x86_64;neon" "convert;scalar;x86_64;neon" "shuffle;x86_64;neon"
+  foreach(test_info IN ITEMS "blend;x86_64;neon" "convert;scalar;x86_64;neon"
+          "shuffle;x86_64;neon"
   )
     list(GET test_info 0 test_name)
     list(SUBLIST test_info 1 -1 test_backends)
     list(FIND test_backends ${grex_backend} grex_backend_index)
 
     if(${grex_backend_index} GREATER_EQUAL 0)
-      foreach(
-        test_type
-        f64
-        f32
-        f16
-        i64
-        i32
-        i16
-        i8
-        u64
-        u32
-        u16
-        u8
-      )
+      foreach(test_type f64 f32 f16 i64 i32 i16 i8 u64 u32 u16 u8)
         foreach(test_arch ${grex_arches})
-          set(
-            test_target_name
-            "${PROJECT_NAME}_${test_name}_${test_type}_${test_arch}"
+          set(test_target_name
+              "${PROJECT_NAME}_${test_name}_${test_type}_${test_arch}"
           )
-          create_grex_test(${test_target_name} ${test_name} "${PROJECT_NAME}.${test_name}.${test_type}.${test_arch}")
+          create_grex_test(${test_target_name} ${test_name}
+                           "${PROJECT_NAME}.${test_name}.${test_type}.${test_arch}"
+          )
           target_compile_definitions(
             ${test_target_name}
             PRIVATE "GREX_TEST_TYPE=${test_type}"
@@ -183,7 +194,9 @@ if(GREX_BUILD_TESTS)
         endforeach()
 
         set(test_target_name "${PROJECT_NAME}_${test_name}_${test_type}_native")
-        create_grex_test(${test_target_name} ${test_name} "${PROJECT_NAME}.${test_name}.${test_type}.native")
+        create_grex_test(${test_target_name} ${test_name}
+                         "${PROJECT_NAME}.${test_name}.${test_type}.native"
+        )
         target_compile_definitions(
           ${test_target_name}
           PRIVATE "GREX_TEST_TYPE=${test_type}"
@@ -197,19 +210,19 @@ if(GREX_BUILD_TESTS)
     test_info
     IN
     ITEMS
-      "componentwise;scalar;x86_64;neon"
-      "expand;x86_64;neon"
-      "extract;scalar;x86_64;neon"
-      "f16;scalar;x86_64;neon"
-      "gather;scalar;x86_64;neon"
-      "general;scalar;x86_64;neon"
-      "horizontal;scalar;x86_64;neon"
-      "load;scalar;x86_64;neon"
-      "multibyte;scalar;x86_64;neon"
-      "nary;scalar;x86_64;neon"
-      "set;scalar;x86_64;neon"
-      "shingle;scalar;x86_64;neon"
-      "store;scalar;x86_64;neon"
+    "componentwise;scalar;x86_64;neon"
+    "expand;x86_64;neon"
+    "extract;scalar;x86_64;neon"
+    "f16;scalar;x86_64;neon"
+    "gather;scalar;x86_64;neon"
+    "general;scalar;x86_64;neon"
+    "horizontal;scalar;x86_64;neon"
+    "load;scalar;x86_64;neon"
+    "multibyte;scalar;x86_64;neon"
+    "nary;scalar;x86_64;neon"
+    "set;scalar;x86_64;neon"
+    "shingle;scalar;x86_64;neon"
+    "store;scalar;x86_64;neon"
   )
     list(GET test_info 0 test_name)
     list(SUBLIST test_info 1 -1 test_backends)
@@ -218,7 +231,9 @@ if(GREX_BUILD_TESTS)
     if(${grex_backend_index} GREATER_EQUAL 0)
       foreach(test_arch ${grex_arches})
         set(test_target_name "${PROJECT_NAME}_${test_name}_${test_arch}")
-        create_grex_test(${test_target_name} ${test_name} "${PROJECT_NAME}.${test_name}.${test_arch}")
+        create_grex_test(${test_target_name} ${test_name}
+                         "${PROJECT_NAME}.${test_name}.${test_arch}"
+        )
         target_compile_options(
           ${test_target_name}
           PRIVATE "-march=${test_arch}"
@@ -226,7 +241,9 @@ if(GREX_BUILD_TESTS)
       endforeach()
 
       set(test_target_name "${PROJECT_NAME}_${test_name}_native")
-      create_grex_test(${test_target_name} ${test_name} "${PROJECT_NAME}.${test_name}.native")
+      create_grex_test(${test_target_name} ${test_name}
+                       "${PROJECT_NAME}.${test_name}.native"
+      )
       cmop_add_optimization(${test_target_name})
     endif()
   endforeach()
