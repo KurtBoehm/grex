@@ -15,7 +15,6 @@
 #include "grex/backend/base.hpp"
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/neon/operations/interleave.hpp"
-#include "grex/backend/neon/types.hpp"
 #include "grex/backend/shared/operations/lookup-table.hpp"
 #include "grex/base.hpp"
 
@@ -25,9 +24,9 @@ struct LookupTable {
   static constexpr bool is_enabled = false;
 };
 
-/** If the table is at most native, use `shuffle`. */
+/** If the table consists of at most two native vectors, use `shuffle`. */
 template<Vectorizable T, std::size_t N>
-requires(N <= max_native_size<T>)
+requires(N <= 2 * max_native_size<T>)
 struct LookupTable<T, N> : ShuffleLookupTable<T, N> {
   using Index = u8;
   static constexpr bool is_enabled = true;
@@ -36,25 +35,26 @@ struct LookupTable<T, N> : ShuffleLookupTable<T, N> {
 };
 
 /**
- * The SIMD component of a `grex::LookupTable` implemented based on byte planes: The values are
- * de-interleaved into `B = sizeof(T)` `u8` in the constructor so that `B` `TBL` instructions can be
- * applied to the planes independently, with the results only needing to be interleaved again.
+ * The SIMD component of a `grex::LookupTable` implemented based on 16-bit planes: The values are
+ * de-interleaved into `B = sizeof(T) / 2` `u16` in the constructor so that `B` two-table `TBL`
+ * instructions can be applied to the planes independently, with the results only needing to be
+ * interleaved again.
  */
 template<Vectorizable T, std::size_t N>
-requires(N == 16 && sizeof(T) > 1)
+requires(N == 16 && sizeof(T) > 2)
 struct LookupTable<T, N> {
   using UnValue = UnsignedInt<sizeof(T)>;
-  using Planes = std::array<u8x16, sizeof(T)>;
-  using Index = u8;
+  using Planes = std::array<VectorFor<u16, 16>, sizeof(T) / 2>;
+  using Index = u16;
   static constexpr bool is_enabled = true;
 
   LookupTable() = default;
   explicit LookupTable(const std::array<T, N>& table)
-      : table_{deinterleave<u8>(as<UnValue>(load(table.data(), type_tag<VectorFor<T, N>>)))} {}
+      : table_{deinterleave<u16>(as<UnValue>(load(table.data(), type_tag<VectorFor<T, N>>)))} {}
 
   template<UnsignedIntVector Idx>
   [[nodiscard, GREX_ALWAYS_INLINE]] VectorFor<T, size_of<Idx>> lookup(Idx idxs) const {
-    return static_apply<sizeof(T)>(
+    return static_apply<sizeof(T) / 2>(
       [&]<std::size_t... I> { return as<T>(interleave(shuffle(std::get<I>(table_), idxs)...)); });
   }
 
