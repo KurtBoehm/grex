@@ -179,14 +179,16 @@ inline Vector<Dst, Src::size> convert(Src src, CastTag<Safe> /*tag*/) {
   return src.convert(type_tag<Dst>);
 }
 
-// Mask conversions are always safe if each entry is filled with 0 or 1
-// (which the provided operations ensure)
-template<Vectorizable Dst>
-inline bool convert(bool src) {
+/**
+ * Mask conversions are always safe if each entry is all zeros or all ones (which Grex’s built-in
+ * operations ensure).
+ */
+template<Vectorizable Dst, std::same_as<bool> Src>
+inline bool convert(Src src) {
   return src;
 }
-template<Vectorizable Dst>
-inline bool convert(bool src, AnyBoolTag auto /*tag*/) {
+template<Vectorizable Dst, std::same_as<bool> Src, bool Safe>
+inline bool convert(Src src, CastTag<Safe> /*tag*/) {
   return src;
 }
 
@@ -194,8 +196,8 @@ template<Vectorizable Dst, AnyMask Src>
 inline Mask<Dst, Src::size> convert(Src src) {
   return src.convert(type_tag<Dst>);
 }
-template<Vectorizable Dst, AnyMask Src>
-inline Mask<Dst, Src::size> convert(Src src, AnyBoolTag auto /*tag*/) {
+template<Vectorizable Dst, AnyMask Src, bool Safe>
+inline Mask<Dst, Src::size> convert(Src src, CastTag<Safe> /*tag*/) {
   return src.convert(type_tag<Dst>);
 }
 #endif
