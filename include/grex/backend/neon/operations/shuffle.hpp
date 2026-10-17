@@ -35,16 +35,16 @@ inline u8x16 shuffle_indices(u8x16 idxs, IndexTag<1> /*value_bytes*/) {
   return idxs;
 }
 
-// 2-byte elements, u8×8 indices: replicate each 1-byte index to two consecutive bytes,
-// multiply by 2, then add the per-element offsets [0, 1].
+// 2-byte elements, u8×8 indices: replicate each 1-byte index to two adjacent bytes, multiply by 2,
+// then add the per-element offsets [0, 1].
 inline u8x16 shuffle_indices(SubVector<u8, 8> idxs, IndexTag<2> /*value_bytes*/) {
   const auto zip = vzip1q_u8(idxs.full.r, idxs.full.r);
   const auto shift = vaddq_u8(zip, zip);
   return {.r = vorrq_u8(shift, as<u8>(vdupq_n_u16(0x0100)))};
 }
 
-// 4-byte elements, u8×4 indices: multiply by 4, replicate each 1-byte index to four
-// adjacent bytes, then add the per-element offsets [0, 1, 2, 3].
+// 4-byte elements, u8×4 indices: multiply by 4, replicate each 1-byte index to four adjacent bytes,
+// then add the per-element offsets [0, 1, 2, 3].
 inline u8x16 shuffle_indices(SubVector<u8, 4> idxs, IndexTag<4> /*value_bytes*/) {
   constexpr std::array<u8, 16> shuf_arr{0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3};
   const auto shift = vshlq_n_u8(idxs.full.r, 2);
@@ -53,8 +53,8 @@ inline u8x16 shuffle_indices(SubVector<u8, 4> idxs, IndexTag<4> /*value_bytes*/)
   return {.r = vorrq_u8(shuf, as<u8>(vdupq_n_u32(0x03020100)))};
 }
 
-// 8-byte elements, u8×2 indices: multiply by 8, replicate each 1-byte index to eight
-// adjacent bytes, then add the per-element offsets [0, 1, 2, 3, 4, 5, 6, 7].
+// 8-byte elements, u8×2 indices: multiply by 8, replicate each 1-byte index to eight adjacent
+// bytes, then add the per-element offsets [0, 1, 2, 3, 4, 5, 6, 7].
 inline u8x16 shuffle_indices(SubVector<u8, 2> idxs, IndexTag<8> /*value_bytes*/) {
   constexpr std::array<u8, 16> shuf_arr{0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
   const auto shift = vshlq_n_u8(idxs.full.r, 3);
@@ -73,24 +73,24 @@ inline SubVector<u8, 8> shuffle_indices(u16x8 idxs, IndexTag<1> /*value_bytes*/)
   return SubVector<u8, 8>{{.r = vuzp1q_u8(as<u8>(idxs.r), as<u8>(idxs.r))}};
 }
 
-// 2-byte elements, u16×8 indices: replicate the low byte into the high byte, multiply by 2,
-// then add the per-element offsets [0, 1].
+// 2-byte elements, u16×8 indices: replicate the low byte into the high byte, multiply by 2, then
+// add the per-element offsets [0, 1].
 inline u8x16 shuffle_indices(u16x8 idxs, IndexTag<2> /*value_bytes*/) {
   const auto trn = vtrn1q_u8(as<u8>(idxs.r), as<u8>(idxs.r));
   const auto shift = vaddq_u8(trn, trn);
   return {.r = vorrq_u8(shift, as<u8>(vdupq_n_u16(0x0100)))};
 }
 
-// 4-byte elements, u16×4 indices: widen to u32, multiply by u32(u8×4{4, 4, 4, 4}) to obtain
-// byte indices in one step, then add the per-element offsets [0, 1, 2, 3].
+// 4-byte elements, u16×4 indices: widen to u32, multiply by u32(u8×4{4, 4, 4, 4}) to obtain byte
+// indices in one step, then add the per-element offsets [0, 1, 2, 3].
 inline u8x16 shuffle_indices(SubVector<u16, 4> idxs, IndexTag<4> /*value_bytes*/) {
   const auto idxs32 = vmovl_u16(vget_low_u16(idxs.full.r));
   const auto mul = as<u8>(vmulq_u32(idxs32, vdupq_n_u32(0x04040404)));
   return {.r = vorrq_u8(mul, as<u8>(vdupq_n_u32(0x03020100)))};
 }
 
-// 8-byte elements, u16×2 indices: multiply by 8, replicate each low byte across 8 bytes,
-// then add the per-element offsets [0, 1, 2, 3, 4, 5, 6, 7].
+// 8-byte elements, u16×2 indices: multiply by 8, replicate each low byte across 8 bytes, then add
+// the per-element offsets [0, 1, 2, 3, 4, 5, 6, 7].
 inline u8x16 shuffle_indices(SubVector<u16, 2> idxs, IndexTag<8> /*value_bytes*/) {
   constexpr std::array<u8, 16> shuf_arr{0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2};
   const auto shift = vshlq_n_u8(as<u8>(idxs.full.r), 3);
@@ -98,8 +98,8 @@ inline u8x16 shuffle_indices(SubVector<u16, 2> idxs, IndexTag<8> /*value_bytes*/
   return {.r = vorrq_u8(shuf, as<u8>(vdupq_n_u64(0x0706050403020100)))};
 }
 
-// 1-byte elements, u32×16 indices: copy the lower 16 bits of each index into the upper 16 bits
-// and delegate to the u16 path.
+// 1-byte elements, u32×16 indices: copy the lower 16 bits of each index into the upper 16 bits and
+// delegate to the u16 path.
 inline u8x16 shuffle_indices(VectorFor<u32, 16> idxs, IndexTag<1> value_bytes) {
   const auto idxs16 = as<u16>(idxs);
   const VectorFor<u16, 16> uzp{
@@ -109,43 +109,43 @@ inline u8x16 shuffle_indices(VectorFor<u32, 16> idxs, IndexTag<1> value_bytes) {
   return shuffle_indices(uzp, value_bytes);
 }
 
-// 1-byte elements, u32×8 indices: copy the lower 16 bits of each index into the upper 16 bits
-// and delegate to the u16 path.
+// 1-byte elements, u32×8 indices: copy the lower 16 bits of each index into the upper 16 bits and
+// delegate to the u16 path.
 inline SubVector<u8, 8> shuffle_indices(VectorFor<u32, 8> idxs, IndexTag<1> value_bytes) {
   const auto uzp = vuzp1q_u16(as<u16>(idxs.lower.r), as<u16>(idxs.upper.r));
   return shuffle_indices(u16x8{.r = uzp}, value_bytes);
 }
 
-// 1-byte elements, u32×4 indices: copy the lower 16 bits of each index into the upper 16 bits
-// and delegate to the u16 path.
+// 1-byte elements, u32×4 indices: copy the lower 16 bits of each index into the upper 16 bits and
+// delegate to the u16 path.
 inline SubVector<u8, 4> shuffle_indices(u32x4 idxs, IndexTag<1> value_bytes) {
   const auto uzp = vuzp1q_u16(as<u16>(idxs.r), as<u16>(idxs.r));
   return SubVector<u8, 4>{shuffle_indices(u16x8{.r = uzp}, value_bytes).full};
 }
 
-// 2-byte elements, u32×8 indices: copy the lower 16 bits of each index into the upper 16 bits
-// and delegate to the u16 path.
+// 2-byte elements, u32×8 indices: copy the lower 16 bits of each index into the upper 16 bits and
+// delegate to the u16 path.
 inline u8x16 shuffle_indices(VectorFor<u32, 8> idxs, IndexTag<2> value_bytes) {
   const auto uzp = vuzp1q_u16(as<u16>(idxs.lower.r), as<u16>(idxs.upper.r));
   return shuffle_indices(u16x8{.r = uzp}, value_bytes);
 }
 
-// 2-byte elements, u32×4 indices: copy the lower 16 bits of each index into the upper 16 bits
-// and delegate to the u16 path.
+// 2-byte elements, u32×4 indices: copy the lower 16 bits of each index into the upper 16 bits and
+// delegate to the u16 path.
 inline SubVector<u8, 8> shuffle_indices(u32x4 idxs, IndexTag<2> value_bytes) {
   const auto uzp = vuzp1q_u16(as<u16>(idxs.r), as<u16>(idxs.r));
   return SubVector<u8, 8>{shuffle_indices(u16x8{.r = uzp}, value_bytes)};
 }
 
-// 4-byte elements, u32×4 indices: multiply by u32(u8×4{4, 4, 4, 4}) to obtain byte indices,
-// then add the per-element offsets [0, 1, 2, 3].
+// 4-byte elements, u32×4 indices: multiply by u32(u8×4{4, 4, 4, 4}) to obtain byte indices, then
+// add the per-element offsets [0, 1, 2, 3].
 inline u8x16 shuffle_indices(u32x4 idxs, IndexTag<4> /*value_bytes*/) {
   const auto mul = as<u8>(vmulq_u32(idxs.r, vdupq_n_u32(0x04040404)));
   return {.r = vorrq_u8(mul, as<u8>(vdupq_n_u32(0x03020100)))};
 }
 
-// 8-byte elements, u32×2 indices: multiply by 8, replicate each low byte across 8 bytes,
-// then add the per-element offsets [0, 1, 2, 3, 4, 5, 6, 7].
+// 8-byte elements, u32×2 indices: multiply by 8, replicate each low byte across 8 bytes, then add
+// the per-element offsets [0, 1, 2, 3, 4, 5, 6, 7].
 inline u8x16 shuffle_indices(SubVector<u32, 2> idxs, IndexTag<8> /*value_bytes*/) {
   constexpr std::array<u8, 16> shuf_arr{0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4};
   const auto shift = vshlq_n_u8(as<u8>(idxs.full.r), 3);
@@ -201,8 +201,8 @@ inline SubVector<u8, 8> shuffle_indices(u64x2 idxs, IndexTag<4> value_bytes) {
   return SubVector<u8, 8>{shuffle_indices(compress64(idxs).full, value_bytes)};
 }
 
-// 8-byte elements, u64×2 indices: multiply by 8, replicate each low byte across the
-// corresponding 8 bytes, then add the per-element offsets [0, 1, 2, 3, 4, 5, 6, 7].
+// 8-byte elements, u64×2 indices: multiply by 8, replicate each low byte across the corresponding 8
+// bytes, then add the per-element offsets [0, 1, 2, 3, 4, 5, 6, 7].
 inline u8x16 shuffle_indices(u64x2 idxs, IndexTag<8> /*value_bytes*/) {
   constexpr std::array<u8, 16> shuf_arr{0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8};
   const auto shift = vshlq_n_u8(as<u8>(idxs.r), 3);
@@ -210,8 +210,8 @@ inline u8x16 shuffle_indices(u64x2 idxs, IndexTag<8> /*value_bytes*/) {
   return {.r = vorrq_u8(shuf, as<u8>(vdupq_n_u64(0x0706050403020100)))};
 }
 
-// Sub-native indices: expand the index vector to twice its width, compute byte indices,
-// then shrink back to the original vector width.
+// Sub-native indices: expand the index vector to twice its width, compute byte indices, then shrink
+// back to the original vector width.
 template<Vectorizable T, std::size_t N, std::size_t ValueBytes>
 inline VectorFor<u8, N * ValueBytes> shuffle_indices(SubVector<T, N> idxs,
                                                      IndexTag<ValueBytes> value_bytes) {
@@ -367,7 +367,7 @@ shuffle(Table table, Idxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto inde
 
 // Convenience overload: full table range, zero base offset.
 template<AnyVector Table, AnyVector Idxs>
-inline VectorFor<typename Table::Value, Idxs::size> shuffle(Table table, Idxs idxs) {
+inline VectorFor<ValueOf<Table>, size_of<Idxs>> shuffle(Table table, Idxs idxs) {
   return shuffle(table, idxs, index_tag<Table::size>, index_tag<0>);
 }
 } // namespace grex::backend

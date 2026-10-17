@@ -15,6 +15,8 @@
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/defs.hpp" // IWYU pragma: keep
 #include "grex/backend/macros/base.hpp"
+#include "grex/backend/macros/for-each.hpp"
+#include "grex/backend/macros/math.hpp"
 #include "grex/backend/neon/macros/types.hpp"
 #include "grex/base.hpp"
 
@@ -171,6 +173,16 @@ as(SuperVector<Half> src) {
   using Out = VectorFor<Dst, 2 * Half::size * sizeof(typename Half::Value) / sizeof(Dst)>;
   return Out{.lower = as<Dst>(src.lower), .upper = as<Dst>(src.upper)};
 }
+
+//==================================================================================================
+// Get the lower 64 bits for free
+//==================================================================================================
+#define GREX_GET_LOW(KIND, BITS, SIZE) \
+  [[GREX_ALWAYS_INLINE]] inline GREX_REGISTER(KIND, BITS, GREX_DIVIDE(SIZE, 2)) \
+    low64(GREX_REGISTER(KIND, BITS, SIZE) r) { \
+    return GREX_ISUFFIXED(vget_low, KIND, BITS)(r); \
+  }
+GREX_FOREACH_TYPE_EXT(GREX_GET_LOW, 128)
 } // namespace grex::backend
 
 #endif // INCLUDE_GREX_BACKEND_NEON_OPERATIONS_REINTERPRET_HPP

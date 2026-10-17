@@ -1,7 +1,7 @@
 #ifndef INCLUDE_GREX_BACKEND_ACTIVE_SIZES_HPP
 #define INCLUDE_GREX_BACKEND_ACTIVE_SIZES_HPP
 
-#include "grex/backend/defs.hpp"
+#include "grex/backend/defs.hpp" // IWYU pragma: keep
 
 // IWYU pragma: begin_exports
 #if GREX_BACKEND_X86_64

@@ -33,6 +33,11 @@ static constexpr std::size_t min_native_size = native_sizes<T>.front();
 template<Vectorizable T>
 static constexpr std::size_t max_native_size = native_sizes<T>.back();
 
+/** The number of native vectors to decompose a given `N` into. */
+template<Vectorizable T, std::size_t N>
+requires(std::has_single_bit(N) && N > max_native_size<T>)
+static constexpr std::size_t max_native_num = N / max_native_size<T>;
+
 template<Vectorizable T, std::size_t N>
 static constexpr bool is_native = static_apply<native_sizes<T>.size()>(
   []<std::size_t... I> { return (... || (N == std::get<I>(native_sizes<T>))); });

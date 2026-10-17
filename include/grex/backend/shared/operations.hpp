@@ -19,6 +19,7 @@
 #include "operations/insert-static.hpp"
 #include "operations/insert.hpp"
 #include "operations/load.hpp"
+#include "operations/lookup-table.hpp"
 #include "operations/mask-convert.hpp"
 #include "operations/mask-index.hpp"
 #include "operations/multibyte.hpp"
