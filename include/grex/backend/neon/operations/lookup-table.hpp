@@ -10,8 +10,6 @@
 #include <array>
 #include <cstddef>
 
-#include <arm_neon.h>
-
 #include "grex/backend/base.hpp"
 #include "grex/backend/choosers.hpp"
 #include "grex/backend/neon/operations/interleave.hpp"

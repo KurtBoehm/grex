@@ -9,8 +9,6 @@
 
 #include <cstddef>
 
-#include <arm_neon.h>
-
 #include "grex/backend/shared/operations/lookup-table.hpp"
 #include "grex/base.hpp"
 
