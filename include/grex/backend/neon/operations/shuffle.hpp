@@ -20,6 +20,7 @@
 #include "grex/backend/neon/operations/blend.hpp"
 #include "grex/backend/neon/operations/compare.hpp"
 #include "grex/backend/neon/operations/convert.hpp"
+#include "grex/backend/neon/operations/expand64.hpp"
 #include "grex/backend/neon/operations/merge.hpp"
 #include "grex/backend/neon/operations/reinterpret.hpp"
 #include "grex/backend/neon/operations/shrink.hpp"
@@ -221,8 +222,32 @@ inline VectorFor<u8, N * ValueBytes> shuffle_indices(SubVector<T, N> idxs,
 // Neon 8-bit tbl shuffles
 //==================================================================================================
 
-// Table size 16: vqtbl1q_u8.
-// If logical index range (index_ub) exceeds table size, mask indices down to [0, 15].
+// Table and index size below 16: `vtbl1_u8`.
+// If the logical index range (`index_ub`) exceeds the table size, masks indices down to [0, 8).
+template<std::size_t TN, std::size_t IN>
+inline SubVector<u8, IN> shuffle(SubVector<u8, TN> table, SubVector<u8, IN> idxs,
+                                 AnyIndexTag auto index_ub, AnyIndexTag auto /*index_offset*/) {
+  uint8x8_t vidxs = vget_low_u8(idxs.full.r); // NOLINT(*-const-correctness)
+  if constexpr (index_ub > 8) {
+    vidxs = vand_u8(vidxs, vdup_n_u8(0x07));
+  }
+  return SubVector<u8, IN>{expand64(vtbl1_u8(vget_low_u8(table.full.r), vidxs))};
+}
+
+// Table size 16, index size below 16: `vqtbl1_u8`.
+// If the logical index range (`index_ub`) exceeds the table size, masks indices down to [0, 16).
+template<std::size_t IN>
+inline SubVector<u8, IN> shuffle(u8x16 table, SubVector<u8, IN> idxs, AnyIndexTag auto index_ub,
+                                 AnyIndexTag auto /*index_offset*/) {
+  uint8x8_t vidxs = vget_low_u8(idxs.full.r); // NOLINT(*-const-correctness)
+  if constexpr (index_ub > 16) {
+    vidxs = vand_u8(vidxs, vdup_n_u8(0x0F));
+  }
+  return SubVector<u8, IN>{expand64(vqtbl1_u8(table.r, vidxs))};
+}
+
+// Table size 16: `vqtbl1q_u8`.
+// If the logical index range (`index_ub`) exceeds the table size, masks indices down to [0, 16).
 inline u8x16 shuffle(u8x16 table, u8x16 idxs, AnyIndexTag auto index_ub,
                      AnyIndexTag auto /*index_offset*/) {
   uint8x16_t vidxs = idxs.r; // NOLINT(*-const-correctness)
@@ -232,8 +257,20 @@ inline u8x16 shuffle(u8x16 table, u8x16 idxs, AnyIndexTag auto index_ub,
   return {.r = vqtbl1q_u8(table.r, vidxs)};
 }
 
-// Table size 32: vqtbl2q_u8.
-// If logical index range (index_ub) exceeds table size, mask indices down to [0, 31].
+// Table size 32, index size below 16: `vqtbl2_u8`.
+// If the logical index range (`index_ub`) exceeds the table size, masks indices down to [0, 32).
+template<std::size_t IN>
+inline SubVector<u8, IN> shuffle(VectorFor<u8, 32> table, SubVector<u8, IN> idxs,
+                                 AnyIndexTag auto index_ub, AnyIndexTag auto /*index_offset*/) {
+  uint8x8_t vidxs = vget_low_u8(idxs.full.r); // NOLINT(*-const-correctness)
+  if constexpr (index_ub > 32) {
+    vidxs = vand_u8(vidxs, vdup_n_u8(0x1F));
+  }
+  return SubVector<u8, IN>{expand64(vqtbl2_u8(uint8x16x2_t{table.lower.r, table.upper.r}, vidxs))};
+}
+
+// Table size 32: `vqtbl2q_u8`.
+// If the logical index range (`index_ub`) exceeds the table size, masks indices down to [0, 32).
 inline u8x16 shuffle(VectorFor<u8, 32> table, u8x16 idxs, AnyIndexTag auto index_ub,
                      AnyIndexTag auto /*index_offset*/) {
   uint8x16_t vidxs = idxs.r; // NOLINT(*-const-correctness)
@@ -243,8 +280,26 @@ inline u8x16 shuffle(VectorFor<u8, 32> table, u8x16 idxs, AnyIndexTag auto index
   return {.r = vqtbl2q_u8(uint8x16x2_t{table.lower.r, table.upper.r}, vidxs)};
 }
 
-// Table size 64: vqtbl4q_u8.
-// If logical index range (index_ub) exceeds table size, mask indices down to [0, 63].
+// Table size 64: `vqtbl4_u8`.
+// If the logical index range (`index_ub`) exceeds the table size, masks indices down to [0, 64).
+template<std::size_t IN>
+inline SubVector<u8, IN> shuffle(VectorFor<u8, 64> table, SubVector<u8, IN> idxs,
+                                 AnyIndexTag auto index_ub, AnyIndexTag auto /*index_offset*/) {
+  uint8x8_t vidxs = vget_low_u8(idxs.full.r); // NOLINT(*-const-correctness)
+  if constexpr (index_ub > 64) {
+    vidxs = vand_u8(vidxs, vdup_n_u8(0x3F));
+  }
+  const uint8x16x4_t vtable{
+    table.lower.lower.r,
+    table.lower.upper.r,
+    table.upper.lower.r,
+    table.upper.upper.r,
+  };
+  return SubVector<u8, IN>{expand64(vqtbl4_u8(vtable, vidxs))};
+}
+
+// Table size 64: `vqtbl4q_u8`.
+// If the logical index range (`index_ub`) exceeds the table size, masks indices down to [0, 64).
 inline u8x16 shuffle(VectorFor<u8, 64> table, u8x16 idxs, AnyIndexTag auto index_ub,
                      AnyIndexTag auto /*index_offset*/) {
   uint8x16_t vidxs = idxs.r; // NOLINT(*-const-correctness)
@@ -292,12 +347,6 @@ shuffle(Table table, Idxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto inde
     const auto shuf = shuffle(as<u8>(table), idxs8, index_tag<index_ub * sizeof(Value)>,
                               index_tag<index_offset * sizeof(Value)>);
     return as<Value>(shuf);
-  } else if constexpr (index_size < 16) {
-    // Sub-native index vector → widen to full native width, then shrink result.
-    return shrink<index_size>(shuffle(table, idxs.full, index_ub, index_offset));
-  } else if constexpr (table_size < 16) {
-    // Sub-native table → widen table to full native width.
-    return shuffle(table.full, idxs, index_ub, index_offset);
   } else if constexpr (table_size > 64) {
     // Table too large for a single tbl (max 64 bytes) → split into two halves.
     const auto lo = shuffle(table.lower, idxs, index_ub, index_offset);
@@ -305,6 +354,11 @@ shuffle(Table table, Idxs idxs, AnyIndexTag auto index_ub, AnyIndexTag auto inde
     const auto mask = compare_lt(idxs, broadcast<Idxs>(Index{index_offset + table_size / 2}));
     // Select from low or upper half depending on index range.
     return blend(convert<Value>(mask), hi, lo);
+  } else if constexpr (table_size < 16) {
+    // Sub-native table → widen table to full native width.
+    static_assert(index_size >= 16, "Cases where both the table and the indices are sub-native "
+                                    "should be handled via explicit overloads!");
+    return shuffle(table.full, idxs, index_ub, index_offset);
   } else {
     static_assert(false, "Unsupported shuffle!");
     std::unreachable();
