@@ -11,6 +11,7 @@
 #if !GREX_BACKEND_SCALAR
 #include <array>
 #include <bit>
+#include <concepts>
 #include <cstddef>
 #include <cstdlib>
 #include <random>
@@ -28,25 +29,34 @@ using Index = grex::GREX_INDEX_TYPE;
 inline constexpr std::size_t repetitions = 256;
 inline constexpr auto max_shift = std::bit_width(256 / sizeof(Value));
 
+/**
+ * Test shuffling with runtime indices, including `LookupTable` (which may or may not be backed by
+ * `shuffle`) if the index type matches that of the lookup table. `N` refers to the lane count of
+ * the table; the function tests multiple index lane counts.
+ */
 template<std::size_t N>
 void run_simd(test::Rng& rng, grex::IndexTag<N> /*tag*/) {
   using VC = test::VectorChecker<Value, N>;
+  // Determine the index type of the lookup table, ensure that it is an unsigned vectorizable type,
+  // and perform the tests if it is the same as the current index type.
+  using Table = grex::LookupTable<Value, N>;
+  using TableIndex = Table::Index;
+  static_assert(grex::UnsignedVectorizable<TableIndex>,
+                "The table index has to be both vectorizable and unsigned.");
 
   auto dist = test::make_distribution<Value>(); // NOLINT(*-const-correctness)
-  const auto dval = [&] { return dist(rng); };
-
+  // The lambda to be executed at each index lane count `IdxN`.
   const auto fix = [&]<std::size_t IdxN>(grex::IndexTag<IdxN> /*tag*/) {
     using IVC = test::VectorChecker<Index, IdxN>;
     using SVC = test::VectorChecker<Value, IdxN>;
     auto idst = std::uniform_int_distribution<Index>(0, Index{N - 1});
-    const auto ival = [&] { return idst(rng); };
 
     fmt::print(fmt::fg(fmt::terminal_color::blue) | fmt::emphasis::bold, "[{}×{}, {}×{}]\n",
                test::type_name<Value>(), N, test::type_name<Index>(), IdxN);
 
     for (std::size_t i = 0; i < repetitions; ++i) {
-      const VC table = VC::random(dval);
-      const IVC idxs = IVC::random(ival);
+      const VC table = VC::random([&] { return dist(rng); });
+      const IVC idxs = IVC::random([&] { return idst(rng); });
 
       std::array<Value, IdxN> ref{};
       for (std::size_t j = 0; j < IdxN; ++j) {
@@ -60,6 +70,18 @@ void run_simd(test::Rng& rng, grex::IndexTag<N> /*tag*/) {
                              test::type_name<Index>(), IdxN, idxs.vec, table.vec);
         },
         false);
+
+      if constexpr (std::same_as<Index, TableIndex>) {
+        const Table ltable{table.ref};
+        const SVC looked_up{ltable.lookup(idxs.vec, grex::full_tag<IdxN>), ref};
+        looked_up.check(
+          [&] {
+            return fmt::format("LookupTable<{}, {}>{{{}}}.lookup({}×{}{{{}}})",
+                               test::type_name<Value>(), N, table.vec, test::type_name<Index>(),
+                               IdxN, idxs.vec);
+          },
+          false);
+      }
     }
   };
   grex::static_apply<1, max_shift + 2>(

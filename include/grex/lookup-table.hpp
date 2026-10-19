@@ -30,17 +30,13 @@ struct LookupTable {
   LookupTable() = default;
   explicit LookupTable(std::array<T, N> data) : data_{std::move(data)} {}
 
-  [[nodiscard, GREX_ALWAYS_INLINE]] T lookup(std::size_t i) const {
-    return data_[i];
-  }
-  template<UnsignedIntVectorizable Idx>
-  [[nodiscard, GREX_ALWAYS_INLINE]] T lookup(Idx i, grex::AnyScalarTag auto /*vtag*/) const {
+  [[nodiscard, GREX_ALWAYS_INLINE]] T lookup(Index i, grex::AnyScalarTag auto /*vtag*/) const {
     return data_[i];
   }
 
 #if !GREX_BACKEND_SCALAR
-  template<UnsignedIntVectorizable Idx, std::size_t IN>
-  [[nodiscard, GREX_ALWAYS_INLINE]] grex::Vector<T, IN> lookup(grex::Vector<Idx, IN> i,
+  template<std::size_t IN>
+  [[nodiscard, GREX_ALWAYS_INLINE]] grex::Vector<T, IN> lookup(grex::Vector<Index, IN> i,
                                                                grex::AnyVectorTag auto vtag) const {
     return grex::gather(std::span{data_}, i, vtag);
   }
@@ -60,18 +56,14 @@ struct LookupTable<T, N> {
   LookupTable() = default;
   explicit LookupTable(std::array<T, N> data) : data_{std::move(data)}, table_{data_} {}
 
-  [[nodiscard, GREX_ALWAYS_INLINE]] T lookup(std::size_t i) const {
-    return data_[i];
-  }
-  template<UnsignedIntVectorizable Idx>
-  [[nodiscard, GREX_ALWAYS_INLINE]] T lookup(Idx i, grex::AnyScalarTag auto /*vtag*/) const {
+  [[nodiscard, GREX_ALWAYS_INLINE]] T lookup(Index i, grex::AnyScalarTag auto /*vtag*/) const {
     return data_[i];
   }
 
-  template<UnsignedIntVectorizable Idx, std::size_t IN>
-  [[nodiscard, GREX_ALWAYS_INLINE]] grex::Vector<T, IN> lookup(grex::Vector<Idx, IN> i,
-                                                               grex::AnyVectorTag auto vtag) const {
-    return vtag.mask(grex::Vector<T, IN>{table_.lookup(i.backend())});
+  template<std::size_t IN>
+  [[nodiscard, GREX_ALWAYS_INLINE]] grex::Vector<T, IN>
+  lookup(grex::Vector<Index, IN> i, grex::AnyVectorTag auto /*vtag*/) const {
+    return grex::Vector<T, IN>{table_.lookup(i.backend())};
   }
 
 private:
