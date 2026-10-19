@@ -61,9 +61,9 @@ struct LookupTable<T, N> {
   }
 
   template<std::size_t IN>
-  [[nodiscard, GREX_ALWAYS_INLINE]] grex::Vector<T, IN>
-  lookup(grex::Vector<Index, IN> i, grex::AnyVectorTag auto /*vtag*/) const {
-    return grex::Vector<T, IN>{table_.lookup(i.backend())};
+  [[nodiscard, GREX_ALWAYS_INLINE]] grex::Vector<T, IN> lookup(grex::Vector<Index, IN> i,
+                                                               grex::AnyVectorTag auto vtag) const {
+    return vtag.mask(grex::Vector<T, IN>{table_.lookup(i.backend())});
   }
 
 private:
